@@ -13,7 +13,11 @@ written to scenario files or logs.
 exe: Runtime/shuttlegent-runtime.exe (default). node: the built dsh CLI in ThirdParty.
 
 .PARAMETER Python
-Python 3 interpreter. Defaults to `python` on PATH.
+Python 3 interpreter. Defaults to the engine's bundled Python
+(Engine/Binaries/ThirdParty/Python3/Win64/python.exe, found by walking up from the
+plugin directory), then to `python` on PATH. A Python Install Manager build cannot see
+the launch directories this script creates under %LOCALAPPDATA%, so starting the runtime
+fails with WinError 267 (observed 2026-10-23); pass -Python to override.
 
 .PARAMETER OutDir
 Output directory for logs and the test workspace. Defaults to <plugin>/Saved/Probe.
@@ -51,10 +55,20 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 if (-not $OutDir) { $OutDir = Join-Path $PluginDir 'Saved\Probe' }
 if (-not $Python) {
+    $EnginePython = 'Engine\Binaries\ThirdParty\Python3\Win64\python.exe'
+    $SearchDir = $PluginDir
+    while ($SearchDir) {
+        $Candidate = Join-Path $SearchDir $EnginePython
+        if (Test-Path $Candidate) { $Python = $Candidate; break }
+        $SearchDir = Split-Path $SearchDir -Parent
+    }
+}
+if (-not $Python) {
     $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $PythonCommand) { throw 'Python 3 not found on PATH; pass -Python <path>.' }
+    if (-not $PythonCommand) { throw 'Python 3 not found (no bundled engine Python above the plugin, none on PATH); pass -Python <path>.' }
     $Python = $PythonCommand.Source
 }
+Write-Host "Using Python: $Python"
 
 if ($Runtime -eq 'exe') {
     $RuntimeExe = Join-Path $PluginDir 'Runtime\shuttlegent-runtime.exe'

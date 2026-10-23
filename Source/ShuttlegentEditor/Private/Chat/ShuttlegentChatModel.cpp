@@ -2,6 +2,8 @@
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Serialization/JsonSerializer.h"
+#include "Serialization/JsonWriter.h"
 
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentSessionStore.h"
@@ -39,6 +41,7 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* FieldCurrentValue = TEXT("currentValue");
 
 	// Transcript entry fields and kinds (see FShuttlegentSessionStore)
+	inline const TCHAR* FieldTime = TEXT("t");
 	inline const TCHAR* FieldKind = TEXT("kind");
 	inline const TCHAR* FieldData = TEXT("data");
 	inline const TCHAR* FieldStopReason = TEXT("stopReason");
@@ -48,6 +51,9 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* TranscriptUpdate = TEXT("update");
 	inline const TCHAR* TranscriptTurnEnd = TEXT("turn_end");
 	inline const TCHAR* TranscriptPermission = TEXT("permission");
+
+	// Separator between the text parts of one tool result
+	inline const TCHAR* ToolContentJoiner = TEXT("\n");
 
 	// Stop reasons
 	inline const TCHAR* StopReasonCancelled = TEXT("cancelled");
@@ -59,6 +65,32 @@ namespace ShuttlegentChatModelPrivate
 		FString Text;
 		if (Update->TryGetObjectField(FieldContent, Content)) (*Content)->TryGetStringField(FieldText, Text);
 		return Text;
+	}
+
+	/** Text of a tool_call(_update) content array: [{ type: "content", content: { type: "text", text } }]. Empty when absent. */
+	FString ToolContentText(const TSharedPtr<FJsonObject>& Update)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* Items = nullptr;
+		if (!Update->TryGetArrayField(FieldContent, Items) || Items == nullptr) return FString();
+
+		TArray<FString> Parts;
+		for (const TSharedPtr<FJsonValue>& Item : *Items)
+		{
+			const TSharedPtr<FJsonObject> Object = Item.IsValid() ? Item->AsObject() : nullptr;
+			if (!Object.IsValid()) continue;
+
+			const FString Text = ChunkText(Object);
+			if (!Text.IsEmpty()) Parts.Add(Text);
+		}
+		return FString::Join(Parts, ToolContentJoiner);
+	}
+
+	FString CompactJson(const TSharedPtr<FJsonObject>& Object)
+	{
+		FString Json;
+		const TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Json);
+		FJsonSerializer::Serialize(Object.ToSharedRef(), Writer);
+		return Json;
 	}
 
 	void AddChoice(const TSharedPtr<FJsonObject>& Option, const FString& GroupName, TArray<FShuttlegentConfigChoice>& OutChoices)
@@ -359,7 +391,7 @@ void FShuttlegentChatModel::SendPrompt(const FString& Text)
 	OnStatusChanged.Broadcast();
 }
 
-bool FShuttlegentChatModel::ApplyUpdate(const TSharedPtr<FJsonObject>& Update)
+bool FShuttlegentChatModel::ApplyUpdate(const TSharedPtr<FJsonObject>& Update, const FDateTime& At)
 {
 	FString Kind;
 	Update->TryGetStringField(ShuttlegentChatModelPrivate::FieldSessionUpdate, Kind);
@@ -381,6 +413,8 @@ bool FShuttlegentChatModel::ApplyUpdate(const TSharedPtr<FJsonObject>& Update)
 		}
 		else
 		{
+			if (Target->Thought.IsEmpty()) Target->ThoughtStartUtc = At;
+			Target->ThoughtEndUtc = At;
 			Target->Thought.Append(Chunk);
 		}
 		return !bContinues;
@@ -405,11 +439,15 @@ bool FShuttlegentChatModel::ApplyUpdate(const TSharedPtr<FJsonObject>& Update)
 		if (Update->TryGetStringField(ShuttlegentChatModelPrivate::FieldStatus, Status)) Target->Status = Status;
 
 		const TSharedPtr<FJsonObject>* RawInput = nullptr;
-		FString Justification;
-		if (Update->TryGetObjectField(ShuttlegentChatModelPrivate::FieldRawInput, RawInput) && (*RawInput)->TryGetStringField(ShuttlegentChatModelPrivate::FieldJustification, Justification))
+		if (Update->TryGetObjectField(ShuttlegentChatModelPrivate::FieldRawInput, RawInput))
 		{
-			Target->Detail = Justification;
+			FString Justification;
+			if ((*RawInput)->TryGetStringField(ShuttlegentChatModelPrivate::FieldJustification, Justification)) Target->Detail = Justification;
+			Target->Input = ShuttlegentChatModelPrivate::CompactJson(*RawInput);
 		}
+
+		const FString Result = ShuttlegentChatModelPrivate::ToolContentText(Update);
+		if (!Result.IsEmpty()) Target->Result = Result;
 		return bCreated;
 	}
 
@@ -465,7 +503,10 @@ void FShuttlegentChatModel::ReplayTranscript(const FString& SessionId)
 		}
 		else if (Kind == ShuttlegentChatModelPrivate::TranscriptUpdate)
 		{
-			ApplyUpdate(*Data);
+			FString Time;
+			FDateTime At;
+			if (!Item->TryGetStringField(ShuttlegentChatModelPrivate::FieldTime, Time) || !FDateTime::ParseIso8601(*Time, At)) At = FDateTime();
+			ApplyUpdate(*Data, At);
 		}
 		else if (Kind == ShuttlegentChatModelPrivate::TranscriptTurnEnd)
 		{
@@ -530,7 +571,7 @@ void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const 
 {
 	if (!Update.IsValid()) return;
 
-	if (ApplyUpdate(Update))
+	if (ApplyUpdate(Update, FDateTime::UtcNow()))
 	{
 		OnStructureChanged.Broadcast();
 		return;

@@ -43,6 +43,13 @@ private:
 	bool bWasPrompting = false;
 	bool bShowingEmptyState = false;
 
+	/** Tool rows and read-only groups the user expanded, by entry id (a group by its first entry); survive rebuilds. */
+	TSet<int32> ExpandedToolIds;
+	TSet<int32> ExpandedGroupIds;
+
+	/** Content arrived while the view was scrolled away from the end; shows the back-to-bottom button. */
+	bool bHasUnseenContent = false;
+
 public:
 	void Construct(const FArguments& InArgs);
 	virtual ~SShuttlegentChatPanel() override;
@@ -60,6 +67,9 @@ private:
 	TSharedRef<SWidget> BuildUserRow(const TSharedPtr<FShuttlegentChatEntry>& Entry);
 	TSharedRef<SWidget> BuildAssistantRow(const TSharedPtr<FShuttlegentChatEntry>& Entry);
 	TSharedRef<SWidget> BuildToolCallRow(const TSharedPtr<FShuttlegentChatEntry>& Entry);
+	TSharedRef<SWidget> BuildToolGroupRow(const TArray<TSharedPtr<FShuttlegentChatEntry>>& Group);
+	TSharedRef<SWidget> MakeDetailText(TAttribute<FText> Text) const;
+	TSharedRef<SWidget> BuildScrollToEndButton();
 	TSharedRef<SWidget> BuildPermissionRow(const TSharedPtr<FShuttlegentChatEntry>& Entry);
 	TSharedRef<SWidget> BuildNoticeRow(const TSharedPtr<FShuttlegentChatEntry>& Entry);
 	TSharedRef<SWidget> MakeIconButton(const TCHAR* IconName, const FText& ToolTip, FOnClicked OnClicked) const;
@@ -73,6 +83,7 @@ private:
 	void HandleContentChanged();
 	void HandleStatusChanged();
 	void HandleTurnFinished(bool bCompleted);
+	void HandleUserScrolled(float ScrollOffset);
 
 	void SubmitInput();
 	FReply OnSendClicked();

@@ -96,7 +96,8 @@ private:
 	void AddNotice(const FText& Text, bool bError);
 	void ResetEntries();
 	void SendPrompt(const FString& Text);
-	bool ApplyUpdate(const TSharedPtr<FJsonObject>& Update);
+	/** Folds one session/update into entries; At is when it arrived (live) or was recorded (replay). Returns true when entries were added. */
+	bool ApplyUpdate(const TSharedPtr<FJsonObject>& Update, const FDateTime& At);
 	void ApplyTurnEnd(const FString& StopReason, const FString& ErrorMessage);
 	void ReplayTranscript(const FString& SessionId);
 

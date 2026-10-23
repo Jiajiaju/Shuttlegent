@@ -133,6 +133,12 @@ namespace ShuttlegentStylePrivate
 	// Typeface names of the editor's default font
 	inline const TCHAR* TypefaceRegular = TEXT("Regular");
 	inline const TCHAR* TypefaceBold = TEXT("Bold");
+	inline const TCHAR* TypefaceItalic = TEXT("Italic");
+	inline const TCHAR* TypefaceMono = TEXT("Mono");
+
+	// Core styles that Markdown text and links start from
+	inline const FName CoreHyperlinkStyle = TEXT("Hyperlink");
+	inline const FName CoreNormalTextStyle = TEXT("NormalText");
 
 	FLinearColor Linear(const FColor& Token)
 	{
@@ -162,6 +168,30 @@ namespace ShuttlegentStylePrivate
 		Style.SetNormalPadding(Padding);
 		Style.SetPressedPadding(Padding);
 		return Style;
+	}
+
+	FTextBlockStyle MakeTextStyle(const FSlateFontInfo& Font, const FColor& Color)
+	{
+		return FTextBlockStyle(FCoreStyle::Get().GetWidgetStyle<FTextBlockStyle>(CoreNormalTextStyle)).SetFont(Font).SetColorAndOpacity(FSlateColor(Linear(Color)));
+	}
+
+	/** Text styles of FShuttlegentMarkdown markup and of SShuttlegentMarkdownView blocks. */
+	void RegisterMarkdownStyles(FSlateStyleSet& Style)
+	{
+		const int32 Body = ShuttlegentEditorMetric::FontBody;
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownBody, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceRegular, Body), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownBold, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceBold, Body), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownItalic, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceItalic, Body), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownCode, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceMono, Body), ShuttlegentEditorColor::Accent));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownHeading1, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceBold, ShuttlegentEditorMetric::FontHeading1), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownHeading2, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceBold, ShuttlegentEditorMetric::FontHeading2), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownHeading3, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceBold, ShuttlegentEditorMetric::FontHeading3), ShuttlegentEditorColor::Text));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownQuote, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceRegular, Body), ShuttlegentEditorColor::Muted));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownCodeBlock, MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceMono, Body), ShuttlegentEditorColor::Text));
+
+		FHyperlinkStyle Link = FCoreStyle::Get().GetWidgetStyle<FHyperlinkStyle>(CoreHyperlinkStyle);
+		Link.SetTextStyle(MakeTextStyle(FCoreStyle::GetDefaultFontStyle(TypefaceRegular, Body), ShuttlegentEditorColor::Accent));
+		Style.Set(ShuttlegentEditorStyleKey::MarkdownLink, Link);
 	}
 }
 
@@ -213,6 +243,7 @@ void FShuttlegentStyle::Register()
 	InputBox.SetForegroundColor(FSlateColor(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::Text)));
 	InputBox.SetFont(BodyFont());
 	StyleSet->Set(ShuttlegentEditorStyleKey::InputBox, InputBox);
+	ShuttlegentStylePrivate::RegisterMarkdownStyles(*StyleSet);
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
 }

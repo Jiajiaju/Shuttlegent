@@ -13,9 +13,13 @@
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Text/SMultiLineEditableText.h"
 #include "Widgets/Text/STextBlock.h"
 
+#include "Chat/FShuttlegentToolPresentation.h"
 #include "Chat/ShuttlegentChatModel.h"
+#include "Markdown/SShuttlegentMarkdownView.h"
 #include "Mark/EShuttlegentMarkMotion.h"
 #include "Mark/EShuttlegentMarkTier.h"
 #include "Mark/SShuttlegentMark.h"
@@ -40,7 +44,6 @@ namespace SShuttlegentChatPanelPrivate
 	inline const TCHAR* IconSettings = TEXT("settings");
 	inline const TCHAR* IconSend = TEXT("send");
 	inline const TCHAR* IconStop = TEXT("stop");
-	inline const TCHAR* IconCopy = TEXT("copy");
 	inline const TCHAR* IconCheck = TEXT("check");
 	inline const TCHAR* IconAlert = TEXT("alert");
 	inline const TCHAR* IconChevron = TEXT("chevron");
@@ -55,6 +58,16 @@ namespace SShuttlegentChatPanelPrivate
 	FSlateColor Tint(const FColor& Token)
 	{
 		return FSlateColor(FShuttlegentStyle::Color(Token));
+	}
+
+	bool IsReadOnlyToolCall(const TSharedPtr<FShuttlegentChatEntry>& Entry)
+	{
+		return Entry.IsValid() && Entry->Kind == EShuttlegentChatEntryKind::ToolCall && FShuttlegentToolPresentation::IsReadOnly(Entry->Title);
+	}
+
+	bool IsToolFinished(const FString& Status)
+	{
+		return Status == StatusCompleted || Status == StatusFailed;
 	}
 
 	FText FormatTokens(int64 Tokens)
@@ -115,10 +128,24 @@ void SShuttlegentChatPanel::Construct(const FArguments& InArgs)
 			.FillHeight(1.0f)
 			.Padding(ShuttlegentEditorMetric::Space4, 0.0f)
 			[
-				SAssignNew(ScrollBox, SScrollBox)
-				+ SScrollBox::Slot()
+				SNew(SOverlay)
+
+				+ SOverlay::Slot()
 				[
-					SAssignNew(MessageList, SVerticalBox)
+					SAssignNew(ScrollBox, SScrollBox)
+					.OnUserScrolled(this, &SShuttlegentChatPanel::HandleUserScrolled)
+					+ SScrollBox::Slot()
+					[
+						SAssignNew(MessageList, SVerticalBox)
+					]
+				]
+
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Bottom)
+				.Padding(ShuttlegentEditorMetric::Space3)
+				[
+					BuildScrollToEndButton()
 				]
 			]
 
@@ -524,6 +551,7 @@ TSharedRef<SWidget> SShuttlegentChatPanel::BuildUserRow(const TSharedPtr<FShuttl
 TSharedRef<SWidget> SShuttlegentChatPanel::BuildAssistantRow(const TSharedPtr<FShuttlegentChatEntry>& Entry)
 {
 	TWeakPtr<FShuttlegentChatEntry> WeakEntry = Entry;
+	TWeakPtr<FShuttlegentChatModel> WeakModel = Model;
 	return SNew(SVerticalBox)
 
 		+ SVerticalBox::Slot()
@@ -578,12 +606,21 @@ TSharedRef<SWidget> SShuttlegentChatPanel::BuildAssistantRow(const TSharedPtr<FS
 					SNew(STextBlock)
 					.Font(FShuttlegentStyle::CaptionFont())
 					.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
-					.Text_Lambda([WeakEntry]()
+					.Text_Lambda([WeakEntry, WeakModel]()
 					{
 						const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-						const int32 Chars = Pinned.IsValid() ? Pinned->Thought.Len() : 0;
-						const bool bExpanded = Pinned.IsValid() && Pinned->bThoughtExpanded;
-						return FText::Format(bExpanded ? LOCTEXT("ThoughtExpanded", "思考 {0} 字（收起）") : LOCTEXT("ThoughtCollapsed", "思考 {0} 字（展开）"), FText::AsNumber(Chars));
+						const TSharedPtr<FShuttlegentChatModel> PinnedModel = WeakModel.Pin();
+						if (!Pinned.IsValid() || !PinnedModel.IsValid()) return FText::GetEmpty();
+
+						// Still thinking: the latest entry of a running turn with no reply text yet
+						const TArray<TSharedPtr<FShuttlegentChatEntry>>& All = PinnedModel->GetEntries();
+						const bool bThinking = Pinned->Text.IsEmpty() && PinnedModel->GetState() == EShuttlegentAgentState::Prompting && All.Num() > 0 && All.Last() == Pinned;
+						if (bThinking) return LOCTEXT("Thinking", "思考中…");
+
+						const FText Label = Pinned->ThoughtStartUtc.GetTicks() > 0
+							? FText::Format(LOCTEXT("ThoughtSeconds", "已思考 {0} 秒"), FText::AsNumber(FMath::Max(1, FMath::CeilToInt((Pinned->ThoughtEndUtc - Pinned->ThoughtStartUtc).GetTotalSeconds()))))
+							: LOCTEXT("ThoughtUntimed", "思考过程");
+						return FText::Format(Pinned->bThoughtExpanded ? LOCTEXT("ThoughtExpanded", "{0}（收起）") : LOCTEXT("ThoughtCollapsed", "{0}（展开）"), Label);
 					})
 				]
 			]
@@ -598,7 +635,7 @@ TSharedRef<SWidget> SShuttlegentChatPanel::BuildAssistantRow(const TSharedPtr<FS
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				MakeIconButton(SShuttlegentChatPanelPrivate::IconCopy, LOCTEXT("Copy", "复制"), FOnClicked::CreateLambda([WeakEntry]()
+				MakeIconButton(ShuttlegentEditorResource::IconCopy, LOCTEXT("Copy", "复制"), FOnClicked::CreateLambda([WeakEntry]()
 				{
 					const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
 					if (Pinned.IsValid()) FPlatformApplicationMisc::ClipboardCopy(*Pinned->Text);
@@ -631,86 +668,329 @@ TSharedRef<SWidget> SShuttlegentChatPanel::BuildAssistantRow(const TSharedPtr<FS
 		.AutoHeight()
 		.Padding(0.0f, ShuttlegentEditorMetric::Space2, 0.0f, 0.0f)
 		[
-			SNew(STextBlock)
-			.Font(FShuttlegentStyle::BodyFont())
-			.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Text))
-			.AutoWrapText(true)
-			.Text_Lambda([WeakEntry]()
-			{
-				const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-				return Pinned.IsValid() ? FText::FromString(Pinned->Text) : FText::GetEmpty();
-			})
+			SNew(SShuttlegentMarkdownView)
+			.Entry(Entry)
 		];
 }
 
 TSharedRef<SWidget> SShuttlegentChatPanel::BuildToolCallRow(const TSharedPtr<FShuttlegentChatEntry>& Entry)
 {
 	TWeakPtr<FShuttlegentChatEntry> WeakEntry = Entry;
+	const int32 EntryId = Entry->Id;
+
 	return SNew(SBorder)
 		.BorderImage(FShuttlegentStyle::Brush(ShuttlegentEditorStyleKey::Surface))
 		.Padding(FMargin(ShuttlegentEditorMetric::Space3, ShuttlegentEditorMetric::Space2))
 		[
-			SNew(SHorizontalBox)
+			SNew(SVerticalBox)
 
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
 			[
-				SNew(SBox)
-				.WidthOverride(ShuttlegentEditorMetric::IconSizeSmall)
-				.HeightOverride(ShuttlegentEditorMetric::IconSizeSmall)
+				SNew(SButton)
+				.ButtonStyle(&FShuttlegentStyle::Get().GetWidgetStyle<FButtonStyle>(ShuttlegentEditorStyleKey::IconButton))
+				.ContentPadding(0.0f)
+				.ToolTipText(LOCTEXT("ToolToggle", "展开或收起参数与结果"))
+				.OnClicked_Lambda([this, EntryId]()
+				{
+					if (ExpandedToolIds.Contains(EntryId)) ExpandedToolIds.Remove(EntryId);
+					else ExpandedToolIds.Add(EntryId);
+					return FReply::Handled();
+				})
 				[
-					SNew(SImage)
-					.Image_Lambda([WeakEntry]()
-					{
-						const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-						const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
-						if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconCheck);
-						if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconAlert);
-						return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconTools);
-					})
-					.ColorAndOpacity_Lambda([WeakEntry]()
-					{
-						const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-						const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
-						if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Success);
-						if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Error);
-						return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted);
-					})
+					SNew(SHorizontalBox)
+
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(SBox)
+						.WidthOverride(ShuttlegentEditorMetric::IconSizeSmall)
+						.HeightOverride(ShuttlegentEditorMetric::IconSizeSmall)
+						[
+							SNew(SImage)
+							.Image_Lambda([WeakEntry]()
+							{
+								const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+								const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
+								if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconCheck);
+								if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconAlert);
+								return FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconTools);
+							})
+							.ColorAndOpacity_Lambda([WeakEntry]()
+							{
+								const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+								const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
+								if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Success);
+								if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Error);
+								return SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted);
+							})
+						]
+					]
+
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(ShuttlegentEditorMetric::Space2, 0.0f, 0.0f, 0.0f)
+					[
+						SNew(STextBlock)
+						.Font(FShuttlegentStyle::BodyFont())
+						.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Text))
+						.Text_Lambda([WeakEntry]()
+						{
+							const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+							return Pinned.IsValid() ? FShuttlegentToolPresentation::GetDisplayName(Pinned->Title) : FText::GetEmpty();
+						})
+					]
+
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.VAlign(VAlign_Center)
+					.Padding(ShuttlegentEditorMetric::Space2, 0.0f)
+					[
+						SNew(STextBlock)
+						.Font(FShuttlegentStyle::CaptionFont())
+						.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Text_Lambda([WeakEntry]()
+						{
+							const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+							return Pinned.IsValid() ? FText::FromString(FShuttlegentToolPresentation::GetSummary(Pinned->Input)) : FText::GetEmpty();
+						})
+					]
+
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Font(FShuttlegentStyle::CaptionFont())
+						.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+						.Text_Lambda([WeakEntry]()
+						{
+							const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+							const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
+							if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return LOCTEXT("ToolCompleted", "已完成");
+							if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return LOCTEXT("ToolFailed", "执行失败");
+							return LOCTEXT("ToolRunning", "正在执行");
+						})
+					]
 				]
 			]
 
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.0f)
-			.VAlign(VAlign_Center)
-			.Padding(ShuttlegentEditorMetric::Space2, 0.0f)
-			[
-				SNew(STextBlock)
-				.Font(FShuttlegentStyle::BodyFont())
-				.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Text))
-				.Text_Lambda([WeakEntry]()
-				{
-					const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-					return Pinned.IsValid() ? FText::FromString(Pinned->Title) : FText::GetEmpty();
-				})
-			]
-
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0f, ShuttlegentEditorMetric::Space1, 0.0f, 0.0f)
 			[
 				SNew(STextBlock)
 				.Font(FShuttlegentStyle::CaptionFont())
-				.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+				.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Error))
+				.AutoWrapText(true)
+				.Visibility_Lambda([WeakEntry]()
+				{
+					const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+					return Pinned.IsValid() && Pinned->Status == SShuttlegentChatPanelPrivate::StatusFailed && !Pinned->Result.IsEmpty() ? EVisibility::Visible : EVisibility::Collapsed;
+				})
 				.Text_Lambda([WeakEntry]()
 				{
 					const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
-					const FString Status = Pinned.IsValid() ? Pinned->Status : FString();
-					if (Status == SShuttlegentChatPanelPrivate::StatusCompleted) return LOCTEXT("ToolCompleted", "已完成");
-					if (Status == SShuttlegentChatPanelPrivate::StatusFailed) return LOCTEXT("ToolFailed", "执行失败");
-					return LOCTEXT("ToolRunning", "正在执行");
+					return Pinned.IsValid() ? FText::FromString(FShuttlegentToolPresentation::GetFailureReason(Pinned->Result)) : FText::GetEmpty();
 				})
 			]
+
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(SVerticalBox)
+				.Visibility_Lambda([this, EntryId]()
+				{
+					return ExpandedToolIds.Contains(EntryId) ? EVisibility::Visible : EVisibility::Collapsed;
+				})
+
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, ShuttlegentEditorMetric::Space2, 0.0f, ShuttlegentEditorMetric::Space1)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("ToolInput", "参数"))
+					.Font(FShuttlegentStyle::CaptionFont())
+					.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+				]
+
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					MakeDetailText(TAttribute<FText>::CreateLambda([WeakEntry]()
+					{
+						const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+						return Pinned.IsValid() ? FText::FromString(Pinned->Input) : FText::GetEmpty();
+					}))
+				]
+
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, ShuttlegentEditorMetric::Space2, 0.0f, ShuttlegentEditorMetric::Space1)
+				[
+					SNew(STextBlock)
+					.Text(LOCTEXT("ToolResult", "结果"))
+					.Font(FShuttlegentStyle::CaptionFont())
+					.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+				]
+
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					MakeDetailText(TAttribute<FText>::CreateLambda([WeakEntry]()
+					{
+						const TSharedPtr<FShuttlegentChatEntry> Pinned = WeakEntry.Pin();
+						if (!Pinned.IsValid()) return FText::GetEmpty();
+
+						return Pinned->Result.IsEmpty() ? LOCTEXT("ToolNoResult", "（尚无结果）") : FText::FromString(Pinned->Result);
+					}))
+				]
+			]
+		];
+}
+
+TSharedRef<SWidget> SShuttlegentChatPanel::BuildToolGroupRow(const TArray<TSharedPtr<FShuttlegentChatEntry>>& Group)
+{
+	const int32 GroupId = Group[0]->Id;
+	TArray<TWeakPtr<FShuttlegentChatEntry>> WeakGroup;
+	for (const TSharedPtr<FShuttlegentChatEntry>& Item : Group)
+	{
+		WeakGroup.Add(Item);
+	}
+
+	TSharedRef<SVerticalBox> Rows = SNew(SVerticalBox);
+	for (const TSharedPtr<FShuttlegentChatEntry>& Item : Group)
+	{
+		Rows->AddSlot()
+			.AutoHeight()
+			.Padding(0.0f, ShuttlegentEditorMetric::Space1, 0.0f, 0.0f)
+			[
+				BuildToolCallRow(Item)
+			];
+	}
+
+	return SNew(SVerticalBox)
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.BorderImage(FShuttlegentStyle::Brush(ShuttlegentEditorStyleKey::Surface))
+			.Padding(FMargin(ShuttlegentEditorMetric::Space3, ShuttlegentEditorMetric::Space2))
+			[
+				SNew(SButton)
+				.ButtonStyle(&FShuttlegentStyle::Get().GetWidgetStyle<FButtonStyle>(ShuttlegentEditorStyleKey::IconButton))
+				.ContentPadding(0.0f)
+				.ToolTipText(LOCTEXT("GroupToggle", "展开或收起这组查询"))
+				.OnClicked_Lambda([this, GroupId]()
+				{
+					if (ExpandedGroupIds.Contains(GroupId)) ExpandedGroupIds.Remove(GroupId);
+					else ExpandedGroupIds.Add(GroupId);
+					return FReply::Handled();
+				})
+				[
+					SNew(SHorizontalBox)
+
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(SBox)
+						.WidthOverride(ShuttlegentEditorMetric::IconSizeSmall)
+						.HeightOverride(ShuttlegentEditorMetric::IconSizeSmall)
+						[
+							SNew(SImage)
+							.Image(FShuttlegentStyle::Icon(SShuttlegentChatPanelPrivate::IconChevron))
+							.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+						]
+					]
+
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.VAlign(VAlign_Center)
+					.Padding(ShuttlegentEditorMetric::Space2, 0.0f)
+					[
+						SNew(STextBlock)
+						.Text(FText::Format(LOCTEXT("GroupTitle", "已查询 {0} 项"), FText::AsNumber(Group.Num())))
+						.Font(FShuttlegentStyle::BodyFont())
+						.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Text))
+					]
+
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Font(FShuttlegentStyle::CaptionFont())
+						.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Muted))
+						.Text_Lambda([WeakGroup]()
+						{
+							int32 Failed = 0;
+							for (const TWeakPtr<FShuttlegentChatEntry>& Weak : WeakGroup)
+							{
+								const TSharedPtr<FShuttlegentChatEntry> Pinned = Weak.Pin();
+								if (!Pinned.IsValid()) continue;
+								if (!SShuttlegentChatPanelPrivate::IsToolFinished(Pinned->Status)) return LOCTEXT("GroupRunning", "正在执行");
+								if (Pinned->Status == SShuttlegentChatPanelPrivate::StatusFailed) ++Failed;
+							}
+							return Failed > 0 ? FText::Format(LOCTEXT("GroupFailed", "{0} 项失败"), FText::AsNumber(Failed)) : LOCTEXT("GroupCompleted", "已完成");
+						})
+					]
+				]
+			]
+		]
+
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(ShuttlegentEditorMetric::Space4, 0.0f, 0.0f, 0.0f)
+		[
+			SNew(SBox)
+			.Visibility_Lambda([this, GroupId]()
+			{
+				return ExpandedGroupIds.Contains(GroupId) ? EVisibility::Visible : EVisibility::Collapsed;
+			})
+			[
+				Rows
+			]
+		];
+}
+
+TSharedRef<SWidget> SShuttlegentChatPanel::MakeDetailText(TAttribute<FText> Text) const
+{
+	return SNew(SBorder)
+		.BorderImage(FShuttlegentStyle::Brush(ShuttlegentEditorStyleKey::Background))
+		.Padding(ShuttlegentEditorMetric::Space2)
+		[
+			SNew(SMultiLineEditableText)
+			.Text(Text)
+			.TextStyle(&FShuttlegentStyle::Get().GetWidgetStyle<FTextBlockStyle>(ShuttlegentEditorStyleKey::MarkdownCodeBlock))
+			.IsReadOnly(true)
+			.AutoWrapText(true)
+		];
+}
+
+TSharedRef<SWidget> SShuttlegentChatPanel::BuildScrollToEndButton()
+{
+	return SNew(SButton)
+		.ButtonStyle(&FShuttlegentStyle::Get().GetWidgetStyle<FButtonStyle>(ShuttlegentEditorStyleKey::SecondaryButton))
+		.Visibility_Lambda([this]()
+		{
+			return bHasUnseenContent && !IsScrolledToEnd() ? EVisibility::Visible : EVisibility::Collapsed;
+		})
+		.OnClicked_Lambda([this]()
+		{
+			if (ScrollBox.IsValid()) ScrollBox->ScrollToEnd();
+			bHasUnseenContent = false;
+			return FReply::Handled();
+		})
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("ScrollToEnd", "有新内容 · 回到底部"))
+			.Font(FShuttlegentStyle::CaptionFont())
+			.ColorAndOpacity(SShuttlegentChatPanelPrivate::Tint(ShuttlegentEditorColor::Text))
 		];
 }
 
@@ -890,8 +1170,29 @@ void SShuttlegentChatPanel::RebuildMessages()
 	if (bEmpty && !bShowingEmptyState && EmptyStateMark.IsValid()) EmptyStateMark->Play(EShuttlegentMarkMotion::Intro);
 	bShowingEmptyState = bEmpty;
 
-	for (const TSharedPtr<FShuttlegentChatEntry>& Entry : Model->GetEntries())
+	const TArray<TSharedPtr<FShuttlegentChatEntry>>& Entries = Model->GetEntries();
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
+		const TSharedPtr<FShuttlegentChatEntry>& Entry = Entries[Index];
+
+		// Consecutive read-only tool calls fold into one group row
+		TArray<TSharedPtr<FShuttlegentChatEntry>> Group;
+		while (Index + Group.Num() < Entries.Num() && SShuttlegentChatPanelPrivate::IsReadOnlyToolCall(Entries[Index + Group.Num()]))
+		{
+			Group.Add(Entries[Index + Group.Num()]);
+		}
+		if (Group.Num() >= ShuttlegentEditorTool::MinGroupSize)
+		{
+			MessageList->AddSlot()
+				.AutoHeight()
+				.Padding(0.0f, ShuttlegentEditorMetric::Space2, 0.0f, 0.0f)
+				[
+					BuildToolGroupRow(Group)
+				];
+			Index += Group.Num() - 1;
+			continue;
+		}
+
 		const bool bSeparated = Entry->Kind == EShuttlegentChatEntryKind::User || Entry->Kind == EShuttlegentChatEntryKind::Assistant;
 		MessageList->AddSlot()
 			.AutoHeight()
@@ -940,11 +1241,19 @@ void SShuttlegentChatPanel::HandleStructureChanged()
 	const bool bWasAtEnd = IsScrolledToEnd();
 	RebuildMessages();
 	ScrollToEndIfFollowing(bWasAtEnd);
+	if (!bWasAtEnd) bHasUnseenContent = true;
 }
 
 void SShuttlegentChatPanel::HandleContentChanged()
 {
-	ScrollToEndIfFollowing(IsScrolledToEnd());
+	const bool bWasAtEnd = IsScrolledToEnd();
+	ScrollToEndIfFollowing(bWasAtEnd);
+	if (!bWasAtEnd) bHasUnseenContent = true;
+}
+
+void SShuttlegentChatPanel::HandleUserScrolled(float ScrollOffset)
+{
+	if (IsScrolledToEnd()) bHasUnseenContent = false;
 }
 
 void SShuttlegentChatPanel::HandleStatusChanged()

@@ -30,6 +30,16 @@ struct FShuttlegentChatEntry
 	/** Extra detail: tool justification for permission requests. */
 	FString Detail;
 
+	/** Tool call: rawInput as compact JSON. */
+	FString Input;
+
+	/** Tool call: text of the latest result content, including the error text of a failed call. */
+	FString Result;
+
+	/** Assistant entry: times of the first and the latest reasoning chunk (UTC); unset without reasoning. */
+	FDateTime ThoughtStartUtc {};
+	FDateTime ThoughtEndUtc {};
+
 	/** Assistant entry: reasoning is expanded. */
 	bool bThoughtExpanded = false;
 

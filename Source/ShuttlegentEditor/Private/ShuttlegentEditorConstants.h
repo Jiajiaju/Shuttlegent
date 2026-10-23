@@ -50,6 +50,11 @@ namespace ShuttlegentEditorMetric
 	inline constexpr int32 FontCaption = 9;
 	inline constexpr int32 FontSection = 12;
 
+	// Markdown heading sizes (pt): "#", "##", "###" and deeper
+	inline constexpr int32 FontHeading1 = 14;
+	inline constexpr int32 FontHeading2 = 12;
+	inline constexpr int32 FontHeading3 = 10;
+
 	// VI spacing unit and its multiples
 	inline constexpr float Space1 = 4.0f;
 	inline constexpr float Space2 = 8.0f;
@@ -103,6 +108,9 @@ namespace ShuttlegentEditorResource
 
 	// Palette subfolder of AnimDir the panel plays (ExportMarkAnim.ps1 -Palette red-white)
 	inline const TCHAR* AnimPalette = TEXT("red-white");
+
+	// Copy icon, used by the chat panel and the Markdown code blocks
+	inline const TCHAR* IconCopy = TEXT("copy");
 
 	// Function icons registered as "Shuttlegent.Icon.<name>"
 	inline const TCHAR* Icons[] =
@@ -161,6 +169,56 @@ namespace ShuttlegentEditorMarkAnim
 	inline constexpr float DisconnectedOpacity = 0.45f;
 }
 
+/** Runtime tool names as reported in tool_call titles (dsh packages fs/tool-fs, fs/tool-fs-search, web/tool-web, subagent, todo, goal). */
+namespace ShuttlegentEditorTool
+{
+	inline const TCHAR* Read = TEXT("read");
+	inline const TCHAR* ReadImage = TEXT("read_image");
+	inline const TCHAR* Write = TEXT("write");
+	inline const TCHAR* Edit = TEXT("edit");
+	inline const TCHAR* Glob = TEXT("glob");
+	inline const TCHAR* Grep = TEXT("grep");
+	inline const TCHAR* WebSearch = TEXT("web_search");
+	inline const TCHAR* WebFetch = TEXT("web_fetch");
+	inline const TCHAR* Subagent = TEXT("subagent");
+	inline const TCHAR* ListSubagentModels = TEXT("list_subagent_models");
+	inline const TCHAR* TodoWrite = TEXT("todo_write");
+	inline const TCHAR* CreateGoal = TEXT("create_goal");
+	inline const TCHAR* GetGoal = TEXT("get_goal");
+	inline const TCHAR* UpdateGoal = TEXT("update_goal");
+
+	// Editor and external MCP tools appear as mcp__<server>__<tool>
+	inline const TCHAR* McpPrefix = TEXT("mcp__");
+	inline const TCHAR* McpSeparator = TEXT("__");
+
+	// rawInput keys tried in order for the one-line object summary
+	inline const TCHAR* SummaryKeys[] =
+	{
+		TEXT("file_path"),
+		TEXT("path"),
+		TEXT("pattern"),
+		TEXT("query"),
+		TEXT("url"),
+		TEXT("description"),
+		TEXT("title"),
+	};
+
+	// A pattern summary also shows the searched path; keys ending in PathKeySuffix (or equal to SearchPathKey) hold paths
+	inline const TCHAR* PatternKey = TEXT("pattern");
+	inline const TCHAR* SearchPathKey = TEXT("path");
+	inline const TCHAR* PathKeySuffix = TEXT("_path");
+
+	// Prefix the runtime puts before failure text
+	inline const TCHAR* ErrorPrefix = TEXT("Error:");
+
+	// Longest summary and failure reason shown on a tool row, in characters
+	inline constexpr int32 MaxSummaryChars = 80;
+	inline constexpr int32 MaxReasonChars = 160;
+
+	// Consecutive read-only calls folded into one group from this many on
+	inline constexpr int32 MinGroupSize = 2;
+}
+
 /** Style keys registered by FShuttlegentStyle. */
 namespace ShuttlegentEditorStyleKey
 {
@@ -180,4 +238,19 @@ namespace ShuttlegentEditorStyleKey
 	inline const FName SecondaryButton = TEXT("Shuttlegent.Button.Secondary");
 	inline const FName IconButton = TEXT("Shuttlegent.Button.Icon");
 	inline const FName InputBox = TEXT("Shuttlegent.EditableTextBox");
+
+	// Markdown text styles; the inline ones double as rich-text tag names in FShuttlegentMarkdown markup
+	inline const TCHAR* MarkdownBody = TEXT("Shuttlegent.Md.Body");
+	inline const TCHAR* MarkdownBold = TEXT("Shuttlegent.Md.Bold");
+	inline const TCHAR* MarkdownItalic = TEXT("Shuttlegent.Md.Italic");
+	inline const TCHAR* MarkdownCode = TEXT("Shuttlegent.Md.Code");
+	inline const TCHAR* MarkdownHeading1 = TEXT("Shuttlegent.Md.H1");
+	inline const TCHAR* MarkdownHeading2 = TEXT("Shuttlegent.Md.H2");
+	inline const TCHAR* MarkdownHeading3 = TEXT("Shuttlegent.Md.H3");
+	inline const TCHAR* MarkdownQuote = TEXT("Shuttlegent.Md.Quote");
+	inline const TCHAR* MarkdownCodeBlock = TEXT("Shuttlegent.Md.CodeBlock");
+
+	// Hyperlink style and decorator id of Markdown links
+	inline const TCHAR* MarkdownLink = TEXT("Shuttlegent.Md.Link");
+	inline const TCHAR* MarkdownLinkId = TEXT("link");
 }

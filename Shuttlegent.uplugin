@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Shuttlegent",
+	"Description": "Project-agnostic AI agent for the Unreal Editor, built on DeepSeek Harness via ACP and MCP.",
+	"Category": "Editor",
+	"CreatedBy": "Jiajiaju",
+	"CreatedByURL": "https://github.com/Jiajiaju",
+	"DocsURL": "https://github.com/Jiajiaju/Shuttlegent",
+	"MarketplaceURL": "",
+	"SupportURL": "https://github.com/Jiajiaju/Shuttlegent/issues",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": true,
+	"Installed": false,
+	"EnabledByDefault": false,
+	"Modules": [
+		{
+			"Name": "ShuttlegentCore",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}

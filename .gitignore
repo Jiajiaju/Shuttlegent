@@ -1,0 +1,35 @@
+# Unreal build outputs
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+
+# IDE and tooling
+.vs/
+.vscode/
+.idea/
+*.sln
+*.suo
+*.user
+*.VC.db
+*.opensdf
+*.sdf
+
+# Compiled artifacts
+*.pdb
+*.obj
+*.lib
+*.exp
+*.ilk
+*.dll
+*.exe
+
+# Agent runtime build outputs
+Runtime/**/node_modules/
+Runtime/**/dist/
+Runtime/**/dist-exe/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

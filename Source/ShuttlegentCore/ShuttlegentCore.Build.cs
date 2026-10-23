@@ -12,5 +12,13 @@ public class ShuttlegentCore : ModuleRules
 				"Core",
 			}
 			);
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Json",
+				"Projects",
+			}
+			);
 	}
 }

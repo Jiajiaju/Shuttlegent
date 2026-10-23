@@ -20,6 +20,26 @@
 			"Name": "ShuttlegentCore",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ShuttlegentMcpServer",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ShuttlegentTools",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "ShuttlegentEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		},
+		{
+			"Name": "ShuttlegentToolsetBridge",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	]
 }

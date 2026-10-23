@@ -1,0 +1,38 @@
+# Shuttlegent overlay for the DeepSeek Harness `acp` profile.
+# Applied at launch with: shuttlegent-runtime.exe --profile acp --patch <this file>
+# Row ids come from packages/bundle/base/cordis.patch.yml in the pinned dsh revision.
+
+# Shell tool off by default. Keep `pwsh-sandbox`: it provides the `shell`
+# service that the `permission` presets depend on.
+- id: tool-pwsh
+  disabled: true
+
+# These run model-generated code inside the dsh process.
+- id: tool-workflow
+  disabled: true
+
+- id: workflow-ptc
+  disabled: true
+
+- id: ptc-runtime
+  disabled: true
+
+# Telemetry rows, in addition to DSH_TELEMETRY_DISABLED set by the launcher.
+- id: otel
+  disabled: true
+
+- id: session-telemetry-otel
+  disabled: true
+
+# Project prompt comes from SHUTTLEGENT.md only; AGENTS.md / CLAUDE.md are ignored.
+- id: agent-instructions
+  config:
+    maxBytes: 65536
+    instructionFileCandidates: ['SHUTTLEGENT.md']
+    localInstructionFileCandidates: ['SHUTTLEGENT.local.md']
+
+# Skills come only from directories Shuttlegent configures.
+- id: skill-filesystem
+  config:
+    includeDefaultRoots: false
+    customSkillDirs: []

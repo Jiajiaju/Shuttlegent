@@ -1,0 +1,182 @@
+"""ACP client probe for Shuttlegent.
+
+Spawns a dsh ACP process, drives one scenario, logs every protocol line.
+Secrets must reach the child only through inherit_env; they are never logged.
+Usage: python -I acp_probe.py <scenario.json>
+
+scenario keys:
+  name: scenario name, sent to MCP servers as the X-Probe-Scenario header
+  command: [exe, args...]          process to spawn
+  cwd: absolute workspace dir, sent as the ACP session cwd
+  process_cwd: optional launch directory of the runtime process (defaults to cwd)
+  env: {name: value}               full child environment additions (child starts from a minimal env)
+  inherit_env: [names]             names copied from this process env (e.g. SystemRoot, PATH)
+  log: path of jsonl log
+  mcp: [{name, url, token}]        optional HTTP MCP servers
+  resume: sessionId                optional; uses session/resume instead of session/new
+  prompts: [text]                  prompts sent in order
+  permission: allow|reject         answer for session/request_permission
+  cancel_after: seconds            optional; send session/cancel this long after the first prompt
+  set_config: [{configId, value}]  optional session/set_config_option calls before prompting
+  timeout: seconds per request
+"""
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+import queue
+
+SCENARIO = json.load(open(sys.argv[1], encoding="utf-8"))
+LOG = open(SCENARIO["log"], "w", encoding="utf-8")
+T0 = time.time()
+LOCK = threading.Lock()
+
+
+def log(kind, payload):
+    with LOCK:
+        LOG.write(json.dumps({"t": round(time.time() - T0, 3), "kind": kind, "data": payload}, ensure_ascii=False) + "\n")
+        LOG.flush()
+
+
+env = {}
+for name in SCENARIO.get("inherit_env", []):
+    if name in os.environ:
+        env[name] = os.environ[name]
+env.update(SCENARIO.get("env", {}))
+
+proc = subprocess.Popen(
+    SCENARIO["command"],
+    cwd=SCENARIO.get("process_cwd", SCENARIO["cwd"]),
+    env=env,
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+log("spawn", {"pid": proc.pid, "command": SCENARIO["command"]})
+
+responses = {}
+incoming = queue.Queue()
+next_id = [0]
+
+
+def reader():
+    for raw in proc.stdout:
+        line = raw.decode("utf-8", errors="replace").rstrip("\r\n")
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+        except json.JSONDecodeError:
+            log("stdout_non_json", line)
+            continue
+        log("recv", msg)
+        incoming.put(msg)
+    log("stdout_closed", None)
+    incoming.put(None)
+
+
+def err_reader():
+    for raw in proc.stderr:
+        log("stderr", raw.decode("utf-8", errors="replace").rstrip("\r\n"))
+
+
+threading.Thread(target=reader, daemon=True).start()
+threading.Thread(target=err_reader, daemon=True).start()
+
+
+def send(msg):
+    log("send", msg)
+    proc.stdin.write((json.dumps(msg) + "\n").encode("utf-8"))
+    proc.stdin.flush()
+
+
+def handle_agent_request(msg):
+    method = msg.get("method")
+    if method == "session/request_permission":
+        answer = SCENARIO.get("permission", "reject")
+        option = "allow-once" if answer == "allow" else "reject-once"
+        send({"jsonrpc": "2.0", "id": msg["id"], "result": {"outcome": {"outcome": "selected", "optionId": option}}})
+    else:
+        send({"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32601, "message": f"client does not implement {method}"}})
+
+
+def request(method, params, timeout=None, on_wait=None):
+    next_id[0] += 1
+    rid = next_id[0]
+    send({"jsonrpc": "2.0", "id": rid, "method": method, "params": params})
+    deadline = time.time() + (timeout or SCENARIO.get("timeout", 120))
+    while time.time() < deadline:
+        if on_wait is not None:
+            on_wait()
+        try:
+            msg = incoming.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        if msg is None:
+            return {"error": "process exited"}
+        if "method" in msg and "id" in msg:
+            handle_agent_request(msg)
+        elif msg.get("id") == rid:
+            return msg
+    log("timeout", {"method": method})
+    return {"error": "timeout"}
+
+
+try:
+    init = request("initialize", {
+        "protocolVersion": 1,
+        "clientCapabilities": {"fs": {"readTextFile": False, "writeTextFile": False}, "terminal": False},
+        "clientInfo": {"name": "shuttlegent-m0", "version": "0.0.1"},
+    }, timeout=180)
+    log("initialize_done", {"elapsed": round(time.time() - T0, 3)})
+
+    mcp = [{
+        "type": "http",
+        "name": s["name"],
+        "url": s["url"],
+        "headers": [{"name": "Authorization", "value": "Bearer " + s["token"]}, {"name": "X-Probe-Scenario", "value": SCENARIO["name"]}],
+    } for s in SCENARIO.get("mcp", [])]
+    if SCENARIO.get("resume"):
+        sess = request("session/resume", {"sessionId": SCENARIO["resume"], "cwd": SCENARIO["cwd"], "mcpServers": mcp})
+        session_id = SCENARIO["resume"]
+    else:
+        sess = request("session/new", {"cwd": SCENARIO["cwd"], "mcpServers": mcp})
+        session_id = sess.get("result", {}).get("sessionId")
+    log("session", {"sessionId": session_id})
+
+    for item in SCENARIO.get("set_config", []):
+        request("session/set_config_option", {"sessionId": session_id, "configId": item["configId"], "value": item["value"]})
+
+    for index, text in enumerate(SCENARIO.get("prompts", [])):
+        started = time.time()
+        cancel_sent = [False]
+
+        def maybe_cancel():
+            delay = SCENARIO.get("cancel_after")
+            if delay is not None and index == 0 and not cancel_sent[0] and time.time() - started > delay:
+                cancel_sent[0] = True
+                send({"jsonrpc": "2.0", "method": "session/cancel", "params": {"sessionId": session_id}})
+
+        result = request("session/prompt", {"sessionId": session_id, "prompt": [{"type": "text", "text": text}]}, on_wait=maybe_cancel)
+        log("prompt_done", {"index": index, "elapsed": round(time.time() - started, 3), "result": result.get("result"), "error": result.get("error")})
+
+    mem = subprocess.run(["tasklist", "/FI", f"PID eq {proc.pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True)
+    log("memory", mem.stdout.strip())
+
+    if SCENARIO.get("list_sessions", True):
+        request("session/list", {"cwd": SCENARIO["cwd"]})
+    if session_id:
+        request("session/close", {"sessionId": session_id})
+finally:
+    try:
+        proc.stdin.close()
+    except OSError:
+        pass
+    try:
+        proc.wait(timeout=15)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+    log("exit", {"code": proc.returncode})
+    LOG.close()

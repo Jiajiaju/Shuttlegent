@@ -24,10 +24,16 @@ DerivedDataCache/
 *.dll
 *.exe
 
-# Agent runtime build outputs
-Runtime/**/node_modules/
-Runtime/**/dist/
-Runtime/**/dist-exe/
+# Local secrets
+.env
+.env.*
+
+# Agent runtime build outputs (produced by Build/BuildRuntime.ps1); only the profile is tracked
+Runtime/*
+!Runtime/profile/
+
+# Probe scripts' Python caches
+__pycache__/
 
 # OS files
 .DS_Store

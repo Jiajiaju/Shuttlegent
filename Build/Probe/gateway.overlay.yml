@@ -1,0 +1,22 @@
+# Regression overlay: route the session through llm-pi-ai's OpenAI-compatible
+# protocol, using DeepSeek's compatible endpoint as a stand-in for a team gateway.
+
+- id: llm-pi-ai
+  config:
+    providers:
+      probe-gateway:
+        displayName: Probe OpenAI-compatible gateway
+        apiKeyEnv: DEEPSEEK_API_KEY
+        api: openai-completions
+        baseURL: https://api.deepseek.com/v1
+        compat:
+          thinkingFormat: deepseek
+        models:
+          - id: deepseek-v4-flash
+            name: DeepSeek V4 Flash via gateway
+            contextWindow: 1000000
+
+- id: acp
+  config:
+    provider: probe-gateway
+    model: deepseek-v4-flash

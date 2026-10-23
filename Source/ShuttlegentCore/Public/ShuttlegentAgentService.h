@@ -93,7 +93,8 @@ private:
 	void SetState(EShuttlegentAgentState NewState);
 	TSharedRef<FJsonObject> MakeSessionParams(const FString& SessionId) const;
 	void ApplySessionResult(const FString& SessionId, const TSharedPtr<FJsonObject>& Result, bool bCreated);
-	FString GetCurrentModel() const;
+	/** Current "model" config value and its display name (the value itself when the choice has no name). */
+	void GetCurrentModel(FString& OutValue, FString& OutName) const;
 	void HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params);
 	void HandleAgentRequest(const FString& Method, const TSharedPtr<FJsonValue>& Id, const TSharedPtr<FJsonObject>& Params);
 	void RespondPermission(const TSharedPtr<FJsonValue>& Id, const TSharedPtr<FJsonObject>& Params, bool bAllow);

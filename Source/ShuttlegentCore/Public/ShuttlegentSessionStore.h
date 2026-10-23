@@ -30,6 +30,12 @@ public:
 	/** Creates or updates a record and saves the index; UpdatedAt is set to now. */
 	void UpsertRecord(const FShuttlegentSessionRecord& Record);
 
+	/** Sets a user-chosen title: trimmed, not empty, at most ShuttlegentSessionConstant::RenameMaxChars. Keeps UpdatedAt. Returns false when rejected. */
+	bool RenameRecord(const FString& SessionId, const FString& Title);
+
+	/** Archives or restores a session in the index. Keeps UpdatedAt. Returns false for an unknown session. */
+	bool SetArchived(const FString& SessionId, bool bArchived);
+
 	/** Appends one transcript entry: {"t": ISO-8601, "kind": Kind, "data": Data}. */
 	void AppendTranscript(const FString& SessionId, const FString& Kind, const TSharedPtr<FJsonObject>& Data);
 

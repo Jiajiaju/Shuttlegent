@@ -34,8 +34,17 @@ public:
 	/** Linear color of a VI token (sRGB FColor converted once). */
 	static FLinearColor Color(const FColor& Token);
 
+	/** Slate color of a VI token, for ColorAndOpacity. */
+	static FSlateColor Tint(const FColor& Token);
+
 	static FSlateFontInfo BodyFont();
 	static FSlateFontInfo CaptionFont();
 	static FSlateFontInfo SectionFont();
 	static FSlateFontInfo EmphasisFont();
+
+	/** Empty-state title. */
+	static FSlateFontInfo DisplayFont();
+
+	/** Monospaced caption: run log times and tool parameters. */
+	static FSlateFontInfo MonoCaptionFont();
 };

@@ -5,6 +5,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "Chat/FShuttlegentToolPresentation.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentSessionStore.h"
 
@@ -58,6 +59,9 @@ namespace ShuttlegentChatModelPrivate
 	// Stop reasons
 	inline const TCHAR* StopReasonCancelled = TEXT("cancelled");
 	inline const TCHAR* StopReasonEndTurn = TEXT("end_turn");
+
+	// Tool call status of a failed call
+	inline const TCHAR* ToolStatusFailed = TEXT("failed");
 
 	FString ChunkText(const TSharedPtr<FJsonObject>& Update)
 	{
@@ -178,7 +182,12 @@ void FShuttlegentChatModel::SubmitPrompt(const FString& Text)
 void FShuttlegentChatModel::Cancel()
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
-	if (Pinned.IsValid()) Pinned->Cancel();
+	if (!Pinned.IsValid() || Pinned->GetState() != EShuttlegentAgentState::Prompting || bStopping) return;
+
+	bStopping = true;
+	Pinned->Cancel();
+	AddRunLog(LOCTEXT("LogCancel", "发送停止请求"), true);
+	OnStatusChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::NewConversation()
@@ -191,8 +200,13 @@ void FShuttlegentChatModel::NewConversation()
 	LastSessionId.Reset();
 	UsedTokens = 0;
 	ContextSize = 0;
+	LastOutcome = EShuttlegentTurnOutcome::None;
+	bStopping = false;
+	bResuming = false;
 	ResetEntries();
+	ResetRunLog();
 	OnStatusChanged.Broadcast();
+	OnSessionsChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::OpenSession(const FString& SessionId)
@@ -204,23 +218,37 @@ void FShuttlegentChatModel::OpenSession(const FString& SessionId)
 	PendingPrompt.Reset();
 	UsedTokens = 0;
 	ContextSize = 0;
+	LastOutcome = EShuttlegentTurnOutcome::None;
+	bStopping = false;
+	bResuming = true;
 	ReplayTranscript(SessionId);
+	ResetRunLog();
+	AddRunLog(LOCTEXT("LogOpenSession", "打开会话记录，恢复运行时上下文"), false);
+	OnSessionsChanged.Broadcast();
 
 	if (Pinned->GetState() == EShuttlegentAgentState::Ready)
 	{
 		FString Error;
-		if (!Pinned->ResumeSession(SessionId, Error)) AddNotice(FText::Format(LOCTEXT("ResumeFailed", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+		if (!Pinned->ResumeSession(SessionId, Error))
+		{
+			bResuming = false;
+			AddNotice(FText::Format(LOCTEXT("ResumeFailed", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+		}
+		OnStatusChanged.Broadcast();
 		return;
 	}
 
 	PendingResumeSessionId = SessionId;
 	EnsureRuntime();
+	OnStatusChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::Reconnect()
 {
 	bRuntimeLost = false;
 	PendingResumeSessionId = LastSessionId;
+	bResuming = !LastSessionId.IsEmpty();
+	AddRunLog(LOCTEXT("LogReconnect", "重新连接运行时"), false);
 	EnsureRuntime();
 	OnStatusChanged.Broadcast();
 }
@@ -240,12 +268,7 @@ void FShuttlegentChatModel::SetPermissionHandlerAttached(bool bAttached)
 	Pinned->PermissionHandler.Unbind();
 
 	// Requests the panel can no longer answer fall back to a rejection.
-	TMap<int32, TFunction<void(bool)>> Pending = MoveTemp(PendingPermissions);
-	PendingPermissions.Reset();
-	for (TPair<int32, TFunction<void(bool)>>& Entry : Pending)
-	{
-		if (Entry.Value) Entry.Value(false);
-	}
+	RejectPendingPermissions();
 }
 
 void FShuttlegentChatModel::AnswerPermission(int32 EntryId, bool bAllow)
@@ -263,7 +286,9 @@ void FShuttlegentChatModel::AnswerPermission(int32 EntryId, bool bAllow)
 	}
 
 	if (Respond) Respond(bAllow);
+	AddRunLog(bAllow ? LOCTEXT("LogPermissionAllowed", "允许本次运行时提权") : LOCTEXT("LogPermissionRejected", "拒绝运行时提权"), !bAllow);
 	OnContentChanged.Broadcast();
+	OnStatusChanged.Broadcast();
 }
 
 bool FShuttlegentChatModel::GetConfigChoices(const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const
@@ -319,18 +344,110 @@ void FShuttlegentChatModel::SetConfigValue(const FString& ConfigId, const FStrin
 	if (!Pinned->SetConfigOption(ConfigId, Value, Error)) AddNotice(FText::Format(LOCTEXT("ConfigFailed", "切换失败：{0}"), FText::FromString(Error)), true);
 }
 
-TArray<TPair<FString, FString>> FShuttlegentChatModel::GetRecentSessions() const
+EShuttlegentChatStatus FShuttlegentChatModel::GetStatus() const
 {
-	TArray<TPair<FString, FString>> Sessions;
+	if (bRuntimeLost) return EShuttlegentChatStatus::Lost;
+	if (bResuming) return EShuttlegentChatStatus::Resuming;
+
+	switch (GetState())
+	{
+	case EShuttlegentAgentState::Starting:
+		{
+			return EShuttlegentChatStatus::Connecting;
+		}
+	case EShuttlegentAgentState::Prompting:
+		{
+			if (GetPendingPermission().IsValid()) return EShuttlegentChatStatus::AwaitingPermission;
+			return bStopping ? EShuttlegentChatStatus::Stopping : EShuttlegentChatStatus::Querying;
+		}
+	case EShuttlegentAgentState::Ready:
+		{
+			if (LastOutcome == EShuttlegentTurnOutcome::Stopped) return EShuttlegentChatStatus::Stopped;
+			if (LastOutcome == EShuttlegentTurnOutcome::Failed) return EShuttlegentChatStatus::Failed;
+			return EShuttlegentChatStatus::Connected;
+		}
+	case EShuttlegentAgentState::Stopped:
+	default:
+		{
+			return EShuttlegentChatStatus::NotConnected;
+		}
+	}
+}
+
+TSharedPtr<FShuttlegentChatEntry> FShuttlegentChatModel::GetPendingPermission() const
+{
+	for (const TSharedPtr<FShuttlegentChatEntry>& Entry : Entries)
+	{
+		if (Entry->Kind == EShuttlegentChatEntryKind::Permission && PendingPermissions.Contains(Entry->Id)) return Entry;
+	}
+	return nullptr;
+}
+
+TSharedPtr<FShuttlegentChatEntry> FShuttlegentChatModel::FindToolCallOf(const TSharedPtr<FShuttlegentChatEntry>& Permission) const
+{
+	if (!Permission.IsValid() || Permission->ToolCallId.IsEmpty()) return nullptr;
+
+	return FindToolCall(Permission->ToolCallId);
+}
+
+TArray<FShuttlegentSessionRecord> FShuttlegentChatModel::GetSessions(bool bArchived) const
+{
+	TArray<FShuttlegentSessionRecord> Sessions;
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return Sessions;
 
 	for (const FShuttlegentSessionRecord& Record : Pinned->GetSessionStore().GetRecords())
 	{
-		const FString Title = Record.Title.IsEmpty() ? Record.SessionId : Record.Title;
-		Sessions.Emplace(Record.SessionId, FString::Printf(TEXT("%s  (%s)"), *Title, *Record.UpdatedAt.ToString(TEXT("%Y-%m-%d %H:%M"))));
+		if (Record.bArchived == bArchived) Sessions.Add(Record);
 	}
 	return Sessions;
+}
+
+FString FShuttlegentChatModel::GetCurrentTitle() const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || LastSessionId.IsEmpty()) return FString();
+
+	const FShuttlegentSessionRecord* Record = Pinned->GetSessionStore().FindRecord(LastSessionId);
+	return Record != nullptr ? Record->Title : FString();
+}
+
+bool FShuttlegentChatModel::CanArchive(const FString& SessionId) const
+{
+	if (SessionId.IsEmpty()) return false;
+	if (SessionId != LastSessionId) return true;
+
+	return GetState() != EShuttlegentAgentState::Prompting && !GetPendingPermission().IsValid();
+}
+
+bool FShuttlegentChatModel::RenameSession(const FString& SessionId, const FString& Title)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || !Pinned->GetSessionStore().RenameRecord(SessionId, Title)) return false;
+
+	OnSessionsChanged.Broadcast();
+	return true;
+}
+
+bool FShuttlegentChatModel::ArchiveSession(const FString& SessionId)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || !CanArchive(SessionId) || !Pinned->GetSessionStore().SetArchived(SessionId, true)) return false;
+
+	if (SessionId == LastSessionId)
+	{
+		NewConversation();
+		return true;
+	}
+
+	OnSessionsChanged.Broadcast();
+	return true;
+}
+
+void FShuttlegentChatModel::RestoreSession(const FString& SessionId)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (Pinned.IsValid() && Pinned->GetSessionStore().SetArchived(SessionId, false)) OnSessionsChanged.Broadcast();
 }
 
 TSharedPtr<FShuttlegentChatEntry> FShuttlegentChatModel::AddEntry(EShuttlegentChatEntryKind Kind, const FString& Text)
@@ -363,15 +480,44 @@ void FShuttlegentChatModel::AddNotice(const FText& Text, bool bError)
 void FShuttlegentChatModel::ResetEntries()
 {
 	// Requests whose rows disappear are rejected rather than left hanging.
-	TMap<int32, TFunction<void(bool)>> Pending = MoveTemp(PendingPermissions);
-	PendingPermissions.Reset();
-	for (TPair<int32, TFunction<void(bool)>>& Entry : Pending)
-	{
-		if (Entry.Value) Entry.Value(false);
-	}
+	RejectPendingPermissions();
 
 	Entries.Reset();
 	OnStructureChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::RejectPendingPermissions()
+{
+	TMap<int32, TFunction<void(bool)>> Pending = MoveTemp(PendingPermissions);
+	PendingPermissions.Reset();
+	for (TPair<int32, TFunction<void(bool)>>& Request : Pending)
+	{
+		for (const TSharedPtr<FShuttlegentChatEntry>& Entry : Entries)
+		{
+			if (Entry->Id != Request.Key) continue;
+
+			Entry->bAnswered = true;
+			Entry->bAllowed = false;
+			break;
+		}
+
+		if (Request.Value) Request.Value(false);
+	}
+}
+
+void FShuttlegentChatModel::AddRunLog(const FText& Text, bool bWarning)
+{
+	FShuttlegentRunLogEntry& Entry = RunLog.AddDefaulted_GetRef();
+	Entry.Time = FDateTime::UtcNow();
+	Entry.Text = Text;
+	Entry.bWarning = bWarning;
+	OnRunLogChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::ResetRunLog()
+{
+	RunLog.Reset();
+	OnRunLogChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::SendPrompt(const FString& Text)
@@ -386,9 +532,13 @@ void FShuttlegentChatModel::SendPrompt(const FString& Text)
 		return;
 	}
 
+	LastOutcome = EShuttlegentTurnOutcome::None;
+	bStopping = false;
 	AddEntry(EShuttlegentChatEntryKind::User, Text);
+	AddRunLog(LOCTEXT("LogTurnStart", "开始本轮"), false);
 	OnStructureChanged.Broadcast();
 	OnStatusChanged.Broadcast();
+	OnSessionsChanged.Broadcast();
 }
 
 bool FShuttlegentChatModel::ApplyUpdate(const TSharedPtr<FJsonObject>& Update, const FDateTime& At)
@@ -542,7 +692,11 @@ void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
 		{
 			const FString SessionId = MoveTemp(PendingResumeSessionId);
 			PendingResumeSessionId.Reset();
-			if (!Pinned->ResumeSession(SessionId, Error)) AddNotice(FText::Format(LOCTEXT("ResumeFailedOnStart", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+			if (!Pinned->ResumeSession(SessionId, Error))
+			{
+				bResuming = false;
+				AddNotice(FText::Format(LOCTEXT("ResumeFailedOnStart", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+			}
 		}
 		else if (!PendingPrompt.IsEmpty())
 		{
@@ -555,8 +709,10 @@ void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
 
 void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 {
+	if (bResuming) AddRunLog(LOCTEXT("LogResumed", "会话已恢复"), false);
 	LastSessionId = SessionId;
 	bRuntimeLost = false;
+	bResuming = false;
 
 	if (!PendingPrompt.IsEmpty())
 	{
@@ -565,13 +721,28 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 		SendPrompt(Text);
 	}
 	OnStatusChanged.Broadcast();
+	OnSessionsChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const TSharedPtr<FJsonObject>& Update)
 {
 	if (!Update.IsValid()) return;
 
-	if (ApplyUpdate(Update, FDateTime::UtcNow()))
+	FString ToolCallId;
+	FString Status;
+	Update->TryGetStringField(ShuttlegentChatModelPrivate::FieldToolCallId, ToolCallId);
+	Update->TryGetStringField(ShuttlegentChatModelPrivate::FieldStatus, Status);
+	const TSharedPtr<FShuttlegentChatEntry> Existing = ToolCallId.IsEmpty() ? nullptr : FindToolCall(ToolCallId);
+	const FString PreviousStatus = Existing.IsValid() ? Existing->Status : FString();
+
+	const bool bAdded = ApplyUpdate(Update, FDateTime::UtcNow());
+
+	// Run log: a tool call's first update and its first failure
+	const TSharedPtr<FShuttlegentChatEntry> ToolCall = ToolCallId.IsEmpty() ? nullptr : FindToolCall(ToolCallId);
+	if (ToolCall.IsValid() && !Existing.IsValid()) AddRunLog(FText::Format(LOCTEXT("LogToolCall", "工具调用：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), false);
+	if (ToolCall.IsValid() && Status == ShuttlegentChatModelPrivate::ToolStatusFailed && PreviousStatus != Status) AddRunLog(FText::Format(LOCTEXT("LogToolFailed", "工具失败：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), true);
+
+	if (bAdded)
 	{
 		OnStructureChanged.Broadcast();
 		return;
@@ -583,6 +754,16 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 {
 	const bool bCompleted = ErrorMessage.IsEmpty() && (StopReason.IsEmpty() || StopReason == ShuttlegentChatModelPrivate::StopReasonEndTurn);
 
+	bStopping = false;
+	if (bCompleted) LastOutcome = EShuttlegentTurnOutcome::Completed;
+	else LastOutcome = ErrorMessage.IsEmpty() ? EShuttlegentTurnOutcome::Stopped : EShuttlegentTurnOutcome::Failed;
+
+	if (LastOutcome == EShuttlegentTurnOutcome::Completed) AddRunLog(LOCTEXT("LogTurnCompleted", "本轮结束"), false);
+	else if (LastOutcome == EShuttlegentTurnOutcome::Stopped) AddRunLog(LOCTEXT("LogTurnStopped", "本轮已停止"), true);
+	else AddRunLog(LOCTEXT("LogTurnFailed", "本轮查询失败"), true);
+
+	// A request still open when its turn ends can no longer be acted on
+	RejectPendingPermissions();
 	ApplyTurnEnd(StopReason, ErrorMessage);
 	OnTurnFinished.Broadcast(bCompleted);
 	OnStructureChanged.Broadcast();
@@ -591,9 +772,14 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 
 void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 {
+	bStopping = false;
+	bResuming = false;
+	RejectPendingPermissions();
+
 	if (!bExpected)
 	{
 		bRuntimeLost = true;
+		AddRunLog(LOCTEXT("LogRuntimeLost", "运行时断开"), true);
 		AddNotice(FText::Format(LOCTEXT("RuntimeLost", "运行时意外退出（代码 {0}）。"), FText::AsNumber(ExitCode)), true);
 	}
 	OnStatusChanged.Broadcast();
@@ -601,12 +787,15 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 
 void FShuttlegentChatModel::HandleError(const FString& Message)
 {
+	bResuming = false;
 	AddNotice(FText::FromString(Message), true);
+	OnStatusChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::HandleConfigOptionsChanged()
 {
 	OnStatusChanged.Broadcast();
+	OnSessionsChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject>& Params, TFunction<void(bool)> Respond)
@@ -624,7 +813,9 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 	}
 
 	PendingPermissions.Add(Entry->Id, MoveTemp(Respond));
+	AddRunLog(LOCTEXT("LogPermissionRequest", "运行时请求额外权限"), true);
 	OnStructureChanged.Broadcast();
+	OnStatusChanged.Broadcast();
 }
 
 #undef LOCTEXT_NAMESPACE

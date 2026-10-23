@@ -8,7 +8,8 @@
 #include "Widgets/Docking/SDockTab.h"
 
 #include "Chat/ShuttlegentChatModel.h"
-#include "SShuttlegentChatPanel.h"
+#include "Panel/FShuttlegentPanelCommands.h"
+#include "Panel/SShuttlegentChatPanel.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentCoreModule.h"
 #include "ShuttlegentEditorConstants.h"
@@ -19,6 +20,7 @@
 void FShuttlegentEditorModule::StartupModule()
 {
 	FShuttlegentStyle::Register();
+	FShuttlegentPanelCommands::Register();
 
 	ChatModel = MakeShared<FShuttlegentChatModel>();
 	const TSharedPtr<FShuttlegentAgentService> Service = FShuttlegentCoreModule::Get().GetAgentService();
@@ -43,6 +45,7 @@ void FShuttlegentEditorModule::ShutdownModule()
 	if (ChatModel.IsValid()) ChatModel->Shutdown();
 	ChatModel.Reset();
 
+	FShuttlegentPanelCommands::Unregister();
 	FShuttlegentStyle::Unregister();
 }
 

@@ -119,6 +119,26 @@ FString FShuttlegentToolPresentation::GetSummary(const FString& InputJson)
 	return FString();
 }
 
+FString FShuttlegentToolPresentation::GetContentPreview(const FString& InputJson)
+{
+	if (InputJson.IsEmpty()) return FString();
+
+	TSharedPtr<FJsonObject> Input;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InputJson);
+	if (!FJsonSerializer::Deserialize(Reader, Input) || !Input.IsValid()) return FString();
+
+	for (const TCHAR* Key : ShuttlegentEditorTool::ContentKeys)
+	{
+		FString Value;
+		if (!FShuttlegentToolPresentationPrivate::TryGetValue(Input, Key, Value)) continue;
+
+		TArray<FString> Lines;
+		Value.TrimStartAndEnd().ParseIntoArrayLines(Lines);
+		return FShuttlegentToolPresentationPrivate::Truncate(FString::Join(Lines, FShuttlegentToolPresentationPrivate::LineJoiner), ShuttlegentEditorTool::MaxReasonChars);
+	}
+	return FString();
+}
+
 FString FShuttlegentToolPresentation::GetFailureReason(const FString& Result)
 {
 	TArray<FString> Lines;

@@ -14,6 +14,9 @@ struct FShuttlegentToolPresentation
 	/** One-line object summary from rawInput JSON: the first known key, paths relative to the project, truncated. */
 	static FString GetSummary(const FString& InputJson);
 
+	/** What a call writes or runs, from rawInput JSON (content, new_string or command) on one line, truncated; empty when absent. */
+	static FString GetContentPreview(const FString& InputJson);
+
 	/** First line of a failed call's result without the runtime's "Error:" prefix, truncated. */
 	static FString GetFailureReason(const FString& Result);
 };

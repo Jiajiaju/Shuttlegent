@@ -11,6 +11,9 @@ namespace ShuttlegentEditorName
 	// Slate style set
 	inline const FName StyleSetName = TEXT("ShuttlegentStyle");
 
+	// Binding context of the panel shortcuts (FShuttlegentPanelCommands)
+	inline const FName CommandContext = TEXT("Shuttlegent");
+
 	// Menu extended with the "Shuttlegent" entry
 	inline const TCHAR* WindowMenu = TEXT("LevelEditor.MainMenu.Window");
 	inline const FName WindowMenuSection = TEXT("ShuttlegentSection");
@@ -40,6 +43,29 @@ namespace ShuttlegentEditorColor
 
 	// Hover tint of the primary button: brand red lightened for feedback
 	inline const FColor PrimaryHovered(0xB8, 0x55, 0x50);
+
+	// Session sidebar and inspector background (prototype.css .sidebar, .inspector)
+	inline const FColor Pane(0x29, 0x27, 0x24);
+
+	// User message bubble outline (prototype.css .message.user)
+	inline const FColor BubbleBorder(0x4B, 0x43, 0x3B);
+
+	// Composer outline, and its outline while the input has focus (prototype.css .composer)
+	inline const FColor ComposerBorder(0x71, 0x60, 0x53);
+	inline const FColor ComposerBorderFocused(0xA1, 0x84, 0x69);
+
+	// Outline of the current session in the sidebar (prototype.css .session[aria-current])
+	inline const FColor CurrentSessionBorder(0x64, 0x53, 0x4A);
+
+	// Warning banner fill and bottom line (prototype.css .banner)
+	inline const FColor BannerFill(0x3B, 0x30, 0x27);
+	inline const FColor BannerLine(0x76, 0x60, 0x3F);
+
+	// Outline of the stop button (prototype.css .stop)
+	inline const FColor StopBorder(0x8A, 0x70, 0x64);
+
+	// Dimming layer behind an overlay pane: black at 53 % (prototype.css .scrim #0008)
+	inline const FColor Scrim(0x00, 0x00, 0x00, 0x88);
 }
 
 /** Shuttlegent VI 1.1 metrics, in Slate units. */
@@ -87,6 +113,50 @@ namespace ShuttlegentEditorMetric
 
 	// Space above the empty-state mark in the message area
 	inline constexpr float EmptyStateTopPadding = 64.0f;
+
+	// Empty-state title, 22 px in the prototype, as an editor font size (pt)
+	inline constexpr int32 FontDisplay = 16;
+
+	// Panel layout (Shuttlegent UI interaction spec section 2): pane widths and header height
+	inline constexpr float SidebarWidth = 248.0f;
+	inline constexpr float InspectorWidth = 360.0f;
+	inline constexpr float HeaderHeight = 60.0f;
+
+	// Widest overlay inspector between BreakpointMedium and BreakpointWide
+	inline constexpr float InspectorOverlayMaxWidth = 420.0f;
+
+	// Panel widths where the layout changes: centered conversation, docked inspector, docked sidebar
+	inline constexpr float BreakpointMedium = 560.0f;
+	inline constexpr float BreakpointWide = 900.0f;
+	inline constexpr float BreakpointFull = 1180.0f;
+
+	// Conversation column: widest column and the space around it
+	inline constexpr float ConversationMaxWidth = 720.0f;
+	inline constexpr float ConversationPaddingTop = 32.0f;
+	inline constexpr float ConversationPaddingSide = 24.0f;
+	inline constexpr float ConversationPaddingBottom = 24.0f;
+
+	// Space between consecutive messages (prototype .message margin-bottom)
+	inline constexpr float MessageSpacing = 24.0f;
+
+	// Share of the conversation column a user bubble may take
+	inline constexpr float UserBubbleMaxShare = 0.9f;
+
+	// Brand mark next to the assistant name
+	inline constexpr float MarkSizeAssistant = 22.0f;
+
+	// Left rule of notes, active tab underline and current session marker
+	inline constexpr float AccentLineWidth = 2.0f;
+
+	// Width of the model picker and of the reasoning-effort picker in the composer toolbar
+	inline constexpr float ComposerModelWidth = 160.0f;
+	inline constexpr float ComposerReasoningWidth = 75.0f;
+
+	// Width of popups opened from the panel: rename, archive, archived sessions
+	inline constexpr float PopupWidth = 280.0f;
+
+	// Percent scale of the usage indicator
+	inline constexpr double PercentScale = 100.0;
 }
 
 /** Resource file names under <Plugin>/Resources. */
@@ -208,6 +278,14 @@ namespace ShuttlegentEditorTool
 	inline const TCHAR* SearchPathKey = TEXT("path");
 	inline const TCHAR* PathKeySuffix = TEXT("_path");
 
+	// rawInput keys tried in order for the content line of a permission request (written text, edit replacement, command)
+	inline const TCHAR* ContentKeys[] =
+	{
+		TEXT("content"),
+		TEXT("new_string"),
+		TEXT("command"),
+	};
+
 	// Prefix the runtime puts before failure text
 	inline const TCHAR* ErrorPrefix = TEXT("Error:");
 
@@ -238,6 +316,22 @@ namespace ShuttlegentEditorStyleKey
 	inline const FName SecondaryButton = TEXT("Shuttlegent.Button.Secondary");
 	inline const FName IconButton = TEXT("Shuttlegent.Button.Icon");
 	inline const FName InputBox = TEXT("Shuttlegent.EditableTextBox");
+
+	// Panel layout brushes and styles added with the M3.3 structure
+	inline const FName Pane = TEXT("Shuttlegent.Pane");
+	inline const FName Scrim = TEXT("Shuttlegent.Scrim");
+	inline const FName AccentLine = TEXT("Shuttlegent.AccentLine");
+	inline const FName UserBubble = TEXT("Shuttlegent.UserBubble");
+	inline const FName Composer = TEXT("Shuttlegent.Composer");
+	inline const FName ComposerFocused = TEXT("Shuttlegent.Composer.Focused");
+	inline const FName Banner = TEXT("Shuttlegent.Banner");
+	inline const FName BannerLine = TEXT("Shuttlegent.BannerLine");
+	inline const FName DecisionCard = TEXT("Shuttlegent.DecisionCard");
+	inline const FName CurrentSession = TEXT("Shuttlegent.CurrentSession");
+	inline const FName ToolRow = TEXT("Shuttlegent.ToolRow");
+	inline const FName StopButton = TEXT("Shuttlegent.Button.Stop");
+	inline const FName FlatButton = TEXT("Shuttlegent.Button.Flat");
+	inline const FName SearchBox = TEXT("Shuttlegent.SearchBox");
 
 	// Markdown text styles; the inline ones double as rich-text tag names in FShuttlegentMarkdown markup
 	inline const TCHAR* MarkdownBody = TEXT("Shuttlegent.Md.Body");

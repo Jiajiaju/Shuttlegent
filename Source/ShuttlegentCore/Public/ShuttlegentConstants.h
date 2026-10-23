@@ -113,4 +113,7 @@ namespace ShuttlegentSessionConstant
 {
 	// Maximum length of a session title derived from the first prompt, in characters
 	inline constexpr int32 TitleMaxChars = 40;
+
+	// Maximum length of a title the user sets by renaming, in characters (Shuttlegent UI interaction spec section 6)
+	inline constexpr int32 RenameMaxChars = 60;
 }

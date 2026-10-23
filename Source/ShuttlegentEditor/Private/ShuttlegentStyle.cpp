@@ -140,6 +140,9 @@ namespace ShuttlegentStylePrivate
 	inline const FName CoreHyperlinkStyle = TEXT("Hyperlink");
 	inline const FName CoreNormalTextStyle = TEXT("NormalText");
 
+	// Fill of outlined shapes that show what is behind them
+	inline const FColor ClearFill(0, 0, 0, 0);
+
 	FLinearColor Linear(const FColor& Token)
 	{
 		return FLinearColor(Token);
@@ -233,6 +236,20 @@ void FShuttlegentStyle::Register()
 	StyleSet->Set(ShuttlegentEditorStyleKey::PrimaryButton, ShuttlegentStylePrivate::MakeButtonStyle(ShuttlegentEditorColor::Primary, ShuttlegentEditorColor::PrimaryHovered, ShuttlegentEditorColor::Primary, false));
 	StyleSet->Set(ShuttlegentEditorStyleKey::SecondaryButton, ShuttlegentStylePrivate::MakeButtonStyle(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::Raised, ShuttlegentEditorColor::Border, true));
 	StyleSet->Set(ShuttlegentEditorStyleKey::IconButton, ShuttlegentStylePrivate::MakeButtonStyle(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::Raised, ShuttlegentEditorColor::Surface, false));
+	StyleSet->Set(ShuttlegentEditorStyleKey::StopButton, ShuttlegentStylePrivate::MakeButtonStyle(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::Raised, ShuttlegentEditorColor::StopBorder, true));
+	StyleSet->Set(ShuttlegentEditorStyleKey::FlatButton, ShuttlegentStylePrivate::MakeButtonStyle(ShuttlegentStylePrivate::ClearFill, ShuttlegentEditorColor::Raised, ShuttlegentStylePrivate::ClearFill, false));
+
+	StyleSet->Set(ShuttlegentEditorStyleKey::Pane, new FSlateColorBrush(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::Pane)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::Scrim, new FSlateColorBrush(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::Scrim)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::AccentLine, new FSlateColorBrush(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::Primary)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::Banner, new FSlateColorBrush(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::BannerFill)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::BannerLine, new FSlateColorBrush(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::BannerLine)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::UserBubble, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::BubbleBorder, ShuttlegentEditorMetric::RadiusPanel)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::Composer, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::ComposerBorder, ShuttlegentEditorMetric::RadiusPanel)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::ComposerFocused, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::ComposerBorderFocused, ShuttlegentEditorMetric::RadiusPanel)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::DecisionCard, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Surface, ShuttlegentEditorColor::Warning, ShuttlegentEditorMetric::RadiusPanel)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::CurrentSession, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Raised, ShuttlegentEditorColor::CurrentSessionBorder, ShuttlegentEditorMetric::RadiusControl)));
+	StyleSet->Set(ShuttlegentEditorStyleKey::ToolRow, new FSlateRoundedBoxBrush(ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentStylePrivate::ClearFill, ShuttlegentEditorColor::Border, ShuttlegentEditorMetric::RadiusControl)));
 
 	FEditableTextBoxStyle InputBox = FAppStyle::Get().GetWidgetStyle<FEditableTextBoxStyle>(TEXT("NormalEditableTextBox"));
 	const FSlateColorBrush Transparent(FLinearColor::Transparent);
@@ -243,6 +260,16 @@ void FShuttlegentStyle::Register()
 	InputBox.SetForegroundColor(FSlateColor(ShuttlegentStylePrivate::Linear(ShuttlegentEditorColor::Text)));
 	InputBox.SetFont(BodyFont());
 	StyleSet->Set(ShuttlegentEditorStyleKey::InputBox, InputBox);
+
+	FEditableTextBoxStyle SearchBox = InputBox;
+	const FSlateRoundedBoxBrush SearchField = ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Background, ShuttlegentEditorColor::Border, ShuttlegentEditorMetric::RadiusControl);
+	const FSlateRoundedBoxBrush SearchFieldFocused = ShuttlegentStylePrivate::RoundedOutlined(ShuttlegentEditorColor::Background, ShuttlegentEditorColor::ComposerBorderFocused, ShuttlegentEditorMetric::RadiusControl);
+	SearchBox.SetBackgroundImageNormal(SearchField);
+	SearchBox.SetBackgroundImageHovered(SearchField);
+	SearchBox.SetBackgroundImageFocused(SearchFieldFocused);
+	SearchBox.SetBackgroundImageReadOnly(SearchField);
+	SearchBox.SetFont(CaptionFont());
+	StyleSet->Set(ShuttlegentEditorStyleKey::SearchBox, SearchBox);
 	ShuttlegentStylePrivate::RegisterMarkdownStyles(*StyleSet);
 
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
@@ -300,6 +327,21 @@ FSlateFontInfo FShuttlegentStyle::CaptionFont()
 FSlateFontInfo FShuttlegentStyle::SectionFont()
 {
 	return FCoreStyle::GetDefaultFontStyle(ShuttlegentStylePrivate::TypefaceRegular, ShuttlegentEditorMetric::FontSection);
+}
+
+FSlateFontInfo FShuttlegentStyle::DisplayFont()
+{
+	return FCoreStyle::GetDefaultFontStyle(ShuttlegentStylePrivate::TypefaceRegular, ShuttlegentEditorMetric::FontDisplay);
+}
+
+FSlateFontInfo FShuttlegentStyle::MonoCaptionFont()
+{
+	return FCoreStyle::GetDefaultFontStyle(ShuttlegentStylePrivate::TypefaceMono, ShuttlegentEditorMetric::FontCaption);
+}
+
+FSlateColor FShuttlegentStyle::Tint(const FColor& Token)
+{
+	return FSlateColor(Color(Token));
 }
 
 FSlateFontInfo FShuttlegentStyle::EmphasisFont()

@@ -17,7 +17,13 @@ struct FShuttlegentSessionRecord
 	/** Model selection as reported by the runtime's config options. */
 	FString Model;
 
+	/** Display name of Model, from the same config option; shown in the session list. */
+	FString ModelName;
+
 	FDateTime CreatedAt {};
 
 	FDateTime UpdatedAt {};
+
+	/** Hidden from the session list until restored; the runtime session is kept. */
+	bool bArchived = false;
 };

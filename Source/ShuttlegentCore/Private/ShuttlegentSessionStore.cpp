@@ -19,6 +19,8 @@ namespace ShuttlegentSessionStorePrivate
 	inline const TCHAR* FieldTitle = TEXT("title");
 	inline const TCHAR* FieldCwd = TEXT("cwd");
 	inline const TCHAR* FieldModel = TEXT("model");
+	inline const TCHAR* FieldModelName = TEXT("modelName");
+	inline const TCHAR* FieldArchived = TEXT("archived");
 	inline const TCHAR* FieldCreatedAt = TEXT("createdAt");
 	inline const TCHAR* FieldUpdatedAt = TEXT("updatedAt");
 
@@ -38,6 +40,8 @@ namespace ShuttlegentSessionStorePrivate
 		Object->SetStringField(FieldTitle, Record.Title);
 		Object->SetStringField(FieldCwd, Record.WorkingDirectory);
 		Object->SetStringField(FieldModel, Record.Model);
+		Object->SetStringField(FieldModelName, Record.ModelName);
+		Object->SetBoolField(FieldArchived, Record.bArchived);
 		Object->SetStringField(FieldCreatedAt, Record.CreatedAt.ToIso8601());
 		Object->SetStringField(FieldUpdatedAt, Record.UpdatedAt.ToIso8601());
 		return Object;
@@ -50,6 +54,8 @@ namespace ShuttlegentSessionStorePrivate
 		Object->TryGetStringField(FieldTitle, OutRecord.Title);
 		Object->TryGetStringField(FieldCwd, OutRecord.WorkingDirectory);
 		Object->TryGetStringField(FieldModel, OutRecord.Model);
+		Object->TryGetStringField(FieldModelName, OutRecord.ModelName);
+		Object->TryGetBoolField(FieldArchived, OutRecord.bArchived);
 
 		FString CreatedAt;
 		FString UpdatedAt;
@@ -101,6 +107,33 @@ void FShuttlegentSessionStore::UpsertRecord(const FShuttlegentSessionRecord& Rec
 
 	Records.Insert(MoveTemp(Updated), 0);
 	SaveIndex();
+}
+
+bool FShuttlegentSessionStore::RenameRecord(const FString& SessionId, const FString& Title)
+{
+	EnsureLoaded();
+
+	const FString Trimmed = Title.TrimStartAndEnd();
+	if (Trimmed.IsEmpty() || Trimmed.Len() > ShuttlegentSessionConstant::RenameMaxChars) return false;
+
+	FShuttlegentSessionRecord* Record = Records.FindByPredicate([&SessionId](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == SessionId; });
+	if (Record == nullptr) return false;
+
+	Record->Title = Trimmed;
+	SaveIndex();
+	return true;
+}
+
+bool FShuttlegentSessionStore::SetArchived(const FString& SessionId, bool bArchived)
+{
+	EnsureLoaded();
+
+	FShuttlegentSessionRecord* Record = Records.FindByPredicate([&SessionId](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == SessionId; });
+	if (Record == nullptr) return false;
+
+	Record->bArchived = bArchived;
+	SaveIndex();
+	return true;
 }
 
 void FShuttlegentSessionStore::AppendTranscript(const FString& SessionId, const FString& Kind, const TSharedPtr<FJsonObject>& Data)

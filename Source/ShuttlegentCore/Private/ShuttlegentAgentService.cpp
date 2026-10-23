@@ -83,6 +83,32 @@ namespace ShuttlegentAgentServicePrivate
 		return Plugin.IsValid() ? Plugin->GetDescriptor().VersionName : FString();
 	}
 
+	/** Display name of Value among a config option's choices, searching one level of grouped choices; empty when not listed. */
+	FString FindChoiceName(const TArray<TSharedPtr<FJsonValue>>& Choices, const FString& Value)
+	{
+		for (const TSharedPtr<FJsonValue>& ChoiceValue : Choices)
+		{
+			const TSharedPtr<FJsonObject> Choice = ChoiceValue.IsValid() ? ChoiceValue->AsObject() : nullptr;
+			if (!Choice.IsValid()) continue;
+
+			const TArray<TSharedPtr<FJsonValue>>* GroupChoices = nullptr;
+			if (Choice->TryGetArrayField(FieldOptions, GroupChoices))
+			{
+				const FString GroupName = FindChoiceName(*GroupChoices, Value);
+				if (!GroupName.IsEmpty()) return GroupName;
+				continue;
+			}
+
+			FString ChoiceId;
+			FString Name;
+			if (!Choice->TryGetStringField(FieldValue, ChoiceId) || ChoiceId != Value) continue;
+
+			Choice->TryGetStringField(FieldName, Name);
+			return Name;
+		}
+		return FString();
+	}
+
 	FString MakeTitle(const FString& Prompt)
 	{
 		FString Title = Prompt.Replace(TEXT("\r"), TEXT(" ")).Replace(TEXT("\n"), TEXT(" ")).TrimStartAndEnd();
@@ -336,7 +362,7 @@ bool FShuttlegentAgentService::SetConfigOption(const FString& ConfigId, const FS
 		if (Existing != nullptr)
 		{
 			FShuttlegentSessionRecord Updated = *Existing;
-			Updated.Model = This->GetCurrentModel();
+			This->GetCurrentModel(Updated.Model, Updated.ModelName);
 			This->SessionStore.UpsertRecord(Updated);
 		}
 		UE_LOG(LogShuttlegent, Log, TEXT("Config option %s updated."), *ConfigId);
@@ -386,7 +412,7 @@ void FShuttlegentAgentService::ApplySessionResult(const FString& SessionId, cons
 	FShuttlegentSessionRecord Record = Existing != nullptr ? *Existing : FShuttlegentSessionRecord {};
 	Record.SessionId = SessionId;
 	Record.WorkingDirectory = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	Record.Model = GetCurrentModel();
+	GetCurrentModel(Record.Model, Record.ModelName);
 	if (bCreated || Existing == nullptr) Record.CreatedAt = FDateTime::UtcNow();
 	SessionStore.UpsertRecord(Record);
 
@@ -395,19 +421,24 @@ void FShuttlegentAgentService::ApplySessionResult(const FString& SessionId, cons
 	OnSessionReady.Broadcast(SessionId);
 }
 
-FString FShuttlegentAgentService::GetCurrentModel() const
+void FShuttlegentAgentService::GetCurrentModel(FString& OutValue, FString& OutName) const
 {
+	OutValue.Reset();
+	OutName.Reset();
+
 	for (const TSharedPtr<FJsonValue>& Value : ConfigOptions)
 	{
 		const TSharedPtr<FJsonObject> Option = Value.IsValid() ? Value->AsObject() : nullptr;
 		FString Id;
 		if (!Option.IsValid() || !Option->TryGetStringField(ShuttlegentAgentServicePrivate::FieldId, Id) || Id != ShuttlegentAgentServicePrivate::ConfigIdModel) continue;
 
-		FString CurrentValue;
-		Option->TryGetStringField(ShuttlegentAgentServicePrivate::FieldCurrentValue, CurrentValue);
-		return CurrentValue;
+		Option->TryGetStringField(ShuttlegentAgentServicePrivate::FieldCurrentValue, OutValue);
+
+		const TArray<TSharedPtr<FJsonValue>>* Choices = nullptr;
+		if (Option->TryGetArrayField(ShuttlegentAgentServicePrivate::FieldOptions, Choices)) OutName = ShuttlegentAgentServicePrivate::FindChoiceName(*Choices, OutValue);
+		if (OutName.IsEmpty()) OutName = OutValue;
+		return;
 	}
-	return FString();
 }
 
 void FShuttlegentAgentService::HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params)

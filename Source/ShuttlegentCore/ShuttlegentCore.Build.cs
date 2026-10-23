@@ -16,6 +16,8 @@ public class ShuttlegentCore : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"CoreUObject",
+				"DeveloperSettings",
 				"Json",
 				"Projects",
 			}

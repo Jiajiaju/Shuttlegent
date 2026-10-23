@@ -22,6 +22,11 @@ public class ShuttlegentEditor : ModuleRules
 				"SlateCore",
 				"ToolMenus",
 				"DeveloperSettings",
+				"InputCore",
+				"Projects",
+				"ApplicationCore",
+				"Settings",
+				"Json",
 				"ShuttlegentCore",
 				"ShuttlegentMcpServer",
 			}

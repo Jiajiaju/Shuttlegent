@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shuttlegent</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="workbench" id="workbench">
+  <button class="scrim" id="scrim" aria-label="收起覆盖面板" hidden></button>
+
+  <aside class="sidebar" id="sidebar" aria-label="会话列表">
+    <div class="brand"><img src="../png/mark-red-white.png" alt=""><strong>Shuttlegent</strong></div>
+    <button class="new-session" id="new-session" title="开始一个新会话 · Ctrl+N"><span><span data-icon="plus"></span> 新会话</span><kbd>Ctrl N</kbd></button>
+    <input id="search" type="search" placeholder="搜索会话" aria-label="搜索会话" autocomplete="off">
+    <nav id="sessions" aria-label="选择会话"></nav>
+    <div class="sidebar-bottom">
+      <button id="archived-button" title="查看并恢复已归档的会话">已归档 <span id="archive-count">0</span></button>
+      <div class="role-row">
+        <span id="permission-mode" title="运行时文件与命令工具的权限；在编辑器偏好设置 → 插件 → Shuttlegent 中修改，下次启动运行时生效"></span>
+        <button class="icon" id="open-settings" title="设置" aria-label="设置"><span data-icon="settings"></span></button>
+      </div>
+    </div>
+    <div class="pane-resizer" id="sidebar-resizer" data-pane="sidebar" role="separator" aria-orientation="vertical" aria-label="调整会话侧栏宽度" title="拖动调整宽度 · 双击恢复默认" tabindex="0"></div>
+  </aside>
+
+  <main class="chat" id="chat">
+    <header class="chat-header">
+      <button class="icon" id="toggle-sidebar" title="会话侧栏 · Ctrl+B" aria-label="切换会话侧栏"><span data-icon="sidebar"></span></button>
+      <div id="header-mark" role="img" aria-label="Shuttlegent"></div>
+      <div class="chat-heading"><strong id="session-title">新会话</strong><span id="status" role="status"></span></div>
+      <button class="icon" id="toggle-inspector" title="检视窗格 · Ctrl+I" aria-label="切换检视窗格"><span data-icon="inspector"></span></button>
+    </header>
+    <div id="banner" class="banner" hidden></div>
+    <div class="conversation" id="conversation" tabindex="0" aria-label="对话记录"><div class="message-column" id="messages"></div></div>
+    <button class="back-bottom" id="back-bottom" hidden>新内容 · 回到底部 <span data-icon="arrow-down" data-size="14"></span></button>
+    <div class="composer-column">
+      <div id="queue" class="queue" aria-label="待发送队列" hidden></div>
+      <section id="decision" class="decision elevation" aria-labelledby="decision-title" hidden></section>
+      <section class="composer" id="composer" aria-label="消息编辑区">
+        <div id="references" class="references" aria-label="引用"></div>
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="引用与模板" hidden></div>
+        <button class="icon" id="add-reference" title="添加引用 · Ctrl+Space" aria-label="添加引用"><span data-icon="plus"></span></button>
+        <label class="sr-only" for="draft">消息</label>
+        <textarea id="draft" rows="1" placeholder="描述你想在编辑器里完成的事…" aria-autocomplete="list" aria-controls="suggestions"></textarea>
+        <button id="send" class="primary send" title="发送 · Enter" aria-label="发送消息" disabled><span data-icon="send" data-size="18"></span></button>
+        <button id="stop" class="stop" hidden></button>
+      </section>
+      <div class="composer-meta" id="composer-meta">
+        <label class="sr-only" for="model">模型</label><select id="model"></select>
+        <label class="sr-only" for="reasoning">推理强度</label><select id="reasoning"></select>
+        <span class="usage" id="usage" role="img"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle class="usage-track" cx="8" cy="8" r="6"/><circle class="usage-bar" id="usage-bar" cx="8" cy="8" r="6" pathLength="100"/></svg></span>
+      </div>
+      <div class="input-hint" id="input-hint"><span id="input-hint-keys">Enter 发送 · Shift+Enter 换行</span></div>
+    </div>
+  </main>
+
+  <aside class="inspector" id="inspector" aria-label="检视窗格">
+    <div class="pane-resizer" id="inspector-resizer" data-pane="inspector" role="separator" aria-orientation="vertical" aria-label="调整检视窗格宽度" title="拖动调整宽度 · 双击恢复默认" tabindex="0"></div>
+    <header><strong>检视</strong></header>
+    <div class="tabs" role="tablist" aria-label="检视内容" id="tabs">
+      <button role="tab" id="tab-changes" data-tab="changes" aria-controls="inspection">变更预览</button>
+      <button role="tab" id="tab-tools" data-tab="tools" aria-controls="inspection">工具详情</button>
+      <button role="tab" id="tab-log" data-tab="log" aria-controls="inspection">运行日志</button>
+    </div>
+    <div id="inspection" role="tabpanel"></div>
+    <footer>预览与实际执行结果分别展示。<br>只有明确确认后才进入写操作。</footer>
+  </aside>
+</div>
+
+<dialog id="rename-dialog" aria-labelledby="rename-title">
+  <h2 id="rename-title">重命名会话</h2>
+  <input id="rename-input" aria-label="会话名称" autocomplete="off">
+  <p class="dialog-error" id="rename-error" hidden></p>
+  <div class="actions"><button data-close>取消</button><button class="primary" id="rename-save">保存</button></div>
+</dialog>
+<dialog id="archive-dialog" aria-labelledby="archive-title">
+  <h2 id="archive-title">归档会话</h2>
+  <p>从会话列表隐藏，记录保留，可从“已归档”恢复。</p>
+  <div class="actions"><button data-close>取消</button><button class="primary" id="archive-confirm">归档</button></div>
+</dialog>
+<dialog id="delete-dialog" aria-labelledby="delete-title">
+  <h2 id="delete-title">删除会话</h2>
+  <p>永久删除“<span id="delete-name"></span>”的本地记录，删除后无法恢复。</p>
+  <div class="actions"><button data-close>取消</button><button class="danger" id="delete-confirm">删除</button></div>
+</dialog>
+<div class="context-menu" id="session-menu" role="menu" aria-label="会话操作" hidden>
+  <button role="menuitem" data-menu-action="rename"><span data-icon="edit" data-size="14"></span>重命名</button>
+  <button role="menuitem" data-menu-action="archive"><span data-icon="archive" data-size="14"></span>归档</button>
+  <button role="menuitem" class="danger-item" data-menu-action="delete"><span data-icon="trash" data-size="14"></span>删除</button>
+</div>
+<dialog id="archived-dialog" aria-labelledby="archived-title">
+  <div class="dialog-heading"><h2 id="archived-title">已归档会话</h2><button class="icon" data-close aria-label="关闭"><span data-icon="close"></span></button></div>
+  <div id="archived-list"></div>
+</dialog>
+
+<script src="icons.js"></script>
+<script src="markdown.js"></script>
+<script src="highlight.js"></script>
+<script src="mark.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

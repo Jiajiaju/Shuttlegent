@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.0",
+	"FriendlyName": "Shuttlegent Sample",
+	"Description": "Sample project integration for Shuttlegent: an editor tool provider, with project settings, prompt, skill, templates and an external MCP server to copy into a project.",
+	"Category": "Editor",
+	"CreatedBy": "Shuttlegent",
+	"EnabledByDefault": true,
+	"CanContainContent": false,
+	"Modules": [
+		{
+			"Name": "ShuttlegentSample",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Shuttlegent",
+			"Enabled": true
+		}
+	]
+}

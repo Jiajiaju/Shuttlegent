@@ -120,7 +120,8 @@ function Invoke-Scenario {
         [double]$CancelAfter = -1,
         [string]$Resume = '',
         [string]$Key = '',
-        [string[]]$ExtraPatches = @()
+        [string[]]$ExtraPatches = @(),
+        [string[]]$ParallelPrompts = @()
     )
 
     $Command = $BaseCommand + @('--profile', 'acp', '--patch', $PatchFile)
@@ -147,6 +148,7 @@ function Invoke-Scenario {
     }
     if ($CancelAfter -ge 0) { $Scenario.cancel_after = $CancelAfter }
     if ($Resume) { $Scenario.resume = $Resume }
+    if ($ParallelPrompts.Count -gt 0) { $Scenario.parallel_prompts = $ParallelPrompts }
     if ($SplitLaunchDir) {
         New-Item -ItemType Directory -Force $DshHome | Out-Null
         $Scenario.process_cwd = $DshHome
@@ -197,6 +199,10 @@ try {
         Invoke-Scenario -Name 's08_cancel' -HomeName 'cancel' -Prompts @('Write the numbers from 1 to 400 in English words, one per line, without using any tool.', 'Without any tool, reply with just the word OK.') -CancelAfter 4 -Key $ApiKey
 
         Invoke-Scenario -Name 's09_gateway' -HomeName 'gateway' -Prompts @('Call the ue_read_probe tool, then tell me its result in one sentence.') -Key $ApiKey -ExtraPatches @($GatewayOverlay)
+
+        # M3.7 precondition: two sessions of one runtime prompted at the same time (Shuttlegent.md section 14.3.7)
+        $LongPrompt = 'Without using any tool, write the numbers from 1 to 120 in English words, one per line.'
+        Invoke-Scenario -Name 's10_parallel' -HomeName 'parallel' -ParallelPrompts @($LongPrompt, $LongPrompt) -Key $ApiKey
     }
 }
 finally {

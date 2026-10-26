@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 
 #include "Chat/EShuttlegentChatEntryKind.h"
+#include "WriteGate/FShuttlegentWriteResult.h"
 
 /** One row of the chat panel. Widgets read it through attributes, so streamed text needs no rebuild. */
 struct FShuttlegentChatEntry
@@ -43,12 +44,16 @@ struct FShuttlegentChatEntry
 	/** Assistant entry: reasoning is expanded. */
 	bool bThoughtExpanded = false;
 
-	/** Permission entry: answered, and the answer. */
+	/** Permission entry: answered, and the answer. Write unknown entry: bAnswered once the user verified the objects. */
 	bool bAnswered = false;
 	bool bAllowed = false;
 
 	/** Notice or turn end that reports a failure. */
 	bool bError = false;
+
+	/** Write result entry: what the write did, and whether "undo this change" already reverted it. */
+	FShuttlegentWriteResult WriteResult;
+	bool bUndone = false;
 
 	/** Stable id used to answer a pending permission request. */
 	int32 Id = 0;

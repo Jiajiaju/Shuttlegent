@@ -16,6 +16,9 @@ private:
 	TWeakPtr<FShuttlegentAgentService> Service;
 	TArray<TUniquePtr<FAutoConsoleCommand>> Commands;
 	FString MessageText;
+
+	/** Session the commands act on: the last one created or resumed. */
+	FString CurrentSessionId;
 	int32 ThoughtChars = 0;
 
 public:
@@ -38,7 +41,7 @@ private:
 	void OnTurnFinished(const FString& SessionId, const FString& StopReason, const FString& ErrorMessage);
 	void OnSessionReady(const FString& SessionId);
 	void OnRuntimeExited(int32 ExitCode, bool bExpected);
-	void OnError(const FString& Message);
+	void OnError(const FString& SessionId, const FString& Message);
 
 	void LogResult(bool bSuccess, const FString& Action, const FString& Error) const;
 };

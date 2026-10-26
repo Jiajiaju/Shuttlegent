@@ -99,14 +99,51 @@ void FShuttlegentSessionStore::UpsertRecord(const FShuttlegentSessionRecord& Rec
 {
 	EnsureLoaded();
 
-	FShuttlegentSessionRecord Updated = Record;
-	Updated.UpdatedAt = FDateTime::UtcNow();
-
+	// Opening, resuming or reconfiguring a session is not new content: it keeps its place in the list
 	const int32 ExistingIndex = Records.IndexOfByPredicate([&Record](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == Record.SessionId; });
-	if (ExistingIndex != INDEX_NONE) Records.RemoveAt(ExistingIndex);
+	if (ExistingIndex != INDEX_NONE)
+	{
+		const FDateTime UpdatedAt = Records[ExistingIndex].UpdatedAt;
+		Records[ExistingIndex] = Record;
+		Records[ExistingIndex].UpdatedAt = UpdatedAt;
+	}
+	else
+	{
+		FShuttlegentSessionRecord Created = Record;
+		Created.UpdatedAt = FDateTime::UtcNow();
+		Records.Insert(MoveTemp(Created), 0);
+	}
 
-	Records.Insert(MoveTemp(Updated), 0);
 	SaveIndex();
+}
+
+void FShuttlegentSessionStore::TouchRecord(const FString& SessionId)
+{
+	EnsureLoaded();
+
+	const int32 ExistingIndex = Records.IndexOfByPredicate([&SessionId](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == SessionId; });
+	if (ExistingIndex == INDEX_NONE) return;
+
+	FShuttlegentSessionRecord Touched = Records[ExistingIndex];
+	Touched.UpdatedAt = FDateTime::UtcNow();
+	Records.RemoveAt(ExistingIndex);
+	Records.Insert(MoveTemp(Touched), 0);
+	SaveIndex();
+}
+
+bool FShuttlegentSessionStore::DeleteRecord(const FString& SessionId)
+{
+	EnsureLoaded();
+
+	const int32 ExistingIndex = Records.IndexOfByPredicate([&SessionId](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == SessionId; });
+	if (ExistingIndex == INDEX_NONE) return false;
+
+	Records.RemoveAt(ExistingIndex);
+	SaveIndex();
+
+	const FString Path = GetTranscriptPath(SessionId);
+	if (IFileManager::Get().FileExists(*Path) && !IFileManager::Get().Delete(*Path)) UE_LOG(LogShuttlegent, Warning, TEXT("Deleting transcript failed: %s"), *Path);
+	return true;
 }
 
 bool FShuttlegentSessionStore::RenameRecord(const FString& SessionId, const FString& Title)

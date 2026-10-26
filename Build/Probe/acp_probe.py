@@ -18,6 +18,8 @@ scenario keys:
   permission: allow|reject         answer for session/request_permission
   cancel_after: seconds            optional; send session/cancel this long after the first prompt
   set_config: [{configId, value}]  optional session/set_config_option calls before prompting
+  parallel_prompts: [text]         optional; one new session per text, all prompts sent at once on the same
+                                   connection, then every answer collected (logs parallel_done per session)
   timeout: seconds per request
 """
 import json
@@ -124,6 +126,51 @@ def request(method, params, timeout=None, on_wait=None):
     return {"error": "timeout"}
 
 
+def run_parallel(mcp):
+    """Opens one session per prompt, sends every prompt before reading any answer, and records when each session's updates arrived."""
+    sessions = []
+    for _ in SCENARIO["parallel_prompts"]:
+        sess = request("session/new", {"cwd": SCENARIO["cwd"], "mcpServers": mcp})
+        sessions.append(sess.get("result", {}).get("sessionId"))
+    log("parallel_sessions", {"sessionIds": sessions})
+
+    pending = {}
+    started = time.time()
+    for session_id, text in zip(sessions, SCENARIO["parallel_prompts"]):
+        next_id[0] += 1
+        pending[next_id[0]] = session_id
+        send({"jsonrpc": "2.0", "id": next_id[0], "method": "session/prompt", "params": {"sessionId": session_id, "prompt": [{"type": "text", "text": text}]}})
+
+    windows = {sid: {"first": None, "last": None, "chunks": 0} for sid in sessions}
+    results = {}
+    deadline = time.time() + SCENARIO.get("timeout", 120)
+    while pending and time.time() < deadline:
+        try:
+            msg = incoming.get(timeout=0.2)
+        except queue.Empty:
+            continue
+        if msg is None:
+            break
+        if "method" in msg and "id" in msg:
+            handle_agent_request(msg)
+            continue
+        if msg.get("method") == "session/update":
+            sid = msg["params"].get("sessionId")
+            if sid in windows:
+                now = round(time.time() - started, 3)
+                window = windows[sid]
+                window["first"] = now if window["first"] is None else window["first"]
+                window["last"] = now
+                window["chunks"] += 1
+            continue
+        if msg.get("id") in pending:
+            sid = pending.pop(msg["id"])
+            results[sid] = {"elapsed": round(time.time() - started, 3), "result": msg.get("result"), "error": msg.get("error")}
+    for sid in sessions:
+        log("parallel_done", {"sessionId": sid, "window": windows[sid], **results.get(sid, {"error": "timeout"})})
+    return sessions
+
+
 try:
     init = request("initialize", {
         "protocolVersion": 1,
@@ -138,6 +185,11 @@ try:
         "url": s["url"],
         "headers": [{"name": "Authorization", "value": "Bearer " + s["token"]}, {"name": "X-Probe-Scenario", "value": SCENARIO["name"]}],
     } for s in SCENARIO.get("mcp", [])]
+    if SCENARIO.get("parallel_prompts"):
+        for parallel_session in run_parallel(mcp):
+            if parallel_session:
+                request("session/close", {"sessionId": parallel_session})
+        raise SystemExit(0)
     if SCENARIO.get("resume"):
         sess = request("session/resume", {"sessionId": SCENARIO["resume"], "cwd": SCENARIO["cwd"], "mcpServers": mcp})
         session_id = SCENARIO["resume"]

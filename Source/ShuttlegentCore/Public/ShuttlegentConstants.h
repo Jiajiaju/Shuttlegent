@@ -42,6 +42,12 @@ namespace ShuttlegentEnvVar
 	inline const TCHAR* DshTelemetryDisabled = TEXT("DSH_TELEMETRY_DISABLED");
 	inline const TCHAR* LocalAppData = TEXT("LOCALAPPDATA");
 
+	// Key of the default provider route (deepseek-official); the only provider key passed on from the editor environment
+	inline const TCHAR* ProviderKey = TEXT("DEEPSEEK_API_KEY");
+
+	// Display name of that provider in the start guide card
+	inline const TCHAR* ProviderName = TEXT("DeepSeek");
+
 	// Value written to DSH_TELEMETRY_DISABLED; any non-empty value opts out
 	inline const TCHAR* TelemetryDisabledValue = TEXT("1");
 
@@ -64,6 +70,45 @@ namespace ShuttlegentEnvVar
 		TEXT("USERNAME"),
 		TEXT("COMPUTERNAME"),
 	};
+}
+
+/** Model providers and the generated runtime patch (Shuttlegent.md sections 8.2, 9). */
+namespace ShuttlegentProviderConstant
+{
+	// The runtime's built-in DeepSeek route, used when the project names no default provider
+	inline const TCHAR* BuiltinRoute = TEXT("deepseek-official");
+
+	// Credential Manager entry prefix of a variable without a configured entry: Shuttlegent/<variable>
+	inline const TCHAR* CredentialPrefix = TEXT("Shuttlegent/");
+
+	// llm-pi-ai api values (EShuttlegentProviderApi)
+	inline const TCHAR* ApiOpenAiCompletions = TEXT("openai-completions");
+	inline const TCHAR* ApiOpenAiResponses = TEXT("openai-responses");
+	inline const TCHAR* ApiAnthropicMessages = TEXT("anthropic-messages");
+
+	// Patch the plugin writes into DSH_HOME before every launch and passes as a second --patch (JSON is valid YAML)
+	inline const TCHAR* GeneratedPatchFile = TEXT("generated.patch.yml");
+
+	// Rows and fields of the generated patch
+	inline const TCHAR* RowLlmPiAi = TEXT("llm-pi-ai");
+	inline const TCHAR* RowAcp = TEXT("acp");
+	inline const TCHAR* RowSkillFilesystem = TEXT("skill-filesystem");
+	inline const TCHAR* RowToolPwsh = TEXT("tool-pwsh");
+	inline const TCHAR* FieldId = TEXT("id");
+	inline const TCHAR* FieldConfig = TEXT("config");
+	inline const TCHAR* FieldDisabled = TEXT("disabled");
+	inline const TCHAR* FieldProviders = TEXT("providers");
+	inline const TCHAR* FieldDisplayName = TEXT("displayName");
+	inline const TCHAR* FieldApiKeyEnv = TEXT("apiKeyEnv");
+	inline const TCHAR* FieldApi = TEXT("api");
+	inline const TCHAR* FieldBaseUrl = TEXT("baseURL");
+	inline const TCHAR* FieldModels = TEXT("models");
+	inline const TCHAR* FieldModelId = TEXT("id");
+	inline const TCHAR* FieldModelName = TEXT("name");
+	inline const TCHAR* FieldProvider = TEXT("provider");
+	inline const TCHAR* FieldModel = TEXT("model");
+	inline const TCHAR* FieldIncludeDefaultRoots = TEXT("includeDefaultRoots");
+	inline const TCHAR* FieldCustomSkillDirs = TEXT("customSkillDirs");
 }
 
 /** Plugin-relative and user-level paths. */
@@ -116,4 +161,10 @@ namespace ShuttlegentSessionConstant
 
 	// Maximum length of a title the user sets by renaming, in characters (Shuttlegent UI interaction spec section 6)
 	inline constexpr int32 RenameMaxChars = 60;
+}
+
+namespace ShuttlegentAppearanceConstant
+{
+	// Conversation font size of the panel page, in CSS pixels (UShuttlegentSettings::FontSize)
+	inline constexpr int32 DefaultFontSize = 13;
 }

@@ -21,5 +21,11 @@ enum class EShuttlegentChatEntryKind : uint8
 	TurnEnd,
 
 	// Connection and session notices
-	Notice
+	Notice,
+
+	// What an approved editor write did, object by object, with its undo
+	WriteResult,
+
+	// An approved editor write whose result never arrived because the runtime was lost; the user verifies its objects
+	WriteUnknown
 };

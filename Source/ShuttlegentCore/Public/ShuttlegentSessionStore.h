@@ -27,8 +27,14 @@ public:
 
 	const FShuttlegentSessionRecord* FindRecord(const FString& SessionId);
 
-	/** Creates or updates a record and saves the index; UpdatedAt is set to now. */
+	/** Creates or updates a record and saves the index. A new record is stamped now and listed first; an existing one keeps its UpdatedAt and place. */
 	void UpsertRecord(const FShuttlegentSessionRecord& Record);
+
+	/** The session has new content (a prompt sent, a turn ended): UpdatedAt is set to now and the session is listed first. */
+	void TouchRecord(const FString& SessionId);
+
+	/** Removes a session from the index and deletes its transcript. Returns false for an unknown session. */
+	bool DeleteRecord(const FString& SessionId);
 
 	/** Sets a user-chosen title: trimmed, not empty, at most ShuttlegentSessionConstant::RenameMaxChars. Keeps UpdatedAt. Returns false when rejected. */
 	bool RenameRecord(const FString& SessionId, const FString& Title);

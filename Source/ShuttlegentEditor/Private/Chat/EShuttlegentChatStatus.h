@@ -20,6 +20,12 @@ enum class EShuttlegentChatStatus : uint8
 	// A turn is waiting for the user to answer a runtime permission request
 	AwaitingPermission,
 
+	// An editor write waits for the user to confirm it
+	AwaitingWriteConfirmation,
+
+	// A confirmed editor write is running
+	Writing,
+
 	// Stop was sent; waiting for the turn to end
 	Stopping,
 
@@ -33,5 +39,11 @@ enum class EShuttlegentChatStatus : uint8
 	Lost,
 
 	// A stored session is being resumed in the runtime
-	Resuming
+	Resuming,
+
+	// The runtime cannot start or serve prompts (missing runtime or key, rejected key); the start guide card says why
+	StartBlocked,
+
+	// The runtime could not resume the session's context; its local record is kept
+	ResumeFailed
 };

@@ -10,14 +10,18 @@ public class ShuttlegentMcpServer : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Json",
 			}
 			);
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Json",
+				"CoreUObject",
+				"Engine",
+				"UnrealEd",
 				"HTTPServer",
+				"Projects",
 				"ShuttlegentCore",
 			}
 			);

@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "ShuttlegentStartIssue.h"
+
 /** Everything needed to start the DeepSeek Harness runtime process. */
 struct FShuttlegentRuntimeLaunchSpec
 {
@@ -20,8 +22,9 @@ struct FShuttlegentRuntimeLaunchSpec
 	/**
 	 * Builds the launch spec from the plugin layout, user settings and the development .env file.
 	 * @param OutSpec   Filled on success.
-	 * @param OutError  Human-readable reason on failure.
-	 * @return true when the runtime executable and profile patch exist and DSH_HOME could be created.
+	 * @param OutError  Human-readable reason on failure; names paths and variables, never a key value.
+	 * @param OutIssue  Kind of failure for the start guide card; None on success.
+	 * @return true when the runtime executable and profile patch exist, DSH_HOME could be created and the provider key is set.
 	 */
-	static bool Build(FShuttlegentRuntimeLaunchSpec& OutSpec, FString& OutError);
+	static bool Build(FShuttlegentRuntimeLaunchSpec& OutSpec, FString& OutError, EShuttlegentStartIssue& OutIssue);
 };

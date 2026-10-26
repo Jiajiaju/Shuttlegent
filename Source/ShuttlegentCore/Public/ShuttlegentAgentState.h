@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** Lifecycle of the agent runtime as seen by FShuttlegentAgentService. */
+/** Lifecycle of the agent runtime as seen by FShuttlegentAgentService. Whether a session runs a prompt is per session (FShuttlegentAgentService::IsPrompting). */
 enum class EShuttlegentAgentState : uint8
 {
 	// No runtime process
@@ -11,9 +11,6 @@ enum class EShuttlegentAgentState : uint8
 	// Process launched, waiting for the initialize response
 	Starting,
 
-	// Initialized; may or may not have an active session
-	Ready,
-
-	// A session/prompt is in flight
-	Prompting
+	// Initialized; sessions can be created, resumed and prompted
+	Ready
 };

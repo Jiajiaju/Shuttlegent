@@ -1,0 +1,7 @@
+/* Shared by the editable boards and the interactive prototype. Brand colours are fixed. */
+:root{color-scheme:dark;--bg:#1C1C1B;--surface:#262625;--raised:#343432;--sidebar:#20201F;--text:#E8DFCF;--muted:#A9A8A2;--line:#3C3C39;--subtle:#30302E;--red:#A94743;--accent:#E17D73;--success:#8CAD92;--warning:#D5B57B;--error:#E68F82;--info:#9EB4C1;--control-radius:6px;--panel-radius:10px;--header-height:44px}
+
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+
+/* Code block colouring (highlight.js token classes tk-*), on --surface; warm hues next to the brand colours */
+:root{--code-comment:#8A857C;--code-keyword:#E17D73;--code-string:#9DBB8A;--code-number:#D9B77E;--code-type:#8FB8C8;--code-func:#E6CFA3;--code-meta:#C79BBE;--code-key:#A9C4D2;--code-variable:#D8A6C8}

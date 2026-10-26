@@ -10,6 +10,9 @@ import sys
 OUT = sys.argv[1]
 WORKSPACE = os.path.join(OUT, "ws")
 MCP_LOG = os.path.join(OUT, "mcp_mock.log")
+
+# s10_parallel: two prompts sent together count as run side by side when the later one finishes before this multiple of the earlier one's time
+PARALLEL_FINISH_RATIO = 1.5
 with open(os.path.join(OUT, "mode.json"), encoding="utf-8") as mode_file:
     SPLIT_LAUNCH_DIR = json.load(mode_file).get("splitLaunchDir", False)
 
@@ -106,6 +109,22 @@ def check_gateway(ev):
     return read and reasons == ["end_turn"], f"read={read} stopReasons={reasons}"
 
 
+def check_parallel(ev):
+    done = [e["data"] for e in ev if e["kind"] == "parallel_done"]
+    reasons = [(d.get("result") or {}).get("stopReason") for d in done]
+    windows = [d.get("window") or {} for d in done]
+    complete = len(done) == 2 and reasons == ["end_turn", "end_turn"] and all(w.get("first") is not None for w in windows)
+    if not complete:
+        return False, f"stopReasons={reasons} windows={windows}"
+
+    # The runtime may push a whole turn as one update at its end, so update windows do not show overlap. Both prompts were
+    # sent at the same moment: run one after the other, the later one finishes at least a whole turn after the earlier one;
+    # run side by side, both finish within a fraction of a turn of each other.
+    elapsed = sorted(d["elapsed"] for d in done)
+    parallel = elapsed[1] < elapsed[0] * PARALLEL_FINISH_RATIO
+    return True, f"parallel={parallel} elapsed={elapsed} windows={[(w['first'], w['last'], w['chunks']) for w in windows]}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -118,6 +137,7 @@ CHECKS = [
     ("s07_resume", "Q8 session/resume keeps context", check_resume),
     ("s08_cancel", "session/cancel then continue", check_cancel),
     ("s09_gateway", "llm-pi-ai openai-completions route", check_gateway),
+    ("s10_parallel", "M3.7 two sessions prompted at once both finish (parallel= tells whether they overlapped)", check_parallel),
 ]
 
 failed = 0

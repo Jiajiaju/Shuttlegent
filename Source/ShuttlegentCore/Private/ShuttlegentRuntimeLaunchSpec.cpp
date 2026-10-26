@@ -3,9 +3,11 @@
 #include "HAL/FileManager.h"
 #include "HAL/PlatformMisc.h"
 #include "Interfaces/IPluginManager.h"
-#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
+#include "FShuttlegentGeneratedPatch.h"
+#include "FShuttlegentProjectConfig.h"
+#include "FShuttlegentSecrets.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSettings.h"
@@ -20,63 +22,11 @@ namespace ShuttlegentRuntimeLaunchSpecPrivate
 	inline const TCHAR* ProfileSwitch = TEXT("--profile");
 	inline const TCHAR* PatchSwitch = TEXT("--patch");
 
-	// .env syntax
-	inline const TCHAR* CommentPrefix = TEXT("#");
-	inline const TCHAR* Assignment = TEXT("=");
-	inline const TCHAR* DoubleQuote = TEXT("\"");
-	inline const TCHAR* SingleQuote = TEXT("'");
-
-	FString StripQuotes(const FString& Value)
-	{
-		const bool bDoubleQuoted = Value.Len() >= 2 && Value.StartsWith(DoubleQuote) && Value.EndsWith(DoubleQuote);
-		const bool bSingleQuoted = Value.Len() >= 2 && Value.StartsWith(SingleQuote) && Value.EndsWith(SingleQuote);
-		if (bDoubleQuoted || bSingleQuoted) return Value.Mid(1, Value.Len() - 2);
-		return Value;
-	}
-
-	/** Reads KEY=VALUE lines from the development .env file. Values are never logged. */
-	void LoadDevEnvFile(const FString& Path, TMap<FString, FString>& OutEnvironment)
-	{
-		TArray<FString> Lines;
-		if (!FFileHelper::LoadFileToStringArray(Lines, *Path)) return;
-
-		for (const FString& RawLine : Lines)
-		{
-			const FString Line = RawLine.TrimStartAndEnd();
-			if (Line.IsEmpty() || Line.StartsWith(CommentPrefix)) continue;
-
-			FString Name;
-			FString Value;
-			if (!Line.Split(Assignment, &Name, &Value)) continue;
-
-			Name = Name.TrimStartAndEnd();
-			Value = StripQuotes(Value.TrimStartAndEnd());
-			if (Name.IsEmpty() || Value.IsEmpty()) continue;
-
-			OutEnvironment.Add(Name, Value);
-			UE_LOG(LogShuttlegent, Verbose, TEXT("Loaded %s from the development .env file."), *Name);
-		}
-	}
-
-	const TCHAR* ToDshPermissionMode(EShuttlegentPermissionMode Mode)
-	{
-		switch (Mode)
-		{
-		case EShuttlegentPermissionMode::WorkspaceWrite:
-			{
-				return PermissionModeWorkspaceWrite;
-			}
-		case EShuttlegentPermissionMode::ReadOnly:
-		default:
-			{
-				return PermissionModeReadOnly;
-			}
-		}
-	}
 }
 
-bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec, FString& OutError)
+bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec, FString& OutError, EShuttlegentStartIssue& OutIssue)
 {
+	OutIssue = EShuttlegentStartIssue::Other;
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
 	if (!Plugin.IsValid())
 	{
@@ -96,11 +46,13 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 	const FString PatchFile = FPaths::Combine(PluginDir, ShuttlegentPath::ProfilePatch);
 	if (!FPaths::FileExists(Executable))
 	{
+		OutIssue = EShuttlegentStartIssue::MissingRuntime;
 		OutError = FString::Printf(TEXT("Runtime executable not found: %s. Build it with Build/BuildRuntime.ps1."), *Executable);
 		return false;
 	}
 	if (!FPaths::FileExists(PatchFile))
 	{
+		OutIssue = EShuttlegentStartIssue::MissingRuntime;
 		OutError = FString::Printf(TEXT("Profile patch not found: %s."), *PatchFile);
 		return false;
 	}
@@ -120,9 +72,15 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		return false;
 	}
 
+	// The project's providers and skills and the user's Shell switch go into a second patch on top of the plugin's
+	const bool bWorkspaceWrite = IsValid(Settings) && Settings->bAllowWorkspaceWrite;
+	const bool bShell = IsValid(Settings) && Settings->bAllowShell;
+	FString GeneratedPatch;
+	if (!FShuttlegentGeneratedPatch::Write(DshHome, bShell, GeneratedPatch, OutError)) return false;
+
 	OutSpec = FShuttlegentRuntimeLaunchSpec {};
 	OutSpec.Executable = Executable;
-	OutSpec.Arguments = { ShuttlegentRuntimeLaunchSpecPrivate::ProfileSwitch, ShuttlegentPath::AcpProfile, ShuttlegentRuntimeLaunchSpecPrivate::PatchSwitch, PatchFile };
+	OutSpec.Arguments = { ShuttlegentRuntimeLaunchSpecPrivate::ProfileSwitch, ShuttlegentPath::AcpProfile, ShuttlegentRuntimeLaunchSpecPrivate::PatchSwitch, PatchFile, ShuttlegentRuntimeLaunchSpecPrivate::PatchSwitch, GeneratedPatch };
 	OutSpec.WorkingDirectory = DshHome;
 
 	for (const TCHAR* Name : ShuttlegentEnvVar::InheritedNames)
@@ -131,12 +89,29 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		if (!Value.IsEmpty()) OutSpec.Environment.Add(Name, Value);
 	}
 
-	ShuttlegentRuntimeLaunchSpecPrivate::LoadDevEnvFile(FPaths::Combine(PluginDir, ShuttlegentPath::DevEnvFile), OutSpec.Environment);
+	// Only the key variables the configuration names are passed on, each from its first source
+	for (const FString& Variable : FShuttlegentProjectConfig::GetKeyVariables())
+	{
+		FString Value;
+		EShuttlegentSecretSource Source = EShuttlegentSecretSource::None;
+		if (FShuttlegentSecrets::Resolve(Variable, Value, Source)) OutSpec.Environment.Add(Variable, Value);
+	}
 
-	const EShuttlegentPermissionMode PermissionMode = IsValid(Settings) ? Settings->PermissionMode : EShuttlegentPermissionMode::ReadOnly;
+	FString KeyVariable;
+	FString ProviderName;
+	FShuttlegentProjectConfig::GetDefaultProviderKey(KeyVariable, ProviderName);
+	if (!OutSpec.Environment.Contains(KeyVariable))
+	{
+		OutIssue = EShuttlegentStartIssue::MissingKey;
+		OutError = FString::Printf(TEXT("%s (%s) is set neither in the Credential Manager entry %s, the environment nor %s."), *KeyVariable, *ProviderName, *FShuttlegentSecrets::GetCredentialTarget(KeyVariable), *FShuttlegentSecrets::GetDevEnvFilePath());
+		return false;
+	}
+
 	OutSpec.Environment.Add(ShuttlegentEnvVar::DshHome, DshHome);
 	OutSpec.Environment.Add(ShuttlegentEnvVar::DshAgentsHome, DshAgentsHome);
-	OutSpec.Environment.Add(ShuttlegentEnvVar::DshPermissionMode, ShuttlegentRuntimeLaunchSpecPrivate::ToDshPermissionMode(PermissionMode));
+	OutSpec.Environment.Add(ShuttlegentEnvVar::DshPermissionMode, bWorkspaceWrite ? ShuttlegentRuntimeLaunchSpecPrivate::PermissionModeWorkspaceWrite : ShuttlegentRuntimeLaunchSpecPrivate::PermissionModeReadOnly);
+	UE_LOG(LogShuttlegent, Log, TEXT("Runtime launch: workspace write %s, shell %s, default route %s."), bWorkspaceWrite ? TEXT("on") : TEXT("off"), bShell ? TEXT("on") : TEXT("off"), *FShuttlegentProjectConfig::GetDefaultRoute());
 	OutSpec.Environment.Add(ShuttlegentEnvVar::DshTelemetryDisabled, ShuttlegentEnvVar::TelemetryDisabledValue);
+	OutIssue = EShuttlegentStartIssue::None;
 	return true;
 }

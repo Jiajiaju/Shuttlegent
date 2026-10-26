@@ -5,7 +5,8 @@ Builds the Shuttlegent agent runtime from the pinned DeepSeek Harness submodule.
 .DESCRIPTION
 Installs dependencies, builds DeepSeek Harness, packs the single-file executable
 (Node SEA via @yao-pkg/pkg) and copies it into Runtime/ as shuttlegent-runtime.exe,
-together with its ripgrep sidecar and resource directory.
+together with its ripgrep sidecar and resource directory, then sets the executable's
+version information to Shuttlegent (SetRuntimeVersionInfo.mjs).
 
 Requirements on the build machine only: Node.js 22.19+ or 24+ with corepack, and git.
 pnpm is invoked through corepack at the version pinned by the submodule.
@@ -90,6 +91,10 @@ Copy-Item -Recurse $ResourceSource $ResourceTarget
 $Revision = (& git -C $DshDir rev-parse HEAD).Trim()
 $Stamp = [ordered]@{ dshRevision = $Revision; target = $Target; builtAt = (Get-Date).ToString('o') }
 [IO.File]::WriteAllText((Join-Path $RuntimeDir 'runtime-version.json'), ($Stamp | ConvertTo-Json), (New-Object System.Text.UTF8Encoding $false))
+
+# Windows shows the process as Shuttlegent instead of Node.js (Task Manager reads FileDescription)
+$PluginVersion = (Get-Content -Raw (Join-Path $PluginDir 'Shuttlegent.uplugin') | ConvertFrom-Json).VersionName
+Invoke-Step 'set version info' { node (Join-Path $PSScriptRoot 'SetRuntimeVersionInfo.mjs') (Join-Path $RuntimeDir "$RuntimeBase.exe") $PluginVersion $Revision.Substring(0, 8) }
 
 $Exe = Get-Item (Join-Path $RuntimeDir "$RuntimeBase.exe")
 Write-Host ("Runtime ready: {0} ({1:N1} MB), dsh {2}" -f $Exe.FullName, ($Exe.Length / 1MB), $Revision.Substring(0, 8))

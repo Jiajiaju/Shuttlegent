@@ -19,6 +19,13 @@ public class ShuttlegentTools : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"AssetRegistry",
+				"DeveloperSettings",
+				"LevelEditor",
+				"Settings",
+				"Slate",
+				"SlateCore",
+				"UnrealEd",
+				"ShuttlegentCore",
 				"ShuttlegentMcpServer",
 			}
 			);

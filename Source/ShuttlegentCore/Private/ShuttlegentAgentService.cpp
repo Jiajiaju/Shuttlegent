@@ -12,6 +12,10 @@
 
 namespace ShuttlegentAgentServicePrivate
 {
+	// Runtime error texts of a missing key (llm-deepseek) and of a key the provider rejected
+	inline const TCHAR* ErrorNoApiKey = TEXT("no API key");
+	inline const TCHAR* ErrorAuthentication[] = { TEXT("Authentication Fails"), TEXT("invalid api key") };
+
 	// ACP request and response fields
 	inline const TCHAR* FieldProtocolVersion = TEXT("protocolVersion");
 	inline const TCHAR* FieldClientCapabilities = TEXT("clientCapabilities");
@@ -134,7 +138,7 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 	}
 
 	FShuttlegentRuntimeLaunchSpec Spec;
-	if (!FShuttlegentRuntimeLaunchSpec::Build(Spec, OutError)) return false;
+	if (!FShuttlegentRuntimeLaunchSpec::Build(Spec, OutError, StartIssue)) return false;
 
 	Connection = MakeUnique<FShuttlegentAcpConnection>();
 	Connection->OnNotification.AddSP(this, &FShuttlegentAgentService::HandleNotification);
@@ -142,13 +146,13 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 	Connection->OnClosed.AddSP(this, &FShuttlegentAgentService::HandleRuntimeClosed);
 	if (!Connection->Open(Spec, OutError))
 	{
+		StartIssue = EShuttlegentStartIssue::Other;
 		Connection.Reset();
 		return false;
 	}
 
 	bStopRequested = false;
-	ActiveSessionId.Reset();
-	ConfigOptions.Reset();
+	OpenSessions.Reset();
 	SetState(EShuttlegentAgentState::Starting);
 
 	TSharedRef<FJsonObject> Fs = MakeShared<FJsonObject>();
@@ -176,7 +180,8 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 
 		if (!Response.bSuccess)
 		{
-			This->OnError.Broadcast(FString::Printf(TEXT("initialize failed: %s"), *Response.ErrorMessage));
+			This->StartIssue = EShuttlegentStartIssue::Other;
+			This->OnError.Broadcast(FString(), FString::Printf(TEXT("initialize failed: %s"), *Response.ErrorMessage));
 			This->Stop();
 			return;
 		}
@@ -187,12 +192,21 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 	return true;
 }
 
+EShuttlegentStartIssue FShuttlegentAgentService::ClassifyError(const FString& Message)
+{
+	if (Message.Contains(ShuttlegentAgentServicePrivate::ErrorNoApiKey)) return EShuttlegentStartIssue::MissingKey;
+	for (const TCHAR* Needle : ShuttlegentAgentServicePrivate::ErrorAuthentication)
+	{
+		if (Message.Contains(Needle)) return EShuttlegentStartIssue::AuthFailed;
+	}
+	return EShuttlegentStartIssue::Other;
+}
+
 void FShuttlegentAgentService::Stop()
 {
 	if (!Connection.IsValid()) return;
 
 	bStopRequested = true;
-	++TurnGeneration;
 	Connection->Close();
 }
 
@@ -214,7 +228,7 @@ bool FShuttlegentAgentService::NewSession(FString& OutError)
 		FString SessionId;
 		if (!Response.bSuccess || !Response.Result.IsValid() || !Response.Result->TryGetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId))
 		{
-			This->OnError.Broadcast(FString::Printf(TEXT("session/new failed: %s"), *Response.ErrorMessage));
+			This->OnError.Broadcast(FString(), FString::Printf(TEXT("session/new failed: %s"), *Response.ErrorMessage));
 			return;
 		}
 
@@ -245,7 +259,7 @@ bool FShuttlegentAgentService::ResumeSession(const FString& SessionId, FString& 
 
 		if (!Response.bSuccess)
 		{
-			This->OnError.Broadcast(FString::Printf(TEXT("session/resume failed: %s"), *Response.ErrorMessage));
+			This->OnError.Broadcast(SessionId, FString::Printf(TEXT("session/resume failed: %s"), *Response.ErrorMessage));
 			return;
 		}
 
@@ -254,16 +268,29 @@ bool FShuttlegentAgentService::ResumeSession(const FString& SessionId, FString& 
 	return true;
 }
 
-bool FShuttlegentAgentService::Prompt(const FString& Text, FString& OutError)
+bool FShuttlegentAgentService::IsPrompting(const FString& SessionId) const
 {
-	if (State != EShuttlegentAgentState::Ready)
+	const FShuttlegentOpenSession* Session = OpenSessions.Find(SessionId);
+	return Session != nullptr && Session->bPrompting;
+}
+
+TArray<TSharedPtr<FJsonValue>> FShuttlegentAgentService::GetConfigOptions(const FString& SessionId) const
+{
+	const FShuttlegentOpenSession* Session = OpenSessions.Find(SessionId);
+	return Session != nullptr ? Session->ConfigOptions : TArray<TSharedPtr<FJsonValue>>();
+}
+
+bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& Text, FString& OutError)
+{
+	FShuttlegentOpenSession* Session = OpenSessions.Find(SessionId);
+	if (State != EShuttlegentAgentState::Ready || Session == nullptr)
 	{
-		OutError = State == EShuttlegentAgentState::Prompting ? TEXT("A prompt is already running.") : TEXT("Runtime is not ready.");
+		OutError = State != EShuttlegentAgentState::Ready ? TEXT("Runtime is not ready.") : TEXT("Session is not open.");
 		return false;
 	}
-	if (ActiveSessionId.IsEmpty())
+	if (Session->bPrompting)
 	{
-		OutError = TEXT("No active session.");
+		OutError = TEXT("A prompt is already running in this session.");
 		return false;
 	}
 	if (Text.TrimStartAndEnd().IsEmpty())
@@ -272,7 +299,7 @@ bool FShuttlegentAgentService::Prompt(const FString& Text, FString& OutError)
 		return false;
 	}
 
-	const FShuttlegentSessionRecord* Existing = SessionStore.FindRecord(ActiveSessionId);
+	const FShuttlegentSessionRecord* Existing = SessionStore.FindRecord(SessionId);
 	if (Existing != nullptr && Existing->Title.IsEmpty())
 	{
 		FShuttlegentSessionRecord Titled = *Existing;
@@ -288,22 +315,26 @@ bool FShuttlegentAgentService::Prompt(const FString& Text, FString& OutError)
 	PromptBlocks.Add(MakeShared<FJsonValueObject>(Block));
 
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
-	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, ActiveSessionId);
+	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Params->SetArrayField(ShuttlegentAgentServicePrivate::FieldPrompt, PromptBlocks);
 
 	TSharedRef<FJsonObject> TranscriptEntry = MakeShared<FJsonObject>();
 	TranscriptEntry->SetStringField(ShuttlegentAgentServicePrivate::FieldText, Text);
-	SessionStore.AppendTranscript(ActiveSessionId, ShuttlegentAgentServicePrivate::TranscriptPrompt, TranscriptEntry);
+	SessionStore.AppendTranscript(SessionId, ShuttlegentAgentServicePrivate::TranscriptPrompt, TranscriptEntry);
+	SessionStore.TouchRecord(SessionId);
 
-	const uint64 Generation = ++TurnGeneration;
-	const FString SessionId = ActiveSessionId;
-	SetState(EShuttlegentAgentState::Prompting);
+	const uint64 Generation = ++Session->TurnGeneration;
+	Session->bPrompting = true;
 
 	TWeakPtr<FShuttlegentAgentService> WeakThis = AsShared();
 	Connection->Request(ShuttlegentAcpMethod::SessionPrompt, Params, [WeakThis, Generation, SessionId](const FShuttlegentAcpResponse& Response)
 	{
 		const TSharedPtr<FShuttlegentAgentService> This = WeakThis.Pin();
-		if (!This.IsValid() || Generation != This->TurnGeneration) return;
+		if (!This.IsValid()) return;
+
+		// A closed session, a newer prompt or a lost runtime makes this answer stale
+		FShuttlegentOpenSession* Owner = This->OpenSessions.Find(SessionId);
+		if (Owner == nullptr || Generation != Owner->TurnGeneration) return;
 
 		FString StopReason;
 		if (Response.bSuccess && Response.Result.IsValid()) Response.Result->TryGetStringField(ShuttlegentAgentServicePrivate::FieldStopReason, StopReason);
@@ -312,37 +343,37 @@ bool FShuttlegentAgentService::Prompt(const FString& Text, FString& OutError)
 		TurnEnd->SetStringField(ShuttlegentAgentServicePrivate::FieldStopReason, StopReason);
 		if (!Response.bSuccess) TurnEnd->SetStringField(ShuttlegentAgentServicePrivate::FieldError, Response.ErrorMessage);
 		This->SessionStore.AppendTranscript(SessionId, ShuttlegentAgentServicePrivate::TranscriptTurnEnd, TurnEnd);
+		This->SessionStore.TouchRecord(SessionId);
 
-		if (This->State == EShuttlegentAgentState::Prompting) This->SetState(EShuttlegentAgentState::Ready);
+		Owner->bPrompting = false;
 		This->OnTurnFinished.Broadcast(SessionId, StopReason, Response.bSuccess ? FString() : Response.ErrorMessage);
 	});
 	return true;
 }
 
-void FShuttlegentAgentService::Cancel()
+void FShuttlegentAgentService::Cancel(const FString& SessionId)
 {
-	if (State != EShuttlegentAgentState::Prompting || !Connection.IsValid()) return;
+	if (!IsPrompting(SessionId) || !Connection.IsValid()) return;
 
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
-	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, ActiveSessionId);
+	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Connection->Notify(ShuttlegentAcpMethod::SessionCancel, Params);
 }
 
-bool FShuttlegentAgentService::SetConfigOption(const FString& ConfigId, const FString& Value, FString& OutError)
+bool FShuttlegentAgentService::SetConfigOption(const FString& SessionId, const FString& ConfigId, const FString& Value, FString& OutError)
 {
-	if (State != EShuttlegentAgentState::Ready || ActiveSessionId.IsEmpty())
+	if (State != EShuttlegentAgentState::Ready || !IsSessionOpen(SessionId) || IsPrompting(SessionId))
 	{
-		OutError = TEXT("No idle active session.");
+		OutError = TEXT("The session is not open or runs a prompt.");
 		return false;
 	}
 
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
-	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, ActiveSessionId);
+	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldConfigId, ConfigId);
 	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldValue, Value);
 
 	TWeakPtr<FShuttlegentAgentService> WeakThis = AsShared();
-	const FString SessionId = ActiveSessionId;
 	Connection->Request(ShuttlegentAcpMethod::SessionSetConfigOption, Params, [WeakThis, SessionId, ConfigId](const FShuttlegentAcpResponse& Response)
 	{
 		const TSharedPtr<FShuttlegentAgentService> This = WeakThis.Pin();
@@ -350,37 +381,38 @@ bool FShuttlegentAgentService::SetConfigOption(const FString& ConfigId, const FS
 
 		if (!Response.bSuccess)
 		{
-			This->OnError.Broadcast(FString::Printf(TEXT("set_config_option %s failed: %s"), *ConfigId, *Response.ErrorMessage));
+			This->OnError.Broadcast(SessionId, FString::Printf(TEXT("set_config_option %s failed: %s"), *ConfigId, *Response.ErrorMessage));
 			return;
 		}
 
+		FShuttlegentOpenSession* Session = This->OpenSessions.Find(SessionId);
 		const TArray<TSharedPtr<FJsonValue>>* Options = nullptr;
-		if (Response.Result.IsValid() && Response.Result->TryGetArrayField(ShuttlegentAgentServicePrivate::FieldConfigOptions, Options)) This->ConfigOptions = *Options;
-		This->OnConfigOptionsChanged.Broadcast();
+		if (Session != nullptr && Response.Result.IsValid() && Response.Result->TryGetArrayField(ShuttlegentAgentServicePrivate::FieldConfigOptions, Options)) Session->ConfigOptions = *Options;
+		This->OnConfigOptionsChanged.Broadcast(SessionId);
 
 		const FShuttlegentSessionRecord* Existing = This->SessionStore.FindRecord(SessionId);
-		if (Existing != nullptr)
+		if (Existing != nullptr && Session != nullptr)
 		{
 			FShuttlegentSessionRecord Updated = *Existing;
-			This->GetCurrentModel(Updated.Model, Updated.ModelName);
+			GetCurrentModel(Session->ConfigOptions, Updated.Model, Updated.ModelName);
 			This->SessionStore.UpsertRecord(Updated);
 		}
-		UE_LOG(LogShuttlegent, Log, TEXT("Config option %s updated."), *ConfigId);
+		UE_LOG(LogShuttlegent, Log, TEXT("Config option %s of session %s updated."), *ConfigId, *SessionId);
 	});
 	return true;
 }
 
-void FShuttlegentAgentService::CloseSession()
+void FShuttlegentAgentService::CloseSession(const FString& SessionId)
 {
-	if (ActiveSessionId.IsEmpty() || !Connection.IsValid() || !Connection->IsOpen()) return;
+	if (!OpenSessions.Contains(SessionId)) return;
+
+	// The session's in-flight prompt, if any, is dropped with it
+	OpenSessions.Remove(SessionId);
+	if (!Connection.IsValid() || !Connection->IsOpen()) return;
 
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
-	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, ActiveSessionId);
+	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Connection->Request(ShuttlegentAcpMethod::SessionClose, Params, nullptr);
-
-	++TurnGeneration;
-	ActiveSessionId.Reset();
-	if (State == EShuttlegentAgentState::Prompting) SetState(EShuttlegentAgentState::Ready);
 }
 
 void FShuttlegentAgentService::SetState(EShuttlegentAgentState NewState)
@@ -396,32 +428,33 @@ TSharedRef<FJsonObject> FShuttlegentAgentService::MakeSessionParams(const FStrin
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
 	if (!SessionId.IsEmpty()) Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldCwd, FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
-	Params->SetArrayField(ShuttlegentAgentServicePrivate::FieldMcpServers, TArray<TSharedPtr<FJsonValue>>());
+	Params->SetArrayField(ShuttlegentAgentServicePrivate::FieldMcpServers, McpServersProvider ? McpServersProvider() : TArray<TSharedPtr<FJsonValue>>());
 	return Params;
 }
 
 void FShuttlegentAgentService::ApplySessionResult(const FString& SessionId, const TSharedPtr<FJsonObject>& Result, bool bCreated)
 {
-	ActiveSessionId = SessionId;
-	ConfigOptions.Reset();
+	// Resuming a session that is already open keeps its turn state; a fresh entry otherwise
+	FShuttlegentOpenSession& Session = OpenSessions.FindOrAdd(SessionId);
+	Session.ConfigOptions.Reset();
 
 	const TArray<TSharedPtr<FJsonValue>>* Options = nullptr;
-	if (Result.IsValid() && Result->TryGetArrayField(ShuttlegentAgentServicePrivate::FieldConfigOptions, Options)) ConfigOptions = *Options;
+	if (Result.IsValid() && Result->TryGetArrayField(ShuttlegentAgentServicePrivate::FieldConfigOptions, Options)) Session.ConfigOptions = *Options;
 
 	const FShuttlegentSessionRecord* Existing = SessionStore.FindRecord(SessionId);
 	FShuttlegentSessionRecord Record = Existing != nullptr ? *Existing : FShuttlegentSessionRecord {};
 	Record.SessionId = SessionId;
 	Record.WorkingDirectory = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-	GetCurrentModel(Record.Model, Record.ModelName);
+	GetCurrentModel(Session.ConfigOptions, Record.Model, Record.ModelName);
 	if (bCreated || Existing == nullptr) Record.CreatedAt = FDateTime::UtcNow();
 	SessionStore.UpsertRecord(Record);
 
 	UE_LOG(LogShuttlegent, Log, TEXT("Session %s %s."), *SessionId, bCreated ? TEXT("created") : TEXT("resumed"));
-	OnConfigOptionsChanged.Broadcast();
+	OnConfigOptionsChanged.Broadcast(SessionId);
 	OnSessionReady.Broadcast(SessionId);
 }
 
-void FShuttlegentAgentService::GetCurrentModel(FString& OutValue, FString& OutName) const
+void FShuttlegentAgentService::GetCurrentModel(const TArray<TSharedPtr<FJsonValue>>& ConfigOptions, FString& OutValue, FString& OutName)
 {
 	OutValue.Reset();
 	OutName.Reset();
@@ -448,12 +481,12 @@ void FShuttlegentAgentService::HandleNotification(const FString& Method, const T
 	FString SessionId;
 	const TSharedPtr<FJsonObject>* UpdateField = nullptr;
 	if (!Params->TryGetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId) || !Params->TryGetObjectField(ShuttlegentAgentServicePrivate::FieldUpdate, UpdateField)) return;
-	if (SessionId != ActiveSessionId) return;
+	if (!IsSessionOpen(SessionId)) return;
 
 	const TSharedPtr<FJsonObject> Update = *UpdateField;
 	FString Kind;
 	Update->TryGetStringField(ShuttlegentAgentServicePrivate::FieldSessionUpdate, Kind);
-	if (State != EShuttlegentAgentState::Prompting && ShuttlegentAgentServicePrivate::IsTurnUpdate(Kind))
+	if (!IsPrompting(SessionId) && ShuttlegentAgentServicePrivate::IsTurnUpdate(Kind))
 	{
 		UE_LOG(LogShuttlegent, Verbose, TEXT("Dropped late %s for session %s."), *Kind, *SessionId);
 		return;
@@ -530,16 +563,21 @@ void FShuttlegentAgentService::RespondPermission(const TSharedPtr<FJsonValue>& I
 	TSharedRef<FJsonObject> Entry = MakeShared<FJsonObject>();
 	Entry->SetStringField(ShuttlegentAgentServicePrivate::FieldToolCallId, ToolCallId);
 	Entry->SetBoolField(ShuttlegentAgentServicePrivate::FieldAllowed, bAllow && !OptionId.IsEmpty());
-	SessionStore.AppendTranscript(ActiveSessionId, ShuttlegentAgentServicePrivate::TranscriptPermission, Entry);
+
+	// The request names the session it belongs to
+	FString SessionId;
+	if (Params.IsValid()) Params->TryGetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
+	if (!SessionId.IsEmpty()) SessionStore.AppendTranscript(SessionId, ShuttlegentAgentServicePrivate::TranscriptPermission, Entry);
 	UE_LOG(LogShuttlegent, Log, TEXT("Permission request for tool call %s answered: %s."), *ToolCallId, bAllow ? TEXT("allow") : TEXT("reject"));
 }
 
 void FShuttlegentAgentService::HandleRuntimeClosed(int32 ExitCode)
 {
 	const bool bExpected = bStopRequested;
-	++TurnGeneration;
+	const int32 OpenCount = OpenSessions.Num();
+	OpenSessions.Reset();
 	SetState(EShuttlegentAgentState::Stopped);
 
-	if (!bExpected) UE_LOG(LogShuttlegent, Warning, TEXT("Runtime exited unexpectedly (code %d). Start it again and resume session %s."), ExitCode, *ActiveSessionId);
+	if (!bExpected) UE_LOG(LogShuttlegent, Warning, TEXT("Runtime exited unexpectedly (code %d) with %d open session(s). Start it again and resume them."), ExitCode, OpenCount);
 	OnRuntimeExited.Broadcast(ExitCode, bExpected);
 }

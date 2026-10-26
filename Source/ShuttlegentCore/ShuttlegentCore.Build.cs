@@ -22,5 +22,10 @@ public class ShuttlegentCore : ModuleRules
 				"Projects",
 			}
 			);
+
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PublicSystemLibraries.Add("Advapi32.lib");
+		}
 	}
 }

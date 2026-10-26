@@ -29,6 +29,12 @@ public class ShuttlegentEditor : ModuleRules
 				"Json",
 				"ShuttlegentCore",
 				"ShuttlegentMcpServer",
+				"WebBrowser",
+				"AssetRegistry",
+				"ContentBrowser",
+				"UnrealEd",
+				"RenderCore",
+				"PropertyEditor",
 			}
 			);
 	}

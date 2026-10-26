@@ -121,13 +121,13 @@ void FShuttlegentConsoleCommands::HandlePrompt(const TArray<FString>& Args)
 
 	FString Error;
 	const FString Text = FString::Join(Args, TEXT(" "));
-	LogResult(Pinned->Prompt(Text, Error), TEXT("Prompt"), Error);
+	LogResult(Pinned->Prompt(CurrentSessionId, Text, Error), TEXT("Prompt"), Error);
 }
 
 void FShuttlegentConsoleCommands::HandleCancel(const TArray<FString>& Args)
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
-	if (Pinned.IsValid()) Pinned->Cancel();
+	if (Pinned.IsValid()) Pinned->Cancel(CurrentSessionId);
 }
 
 void FShuttlegentConsoleCommands::HandleList(const TArray<FString>& Args)
@@ -150,7 +150,7 @@ void FShuttlegentConsoleCommands::HandleModel(const TArray<FString>& Args)
 
 	FString Error;
 	const FString Value = FString::Join(Args, TEXT(" "));
-	LogResult(Pinned->SetConfigOption(ShuttlegentConsoleCommandsPrivate::ConfigIdModel, Value, Error), TEXT("Set model"), Error);
+	LogResult(Pinned->SetConfigOption(CurrentSessionId, ShuttlegentConsoleCommandsPrivate::ConfigIdModel, Value, Error), TEXT("Set model"), Error);
 }
 
 void FShuttlegentConsoleCommands::OnSessionUpdate(const FString& SessionId, const TSharedPtr<FJsonObject>& Update)
@@ -203,6 +203,7 @@ void FShuttlegentConsoleCommands::OnTurnFinished(const FString& SessionId, const
 
 void FShuttlegentConsoleCommands::OnSessionReady(const FString& SessionId)
 {
+	CurrentSessionId = SessionId;
 	UE_LOG(LogShuttlegent, Display, TEXT("Session ready: %s"), *SessionId);
 }
 
@@ -211,7 +212,7 @@ void FShuttlegentConsoleCommands::OnRuntimeExited(int32 ExitCode, bool bExpected
 	UE_LOG(LogShuttlegent, Display, TEXT("Runtime exited (code %d, %s)."), ExitCode, bExpected ? TEXT("requested") : TEXT("unexpected"));
 }
 
-void FShuttlegentConsoleCommands::OnError(const FString& Message)
+void FShuttlegentConsoleCommands::OnError(const FString& SessionId, const FString& Message)
 {
 	UE_LOG(LogShuttlegent, Error, TEXT("%s"), *Message);
 }

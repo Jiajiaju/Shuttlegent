@@ -5,9 +5,10 @@ Runs the Shuttlegent runtime regression suite (the M0 scenarios) and checks the 
 .DESCRIPTION
 Starts a mock editor MCP endpoint, drives the dsh runtime over ACP through a set of
 scenarios, then evaluates the logs with check_results.py. Scenarios that call a real
-model need DEEPSEEK_API_KEY in the plugin's .env file; without it they are skipped.
-The key reaches the runtime only through the child process environment and is never
-written to scenario files or logs.
+model need the DeepSeek key the editor uses (Editor Preferences > Shuttlegent > General,
+saved in the project's Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini);
+without it they are skipped. The key reaches the runtime only through the child process
+environment and is never written to scenario files or logs.
 
 .PARAMETER Runtime
 exe: Runtime/shuttlegent-runtime.exe (default). node: the built dsh CLI in ThirdParty.
@@ -21,6 +22,10 @@ fails with WinError 267 (observed 2026-10-23); pass -Python to override.
 
 .PARAMETER OutDir
 Output directory for logs and the test workspace. Defaults to <plugin>/Saved/Probe.
+
+.PARAMETER ProjectDir
+Project whose editor preferences hold the model key. Defaults to the first directory
+above the plugin that contains a .uproject file.
 
 .PARAMETER SkipLiveModel
 Skip scenarios that need a valid model key.
@@ -38,6 +43,7 @@ param(
     [string]$Runtime = 'exe',
     [string]$Python = '',
     [string]$OutDir = '',
+    [string]$ProjectDir = '',
     [int]$Port = 27999,
     [switch]$SkipLiveModel,
     [switch]$LaunchFromWorkspace
@@ -98,15 +104,29 @@ if ($SplitLaunchDir) {
 $Mode = [ordered]@{ runtime = $Runtime; splitLaunchDir = $SplitLaunchDir }
 [IO.File]::WriteAllText((Join-Path $OutDir 'mode.json'), ($Mode | ConvertTo-Json), $Utf8NoBom)
 
-# Model key from the plugin .env, kept in this process only.
+# Model key from the editor preferences (UShuttlegentSettings::DeepSeekApiKey), kept in this process only.
 $ApiKey = ''
-$EnvFile = Join-Path $PluginDir '.env'
-if (-not $SkipLiveModel -and (Test-Path $EnvFile)) {
-    $KeyLine = Get-Content $EnvFile | Where-Object { $_ -match '^DEEPSEEK_API_KEY=.+' } | Select-Object -First 1
-    if ($KeyLine) { $ApiKey = $KeyLine.Substring('DEEPSEEK_API_KEY='.Length).Trim() }
+if (-not $SkipLiveModel) {
+    if (-not $ProjectDir) {
+        $SearchDir = Split-Path $PluginDir -Parent
+        while ($SearchDir) {
+            if (Get-ChildItem -Path $SearchDir -Filter '*.uproject' -File -ErrorAction SilentlyContinue) { $ProjectDir = $SearchDir; break }
+            $SearchDir = Split-Path $SearchDir -Parent
+        }
+    }
+    $SettingsFile = ''
+    if ($ProjectDir) { $SettingsFile = Join-Path $ProjectDir 'Saved\Config\WindowsEditor\EditorPerProjectUserSettings.ini' }
+    if ($SettingsFile -and (Test-Path $SettingsFile)) {
+        $InSection = $false
+        foreach ($Line in Get-Content $SettingsFile) {
+            if ($Line -match '^\s*\[(.+)\]\s*$') { $InSection = $Matches[1] -eq '/Script/ShuttlegentCore.ShuttlegentSettings'; continue }
+            if ($InSection -and $Line -match '^DeepSeekApiKey=(.*)$') { $ApiKey = $Matches[1].Trim().Trim('"'); break }
+        }
+    }
+    if ($ApiKey) { Write-Host "Model key: DeepSeekApiKey from $SettingsFile" }
 }
 $LiveModel = [bool]$ApiKey
-if (-not $LiveModel) { Write-Host 'No DEEPSEEK_API_KEY in plugin .env (or -SkipLiveModel): live-model scenarios are skipped.' }
+if (-not $LiveModel) { Write-Host 'No DeepSeek key in Editor Preferences > Shuttlegent > General (or -SkipLiveModel): live-model scenarios are skipped.' }
 
 $BaseInherit = @('SystemRoot', 'SystemDrive', 'windir', 'PATH', 'PATHEXT', 'COMSPEC', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'USERNAME', 'COMPUTERNAME')
 Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue

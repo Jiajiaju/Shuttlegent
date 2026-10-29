@@ -17,7 +17,7 @@ Scripts that drive the Shuttlegent agent runtime (DeepSeek Harness over ACP) wit
 
 - Runtime built by `Build/BuildRuntime.ps1` (or `-Runtime node` with the submodule built).
 - Python 3 (standard library only). `RunRegression.ps1` uses, in order: `-Python`, the engine's bundled `Engine/Binaries/ThirdParty/Python3/Win64/python.exe` found by walking up from the plugin, then `python` on PATH. Avoid a Python Install Manager build: it cannot see the launch directories created under `%LOCALAPPDATA%`, and the runtime fails to start with WinError 267.
-- For live-model scenarios: `DEEPSEEK_API_KEY=...` in the plugin's `.env` (git-ignored). The key is passed to the runtime through its environment only and is never written to scenario files or logs.
+- For live-model scenarios: the DeepSeek key set in **Editor Preferences > Shuttlegent > General** (the project's `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`). The project is the first directory above the plugin with a `.uproject`; pass `-ProjectDir` to use another. The key is passed to the runtime through its environment only and is never written to scenario files or logs.
 
 ## Usage
 

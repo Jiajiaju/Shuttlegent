@@ -28,7 +28,7 @@ Shuttlegent 是一个 Unreal Editor 插件：在编辑器内提供 AI Agent 对�
 | `ShuttlegentMcpServer` | Editor | 本机 MCP 端点、写入门（确认与撤销）、外部 MCP 接入、工具注册接口 `IShuttlegentToolProvider` |
 | `ShuttlegentTools` | Editor | 内置编辑器工具 |
 | `ShuttlegentEditor` | Editor | 对话面板、ACP 会话、斜杠模板、设置页定制；`PostEngineInit` 加载 |
-| `ShuttlegentToolsetBridge` | Editor | 模块骨架，尚无实现 |
+| `ShuttlegentToolsetBridge` | Editor | 接入引擎 Toolset Registry，把 UE 各个 Toolset 的工具交给 Agent，写操作走写入门 |
 
 ## 内置工具
 
@@ -43,6 +43,21 @@ Shuttlegent 是一个 Unreal Editor 插件：在编辑器内提供 AI Agent 对�
 | 历史 | `undo`、`redo` | 写 |
 
 写工具执行前在面板中弹出确认卡。每个工具可在 **编辑器偏好设置 > Shuttlegent > General** 的编辑器工具开关中单独关闭。
+
+## 引擎 Toolset
+
+UE 5.8 的 Toolset Registry 把各系统的 AI 工具做成独立的 Toolset 插件（UMG、Niagara、PCG、GameplayTags、StateTree、物理、动画等）。Shuttlegent 依赖 `ToolsetRegistry` 插件，通过三个工具把已启用的 Toolset 交给 Agent：
+
+| 工具 | 作用 |
+|---|---|
+| `list_toolsets` | 列出可用的 Toolset |
+| `describe_toolset` | 查看一个 Toolset 的工具，或一个工具的参数 |
+| `call_toolset_tool` | 调用一个工具；只读工具直接执行，其他工具先弹确认卡 |
+
+- **启用 Toolset**：每个 Toolset 是单独的引擎插件，默认不启用，在 **编辑 > 插件** 中搜索 Toolset 按需启用。面向策划与美术，建议启用 EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、GameplayTagsToolset、DataRegistryToolset、GASToolsets、PhysicsToolsets、ChaosClothAssetToolset、DataflowAgent、StateTreeToolset、AnimationAssistantToolset、ConversationToolset、AIModuleToolset、SemanticSearchToolset。
+- **读写判断**：引擎工具不标记读写。名字以 `Get`、`List`、`Find`、`Search`、`Describe`、`Is`、`Has`、`Query`、`Discover` 开头的按只读执行，其余一律先确认。规则在 **项目设置 > Shuttlegent > General > Engine Toolsets** 的 Read Only Tool Prefixes、Read Only Tools、Write Tools 中调整。
+- **撤销**：写操作在一个编辑器事务里执行，引擎记录了改动的可以在面板里撤销；没有记录的（如新建资源、保存文件）和后台继续执行的标为不可撤销。
+- **屏蔽**：项目设置的 Blocked Toolset Names 对全团队屏蔽 Toolset 或工具，默认屏蔽写代码与测试类（LiveCoding、AutomationTest）、插件与功能开关类（Plugin、GameFeatures）、界面模拟类（SlateInspector）、MCPClient，以及暂不支持的截图类工具。个人可在 **编辑器偏好设置 > Shuttlegent > General > Engine Toolsets** 再关掉单个 Toolset。
 
 ## 环境要求
 

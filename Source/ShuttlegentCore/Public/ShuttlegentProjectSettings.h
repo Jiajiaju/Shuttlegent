@@ -35,6 +35,28 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Integration")
 	TArray<FShuttlegentUiGuide> UiGuides;
 
+	/**
+	 * Engine toolsets (Toolset Registry) and engine toolset tools the assistant never sees, for the whole team. A pattern
+	 * matches a toolset name or a full tool name (Toolset.Tool) as a case-insensitive substring; /pattern/ is a regular expression.
+	 */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> BlockedToolsetNames;
+
+	/**
+	 * Engine toolset tools whose name starts with one of these words only read and run without confirmation, e.g. Get
+	 * matches GetSelectedActors and get_actors. Every other engine toolset tool asks the user first.
+	 */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> ReadOnlyToolPrefixes;
+
+	/** Further engine toolset tools that only read, by tool name (Snapshot) or full name (Toolset.Tool). */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> ReadOnlyTools;
+
+	/** Engine toolset tools that write although their name reads like a query; they always ask first. Wins over the read lists. */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> WriteTools;
+
 	//~ Begin UDeveloperSettings Interface.
 	virtual FName GetContainerName() const override;
 	virtual FName GetCategoryName() const override;

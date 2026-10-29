@@ -16,6 +16,9 @@ struct FShuttlegentWriteRequest;
  * change (the confirmation card), the endpoint asks the write gate, and only after confirmation Execute writes the
  * previewed objects. A transactional write runs inside one editor transaction that the endpoint opens; Execute must
  * call Modify() on what it changes and must not open its own transaction.
+ *
+ * A tool that dispatches to other tools (an engine toolset call) decides per call whether it only reads
+ * (IsReadOnlyCall) and may answer a read later (RunAsync).
  */
 class SHUTTLEGENTMCPSERVER_API IShuttlegentTool
 {
@@ -23,6 +26,12 @@ public:
 	virtual ~IShuttlegentTool() = default;
 
 	virtual const FShuttlegentToolDefinition& GetDefinition() const = 0;
+
+	/** Whether this call only reads, so it runs without confirmation; defaults to the definition's bReadOnly. */
+	virtual bool IsReadOnlyCall(const TSharedRef<FJsonObject>& Arguments) const;
+
+	/** Read-only calls: answers through OnDone, at once or later on the game thread; defaults to Run. */
+	virtual void RunAsync(const TSharedRef<FJsonObject>& Arguments, TFunction<void(const FShuttlegentToolResult&)> OnDone);
 
 	/** Read-only tools: answers the call. */
 	virtual FShuttlegentToolResult Run(const TSharedRef<FJsonObject>& Arguments);

@@ -96,6 +96,16 @@ FString FShuttlegentToolPresentation::GetSummary(const FString& InputJson)
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InputJson);
 	if (!FJsonSerializer::Deserialize(Reader, Input) || !Input.IsValid()) return FString();
 
+	FString Toolset;
+	if (FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::ToolsetKey, Toolset))
+	{
+		FString ShortToolset = Toolset;
+		Toolset.Split(ShuttlegentEditorTool::ToolsetNameSeparator, nullptr, &ShortToolset, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		FString Tool;
+		const FString Summary = FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::ToolKey, Tool) ? FText::Format(LOCTEXT("ToolInToolset", "{0}（{1}）"), FText::FromString(Tool), FText::FromString(ShortToolset)).ToString() : ShortToolset;
+		return FShuttlegentToolPresentationPrivate::Truncate(Summary, ShuttlegentEditorTool::MaxSummaryChars);
+	}
+
 	for (const TCHAR* Key : ShuttlegentEditorTool::SummaryKeys)
 	{
 		FString Value;

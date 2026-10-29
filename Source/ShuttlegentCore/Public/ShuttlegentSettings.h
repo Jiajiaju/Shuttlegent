@@ -60,6 +60,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Editor Tools")
 	TArray<FString> DisabledTools;
 
+	/** Engine toolsets withheld from the model, by toolset name; shown as switches under Engine Toolsets. Takes effect at once. */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> DisabledToolsets;
+
 	/** Values of the variables external MCP server headers name (Project Settings > Shuttlegent > General), e.g. TEAM_KB_TOKEN -> <token>; kept in this machine's settings only. */
 	UPROPERTY(Config, EditAnywhere, Category = "Credentials")
 	TMap<FString, FString> McpHeaderValues;

@@ -49,6 +49,11 @@ FShuttlegentToolSchema& FShuttlegentToolSchema::StringArray(const FString& Name,
 	return Add(Name, Property, bRequired);
 }
 
+FShuttlegentToolSchema& FShuttlegentToolSchema::Object(const FString& Name, const FString& Description, bool bRequired)
+{
+	return Add(Name, FShuttlegentToolSchemaPrivate::MakeProperty(ShuttlegentMcpTool::TypeObject, Description), bRequired);
+}
+
 FShuttlegentToolSchema& FShuttlegentToolSchema::Enum(const FString& Name, const FString& Description, const TArray<FString>& Values, bool bRequired)
 {
 	TArray<TSharedPtr<FJsonValue>> EnumValues;

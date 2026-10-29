@@ -78,6 +78,7 @@ namespace FShuttlegentToolRunnerPrivate
 			if (Object.Status == EShuttlegentWriteObjectStatus::Completed) ++Completed;
 			FString Line = FString::Printf(TEXT("- %s (%s): %s"), *Object.Name, *Object.Path, StatusWord(Object.Status));
 			if (!Object.Message.IsEmpty()) Line += TEXT(" - ") + Object.Message;
+			if (!Object.Output.IsEmpty()) Line += TEXT("\n  Result: ") + Object.Output;
 			Lines.Add(Line);
 		}
 
@@ -105,6 +106,10 @@ namespace FShuttlegentToolRunnerPrivate
 			return Result;
 		}
 
+		// The newest transaction before the write; a write that records nothing leaves it on top
+		const bool bHasTransactor = GEditor != nullptr && IsValid(GEditor->Trans);
+		const FGuid PreviousTransactionId = bHasTransactor ? GEditor->Trans->GetUndoContext(true).TransactionId : FGuid();
+
 		bool bAnyWritten = false;
 		bool bAnyFailed = false;
 		{
@@ -116,7 +121,13 @@ namespace FShuttlegentToolRunnerPrivate
 		}
 		if (!bAnyWritten || GEditor == nullptr || !IsValid(GEditor->Trans)) return Result;
 
+		// A tool that changed nothing undoable (a saved file, a new asset) left no transaction; the one on top is someone else's
 		const FGuid TransactionId = GEditor->Trans->GetUndoContext(true).TransactionId;
+		if (!TransactionId.IsValid() || TransactionId == PreviousTransactionId)
+		{
+			Result.bUndoable = false;
+			return Result;
+		}
 		if (!bAnyFailed)
 		{
 			Result.TransactionId = TransactionId;
@@ -146,11 +157,14 @@ namespace FShuttlegentToolRunnerPrivate
 void FShuttlegentToolRunner::Call(const TSharedRef<FShuttlegentWriteGate>& Gate, const TSharedRef<IShuttlegentTool>& Tool, const TSharedRef<FJsonObject>& Arguments, TFunction<void(const FShuttlegentToolResult&)> OnDone)
 {
 	const FShuttlegentToolDefinition& Definition = Tool->GetDefinition();
-	if (Definition.bReadOnly)
+	if (Tool->IsReadOnlyCall(Arguments))
 	{
-		FShuttlegentToolResult Result = Tool->Run(Arguments);
-		Result.Text = LimitOutput(Result.Text);
-		OnDone(Result);
+		Tool->RunAsync(Arguments, [OnDone](const FShuttlegentToolResult& Result)
+		{
+			FShuttlegentToolResult Limited = Result;
+			Limited.Text = LimitOutput(Limited.Text);
+			OnDone(Limited);
+		});
 		return;
 	}
 

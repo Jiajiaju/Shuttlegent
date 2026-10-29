@@ -22,6 +22,9 @@ struct FShuttlegentWriteObject
 
 	EShuttlegentWriteObjectStatus Status = EShuttlegentWriteObjectStatus::NotRun;
 
-	/** Why the write of this object failed or did not run; empty when it completed. */
+	/** Why the write of this object failed or did not run; on a completed object, a note such as "still running". */
 	FString Message;
+
+	/** What the write returned for the model, e.g. an engine toolset tool's JSON result; not shown on the card. */
+	FString Output;
 };

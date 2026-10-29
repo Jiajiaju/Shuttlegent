@@ -12,5 +12,19 @@ public class ShuttlegentToolsetBridge : ModuleRules
 				"Core",
 			}
 			);
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"CoreUObject",
+				"Engine",
+				"EditorSubsystem",
+				"Json",
+				"UnrealEd",
+				"ToolsetRegistry",
+				"ShuttlegentCore",
+				"ShuttlegentMcpServer",
+			}
+			);
 	}
 }

@@ -9,10 +9,11 @@ class FShuttlegentWriteGate;
 class IShuttlegentTool;
 
 /**
- * Runs one tool call (Shuttlegent.md section 10.3). A read-only tool answers at once. A write tool previews, waits for
- * the write gate, and once confirmed writes inside one editor transaction; when any object fails the transaction is
- * undone as a whole and the written objects are reported as rolled back. The result goes to the gate (the panel's
- * result bar) and, as text, back to the model. Output is cut to the output budget. Game thread only.
+ * Runs one tool call (Shuttlegent.md section 10.3). A read-only call answers at once or, for a dispatching tool, when
+ * its result arrives. A write tool previews, waits for the write gate, and once confirmed writes inside one editor
+ * transaction; when any object fails the transaction is undone as a whole and the written objects are reported as
+ * rolled back. A write that records nothing in the transaction is reported as not undoable. The result goes to the
+ * gate (the panel's result bar) and, as text, back to the model. Output is cut to the output budget. Game thread only.
  */
 class FShuttlegentToolRunner
 {

@@ -29,6 +29,7 @@ public class ShuttlegentEditor : ModuleRules
 				"Json",
 				"ShuttlegentCore",
 				"ShuttlegentMcpServer",
+				"ShuttlegentToolsetBridge",
 				"WebBrowser",
 				"AssetRegistry",
 				"ContentBrowser",

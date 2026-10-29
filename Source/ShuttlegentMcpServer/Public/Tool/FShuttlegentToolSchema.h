@@ -20,6 +20,9 @@ public:
 	FShuttlegentToolSchema& Boolean(const FString& Name, const FString& Description, bool bRequired = false);
 	FShuttlegentToolSchema& StringArray(const FString& Name, const FString& Description, bool bRequired = false);
 
+	/** A JSON object of any shape, such as the arguments passed on to another tool. */
+	FShuttlegentToolSchema& Object(const FString& Name, const FString& Description, bool bRequired = false);
+
 	/** A string that must be one of Values. */
 	FShuttlegentToolSchema& Enum(const FString& Name, const FString& Description, const TArray<FString>& Values, bool bRequired = false);
 

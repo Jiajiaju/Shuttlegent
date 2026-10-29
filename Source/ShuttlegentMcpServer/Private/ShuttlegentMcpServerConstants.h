@@ -147,5 +147,5 @@ namespace ShuttlegentMcpEndpointConstant
 	inline const TCHAR* FieldValue = TEXT("value");
 
 	// Instructions sent with initialize
-	inline const TCHAR* Instructions = TEXT("Unreal Editor tools of the open project. Read tools answer at once; write tools ask the user to confirm in the editor (55 s limit) and run as one undoable transaction that is rolled back as a whole if any object fails. Object paths are full paths such as /Game/Maps/Main.Main:PersistentLevel.Cube_1.");
+	inline const TCHAR* Instructions = TEXT("Unreal Editor tools of the open project. Read tools answer at once; write tools ask the user to confirm in the editor (55 s limit) and run as one undoable transaction that is rolled back as a whole if any object fails. Object paths are full paths such as /Game/Maps/Main.Main:PersistentLevel.Cube_1. Unreal Engine toolsets (UMG, Niagara, PCG and more) are reached through list_toolsets, describe_toolset and call_toolset_tool.");
 }

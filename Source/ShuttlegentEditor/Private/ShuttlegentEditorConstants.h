@@ -156,6 +156,9 @@ namespace ShuttlegentEditorSettingsUi
 	// Category of UShuttlegentSettings::DisabledTools, where the switches replace the array
 	inline const TCHAR* ToolsCategory = TEXT("Editor Tools");
 
+	// Category of UShuttlegentSettings::DisabledToolsets, where one switch per engine toolset replaces the array
+	inline const TCHAR* ToolsetsCategory = TEXT("Engine Toolsets");
+
 	// End of the first line of a tool description, shown as the switch's tooltip
 	inline const TCHAR* LineBreak = TEXT("\n");
 
@@ -451,6 +454,11 @@ namespace ShuttlegentEditorTool
 		TEXT("description"),
 		TEXT("title"),
 	};
+
+	// An engine toolset call (call_toolset_tool, describe_toolset) is summarized as tool and toolset; the toolset shows its last name part
+	inline const TCHAR* ToolsetKey = TEXT("toolset");
+	inline const TCHAR* ToolKey = TEXT("tool");
+	inline const TCHAR* ToolsetNameSeparator = TEXT(".");
 
 	// A pattern summary also shows the searched path; keys ending in PathKeySuffix (or equal to SearchPathKey) hold paths
 	inline const TCHAR* PatternKey = TEXT("pattern");

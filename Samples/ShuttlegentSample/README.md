@@ -10,7 +10,7 @@ Shuttlegent 的示例项目接入，覆盖 Shuttlegent.md 第 11 节的全部扩
 | 技能 | `Project/Shuttlegent/Skills/level-review` |
 | 斜杠模板 | `Project/Shuttlegent/Templates/*.md` |
 | 界面指路 | 下方配置中的 `UiGuides` |
-| 权限开关 | 编辑器偏好设置 → 插件 → Shuttlegent：编辑器工具开关中可关掉示例工具 |
+| 权限开关 | 编辑器偏好设置 → Shuttlegent → General：编辑器工具开关中可关掉示例工具 |
 
 ## 启用
 

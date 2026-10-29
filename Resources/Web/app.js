@@ -552,9 +552,9 @@
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
       case 'missingKey':
-        return { title: '未找到 ' + esc(issue.provider) + ' 密钥', body: '在命令行执行下面这行，把密钥存进 Windows 凭据管理器，然后点“重试”：<br>' + code('cmdkey /generic:' + issue.credentialTarget + ' /user:key /pass:<你的密钥>') + '<br>开发期也可以在插件目录的 ' + code('.env') + ' 写一行 ' + code(issue.keyVariable + '=<你的密钥>') + '（' + code(issue.envFile) + '）。', folder: true };
+        return { title: '未找到 ' + esc(issue.provider) + ' 密钥', body: '在“编辑器偏好设置 > Shuttlegent > General > Providers”中填写 ' + esc(issue.provider) + ' 的 API 密钥（和端点 URL），然后点“重试”。', settings: true };
       case 'authFailed':
-        return { title: esc(issue.provider) + ' 拒绝了当前密钥', body: '鉴权失败，密钥可能有误或已失效。用下面这行覆盖凭据管理器里的密钥后点“重试”，运行时会重新启动并读取新密钥：<br>' + code('cmdkey /generic:' + issue.credentialTarget + ' /user:key /pass:<新密钥>') + '<br>若密钥放在 ' + code('.env') + '，改其中的 ' + code(issue.keyVariable) + '。', folder: true };
+        return { title: esc(issue.provider) + ' 拒绝了当前密钥', body: '鉴权失败，密钥可能有误或已失效。在“编辑器偏好设置 > Shuttlegent > General > Providers”中改正密钥和端点 URL，然后点“重试”，运行时会重新启动并读取新设置。', settings: true };
       case 'missingRuntime':
         return { title: '未找到运行时', body: '期望位置：' + code(issue.runtimePath) + '<br>在插件目录运行 ' + code(issue.buildScript) + ' 构建运行时，或在编辑器偏好设置中指定运行时路径，然后点“重试”。', folder: true };
       default:
@@ -568,8 +568,9 @@
     if (state.startIssue) {
       const guide = startGuide(state.startIssue);
       banner.classList.add('guide');
-      banner.innerHTML = '<div class="guide-text"><strong>' + guide.title + '</strong><p>' + guide.body + '</p></div><div class="guide-actions">' + (guide.folder ? '<button id="open-plugin-folder">打开插件目录</button>' : '') + '<button id="retry-start" class="primary">重试</button></div>';
+      banner.innerHTML = '<div class="guide-text"><strong>' + guide.title + '</strong><p>' + guide.body + '</p></div><div class="guide-actions">' + (guide.settings ? '<button id="open-guide-settings">打开偏好设置</button>' : '') + (guide.folder ? '<button id="open-plugin-folder">打开插件目录</button>' : '') + '<button id="retry-start" class="primary">重试</button></div>';
       banner.hidden = false;
+      if (guide.settings) $('open-guide-settings').addEventListener('click', () => call('opensettings'));
       if (guide.folder) $('open-plugin-folder').addEventListener('click', () => call('openpluginfolder'));
       $('retry-start').addEventListener('click', () => call('retrystart'));
       return;

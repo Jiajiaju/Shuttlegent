@@ -20,7 +20,7 @@ struct FShuttlegentRuntimeLaunchSpec
 	TMap<FString, FString> Environment;
 
 	/**
-	 * Builds the launch spec from the plugin layout, user settings and the development .env file.
+	 * Builds the launch spec from the plugin layout and the user settings, provider keys included.
 	 * @param OutSpec   Filled on success.
 	 * @param OutError  Human-readable reason on failure; names paths and variables, never a key value.
 	 * @param OutIssue  Kind of failure for the start guide card; None on success.

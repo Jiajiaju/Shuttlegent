@@ -9,7 +9,7 @@
 
 #include "FShuttlegentProjectConfig.h"
 #include "ShuttlegentConstants.h"
-#include "ShuttlegentProjectSettings.h"
+#include "ShuttlegentSettings.h"
 
 namespace FShuttlegentGeneratedPatchPrivate
 {
@@ -56,7 +56,7 @@ namespace FShuttlegentGeneratedPatchPrivate
 
 		const TSharedRef<FJsonObject> Provider = MakeShared<FJsonObject>();
 		Provider->SetStringField(ShuttlegentProviderConstant::FieldDisplayName, Entry.DisplayName.IsEmpty() ? Entry.Route : Entry.DisplayName);
-		Provider->SetStringField(ShuttlegentProviderConstant::FieldApiKeyEnv, Entry.KeyVariable);
+		Provider->SetStringField(ShuttlegentProviderConstant::FieldApiKeyEnv, FShuttlegentProjectConfig::GetKeyVariable(Entry));
 		Provider->SetStringField(ShuttlegentProviderConstant::FieldApi, ApiName(Entry.Api));
 		if (!Entry.BaseUrl.IsEmpty()) Provider->SetStringField(ShuttlegentProviderConstant::FieldBaseUrl, Entry.BaseUrl);
 		if (!Models.IsEmpty()) Provider->SetArrayField(ShuttlegentProviderConstant::FieldModels, Models);
@@ -66,14 +66,20 @@ namespace FShuttlegentGeneratedPatchPrivate
 
 bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, bool bShell, FString& OutPath, FString& OutError)
 {
-	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	TArray<TSharedPtr<FJsonValue>> Rows;
+
+	// Endpoint of the built-in DeepSeek route, always from the user's settings; empty falls back to DeepSeek's official one
+	const FString DeepSeekBaseUrl = IsValid(Settings) ? Settings->DeepSeekBaseUrl.TrimStartAndEnd() : FString();
+	const TSharedRef<FJsonObject> DeepSeekConfig = MakeShared<FJsonObject>();
+	DeepSeekConfig->SetStringField(ShuttlegentProviderConstant::FieldBaseUrl, DeepSeekBaseUrl.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : DeepSeekBaseUrl);
+	Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowLlmDeepSeek, DeepSeekConfig)));
 
 	// Provider routes, keyed by route; the runtime reads each key from the variable the entry names
 	const TSharedRef<FJsonObject> Providers = MakeShared<FJsonObject>();
-	if (IsValid(Project))
+	if (IsValid(Settings))
 	{
-		for (const FShuttlegentProviderEntry& Entry : Project->Providers)
+		for (const FShuttlegentProviderEntry& Entry : Settings->Providers)
 		{
 			if (!Entry.Route.IsEmpty()) Providers->SetObjectField(Entry.Route, FShuttlegentGeneratedPatchPrivate::MakeProvider(Entry));
 		}
@@ -86,11 +92,11 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, bool bShell, FStr
 	}
 
 	// Default route and model of new sessions; the built-in route keeps the runtime's own default
-	if (IsValid(Project) && !Project->DefaultProvider.IsEmpty())
+	if (IsValid(Settings) && !Settings->DefaultProvider.IsEmpty())
 	{
 		const TSharedRef<FJsonObject> Config = MakeShared<FJsonObject>();
-		Config->SetStringField(ShuttlegentProviderConstant::FieldProvider, Project->DefaultProvider);
-		if (!Project->DefaultModel.IsEmpty()) Config->SetStringField(ShuttlegentProviderConstant::FieldModel, Project->DefaultModel);
+		Config->SetStringField(ShuttlegentProviderConstant::FieldProvider, Settings->DefaultProvider);
+		if (!Settings->DefaultModel.IsEmpty()) Config->SetStringField(ShuttlegentProviderConstant::FieldModel, Settings->DefaultModel);
 		Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowAcp, Config)));
 	}
 

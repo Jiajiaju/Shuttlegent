@@ -64,8 +64,7 @@ namespace FShuttlegentExternalMcpPrivate
 		for (const FShuttlegentMcpHeader& Header : Server.Headers)
 		{
 			FString Value;
-			EShuttlegentSecretSource Source = EShuttlegentSecretSource::None;
-			if (!Header.ValueVariable.IsEmpty() && !FShuttlegentSecrets::Resolve(Header.ValueVariable, Value, Source))
+			if (!Header.ValueVariable.IsEmpty() && !FShuttlegentSecrets::Resolve(Header.ValueVariable, Value))
 			{
 				OutReason = FString::Printf(TEXT("header %s needs %s, which has no value"), *Header.Name, *Header.ValueVariable);
 				return nullptr;

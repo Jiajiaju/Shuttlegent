@@ -178,7 +178,7 @@ public:
 	UFUNCTION()
 	void AcknowledgeWrite(int32 EntryId);
 
-	/** "Open plugin folder" on the start guide card, where the .env file and Runtime/ live. */
+	/** "Open plugin folder" on the start guide card, where Runtime/ lives. */
 	UFUNCTION()
 	void OpenPluginFolder();
 };

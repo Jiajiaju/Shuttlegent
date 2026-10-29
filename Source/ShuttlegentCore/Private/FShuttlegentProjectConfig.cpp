@@ -30,8 +30,8 @@ bool FShuttlegentProjectConfig::IsToolEnabled(const FString& ToolName)
 
 FString FShuttlegentProjectConfig::GetDefaultRoute()
 {
-	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
-	return IsValid(Project) && !Project->DefaultProvider.IsEmpty() ? Project->DefaultProvider : FString(ShuttlegentProviderConstant::BuiltinRoute);
+	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+	return IsValid(Settings) && !Settings->DefaultProvider.IsEmpty() ? Settings->DefaultProvider : FString(ShuttlegentProviderConstant::BuiltinRoute);
 }
 
 void FShuttlegentProjectConfig::GetDefaultProviderKey(FString& OutKeyVariable, FString& OutProviderName)
@@ -39,12 +39,12 @@ void FShuttlegentProjectConfig::GetDefaultProviderKey(FString& OutKeyVariable, F
 	OutKeyVariable = ShuttlegentEnvVar::ProviderKey;
 	OutProviderName = ShuttlegentEnvVar::ProviderName;
 
-	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	const FString Route = GetDefaultRoute();
-	const FShuttlegentProviderEntry* Entry = IsValid(Project) ? Project->Providers.FindByPredicate([&Route](const FShuttlegentProviderEntry& Provider) { return Provider.Route == Route; }) : nullptr;
+	const FShuttlegentProviderEntry* Entry = IsValid(Settings) ? Settings->Providers.FindByPredicate([&Route](const FShuttlegentProviderEntry& Provider) { return Provider.Route == Route; }) : nullptr;
 	if (Entry == nullptr) return;
 
-	OutKeyVariable = Entry->KeyVariable;
+	OutKeyVariable = GetKeyVariable(*Entry);
 	OutProviderName = Entry->DisplayName.IsEmpty() ? Entry->Route : Entry->DisplayName;
 }
 
@@ -53,14 +53,20 @@ TArray<FString> FShuttlegentProjectConfig::GetKeyVariables()
 	TArray<FString> Variables;
 	Variables.Add(ShuttlegentEnvVar::ProviderKey);
 
-	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
-	if (!IsValid(Project)) return Variables;
+	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+	if (!IsValid(Settings)) return Variables;
 
-	for (const FShuttlegentProviderEntry& Provider : Project->Providers)
+	for (const FShuttlegentProviderEntry& Provider : Settings->Providers)
 	{
-		if (!Provider.KeyVariable.IsEmpty()) Variables.AddUnique(Provider.KeyVariable);
+		if (!Provider.Route.IsEmpty()) Variables.AddUnique(GetKeyVariable(Provider));
 	}
 	return Variables;
+}
+
+FString FShuttlegentProjectConfig::GetKeyVariable(const FShuttlegentProviderEntry& Entry)
+{
+	const FString Route = Entry.Route.ToUpper().Replace(ShuttlegentProviderConstant::RouteSeparator, ShuttlegentProviderConstant::VariableSeparator);
+	return FString(ShuttlegentProviderConstant::KeyVariablePrefix) + Route + ShuttlegentProviderConstant::KeyVariableSuffix;
 }
 
 TArray<FString> FShuttlegentProjectConfig::GetSkillDirs()

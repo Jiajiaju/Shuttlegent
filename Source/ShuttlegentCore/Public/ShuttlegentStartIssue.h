@@ -11,7 +11,7 @@ enum class EShuttlegentStartIssue : uint8
 	// The runtime executable or its profile patch is not where the plugin expects it
 	MissingRuntime,
 
-	// No key for the model provider in the environment or the development .env file
+	// No key for the default model provider in the user's settings
 	MissingKey,
 
 	// The provider rejected the key

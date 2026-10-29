@@ -4,7 +4,7 @@
 #include "IDetailCustomization.h"
 
 /**
- * Editor Preferences > Plugins > Shuttlegent: shows UShuttlegentSettings::DisabledTools as one switch per registered
+ * Editor Preferences > Shuttlegent > General: shows UShuttlegentSettings::DisabledTools as one switch per registered
  * editor tool (built-in, project and sample tools alike), so a tool registered later starts switched on.
  */
 class FShuttlegentSettingsCustomization : public IDetailCustomization

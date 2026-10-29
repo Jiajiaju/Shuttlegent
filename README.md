@@ -30,6 +30,18 @@ Shuttlegent 是一个 Unreal Editor 插件：在编辑器内提供 AI Agent 对�
 2. 在工程的 `.uproject` 中启用 `Shuttlegent` 插件（插件默认不启用）。
 3. 重新生成工程文件并编译编辑器。
 
+## 模型配置
+
+模型供应商的端点 URL 和 API 密钥、外部 MCP 服务器请求头的密钥，都只从 **编辑器偏好设置 > Shuttlegent > General** 读取；不读 Windows 凭据管理器、环境变量或 `.env` 文件。这些设置保存在本机的 `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`，不进版本库；密钥以明文存放在这个文件里。
+
+- **Providers > DeepSeek Base Url**：内置 DeepSeek 路由的端点（Anthropic Messages 协议），默认 `https://api.deepseek.com/anthropic`；留空也用这个地址。
+- **Providers > DeepSeek Api Key**：内置 DeepSeek 路由的密钥；默认路由缺密钥时运行时不启动，面板提示到这里填写。
+- **Providers > Providers**：其他路由（OpenAI、Anthropic 协议或 OpenAI 兼容端点），每个条目填自己的 Base Url 和 Api Key。新条目的 Base Url 默认是 DeepSeek 的 OpenAI 兼容端点 `https://api.deepseek.com`。
+- **Providers > Default Provider / Default Model**：新会话使用的路由和模型；留空用内置 DeepSeek。
+- **Credentials > Mcp Header Values**：变量名到值的映射，填项目设置（项目设置 > Shuttlegent > General）中外部 MCP 服务器请求头引用的变量（Value Variable）。
+
+模型设置在重启运行时（面板中“重试”或重启编辑器）后生效；MCP 请求头的值在新会话中生效。
+
 ## 许可
 
 待定。

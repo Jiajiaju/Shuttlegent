@@ -72,7 +72,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		return false;
 	}
 
-	// The project's providers and skills and the user's Shell switch go into a second patch on top of the plugin's
+	// The user's providers and Shell switch and the project's skills go into a second patch on top of the plugin's
 	const bool bWorkspaceWrite = IsValid(Settings) && Settings->bAllowWorkspaceWrite;
 	const bool bShell = IsValid(Settings) && Settings->bAllowShell;
 	FString GeneratedPatch;
@@ -89,12 +89,11 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		if (!Value.IsEmpty()) OutSpec.Environment.Add(Name, Value);
 	}
 
-	// Only the key variables the configuration names are passed on, each from its first source
+	// Only the keys the user's settings hold are passed on, each in its route's variable
 	for (const FString& Variable : FShuttlegentProjectConfig::GetKeyVariables())
 	{
 		FString Value;
-		EShuttlegentSecretSource Source = EShuttlegentSecretSource::None;
-		if (FShuttlegentSecrets::Resolve(Variable, Value, Source)) OutSpec.Environment.Add(Variable, Value);
+		if (FShuttlegentSecrets::Resolve(Variable, Value)) OutSpec.Environment.Add(Variable, Value);
 	}
 
 	FString KeyVariable;
@@ -103,7 +102,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 	if (!OutSpec.Environment.Contains(KeyVariable))
 	{
 		OutIssue = EShuttlegentStartIssue::MissingKey;
-		OutError = FString::Printf(TEXT("%s (%s) is set neither in the Credential Manager entry %s, the environment nor %s."), *KeyVariable, *ProviderName, *FShuttlegentSecrets::GetCredentialTarget(KeyVariable), *FShuttlegentSecrets::GetDevEnvFilePath());
+		OutError = FString::Printf(TEXT("%s has no API key in Editor Preferences > Shuttlegent > General > Providers."), *ProviderName);
 		return false;
 	}
 

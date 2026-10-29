@@ -17,7 +17,6 @@
 #include "ShuttlegentEditorConstants.h"
 #include "FShuttlegentProjectConfig.h"
 #include "Template/FShuttlegentTemplateLibrary.h"
-#include "FShuttlegentSecrets.h"
 #include "ShuttlegentSettings.h"
 
 namespace FShuttlegentWebProtocolPrivate
@@ -162,7 +161,7 @@ namespace FShuttlegentWebProtocolPrivate
 		const bool bOverride = IsValid(Settings) && !Settings->RuntimeExecutableOverride.FilePath.IsEmpty();
 		const FString RuntimePath = bOverride ? FPaths::ConvertRelativePathToFull(Settings->RuntimeExecutableOverride.FilePath) : FPaths::Combine(PluginDir, ShuttlegentPath::RuntimeExecutable);
 
-		// The default route's key: the one a missing or rejected key is about
+		// The default route: the one a missing or rejected key is about
 		FString KeyVariable;
 		FString ProviderName;
 		FShuttlegentProjectConfig::GetDefaultProviderKey(KeyVariable, ProviderName);
@@ -171,9 +170,6 @@ namespace FShuttlegentWebProtocolPrivate
 		Item->SetStringField(ShuttlegentEditorWebField::IssueKind, IssueName(Issue));
 		Item->SetStringField(ShuttlegentEditorWebField::Detail, Detail);
 		Item->SetStringField(ShuttlegentEditorWebField::IssueProvider, ProviderName);
-		Item->SetStringField(ShuttlegentEditorWebField::IssueKeyVariable, KeyVariable);
-		Item->SetStringField(ShuttlegentEditorWebField::IssueCredentialTarget, FShuttlegentSecrets::GetCredentialTarget(KeyVariable));
-		Item->SetStringField(ShuttlegentEditorWebField::IssueEnvFile, FShuttlegentSecrets::GetDevEnvFilePath());
 		Item->SetStringField(ShuttlegentEditorWebField::IssueRuntimePath, RuntimePath);
 		Item->SetStringField(ShuttlegentEditorWebField::IssueBuildScript, FPaths::Combine(PluginDir, ShuttlegentEditorRuntime::BuildScript));
 		return MakeShared<FJsonValueObject>(Item);

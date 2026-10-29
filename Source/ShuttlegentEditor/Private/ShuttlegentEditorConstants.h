@@ -23,8 +23,8 @@ namespace ShuttlegentEditorName
 
 	// Settings viewer location of UShuttlegentSettings
 	inline const FName SettingsContainer = TEXT("Editor");
-	inline const FName SettingsCategory = TEXT("Plugins");
-	inline const FName SettingsSection = TEXT("Shuttlegent");
+	inline const FName SettingsCategory = TEXT("Shuttlegent");
+	inline const FName SettingsSection = TEXT("General");
 }
 
 /** Shuttlegent VI 1.1 metrics of the Slate parts left around the web page, in Slate units. */
@@ -361,15 +361,12 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* StatusStartBlocked = TEXT("startBlocked");
 	inline const TCHAR* StatusResumeFailed = TEXT("resumeFailed");
 
-	// Start guide card (null when nothing blocks the runtime): kind, launcher reason, provider, key variable, .env path, runtime path, build script
+	// Start guide card (null when nothing blocks the runtime): kind, launcher reason, provider, runtime path, build script
 	inline const TCHAR* StartIssue = TEXT("startIssue");
 	inline const TCHAR* IssueKind = TEXT("kind");
 	inline const TCHAR* IssueProvider = TEXT("provider");
-	inline const TCHAR* IssueKeyVariable = TEXT("keyVariable");
-	inline const TCHAR* IssueEnvFile = TEXT("envFile");
 	inline const TCHAR* IssueRuntimePath = TEXT("runtimePath");
 	inline const TCHAR* IssueBuildScript = TEXT("buildScript");
-	inline const TCHAR* IssueCredentialTarget = TEXT("credentialTarget");
 
 	// Start issue kinds (EShuttlegentStartIssue)
 	inline const TCHAR* IssueMissingRuntime = TEXT("missingRuntime");

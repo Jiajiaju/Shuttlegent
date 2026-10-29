@@ -3,9 +3,9 @@
 #include "CoreMinimal.h"
 
 /**
- * The second profile patch, written into DSH_HOME before every launch (Shuttlegent.md section 8.2): the project's
- * provider routes and default route and model, its skill directories, and the user's Shell switch. Written as JSON,
- * which the runtime reads as YAML. Holds no secrets: providers name their key variables only.
+ * The second profile patch, written into DSH_HOME before every launch (Shuttlegent.md section 8.2): the user's
+ * DeepSeek endpoint, provider routes and default route and model, the project's skill directories, and the user's
+ * Shell switch. Written as JSON, which the runtime reads as YAML. Holds no secrets: providers name their key variables only.
  */
 struct FShuttlegentGeneratedPatch
 {

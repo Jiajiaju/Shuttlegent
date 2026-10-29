@@ -42,7 +42,7 @@ namespace ShuttlegentEnvVar
 	inline const TCHAR* DshTelemetryDisabled = TEXT("DSH_TELEMETRY_DISABLED");
 	inline const TCHAR* LocalAppData = TEXT("LOCALAPPDATA");
 
-	// Key of the default provider route (deepseek-official); the only provider key passed on from the editor environment
+	// Variable the built-in DeepSeek route (deepseek-official) reads its key from; filled from UShuttlegentSettings::DeepSeekApiKey
 	inline const TCHAR* ProviderKey = TEXT("DEEPSEEK_API_KEY");
 
 	// Display name of that provider in the start guide card
@@ -78,8 +78,17 @@ namespace ShuttlegentProviderConstant
 	// The runtime's built-in DeepSeek route, used when the project names no default provider
 	inline const TCHAR* BuiltinRoute = TEXT("deepseek-official");
 
-	// Credential Manager entry prefix of a variable without a configured entry: Shuttlegent/<variable>
-	inline const TCHAR* CredentialPrefix = TEXT("Shuttlegent/");
+	// Official endpoint of the built-in route (Anthropic Messages); default of UShuttlegentSettings::DeepSeekBaseUrl
+	inline const TCHAR* DeepSeekBaseUrl = TEXT("https://api.deepseek.com/anthropic");
+
+	// DeepSeek's OpenAI-compatible endpoint; default base URL of a new provider entry
+	inline const TCHAR* DeepSeekOpenAiBaseUrl = TEXT("https://api.deepseek.com");
+
+	// Key variable of a provider entry that names none: SHUTTLEGENT_<ROUTE>_API_KEY, dashes as underscores
+	inline const TCHAR* KeyVariablePrefix = TEXT("SHUTTLEGENT_");
+	inline const TCHAR* KeyVariableSuffix = TEXT("_API_KEY");
+	inline const TCHAR* RouteSeparator = TEXT("-");
+	inline const TCHAR* VariableSeparator = TEXT("_");
 
 	// llm-pi-ai api values (EShuttlegentProviderApi)
 	inline const TCHAR* ApiOpenAiCompletions = TEXT("openai-completions");
@@ -91,6 +100,7 @@ namespace ShuttlegentProviderConstant
 
 	// Rows and fields of the generated patch
 	inline const TCHAR* RowLlmPiAi = TEXT("llm-pi-ai");
+	inline const TCHAR* RowLlmDeepSeek = TEXT("llm-deepseek");
 	inline const TCHAR* RowAcp = TEXT("acp");
 	inline const TCHAR* RowSkillFilesystem = TEXT("skill-filesystem");
 	inline const TCHAR* RowToolPwsh = TEXT("tool-pwsh");
@@ -121,9 +131,6 @@ namespace ShuttlegentPath
 
 	// Shuttlegent profile patch, relative to the plugin directory
 	inline const TCHAR* ProfilePatch = TEXT("Runtime/profile/shuttlegent.patch.yml");
-
-	// Development-time secrets file, relative to the plugin directory
-	inline const TCHAR* DevEnvFile = TEXT(".env");
 
 	// dsh profile launched over ACP
 	inline const TCHAR* AcpProfile = TEXT("acp");

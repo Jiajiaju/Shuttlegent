@@ -2,10 +2,10 @@
 
 namespace ShuttlegentProjectSettingsPrivate
 {
-	// Settings viewer location: Project Settings > Plugins > Shuttlegent
+	// Settings viewer location: Project Settings > Shuttlegent > General
 	inline const TCHAR* ContainerName = TEXT("Project");
-	inline const TCHAR* CategoryName = TEXT("Plugins");
-	inline const TCHAR* SectionName = TEXT("Shuttlegent");
+	inline const TCHAR* CategoryName = TEXT("Shuttlegent");
+	inline const TCHAR* SectionName = TEXT("General");
 }
 
 FName UShuttlegentProjectSettings::GetContainerName() const

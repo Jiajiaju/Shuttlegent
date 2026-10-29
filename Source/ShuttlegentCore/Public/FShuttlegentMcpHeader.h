@@ -18,7 +18,7 @@ struct SHUTTLEGENTCORE_API FShuttlegentMcpHeader
 	UPROPERTY(Config, EditAnywhere, Category = "Header")
 	FString Prefix;
 
-	/** Variable holding the value, resolved like a provider key: credential manager, editor environment, development .env file. */
+	/** Variable holding the value; each user sets it under Editor Preferences > Shuttlegent > General > Mcp Header Values. */
 	UPROPERTY(Config, EditAnywhere, Category = "Header")
 	FString ValueVariable;
 };

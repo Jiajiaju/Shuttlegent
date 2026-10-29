@@ -4,10 +4,11 @@
 
 #include "EShuttlegentProviderApi.h"
 #include "FShuttlegentProviderModel.h"
+#include "ShuttlegentConstants.h"
 
 #include "FShuttlegentProviderEntry.generated.h"
 
-/** A model provider route the project adds through llm-pi-ai (Shuttlegent.md section 8.2). DeepSeek is built in and needs no entry. */
+/** A model provider route the user adds through llm-pi-ai (Shuttlegent.md section 8.2). DeepSeek is built in and needs no entry. */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentProviderEntry
 {
@@ -24,13 +25,13 @@ struct SHUTTLEGENTCORE_API FShuttlegentProviderEntry
 	UPROPERTY(Config, EditAnywhere, Category = "Provider")
 	EShuttlegentProviderApi Api = EShuttlegentProviderApi::OpenAiCompletions;
 
-	/** Endpoint base URL, e.g. https://gateway.example/v1. */
+	/** Endpoint base URL, e.g. https://gateway.example/v1; a new entry starts on DeepSeek's OpenAI-compatible endpoint. */
 	UPROPERTY(Config, EditAnywhere, Category = "Provider")
-	FString BaseUrl;
+	FString BaseUrl = ShuttlegentProviderConstant::DeepSeekOpenAiBaseUrl;
 
-	/** Environment variable the runtime reads the key from; Shuttlegent fills it from the credential manager, the editor environment or the development .env file. */
-	UPROPERTY(Config, EditAnywhere, Category = "Provider")
-	FString KeyVariable;
+	/** Key of this route, kept in this machine's settings only; the runtime receives it as SHUTTLEGENT_<ROUTE>_API_KEY. */
+	UPROPERTY(Config, EditAnywhere, Category = "Provider", meta = (PasswordField = true))
+	FString ApiKey;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Provider")
 	TArray<FShuttlegentProviderModel> Models;

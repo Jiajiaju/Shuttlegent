@@ -110,9 +110,6 @@ private:
 
 	FString GetPageUrl() const;
 
-	/** Text of Resources/anim/<palette>/mark-anim.json, or empty when it is missing or not valid JSON. */
-	FString LoadMarkManifest() const;
-
 	/** The assets or actors an editor drag carries, as a JS array of references; empty for anything else. */
 	FString GetDraggedItems(const FDragDropEvent& DragDropEvent) const;
 

@@ -27,9 +27,6 @@
   // How often the page looks for the editor binding before calling ready, in milliseconds
   const BRIDGE_POLL_MS = 50;
 
-  // Sprite sheets relative to Resources/Web/index.html
-  const MARK_SHEET_DIR = '../anim/red-white/';
-
   // Panel widths where the layout changes (Shuttlegent UI interaction spec section 2)
   const BREAKPOINT_MEDIUM = 560;
   const BREAKPOINT_WIDE = 900;
@@ -400,19 +397,19 @@
     $('back-bottom').hidden = true;
   }
 
+  // An empty conversation centres the composer and perches the large mark on its top left edge
   function renderEmptyState(empty) {
-    const column = $('messages');
-    const existing = $('empty');
+    $('chat').classList.toggle('is-empty', empty);
     if (!empty) {
-      if (existing) existing.remove();
       if (emptyMark) markPlayer.detach(emptyMark);
       emptyMark = null;
+      $('perch').replaceChildren();
       return;
     }
-    if (existing) return;
+    if (emptyMark) return;
 
-    column.insertAdjacentHTML('afterbegin', '<section class="empty" id="empty"><div id="empty-mark" role="img" aria-label="Shuttlegent"></div><h1>今天要在编辑器里做什么？</h1><p>从当前上下文开始，先看清楚，再执行。</p></section>');
-    emptyMark = markPlayer.attach($('empty-mark'), 'l');
+    $('perch').innerHTML = '<div id="empty-mark" role="img" aria-label="Shuttlegent"></div>';
+    emptyMark = markPlayer.attach($('empty-mark'), 'l', $('chat'));
     markPlayer.play(emptyMark, 'intro');
     updateMarkOpacity();
   }
@@ -1455,9 +1452,6 @@
   window.Shuttlegent = {
     apply: apply,
     runCommand: runCommand,
-    setMarkSheets(manifest) {
-      markPlayer.setSheets(manifest, MARK_SHEET_DIR);
-    },
     onDragState(over) {
       document.body.classList.toggle('dragover', over);
     },

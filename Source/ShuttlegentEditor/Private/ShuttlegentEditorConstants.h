@@ -55,11 +55,6 @@ namespace ShuttlegentEditorResource
 
 	// Silk warps and red shuttle; the loading placeholder shows it, matching the page's mark
 	inline const TCHAR* MarkRedWhite = TEXT("mark-red-white");
-
-	// Mark animation sheet manifest the page plays from, exported by Build/MarkAnim/ExportMarkAnim.ps1 -Palette red-white
-	inline const TCHAR* AnimDir = TEXT("anim");
-	inline const TCHAR* AnimPalette = TEXT("red-white");
-	inline const TCHAR* AnimManifest = TEXT("mark-anim.json");
 }
 
 /** Placeholder colours: the page background and caption text (Shuttlegent UI design-tokens.css --bg, --muted). */
@@ -91,7 +86,6 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* JsCallOpen = TEXT("(");
 	inline const TCHAR* JsCallSuffix = TEXT(");");
 	inline const TCHAR* JsApply = TEXT("apply");
-	inline const TCHAR* JsSetMarkSheets = TEXT("setMarkSheets");
 	inline const TCHAR* JsRunCommand = TEXT("runCommand");
 	inline const TCHAR* JsOnReferenceResults = TEXT("onReferenceResults");
 	inline const TCHAR* JsOnReferenceValidity = TEXT("onReferenceValidity");

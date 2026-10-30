@@ -8,10 +8,10 @@
 |---|---|
 | `Source/` | 插件的五个 C++ 模块 |
 | `Resources/Web/` | 对话面板页面（原生 JS，无构建步骤） |
-| `Resources/svg/`、`Resources/png/`、`Resources/anim/` | 图标、标志与标志动画 |
+| `Resources/svg/`、`Resources/png/` | 图标与标志；标志、组合标志和插件图标由 `Build/Brand/` 生成，不手改 |
 | `Config/` | 插件默认的项目设置 `DefaultShuttlegent.ini` |
 | `Runtime/` | 运行时的 profile 补丁；构建出的 `shuttlegent-runtime.exe` 也放在这里，不进版本库 |
-| `Build/` | 运行时构建脚本、回归脚本（`Probe/`）、标志动画导出（`MarkAnim/`） |
+| `Build/` | 运行时构建脚本、回归脚本（`Probe/`）、标志生成（`Brand/`：唯一几何源 `brand-geometry.json`，运行 `ExportBrand.ps1` 重新生成全部标志 SVG/PNG 与面板动画用的 `Resources/Web/brand-geometry.js`） |
 | `Samples/` | 示例项目接入 |
 | `ThirdParty/deepseek-harness/` | DeepSeek Harness 子模块 |
 | `Docs/` | 文档 |

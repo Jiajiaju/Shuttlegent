@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
-<!-- 面板截图待补：Docs/Images/panel.png -->
+<p align="center"><img src="Docs/Images/panel.png" alt="Shuttlegent 对话面板" width="900"></p>
 
 在编辑器内完成关卡、Actor、资产和设置上的操作：查询、修改、摆放、整理。Agent 的每一项改动均先向用户展示，经确认后执行，执行后可撤销。
 

@@ -1,12 +1,11 @@
-# Exports the Shuttlegent mark animation sprite sheets into Resources/anim.
+# Exports every Shuttlegent mark, lockup and icon from Build/Brand/brand-geometry.json:
+# Resources/svg/{mark,lockup}-*.svg, icon128.svg, the matching PNG files, Resources/Icon128.png,
+# and Resources/Web/brand-geometry.js for the panel's animated marks.
 # Requires Node 22+ (built-in WebSocket) and Google Chrome or Microsoft Edge.
 #
-# Usage: .\Build\MarkAnim\ExportMarkAnim.ps1 [-Palette <name>] [-Chrome <path to chrome.exe or msedge.exe>]
-# -Palette picks Resources/svg/mark-<name>.svg for colours; "reverse" (default) writes to Resources/anim,
-# other palettes to Resources/anim/<name>.
+# Usage: .\Build\Brand\ExportBrand.ps1 [-Chrome <path to chrome.exe or msedge.exe>]
 
 param(
-    [string]$Palette = "reverse",
     [string]$Chrome
 )
 
@@ -31,5 +30,5 @@ if (-not $Chrome) {
 if (-not $Chrome -or -not (Test-Path $Chrome)) { throw "Chrome or Edge was not found. Pass -Chrome <path>." }
 
 Write-Host "Using browser: $Chrome"
-& node (Join-Path $PSScriptRoot "ExportMarkAnim.mjs") --chrome $Chrome --plugin $PluginRoot --palette $Palette
-if ($LASTEXITCODE -ne 0) { throw "Mark animation export failed with exit code $LASTEXITCODE." }
+& node (Join-Path $PSScriptRoot "ExportBrand.mjs") --chrome $Chrome --plugin $PluginRoot
+if ($LASTEXITCODE -ne 0) { throw "Brand export failed with exit code $LASTEXITCODE." }

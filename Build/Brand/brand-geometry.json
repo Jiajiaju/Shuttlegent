@@ -1,0 +1,32 @@
+{
+  "$comment": "Single source of the Shuttlegent mark. ExportBrand.ps1 renders every mark, lockup and icon from it and writes Resources/Web/brand-geometry.js for the panel's animated marks.",
+  "viewBox": [-172, -112, 344, 224],
+  "thread": {
+    "$comment": "Two warp threads with round ends, centred at x = -centerX and x = +centerX",
+    "centerX": 48,
+    "width": 32,
+    "top": -92,
+    "height": 184
+  },
+  "shuttle": {
+    "$comment": "Silhouette along axisDeg; profile rows are [distance from centre along the axis, half thickness], joined by a closed Catmull-Rom spline",
+    "axisDeg": -25,
+    "profile": [[0, 32], [10, 31.91], [20, 31.49], [30, 30.89], [40, 30.23], [50, 29.25], [60, 27.88], [70, 26.71], [80, 25.04], [90, 23.42], [100, 21.4], [110, 19.26], [120, 16.71], [130, 14.07], [140, 10.73], [150, 6.43], [154, 0]]
+  },
+  "$commentWeave": "Depth order back to front: left thread, shuttle, right thread",
+  "knockoutGap": 10,
+  "colors": { "ivory": "#E8DFCF", "red": "#A94743", "ink": "#302D2A" },
+  "palettes": {
+    "$comment": "knockout: one-colour palettes cut a gap of knockoutGap around the front shape so the weave stays readable",
+    "color": { "thread": "ink", "shuttle": "red", "word": "ink", "knockout": false },
+    "mono": { "thread": "ink", "shuttle": "ink", "word": "ink", "knockout": true },
+    "reverse": { "thread": "ivory", "shuttle": "ivory", "word": "ivory", "knockout": true },
+    "red-white": { "thread": "ivory", "shuttle": "red", "word": "ivory", "knockout": false }
+  },
+  "lockups": {
+    "horizontal": { "width": 508, "height": 116, "pngScale": 4, "mark": [74, 58, 0.31], "word": [142, 32, 0.6947756070318993] },
+    "stacked": { "width": 320, "height": 272, "pngScale": 4, "mark": [160, 100, 0.83], "word": [35, 212, 0.49626829073707096] }
+  },
+  "icon": { "size": 128, "radius": 24, "inset": 8, "tile": "ink", "palette": "red-white" },
+  "markPngSize": 256
+}

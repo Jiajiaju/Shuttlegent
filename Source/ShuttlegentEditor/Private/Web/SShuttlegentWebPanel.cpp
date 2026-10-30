@@ -16,13 +16,10 @@
 #include "IWebBrowserWindow.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/ConfigCacheIni.h"
-#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "RenderingThread.h"
 #include "SWebBrowser.h"
-#include "Serialization/JsonReader.h"
-#include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
@@ -611,35 +608,8 @@ void SShuttlegentWebPanel::HandlePageReady()
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent panel: page ready%s"), bPageReady ? TEXT(" again") : TEXT(""));
 	bPageReady = true;
 
-	const FString Manifest = LoadMarkManifest();
-	if (!Manifest.IsEmpty()) CallPage(ShuttlegentEditorWeb::JsSetMarkSheets, Manifest);
-
 	if (Protocol.IsValid()) Protocol->HandlePageReady();
 	CallPage(ShuttlegentEditorWeb::JsOnDrawerState, bDrawerOpen ? ShuttlegentEditorWeb::JsTrue : ShuttlegentEditorWeb::JsFalse);
-}
-
-FString SShuttlegentWebPanel::LoadMarkManifest() const
-{
-	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
-	const FString BaseDir = Plugin.IsValid() ? Plugin->GetBaseDir() : FString();
-	const FString ManifestPath = FPaths::Combine(BaseDir, ShuttlegentEditorResource::ResourcesDir, ShuttlegentEditorResource::AnimDir, ShuttlegentEditorResource::AnimPalette, ShuttlegentEditorResource::AnimManifest);
-
-	FString ManifestText;
-	if (!FFileHelper::LoadFileToString(ManifestText, *ManifestPath))
-	{
-		UE_LOG(LogShuttlegent, Warning, TEXT("Mark animation manifest not found at %s; the mark stays static."), *ManifestPath);
-		return FString();
-	}
-
-	// Passed to the page as a JS object literal, so it must be valid JSON
-	TSharedPtr<FJsonObject> Manifest;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ManifestText);
-	if (!FJsonSerializer::Deserialize(Reader, Manifest) || !Manifest.IsValid())
-	{
-		UE_LOG(LogShuttlegent, Warning, TEXT("Mark animation manifest %s is not valid JSON; the mark stays static."), *ManifestPath);
-		return FString();
-	}
-	return ManifestText;
 }
 
 bool SShuttlegentWebPanel::HandleBeforeNavigation(const FString& Url, const FWebNavigationRequest& Request)

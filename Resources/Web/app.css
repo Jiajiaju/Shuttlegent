@@ -21,10 +21,12 @@ h1,h2,h3,h4,p{margin:0}
 .icon:hover{color:var(--text)}
 .icon.small{width:24px;height:24px}
 
-/* Brand mark: static image until the editor sends the sprite sheets, then frames of the sheet */
-.mark{background:url("../png/mark-red-white.png") center/contain no-repeat;flex-shrink:0;transition:opacity .2s}
-.mark-sheets .mark{background-repeat:no-repeat}
-.mark-l{width:128px;height:83.5px;margin:0 auto 20px}
+/* Brand mark, drawn inline by mark.js; a large mark's shuttle may fly past its box, a small one stays inside */
+.mark{flex-shrink:0;transition:opacity .2s}
+.mark svg{display:block;width:100%;height:100%}
+.mark-l svg{overflow:visible}
+.mark-s svg{overflow:hidden}
+.mark-l{width:220px;aspect-ratio:344/224;cursor:pointer}
 .mark-s{width:32px;height:21px}
 .disconnected .mark{opacity:.45}
 
@@ -115,9 +117,15 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 
 /* Wide layout (Editor Preferences > Shuttlegent > Appearance): the columns span the whole conversation area */
 body.wide-content .message-column,body.wide-content .composer-column{max-width:none}
-.empty{max-width:480px;margin:clamp(22px,7vh,90px) auto 0;text-align:center}
-.empty h1{font-size:22px;font-weight:500;line-height:1.5;letter-spacing:.5px}
-.empty p{color:var(--muted);margin:10px 0 30px}
+
+/* Empty conversation: faint warp lines, the composer a little above the middle, the large mark perched on its top left */
+.chat.is-empty{isolation:isolate}
+.chat.is-empty::before{content:'';position:absolute;inset:var(--header-height) 0 0;z-index:-1;background:repeating-linear-gradient(90deg,transparent 0 63px,rgba(232,223,207,.04) 63px 64px);pointer-events:none}
+.chat.is-empty .conversation{flex:1.15 1 0}
+.chat.is-empty::after{content:'';flex:1 1 0}
+.perch{position:relative;height:0}
+.perch .mark-l{position:absolute;left:4px;bottom:4px}
+.composer-column .composer{z-index:1}
 
 .message{margin-bottom:24px;overflow-wrap:anywhere}
 .message.user{margin-left:auto;max-width:90%;width:fit-content;background:var(--surface);padding:10px 14px;border-radius:var(--panel-radius);white-space:pre-wrap;user-select:text}
@@ -296,5 +304,5 @@ dialog input{width:100%;background:var(--bg);border:1px solid var(--line);border
 body.dragover:after{content:'放下以添加引用';position:fixed;inset:8px;z-index:20;display:grid;place-items:center;border:2px dashed var(--accent);background:#302d2ae8;font-size:20px;pointer-events:none}
 
 @media(max-width:899px){.conversation{padding:24px 18px}.composer-column{padding:0 16px 16px}}
-@media(max-width:559px){.chat-header{padding:0 8px;gap:6px}.chat-heading span{display:none}.conversation{padding:20px 14px}.composer-column{padding:0 10px 10px}.composer{padding:7px;gap:3px}.composer-meta{gap:4px}.composer-meta #model{width:110px}.composer-meta #reasoning{width:66px}.empty{margin-top:28px}.empty h1{font-size:20px}.empty p{font-size:12px}.message.user{max-width:95%}}
+@media(max-width:559px){.chat-header{padding:0 8px;gap:6px}.chat-heading span{display:none}.conversation{padding:20px 14px}.composer-column{padding:0 10px 10px}.composer{padding:7px;gap:3px}.composer-meta{gap:4px}.composer-meta #model{width:110px}.composer-meta #reasoning{width:66px}.mark-l{width:150px}.message.user{max-width:95%}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

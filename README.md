@@ -8,6 +8,7 @@
   <img src="https://img.shields.io/badge/Unreal%20Engine-5.8-313131" alt="Unreal Engine 5.8">
   <img src="https://img.shields.io/badge/platform-Windows-0078D6" alt="Windows">
   <img src="https://img.shields.io/badge/version-0.1.0%20experimental-orange" alt="0.1.0 experimental">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
 <!-- 面板截图待补：Docs/Images/panel.png -->
@@ -103,7 +104,7 @@ Shuttlegent 由编辑器内的五个模块和一个运行时子进程组成：
 
 ## 许可
 
-待定。
+[MIT](LICENSE)。子模块 `ThirdParty/deepseek-harness` 遵循其自身的许可。
 
 ## 致谢
 

@@ -24,6 +24,8 @@
     s: { working: 'passLoop', done: 'settle', hover: 'nudge' }
   };
   const LOOPS = new Set(['working']);
+  // Motions in which the shuttle flies through the area around the mark
+  const FLIGHTS = new Set(['weave', 'pass']);
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const marks = new Set();
@@ -150,6 +152,8 @@
       return;
     }
     const duration = MOTIONS[name](mark.parts, mark);
+    // Lets the background follow the flying shuttle (warp.js)
+    if (FLIGHTS.has(name)) mark.element.dispatchEvent(new CustomEvent('shuttleflight', { detail: { node: mark.parts.shuttle.firstChild, duration: duration } }));
     if (LOOPS.has(mark.motion)) return;
     mark.endTimer = window.setTimeout(() => {
       mark.motion = null;

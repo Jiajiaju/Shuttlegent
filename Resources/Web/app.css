@@ -118,9 +118,10 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 /* Wide layout (Editor Preferences > Shuttlegent > Appearance): the columns span the whole conversation area */
 body.wide-content .message-column,body.wide-content .composer-column{max-width:none}
 
-/* Empty conversation: faint warp lines, the composer a little above the middle, the large mark perched on its top left */
+/* Empty conversation: faint warp lines (warp.js), the composer a little above the middle, the large mark perched on its top left */
 .chat.is-empty{isolation:isolate}
-.chat.is-empty::before{content:'';position:absolute;inset:var(--header-height) 0 0;z-index:-1;background:repeating-linear-gradient(90deg,transparent 0 63px,rgba(232,223,207,.04) 63px 64px);pointer-events:none}
+.warp{position:absolute;left:0;top:var(--header-height);width:100%;height:calc(100% - var(--header-height));z-index:-1;pointer-events:none;display:none;fill:none;stroke-width:1}
+.chat.is-empty .warp{display:block}
 .chat.is-empty .conversation{flex:1.15 1 0}
 .chat.is-empty::after{content:'';flex:1 1 0}
 .perch{position:relative;height:0}

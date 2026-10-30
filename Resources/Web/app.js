@@ -13,6 +13,7 @@
   const icons = window.ShuttlegentIcons;
   const markdown = window.ShuttlegentMarkdown;
   const markPlayer = window.ShuttlegentMark;
+  const warpPlayer = window.ShuttlegentWarp;
   const esc = markdown.escapeHtml;
 
   // Distance from the bottom, in CSS pixels, within which new content keeps the view pinned to the end
@@ -410,6 +411,7 @@
 
     $('perch').innerHTML = '<div id="empty-mark" role="img" aria-label="Shuttlegent"></div>';
     emptyMark = markPlayer.attach($('empty-mark'), 'l', $('chat'));
+    $('empty-mark').addEventListener('shuttleflight', (event) => warpPlayer.track(event.detail.node, event.detail.duration));
     markPlayer.play(emptyMark, 'intro');
     updateMarkOpacity();
   }
@@ -1356,7 +1358,10 @@
     for (const key of STATE_KEYS) {
       if (key in message) state[key] = message[key];
     }
-    if ('animateMark' in message) markPlayer.setEnabled(state.animateMark);
+    if ('animateMark' in message) {
+      markPlayer.setEnabled(state.animateMark);
+      warpPlayer.setEnabled(state.animateMark);
+    }
     if ('fontSize' in message) {
       document.documentElement.style.setProperty('--chat-font-size', message.fontSize + 'px');
       growDraft();
@@ -1826,6 +1831,7 @@
 
   decorateIcons();
   headerMark = markPlayer.attach($('header-mark'), 's');
+  warpPlayer.attach($('chat'));
 
   // Whether CEF reports a hidden panel tab decides if the shell must pause the mark itself (Shuttlegent.md section 14.3.8)
   document.addEventListener('visibilitychange', () => console.log('Shuttlegent page visibility: ' + document.visibilityState));

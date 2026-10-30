@@ -33,7 +33,6 @@
 
   const along = (distance) => 'translate(' + (Math.cos(AXIS) * distance).toFixed(1) + 'px,' + (Math.sin(AXIS) * distance).toFixed(1) + 'px)';
   const run = (nodes, frames, options) => [].concat(nodes).map((node) => node.animate(frames, Object.assign({ fill: 'none' }, options)));
-  const wait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
   function element(tag, attributes) {
     const node = document.createElementNS(NS, tag);
@@ -90,25 +89,21 @@
       const halfY = Math.hypot(GEOMETRY.shuttle.halfLength * uy, GEOMETRY.shuttle.halfThickness * ux) * scale;
       const exitDistance = (Math.min((area.width + halfX - cx) / ux, (cy + halfY) / -uy) + 20) / scale;
       const enterDistance = (Math.min((cx + halfX) / ux, (area.height + halfY - cy) / -uy) + 20) / scale;
-      const generation = mark.generation;
-      (async () => {
-        try {
-          await p.shuttle.animate([
-            { transform: 'none', easing: 'cubic-bezier(.3,0,.6,1)' },
-            { transform: along(-12), offset: .3, easing: 'cubic-bezier(.6,0,.95,.4)' },
-            { transform: along(exitDistance), offset: 1 }
-          ], { duration: 620, fill: 'forwards' }).finished;
-          await wait(200);
-          if (mark.generation !== generation) return;
-          p.shuttle.getAnimations().forEach((animation) => animation.cancel());
-          await p.shuttle.animate([{ transform: along(-enterDistance) }, { transform: 'none' }], { duration: 640, easing: 'cubic-bezier(.05,.7,.2,1)', fill: 'forwards' }).finished;
-          p.shuttle.getAnimations().forEach((animation) => animation.cancel());
-          run([p.left, p.right], [{ transform: 'none' }, { transform: 'scaleY(.97)', offset: .35 }, { transform: 'none' }], { duration: 420, easing: 'ease-out' });
-        } catch (error) {
-          // Rested or interrupted; the mark is already back at rest
-        }
-      })();
-      return 620 + 200 + 640 + 420;
+      // One animation without fill: however it ends (finished, cancelled, page hidden) the shuttle is back in the mark.
+      // Out in 620 ms, 200 ms outside the area, then in from the other side in 640 ms
+      const flight = 620 + 200 + 640;
+      const out = 620 / flight;
+      const back = (620 + 200) / flight;
+      run(p.shuttle, [
+        { transform: 'none', easing: 'cubic-bezier(.3,0,.6,1)' },
+        { transform: along(-12), offset: out * .3, easing: 'cubic-bezier(.6,0,.95,.4)' },
+        { transform: along(exitDistance), offset: out },
+        { transform: along(exitDistance), offset: back },
+        { transform: along(-enterDistance), offset: back, easing: 'cubic-bezier(.05,.7,.2,1)' },
+        { transform: 'none', offset: 1 }
+      ], { duration: flight });
+      run([p.left, p.right], [{ transform: 'none' }, { transform: 'scaleY(.97)', offset: .35 }, { transform: 'none' }], { duration: 420, delay: flight, easing: 'ease-out' });
+      return flight + 420;
     },
     // The shuttle gives a short push along its axis and springs back
     nudge(p) {
@@ -139,7 +134,6 @@
   }
 
   function stop(mark) {
-    ++mark.generation;
     window.clearTimeout(mark.endTimer);
     mark.svg.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
   }
@@ -173,7 +167,7 @@
   /** Draws the mark into an element as tier 'l' (large) or 's' (small); a large mark's pass flies to the edges of area. */
   function attach(host, tier, area) {
     const drawn = build();
-    const mark = { element: host, tier: tier, area: area || document.body, svg: drawn.svg, parts: drawn.parts, motion: null, generation: 0, endTimer: 0, idleTimer: 0 };
+    const mark = { element: host, tier: tier, area: area || document.body, svg: drawn.svg, parts: drawn.parts, motion: null, endTimer: 0, idleTimer: 0 };
     host.classList.add('mark', 'mark-' + tier);
     host.replaceChildren(drawn.svg);
     host.addEventListener('mouseenter', () => {

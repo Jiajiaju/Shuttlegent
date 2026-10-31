@@ -53,6 +53,9 @@
   const USAGE_HIGH_SHARE = 0.8;
   const USAGE_FULL_SHARE = 0.95;
 
+  // Placeholder of the message input when nothing holds sending back (index.html carries the same text)
+  const DRAFT_PLACEHOLDER = '描述你想在编辑器里完成的事…';
+
   // Token counts in short form (99.3k, 1M) on the context card
   const TOKENS_PER_THOUSAND = 1000;
   const TOKENS_PER_MILLION = 1000000;
@@ -411,7 +414,7 @@
     $('back-bottom').hidden = true;
   }
 
-  // An empty conversation centres the composer and perches the large mark on its top left edge
+  // An empty conversation keeps the composer at the bottom and centres the large mark in the space above it
   function renderEmptyState(empty) {
     $('chat').classList.toggle('is-empty', empty);
     if (!empty) {
@@ -658,12 +661,13 @@
     send.setAttribute('aria-label', state.busy ? '加入队列' : '发送消息');
     updateSendButton();
 
-    let keys = 'Enter 发送 · Shift+Enter 换行';
-    if (state.busy) keys = 'Enter 加入队列 · 停止不会清空草稿';
-    if (state.runtimeLost) keys = '草稿已保留，重新连接后再发送';
-    if (state.needsVerify) keys = '草稿已保留，核对写入结果后再发送';
-    if (state.startIssue) keys = '草稿已保留，运行时启动后再发送';
-    $('input-hint-keys').textContent = keys;
+    // The input's placeholder says why sending waits; there is no hint line under the composer
+    let placeholder = DRAFT_PLACEHOLDER;
+    if (state.busy) placeholder = '回车加入队列，本轮结束后发送';
+    if (state.runtimeLost) placeholder = '重新连接后再发送';
+    if (state.needsVerify) placeholder = '核对写入结果后再发送';
+    if (state.startIssue) placeholder = '运行时启动后再发送';
+    $('draft').placeholder = placeholder;
     stop.hidden = !state.prompting;
     stop.disabled = state.stopping;
     stop.classList.toggle('is-stopping', state.stopping);
@@ -733,7 +737,6 @@
     const waiting = decision !== null;
     $('composer').hidden = waiting;
     $('composer-meta').hidden = waiting;
-    $('input-hint').hidden = waiting;
     card.hidden = !waiting;
     if (!waiting || decision.kind === 'permission') stopCountdown();
     if (!waiting) {

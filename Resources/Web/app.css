@@ -175,14 +175,13 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 /* Wide layout (Editor Preferences > Shuttlegent > Appearance): the columns span the whole conversation area */
 body.wide-content .message-column,body.wide-content .composer-column{max-width:none}
 
-/* Empty conversation: faint warp lines (warp.js), the composer a little above the middle, the large mark perched on its top left */
+/* Empty conversation: faint warp lines (warp.js), the composer at the bottom as in a conversation, the large mark centred in the space above it */
 .chat.is-empty{isolation:isolate}
-.warp{position:absolute;left:0;top:var(--header-height);width:100%;height:calc(100% - var(--header-height));z-index:-1;pointer-events:none;display:none;fill:none;stroke-width:1}
+.warp{position:absolute;left:0;top:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:none;fill:none;stroke-width:1}
 .chat.is-empty .warp{display:block}
-.chat.is-empty .conversation{flex:1.15 1 0}
-.chat.is-empty::after{content:'';flex:1 1 0}
 .perch{position:relative;height:0}
-.perch .mark-l{position:absolute;left:4px;bottom:4px}
+.chat.is-empty .perch{position:absolute;top:0;left:0;right:var(--inspector-space);bottom:var(--composer-height,140px);height:auto;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.perch .mark-l{pointer-events:auto}
 .composer-column .composer{z-index:1}
 
 .message{margin-bottom:24px;overflow-wrap:anywhere}
@@ -302,8 +301,6 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .usage-bar{stroke:var(--muted);stroke-dasharray:0 100;transition:stroke-dasharray .3s}
 .usage.high .usage-bar{stroke:var(--warning)}
 .usage.full .usage-bar{stroke:var(--error)}
-.input-hint{color:var(--muted);font-size:10px;display:flex;justify-content:space-between;gap:6px;padding:0 4px}
-.input-hint span{white-space:nowrap}
 
 .tool-row{width:100%;background:transparent;border:0;text-align:left;color:inherit;cursor:pointer}
 .tool-row:hover{background:var(--surface)}

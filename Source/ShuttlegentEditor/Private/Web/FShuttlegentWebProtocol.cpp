@@ -18,6 +18,12 @@
 #include "FShuttlegentProjectConfig.h"
 #include "Template/FShuttlegentTemplateLibrary.h"
 #include "ShuttlegentSettings.h"
+#include "Endpoint/FShuttlegentContextBreakdown.h"
+#include "Endpoint/FShuttlegentExternalMcpState.h"
+#include "FShuttlegentToolsets.h"
+#include "ShuttlegentMcpServerModule.h"
+#include "ShuttlegentProjectSettings.h"
+#include "Tool/IShuttlegentTool.h"
 
 namespace FShuttlegentWebProtocolPrivate
 {
@@ -242,6 +248,38 @@ namespace FShuttlegentWebProtocolPrivate
 		return Values;
 	}
 
+	const TCHAR* ExternalIssueName(EShuttlegentExternalMcpIssue Issue)
+	{
+		switch (Issue)
+		{
+		case EShuttlegentExternalMcpIssue::NameInvalid:
+			{
+				return ShuttlegentEditorWebField::IssueNameInvalid;
+			}
+		case EShuttlegentExternalMcpIssue::NameTaken:
+			{
+				return ShuttlegentEditorWebField::IssueNameTaken;
+			}
+		case EShuttlegentExternalMcpIssue::CommandNotAbsolute:
+			{
+				return ShuttlegentEditorWebField::IssueCommandNotAbsolute;
+			}
+		case EShuttlegentExternalMcpIssue::UrlMissing:
+			{
+				return ShuttlegentEditorWebField::IssueUrlMissing;
+			}
+		case EShuttlegentExternalMcpIssue::HeaderValueMissing:
+			{
+				return ShuttlegentEditorWebField::IssueHeaderValueMissing;
+			}
+		case EShuttlegentExternalMcpIssue::None:
+		default:
+			{
+				return ShuttlegentEditorWebField::IssueNone;
+			}
+		}
+	}
+
 	/** Unix time in milliseconds of a UTC time; the page formats it in local time. */
 	double UnixMilliseconds(const FDateTime& UtcTime)
 	{
@@ -285,6 +323,10 @@ void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatModel>
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings)) SettingsChangedHandle = Settings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleSettingChanged);
 
+	// External MCP servers live in the project settings
+	UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
+	if (IsValid(ProjectSettings)) ProjectSettingsChangedHandle = ProjectSettings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleProjectSettingChanged);
+
 	TickerHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FShuttlegentWebProtocol::HandleTick));
 }
 
@@ -296,6 +338,10 @@ void FShuttlegentWebProtocol::Shutdown()
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings) && SettingsChangedHandle.IsValid()) Settings->OnSettingChanged().Remove(SettingsChangedHandle);
 	SettingsChangedHandle.Reset();
+
+	UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
+	if (IsValid(ProjectSettings) && ProjectSettingsChangedHandle.IsValid()) ProjectSettings->OnSettingChanged().Remove(ProjectSettingsChangedHandle);
+	ProjectSettingsChangedHandle.Reset();
 
 	if (Model.IsValid())
 	{
@@ -323,7 +369,7 @@ void FShuttlegentWebProtocol::HandlePageReady()
 
 bool FShuttlegentWebProtocol::HandleTick(float DeltaTime)
 {
-	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || PendingEvents.Num() > 0)) Flush();
+	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || bMcpDirty || PendingEvents.Num() > 0)) Flush();
 	return true;
 }
 
@@ -353,6 +399,7 @@ void FShuttlegentWebProtocol::Flush()
 	// Whether the current session can be archived follows the turn state as well as the session list
 	if (bReset || bSessionsDirty || bStatusDirty) WriteSessions(Root);
 	if (bReset || bRunLogDirty) WriteRunLog(Root);
+	if (bReset || bMcpDirty) WriteMcp(Root);
 
 	// Whether the queue can continue or a failed turn be retried also follows the turn state
 	if (bReset || bQueueDirty || bStatusDirty) WriteQueue(Root);
@@ -373,6 +420,7 @@ void FShuttlegentWebProtocol::Flush()
 	bSessionsDirty = false;
 	bRunLogDirty = false;
 	bQueueDirty = false;
+	bMcpDirty = false;
 	PendingEvents.Reset();
 	if (Root->Values.IsEmpty()) return;
 
@@ -399,6 +447,20 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetBoolField(ShuttlegentEditorWebField::WideLayout, IsValid(Settings) && Settings->bWideLayout);
 	Root->SetNumberField(ShuttlegentEditorWebField::UsedTokens, static_cast<double>(Model->GetUsedTokens()));
 	Root->SetNumberField(ShuttlegentEditorWebField::ContextSize, static_cast<double>(Model->GetContextSize()));
+
+	const FShuttlegentContextBreakdown& Breakdown = Model->GetContextBreakdown();
+	if (Breakdown.IsEmpty())
+	{
+		Root->SetField(ShuttlegentEditorWebField::ContextBreakdown, MakeShared<FJsonValueNull>());
+	}
+	else
+	{
+		const TSharedRef<FJsonObject> BreakdownObject = MakeShared<FJsonObject>();
+		BreakdownObject->SetNumberField(ShuttlegentEditorWebField::SystemTokens, static_cast<double>(Breakdown.SystemTokens));
+		BreakdownObject->SetNumberField(ShuttlegentEditorWebField::ToolsTokens, static_cast<double>(Breakdown.ToolsTokens));
+		BreakdownObject->SetNumberField(ShuttlegentEditorWebField::MessageTokens, static_cast<double>(Breakdown.MessageTokens));
+		Root->SetObjectField(ShuttlegentEditorWebField::ContextBreakdown, BreakdownObject);
+	}
 	Root->SetField(ShuttlegentEditorWebField::StartIssue, FShuttlegentWebProtocolPrivate::MakeStartIssue(Model->GetStartIssue(), Model->GetStartIssueDetail()));
 	Root->SetBoolField(ShuttlegentEditorWebField::ResumeFailed, Model->IsResumeFailed());
 	Root->SetBoolField(ShuttlegentEditorWebField::NeedsVerify, Model->NeedsVerify());
@@ -494,6 +556,61 @@ void FShuttlegentWebProtocol::WriteRunLog(const TSharedRef<FJsonObject>& Root) c
 		Items.Add(MakeShared<FJsonValueObject>(Item));
 	}
 	Root->SetArrayField(ShuttlegentEditorWebField::RunLog, Items);
+}
+
+void FShuttlegentWebProtocol::WriteMcp(const TSharedRef<FJsonObject>& Root) const
+{
+	const FShuttlegentMcpServerModule& McpServer = FShuttlegentMcpServerModule::Get();
+
+	TArray<TSharedRef<IShuttlegentTool>> Tools = McpServer.GetRegisteredTools();
+	Tools.Sort([](const TSharedRef<IShuttlegentTool>& Left, const TSharedRef<IShuttlegentTool>& Right) { return Left->GetDefinition().Name < Right->GetDefinition().Name; });
+
+	TArray<TSharedPtr<FJsonValue>> ToolValues;
+	for (const TSharedRef<IShuttlegentTool>& Tool : Tools)
+	{
+		const FShuttlegentToolDefinition& Definition = Tool->GetDefinition();
+
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(ShuttlegentEditorWebField::Name, Definition.Name);
+		Item->SetBoolField(ShuttlegentEditorWebField::ReadOnly, Definition.bReadOnly);
+		Item->SetBoolField(ShuttlegentEditorWebField::Enabled, FShuttlegentProjectConfig::IsToolEnabled(Definition.Name));
+		ToolValues.Add(MakeShared<FJsonValueObject>(Item));
+	}
+
+	const TSharedRef<FJsonObject> Endpoint = MakeShared<FJsonObject>();
+	Endpoint->SetStringField(ShuttlegentEditorWebField::Name, McpServer.GetEndpointName());
+	Endpoint->SetBoolField(ShuttlegentEditorWebField::Listening, McpServer.IsEndpointListening());
+	Endpoint->SetNumberField(ShuttlegentEditorWebField::Port, McpServer.GetEndpointPort());
+	Endpoint->SetArrayField(ShuttlegentEditorWebField::Tools, ToolValues);
+
+	// Engine toolsets reach the model through the endpoint's toolset tools; empty while the registry is not up
+	TArray<TSharedPtr<FJsonValue>> ToolsetValues;
+	for (const FShuttlegentToolsetInfo& Toolset : FShuttlegentToolsets::GetToolsets())
+	{
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(ShuttlegentEditorWebField::Name, Toolset.Name);
+		Item->SetNumberField(ShuttlegentEditorWebField::ToolCount, Toolset.ToolCount);
+		Item->SetBoolField(ShuttlegentEditorWebField::Blocked, Toolset.bBlockedByProject);
+		Item->SetBoolField(ShuttlegentEditorWebField::Enabled, !Toolset.bDisabledByUser);
+		ToolsetValues.Add(MakeShared<FJsonValueObject>(Item));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> ServerValues;
+	for (const FShuttlegentExternalMcpState& Server : McpServer.GetExternalServers())
+	{
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(ShuttlegentEditorWebField::Name, Server.Name);
+		Item->SetBoolField(ShuttlegentEditorWebField::Stdio, Server.bStdio);
+		Item->SetStringField(ShuttlegentEditorWebField::Issue, FShuttlegentWebProtocolPrivate::ExternalIssueName(Server.Issue));
+		Item->SetStringField(ShuttlegentEditorWebField::Detail, Server.Detail);
+		ServerValues.Add(MakeShared<FJsonValueObject>(Item));
+	}
+
+	const TSharedRef<FJsonObject> Mcp = MakeShared<FJsonObject>();
+	Mcp->SetObjectField(ShuttlegentEditorWebField::Endpoint, Endpoint);
+	Mcp->SetArrayField(ShuttlegentEditorWebField::Toolsets, ToolsetValues);
+	Mcp->SetArrayField(ShuttlegentEditorWebField::Servers, ServerValues);
+	Root->SetObjectField(ShuttlegentEditorWebField::Mcp, Mcp);
 }
 
 void FShuttlegentWebProtocol::WriteQueue(const TSharedRef<FJsonObject>& Root) const
@@ -730,10 +847,21 @@ void FShuttlegentWebProtocol::HandleQueueChanged()
 void FShuttlegentWebProtocol::HandleTurnFinished(bool bCompleted)
 {
 	bStatusDirty = true;
+
+	// Engine toolsets may have come up since the last look
+	bMcpDirty = true;
 	PendingEvents.Add(bCompleted ? ShuttlegentEditorWebField::EventTurnCompleted : ShuttlegentEditorWebField::EventTurnStopped);
 }
 
 void FShuttlegentWebProtocol::HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event)
 {
 	bStatusDirty = true;
+
+	// Tool and toolset switches are personal settings
+	bMcpDirty = true;
+}
+
+void FShuttlegentWebProtocol::HandleProjectSettingChanged(UObject* Settings, FPropertyChangedEvent& Event)
+{
+	bMcpDirty = true;
 }

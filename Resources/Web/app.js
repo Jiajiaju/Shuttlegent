@@ -53,6 +53,13 @@
   const USAGE_HIGH_SHARE = 0.8;
   const USAGE_FULL_SHARE = 0.95;
 
+  // Token counts in short form (99.3k, 1M) on the context card
+  const TOKENS_PER_THOUSAND = 1000;
+  const TOKENS_PER_MILLION = 1000000;
+
+  // Inspector cards, top to bottom
+  const INSPECTOR_CARDS = ['context', 'mcp', 'tools', 'log'];
+
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
 
@@ -104,6 +111,7 @@
     animateMark: true,
     usedTokens: 0,
     contextSize: 0,
+    contextBreakdown: null,
     config: {},
     entries: new Map(),
     order: [],
@@ -121,7 +129,8 @@
     pendingWrite: null,
     pendingQuestion: null,
     queue: { paused: false, items: [] },
-    canRetry: false
+    canRetry: false,
+    mcp: null
   };
 
   // Page-local view state
@@ -134,7 +143,10 @@
     // Docked panes remember whether they stay open; overlays open fresh each time
     docked: { sidebar: true, inspector: true },
     overlay: null,
-    tab: 'changes',
+    // Inspector cards that are expanded; the context card starts open
+    cards: { context: true, mcp: false, tools: false, log: false },
+    // Collapsible groups inside cards that are open (MCP tools, toolsets, external servers)
+    cardGroups: new Set(),
     selectedTool: null,
     shownDecisionKey: null,
     answeringDecisionKey: null,
@@ -1217,12 +1229,14 @@
 
     workbench.classList.remove('full', 'wide', 'medium', 'narrow');
     workbench.classList.add(view.layout);
+    workbench.classList.toggle('inspector-docked', paneMode('inspector') === 'docked');
     $('sidebar').dataset.mode = paneMode('sidebar');
     $('inspector').dataset.mode = paneMode('inspector');
     $('scrim').hidden = view.overlay === null;
 
     // An overlay is modal: the rest of the panel cannot be reached until it closes
     $('chat').inert = view.overlay !== null;
+    $('stage-header').inert = view.overlay !== null;
     $('sidebar').inert = view.overlay === 'inspector';
     $('inspector').inert = view.overlay === 'sidebar';
 
@@ -1234,7 +1248,7 @@
 
   function firstFocusable(pane) {
     if (pane === 'sidebar') return $('new-session');
-    return document.querySelector('#tabs [aria-selected=true]') || $('tab-changes');
+    return $('card-head-' + INSPECTOR_CARDS[0]);
   }
 
   function openPane(pane) {
@@ -1304,30 +1318,204 @@
     return state.runLog.map((item) => '<div class="log' + (item.warning ? ' warning' : '') + '"><time>' + clock(item.time, true) + '</time>' + esc(item.text) + '</div>').join('');
   }
 
-  function renderInspector() {
-    for (const button of document.querySelectorAll('#tabs [data-tab]')) {
-      const selected = button.dataset.tab === view.tab;
-      button.setAttribute('aria-selected', String(selected));
-      button.tabIndex = selected ? 0 : -1;
-    }
-    const panel = $('inspection');
-    panel.setAttribute('aria-labelledby', 'tab-' + view.tab);
-    if (view.tab === 'tools') panel.innerHTML = renderToolDetails();
-    else if (view.tab === 'log') panel.innerHTML = renderRunLog();
-    else panel.innerHTML = '<p class="empty-note">暂无待确认的编辑器变更</p>';
+  /** Token count in short form: 99.3k, 1M. */
+  function shortTokens(count) {
+    if (count >= TOKENS_PER_MILLION) return +(count / TOKENS_PER_MILLION).toFixed(1) + 'M';
+    if (count >= TOKENS_PER_THOUSAND) return +(count / TOKENS_PER_THOUSAND).toFixed(1) + 'k';
+    return String(count);
   }
 
-  function selectTab(tab, focus) {
-    view.tab = tab;
-    renderInspector();
-    if (focus) $('tab-' + tab).focus();
+  function configName(configId) {
+    const option = state.config[configId];
+    if (!option || !option.choices) return '—';
+    const choice = option.choices.find((item) => item.value === option.current);
+    return choice ? choice.name : '—';
+  }
+
+  function contextShare() {
+    return state.contextSize > 0 ? Math.min(state.usedTokens / state.contextSize, 1) : null;
+  }
+
+  /**
+   * One line of a card list. Leading mark: a line icon (icon) or a legend swatch (swatch); then the label, an optional
+   * tag, the value and an optional trailing column (extra). The label carries the full text as a tooltip.
+   */
+  function kvRow(label, value, options) {
+    const opts = options || {};
+    let lead = '';
+    if (opts.icon) lead = '<span class="lead">' + icons.svg(opts.icon, 16) + '</span>';
+    else if (opts.swatch) lead = '<span class="swatch ' + opts.swatch + '"></span>';
+    const tag = opts.tag ? '<span class="tag">' + esc(opts.tag) + '</span>' : '';
+    const extra = opts.extra !== undefined ? '<span class="x">' + esc(opts.extra) + '</span>' : '';
+    return '<li class="kv' + (opts.icon ? ' lit' : '') + (opts.warn ? ' warn' : '') + (opts.mono ? ' mono' : '') + '">' + lead + '<span class="k" title="' + esc(label) + '">' + esc(label) + '</span>' + tag + '<span class="v">' + esc(value) + '</span>' + extra + '</li>';
+  }
+
+  function percentText(share) {
+    return (share * 100).toFixed(1) + '%';
+  }
+
+  function renderContextCard() {
+    const share = contextShare();
+    if (share === null) return '<div class="context-head"><span>用量未知</span></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>';
+
+    const free = Math.max(state.contextSize - state.usedTokens, 0);
+    const parts = contextParts();
+    let meter;
+    let legend;
+    if (parts) {
+      meter = '<div class="meter">' + parts.map((part) => '<span class="' + part.key + '" style="width:' + part.tokens / state.contextSize * 100 + '%"></span>').join('') + '</div>';
+      legend = parts.map((part) => kvRow(part.label, shortTokens(part.tokens), { swatch: part.key, extra: percentText(part.tokens / state.contextSize) })).join('');
+    } else {
+      const level = share >= USAGE_FULL_SHARE ? ' full' : share >= USAGE_HIGH_SHARE ? ' high' : '';
+      meter = '<div class="meter' + level + '"><span class="used" style="width:' + share * 100 + '%"></span></div>';
+      legend = kvRow('已用', shortTokens(state.usedTokens), { swatch: 'used' + level, extra: percentText(share) });
+    }
+    const note = parts ? ' title="分项按运行时估算的比例分摊实际用量"' : '';
+    return '<div class="context-head"><span>已用 ' + Math.round(share * 100) + '%</span><span class="count">' + shortTokens(state.usedTokens) + ' / ' + shortTokens(state.contextSize) + '</span></div>'
+      + meter
+      + '<ul class="kv-list legend"' + note + '>' + legend + kvRow('剩余', shortTokens(free), { swatch: 'free', extra: percentText(1 - share) }) + '</ul>'
+      + '<ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>';
+  }
+
+  /**
+   * The used tokens split like the runtime's estimate (messages, tool definitions, system prompts), largest first as
+   * in Claude's panel order; the estimate is shared out over the billed total so the parts add up to it. Null without a breakdown.
+   */
+  function contextParts() {
+    const breakdown = state.contextBreakdown;
+    if (!breakdown) return null;
+
+    const estimated = breakdown.messages + breakdown.tools + breakdown.system;
+    if (estimated <= 0 || state.usedTokens <= 0) return null;
+
+    const scale = state.usedTokens / estimated;
+    const tools = Math.round(breakdown.tools * scale);
+    const system = Math.round(breakdown.system * scale);
+    return [
+      { key: 'messages', label: '消息', tokens: Math.max(state.usedTokens - tools - system, 0) },
+      { key: 'tools', label: '工具定义', tokens: tools },
+      { key: 'system', label: '系统提示', tokens: system }
+    ];
+  }
+
+  function externalIssueText(server) {
+    if (server.issue === 'nameInvalid') return '名称为空或与编辑器端点重名';
+    if (server.issue === 'nameTaken') return '与另一个外部服务重名';
+    if (server.issue === 'commandNotAbsolute') return '启动命令不是绝对路径';
+    if (server.issue === 'urlMissing') return '缺少 URL';
+    if (server.issue === 'headerValueMissing') return '请求头变量 ' + server.detail + ' 没有值';
+    return '';
+  }
+
+  /** Services the next session gets: the listening editor endpoint and the declarable external servers. */
+  function mcpServiceCount() {
+    if (!state.mcp) return 0;
+    const endpoint = state.mcp.endpoint && state.mcp.endpoint.listening ? 1 : 0;
+    return endpoint + state.mcp.servers.filter((server) => !server.issue).length;
+  }
+
+  function mcpHasProblem() {
+    if (!state.mcp) return false;
+    return !(state.mcp.endpoint && state.mcp.endpoint.listening) || state.mcp.servers.some((server) => server.issue);
+  }
+
+  /** A collapsible group inside a card: caret, label, count; the rows show while it is open. */
+  function cardGroup(id, label, count, rows, empty) {
+    const open = view.cardGroups.has(id);
+    const body = open ? (rows ? '<ul class="kv-list nested">' + rows + '</ul>' : '<p class="empty-note nested">' + empty + '</p>') : '';
+    return '<div class="card-group' + (open ? ' open' : '') + '"><button class="group-head" data-card-group="' + id + '" aria-expanded="' + open + '"><span class="group-chevron">' + icons.svg('chevron', 14) + '</span><span class="k">' + label + '</span><span class="v">' + count + '</span></button>' + body + '</div>';
+  }
+
+  function renderMcpCard() {
+    const mcp = state.mcp;
+    if (!mcp) return '<p class="empty-note">尚未收到 MCP 状态。</p>';
+
+    const endpoint = mcp.endpoint || { name: '', listening: false, port: 0, tools: [] };
+    const tools = endpoint.tools || [];
+    const declared = mcp.servers.filter((server) => !server.issue).length;
+    const skipped = mcp.servers.length - declared;
+    const status = '<ul class="kv-list">'
+      + kvRow('编辑器端点 ' + endpoint.name, endpoint.listening ? '端口 ' + endpoint.port : '未启动', { icon: 'monitor', warn: !endpoint.listening })
+      + kvRow('外部服务', mcp.servers.length ? declared + ' 个已声明' + (skipped ? ' · ' + skipped + ' 个跳过' : '') : '未配置', { icon: 'globe', warn: skipped > 0 })
+      + '</ul>';
+
+    const disabled = tools.filter((tool) => !tool.enabled).length;
+    const toolRows = tools.map((tool) => kvRow(tool.name, tool.enabled ? '' : '已关闭', { tag: tool.readOnly ? '读' : '写', mono: true })).join('');
+    const toolsetRows = mcp.toolsets.map((toolset) => {
+      let value = toolset.toolCount + ' 个工具';
+      if (toolset.blocked) value = '项目已屏蔽';
+      else if (!toolset.enabled) value = '已关闭';
+      return kvRow(toolset.name, value, { mono: true });
+    }).join('');
+    const serverRows = mcp.servers.map((server) => kvRow(server.name || '（未命名）', server.issue ? '已跳过：' + externalIssueText(server) : '已声明', { tag: server.stdio ? 'stdio' : 'http', warn: !!server.issue, mono: true })).join('');
+
+    return status
+      + cardGroup('mcp-tools', '编辑器工具', tools.length + (disabled ? ' · ' + disabled + ' 关闭' : ''), toolRows, '没有注册的编辑器工具。')
+      + cardGroup('mcp-toolsets', '引擎 Toolset', mcp.toolsets.length, toolsetRows, '没有可用的引擎 Toolset。')
+      + cardGroup('mcp-servers', '外部服务', mcp.servers.length, serverRows, '项目设置中未配置外部 MCP 服务。')
+      + '<p class="fine">外部服务在新建或恢复会话时声明给运行时；运行时不回报各服务是否连上。</p>';
+  }
+
+  function cardSummary(card) {
+    if (card === 'context') {
+      const share = contextShare();
+      return share === null ? '—' : Math.round(share * 100) + '%';
+    }
+    if (card === 'mcp') return state.mcp ? mcpServiceCount() + ' 个服务' : '—';
+    if (card === 'tools') {
+      const tools = state.order.map((id) => state.entries.get(id)).filter((entry) => entry && entry.kind === 'toolCall');
+      const failed = tools.filter((entry) => entry.toolStatus === TOOL_FAILED).length;
+      return tools.length + ' 次调用' + (failed ? ' · ' + failed + ' 失败' : '');
+    }
+    const warnings = state.runLog.filter((item) => item.warning).length;
+    return state.runLog.length + ' 条' + (warnings ? ' · ' + warnings + ' 警告' : '');
+  }
+
+  function cardWarns(card) {
+    if (card === 'context') {
+      const share = contextShare();
+      return share !== null && share >= USAGE_HIGH_SHARE;
+    }
+    if (card === 'mcp') return mcpHasProblem();
+    if (card === 'tools') return state.order.some((id) => { const entry = state.entries.get(id); return entry && entry.kind === 'toolCall' && entry.toolStatus === TOOL_FAILED; });
+    return state.runLog.some((item) => item.warning);
+  }
+
+  function renderCardBody(card) {
+    if (card === 'context') return renderContextCard();
+    if (card === 'mcp') return renderMcpCard();
+    if (card === 'tools') return renderToolDetails();
+    return renderRunLog();
+  }
+
+  /** Updates the given cards (all by default): header state and summary always, the body only while expanded. */
+  function renderInspector(cards) {
+    for (const card of cards || INSPECTOR_CARDS) {
+      const expanded = view.cards[card];
+      const head = $('card-head-' + card);
+      head.setAttribute('aria-expanded', String(expanded));
+      head.parentElement.classList.toggle('open', expanded);
+
+      const summary = $('card-summary-' + card);
+      summary.textContent = cardSummary(card);
+      summary.classList.toggle('warn', cardWarns(card));
+
+      const body = $('card-body-' + card);
+      body.hidden = !expanded;
+      body.innerHTML = expanded ? renderCardBody(card) : '';
+    }
+  }
+
+  function toggleCard(card) {
+    view.cards[card] = !view.cards[card];
+    renderInspector([card]);
   }
 
   /** Opens the inspector on the tool details of one call (a group opens on its first call). */
   function inspectTool(id) {
     view.selectedTool = id;
     expandedTools.add(id);
-    view.tab = 'tools';
+    view.cards.tools = true;
     openPane('inspector');
     renderInspector();
     const detail = $('tool-detail-' + id);
@@ -1390,7 +1578,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -1460,7 +1648,14 @@
     renderComposer();
 
     const inspectorVisible = paneMode('inspector') !== 'hidden';
-    if (inspectorVisible && ((view.tab === 'tools' && toolsChanged) || (view.tab === 'log' && 'runLog' in message))) renderInspector();
+    if (inspectorVisible) {
+      const cards = [];
+      if ('usedTokens' in message || 'contextSize' in message || 'contextBreakdown' in message || 'config' in message) cards.push('context');
+      if ('mcp' in message) cards.push('mcp');
+      if (toolsChanged) cards.push('tools');
+      if ('runLog' in message) cards.push('log');
+      if (cards.length) renderInspector(cards);
+    }
 
     for (const event of message.events || []) {
       if (event === 'turnCompleted') markPlayer.play(headerMark, 'done');
@@ -1614,7 +1809,19 @@
     $('reasoning').addEventListener('change', (event) => call('setconfig', 'reasoning_effort', event.target.value));
   }
 
+  /** The composer floats over the conversation's bottom: its height pads the conversation, and the end stays in view as it grows. */
+  function trackComposerHeight() {
+    const column = document.querySelector('.composer-column');
+    const observer = new ResizeObserver(() => {
+      const following = isAtEnd();
+      $('chat').style.setProperty('--composer-height', column.offsetHeight + 'px');
+      if (following) $('conversation').scrollTop = $('conversation').scrollHeight;
+    });
+    observer.observe(column);
+  }
+
   function bindConversation() {
+    trackComposerHeight();
     $('back-bottom').addEventListener('click', scrollToEnd);
     $('conversation').addEventListener('scroll', () => {
       if (hasUnseenContent && isAtEnd()) {
@@ -1716,29 +1923,30 @@
 
     bindResizers();
 
-    $('tabs').addEventListener('click', (event) => {
-      const tab = event.target.closest('[data-tab]');
-      if (tab) selectTab(tab.dataset.tab, false);
-    });
-    $('tabs').addEventListener('keydown', (event) => {
-      const tabs = ['changes', 'tools', 'log'];
-      let index = tabs.indexOf(view.tab);
-      if (event.key === 'ArrowRight') index = (index + 1) % tabs.length;
-      else if (event.key === 'ArrowLeft') index = (index + tabs.length - 1) % tabs.length;
-      else if (event.key === 'Home') index = 0;
-      else if (event.key === 'End') index = tabs.length - 1;
-      else return;
-      event.preventDefault();
-      selectTab(tabs[index], true);
-    });
-    $('inspection').addEventListener('click', (event) => {
+    $('cards').addEventListener('click', (event) => {
+      const head = event.target.closest('[data-card]');
+      if (head) {
+        toggleCard(head.dataset.card);
+        return;
+      }
+
+      const group = event.target.closest('[data-card-group]');
+      if (group) {
+        const id = group.dataset.cardGroup;
+        if (view.cardGroups.has(id)) view.cardGroups.delete(id);
+        else view.cardGroups.add(id);
+        renderInspector(['mcp']);
+        document.querySelector('[data-card-group="' + id + '"]').focus();
+        return;
+      }
+
       const toggle = event.target.closest('[data-expand-tool]');
       if (!toggle) return;
 
       const id = Number(toggle.dataset.expandTool);
       if (expandedTools.has(id)) expandedTools.delete(id);
       else expandedTools.add(id);
-      renderInspector();
+      renderInspector(['tools']);
       $('tool-detail-' + id).querySelector('button').focus();
     });
 

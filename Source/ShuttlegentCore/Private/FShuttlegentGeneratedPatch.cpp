@@ -64,7 +64,7 @@ namespace FShuttlegentGeneratedPatchPrivate
 	}
 }
 
-bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, bool bShell, FString& OutPath, FString& OutError)
+bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& PluginDir, bool bShell, FString& OutPath, FString& OutError)
 {
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	TArray<TSharedPtr<FJsonValue>> Rows;
@@ -116,6 +116,19 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, bool bShell, FStr
 	Shell->SetStringField(ShuttlegentProviderConstant::FieldId, ShuttlegentProviderConstant::RowToolPwsh);
 	Shell->SetBoolField(ShuttlegentProviderConstant::FieldDisabled, !bShell);
 	Rows.Add(MakeShared<FJsonValueObject>(Shell));
+
+	// The context tap reports each session's context breakdown to the editor endpoint; the runtime loads plugins by absolute path
+	const FString ContextTap = FPaths::Combine(PluginDir, ShuttlegentPath::ContextTapPlugin);
+	if (FPaths::FileExists(ContextTap))
+	{
+		const TSharedRef<FJsonObject> Plugin = MakeShared<FJsonObject>();
+		Plugin->SetStringField(ShuttlegentProviderConstant::FieldId, ShuttlegentProviderConstant::RowContextTap);
+		Plugin->SetStringField(ShuttlegentProviderConstant::FieldPluginName, ContextTap);
+
+		const TSharedRef<FJsonObject> Insert = MakeShared<FJsonObject>();
+		Insert->SetArrayField(ShuttlegentProviderConstant::FieldInsert, { MakeShared<FJsonValueObject>(Plugin) });
+		Rows.Add(MakeShared<FJsonValueObject>(Insert));
+	}
 
 	FString Json;
 	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Json);

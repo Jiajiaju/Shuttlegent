@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 
 class FJsonValue;
+struct FShuttlegentExternalMcpState;
 
 /**
  * ACP mcpServers entries of the project's external MCP servers (Shuttlegent.md section 11). The runtime refuses a
@@ -13,4 +14,7 @@ class FJsonValue;
 struct FShuttlegentExternalMcp
 {
 	static TArray<TSharedPtr<FJsonValue>> MakeDeclarations();
+
+	/** Every server of the project settings in order, with why it is left out; for the panel, logs nothing. */
+	static TArray<FShuttlegentExternalMcpState> DescribeServers();
 };

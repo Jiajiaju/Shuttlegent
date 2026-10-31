@@ -6,6 +6,7 @@
 #include "Chat/FShuttlegentChatEntry.h"
 #include "Chat/FShuttlegentPromptQueue.h"
 #include "Chat/FShuttlegentRunLogEntry.h"
+#include "Endpoint/FShuttlegentContextBreakdown.h"
 
 /**
  * One conversation the panel holds: a session's entries, run log, queue and turn state.
@@ -35,6 +36,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 
 	int64 UsedTokens = 0;
 	int64 ContextSize = 0;
+
+	/** Latest context breakdown the runtime's context tap reported; empty until the first assistant message of this run. */
+	FShuttlegentContextBreakdown ContextBreakdown {};
 	EShuttlegentTurnOutcome LastOutcome = EShuttlegentTurnOutcome::None;
 
 	/** Stop was sent for the running turn; cleared when the turn ends. */

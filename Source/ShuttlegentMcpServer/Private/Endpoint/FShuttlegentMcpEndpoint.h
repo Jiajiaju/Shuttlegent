@@ -8,6 +8,7 @@
 class FShuttlegentWriteGate;
 class IHttpRouter;
 struct FHttpServerRequest;
+struct FShuttlegentContextBreakdown;
 
 /**
  * The editor's MCP endpoint (Shuttlegent.md section 10.1): Streamable HTTP on localhost, plain JSON answers, no SSE.
@@ -28,12 +29,19 @@ private:
 	FString Token;
 
 public:
+	/** A shuttlegent/contextBreakdown notification arrived from the context tap runtime plugin; game thread. */
+	TFunction<void(const FString& /*SessionId*/, const FShuttlegentContextBreakdown& /*Breakdown*/)> OnContextBreakdown;
+
 	/** Starts listening; false when no port of the range could be bound. */
 	bool Start(const TSharedRef<FShuttlegentWriteGate>& InGate);
 	void Stop();
 
 	bool IsListening() const { return Route.IsValid(); }
 	uint32 GetPort() const { return Port; }
+	const FString& GetToken() const { return Token; }
+
+	/** The endpoint's URL on localhost. */
+	FString GetUrl() const;
 
 	/** A new random token; requests with the old one are refused from now on. */
 	void RotateToken();
@@ -44,6 +52,9 @@ public:
 private:
 	bool HandleRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
 	bool IsAuthorized(const FHttpServerRequest& Request) const;
+
+	/** Handles a notification the endpoint understands (the context tap's breakdown); others are ignored. */
+	void HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params) const;
 
 	/** Answers one JSON-RPC request; OnAnswer gets the result or error object (tools/call may answer later). */
 	void Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, TFunction<void(const TSharedRef<FJsonObject>& /*Result*/, int32 /*ErrorCode*/, const FString& /*ErrorMessage*/)> OnAnswer);

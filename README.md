@@ -78,7 +78,7 @@
 
 | 类别 | 内容 |
 |---|---|
-| 对话面板 | 多会话并行、会话搜索与归档、消息队列、思考过程折叠、用量显示、模型与思考强度切换 |
+| 对话面板 | 多会话并行、会话搜索与归档、消息队列、思考过程折叠、用量显示、模型与思考强度切换；检视窗格分上下文、MCP、工具详情、日志四张卡片 |
 | 内置工具 | 关卡、资产、反射、诊断、编辑、撤销重做、界面指路，共 17 个，见 [Docs/Tools.md §2](Docs/Tools.md#2-内置工具) |
 | 引擎 Toolset | 通过 `list_toolsets`、`describe_toolset`、`call_toolset_tool` 使用已启用的 Toolset，见 [Docs/Tools.md §3](Docs/Tools.md#3-引擎-toolset) |
 | 模型 | DeepSeek（默认）、OpenAI 协议、Anthropic 协议、OpenAI 兼容端点 |

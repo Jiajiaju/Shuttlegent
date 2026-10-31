@@ -62,6 +62,9 @@ public:
 	/** ACP mcpServers entries declared with every session/new and session/resume; ShuttlegentMcpServer declares the editor endpoint here. Empty when unbound. */
 	TFunction<TArray<TSharedPtr<FJsonValue>>()> McpServersProvider;
 
+	/** Adds variables to the runtime's environment right before it launches; ShuttlegentMcpServer adds the endpoint URL and a new token. */
+	TFunction<void(TMap<FString, FString>& /*Environment*/)> RuntimeEnvironmentProvider;
+
 private:
 	TUniquePtr<FShuttlegentAcpConnection> Connection;
 	FShuttlegentSessionStore SessionStore;

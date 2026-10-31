@@ -26,13 +26,15 @@
     <div class="pane-resizer" id="sidebar-resizer" data-pane="sidebar" role="separator" aria-orientation="vertical" aria-label="调整会话侧栏宽度" title="拖动调整宽度 · 双击恢复默认" tabindex="0"></div>
   </aside>
 
+  <div class="stage" id="stage">
+  <header class="chat-header" id="stage-header">
+    <button class="icon" id="toggle-sidebar" title="会话侧栏 · Ctrl+B" aria-label="切换会话侧栏"><span data-icon="sidebar"></span></button>
+    <div id="header-mark" role="img" aria-label="Shuttlegent"></div>
+    <div class="chat-heading"><strong id="session-title">新会话</strong><span id="status" role="status"></span></div>
+    <button class="icon" id="toggle-inspector" title="检视窗格 · Ctrl+I" aria-label="切换检视窗格"><span data-icon="inspector"></span></button>
+  </header>
+  <div class="stage-body">
   <main class="chat" id="chat">
-    <header class="chat-header">
-      <button class="icon" id="toggle-sidebar" title="会话侧栏 · Ctrl+B" aria-label="切换会话侧栏"><span data-icon="sidebar"></span></button>
-      <div id="header-mark" role="img" aria-label="Shuttlegent"></div>
-      <div class="chat-heading"><strong id="session-title">新会话</strong><span id="status" role="status"></span></div>
-      <button class="icon" id="toggle-inspector" title="检视窗格 · Ctrl+I" aria-label="切换检视窗格"><span data-icon="inspector"></span></button>
-    </header>
     <div id="banner" class="banner" hidden></div>
     <div class="conversation" id="conversation" tabindex="0" aria-label="对话记录"><div class="message-column" id="messages"></div></div>
     <button class="back-bottom" id="back-bottom" hidden>新内容 · 回到底部 <span data-icon="arrow-down" data-size="14"></span></button>
@@ -60,15 +62,27 @@
 
   <aside class="inspector" id="inspector" aria-label="检视窗格">
     <div class="pane-resizer" id="inspector-resizer" data-pane="inspector" role="separator" aria-orientation="vertical" aria-label="调整检视窗格宽度" title="拖动调整宽度 · 双击恢复默认" tabindex="0"></div>
-    <header><strong>检视</strong></header>
-    <div class="tabs" role="tablist" aria-label="检视内容" id="tabs">
-      <button role="tab" id="tab-changes" data-tab="changes" aria-controls="inspection">变更预览</button>
-      <button role="tab" id="tab-tools" data-tab="tools" aria-controls="inspection">工具详情</button>
-      <button role="tab" id="tab-log" data-tab="log" aria-controls="inspection">运行日志</button>
+    <div class="cards" id="cards">
+      <section class="card" aria-labelledby="card-head-context">
+        <button class="card-head" id="card-head-context" data-card="context" aria-controls="card-body-context"><span class="card-title">上下文</span><span class="card-caret" aria-hidden="true"></span><span class="card-summary" id="card-summary-context"></span></button>
+        <div class="card-body" id="card-body-context" role="region" aria-labelledby="card-head-context"></div>
+      </section>
+      <section class="card" aria-labelledby="card-head-mcp">
+        <button class="card-head" id="card-head-mcp" data-card="mcp" aria-controls="card-body-mcp"><span class="card-title">MCP</span><span class="card-caret" aria-hidden="true"></span><span class="card-summary" id="card-summary-mcp"></span></button>
+        <div class="card-body" id="card-body-mcp" role="region" aria-labelledby="card-head-mcp"></div>
+      </section>
+      <section class="card" aria-labelledby="card-head-tools">
+        <button class="card-head" id="card-head-tools" data-card="tools" aria-controls="card-body-tools"><span class="card-title">工具详情</span><span class="card-caret" aria-hidden="true"></span><span class="card-summary" id="card-summary-tools"></span></button>
+        <div class="card-body" id="card-body-tools" role="region" aria-labelledby="card-head-tools"></div>
+      </section>
+      <section class="card" aria-labelledby="card-head-log">
+        <button class="card-head" id="card-head-log" data-card="log" aria-controls="card-body-log"><span class="card-title">日志</span><span class="card-caret" aria-hidden="true"></span><span class="card-summary" id="card-summary-log"></span></button>
+        <div class="card-body" id="card-body-log" role="region" aria-labelledby="card-head-log"></div>
+      </section>
     </div>
-    <div id="inspection" role="tabpanel"></div>
-    <footer>预览与实际执行结果分别展示。<br>只有明确确认后才进入写操作。</footer>
   </aside>
+  </div>
+  </div>
 </div>
 
 <dialog id="rename-dialog" aria-labelledby="rename-title">

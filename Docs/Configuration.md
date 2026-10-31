@@ -62,6 +62,8 @@ Shuttlegent 的设置分两处：
 | Engine Toolsets > Non Undoable Tools | 不记入编辑器事务、标为不可撤销的引擎工具（撤销会损坏对象的工具），见 [Tools.md §3.3](Tools.md#33-撤销) |
 | Engine Toolsets > Destructive Tool Prefixes | 名字以这些词开头的引擎工具，确认卡标为删除、移动或改名操作 |
 
+外部 MCP 服务是否会声明给下一次会话、被跳过的原因，可在面板检视窗格的 MCP 卡片中查看（见 [Architecture.md §4](Architecture.md#4-对话面板)）。
+
 引擎 Toolset 的规则与默认值见 [Tools.md §3](Tools.md#3-引擎-toolset)；技能、模板、外部 MCP 与界面指路的写法见 [Extending.md](Extending.md)。
 
 ⚠️ 插件的默认名单写在插件 `Config/DefaultShuttlegent.ini` 中。项目要增减条目时，在项目的 `Config/DefaultShuttlegent.ini` 里用 `+条目=` 追加、`-条目=` 删除，不要整段重写，否则默认规则会被覆盖。

@@ -150,6 +150,7 @@ public:
 	TSharedPtr<FShuttlegentChatEntry> FindToolCallOf(const TSharedPtr<FShuttlegentChatEntry>& Permission) const;
 	int64 GetUsedTokens() const { return Current->UsedTokens; }
 	int64 GetContextSize() const { return Current->ContextSize; }
+	const FShuttlegentContextBreakdown& GetContextBreakdown() const { return Current->ContextBreakdown; }
 
 	/** Starts the runtime if it is not running; a failure becomes the start issue. */
 	void EnsureRuntime();
@@ -329,6 +330,7 @@ private:
 	void HandleRuntimeExited(int32 ExitCode, bool bExpected);
 	void HandleError(const FString& SessionId, const FString& Message);
 	void HandleConfigOptionsChanged(const FString& SessionId);
+	void HandleContextBreakdown(const FString& SessionId, const FShuttlegentContextBreakdown& Breakdown);
 	void HandlePermissionRequest(const TSharedPtr<FJsonObject>& Params, TFunction<void(bool)> Respond);
 
 	void HandleWriteRequested(const FShuttlegentWriteRequest& Request);

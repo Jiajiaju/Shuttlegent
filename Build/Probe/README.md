@@ -57,3 +57,4 @@ python -I Build\Probe\show_log.py Saved\Probe\s05_tools.jsonl
 | `s11_image` | Image input on the default model: read by the model, or declined at `initialize` (`promptCapabilities.image`) |
 | `s12_plugin` | A plugin inserted by a patch from an absolute path loads in the packed runtime and receives session events |
 | `s13_image_flash` | Image input on `deepseek-flash` |
+| `s14_context` | The shipped `Runtime/plugins/shuttlegent-context-tap.mjs` posts the session's context breakdown (system, tools, messages) to the editor endpoint with the endpoint token |

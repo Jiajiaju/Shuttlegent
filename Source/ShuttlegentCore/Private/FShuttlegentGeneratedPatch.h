@@ -5,10 +5,11 @@
 /**
  * The second profile patch, written into DSH_HOME before every launch (Shuttlegent.md section 8.2): the user's
  * DeepSeek endpoint, provider routes and default route and model, the project's skill directories, and the user's
- * Shell switch. Written as JSON, which the runtime reads as YAML. Holds no secrets: providers name their key variables only.
+ * Shell switch, and Shuttlegent's own runtime plugins found under PluginDir. Written as JSON, which the runtime reads as
+ * YAML. Holds no secrets: providers name their key variables only.
  */
 struct FShuttlegentGeneratedPatch
 {
 	/** Writes the patch to DshHome; false with OutError when the file cannot be written. */
-	static bool Write(const FString& DshHome, bool bShell, FString& OutPath, FString& OutError);
+	static bool Write(const FString& DshHome, const FString& PluginDir, bool bShell, FString& OutPath, FString& OutError);
 };

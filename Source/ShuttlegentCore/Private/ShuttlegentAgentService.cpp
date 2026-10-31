@@ -139,6 +139,7 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 
 	FShuttlegentRuntimeLaunchSpec Spec;
 	if (!FShuttlegentRuntimeLaunchSpec::Build(Spec, OutError, StartIssue)) return false;
+	if (RuntimeEnvironmentProvider) RuntimeEnvironmentProvider(Spec.Environment);
 
 	Connection = MakeUnique<FShuttlegentAcpConnection>();
 	Connection->OnNotification.AddSP(this, &FShuttlegentAgentService::HandleNotification);

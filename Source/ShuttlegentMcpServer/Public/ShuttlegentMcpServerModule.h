@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Delegates/Delegate.h"
 #include "Modules/ModuleInterface.h"
 
 class FShuttlegentMcpEndpoint;
@@ -7,7 +8,11 @@ class IShuttlegentTool;
 class FShuttlegentQuestionGate;
 class FShuttlegentWriteGate;
 class FShuttlegentWriteProbe;
-enum class EShuttlegentAgentState : uint8;
+struct FShuttlegentContextBreakdown;
+struct FShuttlegentExternalMcpState;
+
+/** A session's context breakdown arrived from the runtime (ACP session id, breakdown); game thread. */
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentContextBreakdown, const FString& /*SessionId*/, const FShuttlegentContextBreakdown& /*Breakdown*/);
 
 class SHUTTLEGENTMCPSERVER_API FShuttlegentMcpServerModule : public IModuleInterface
 {
@@ -24,6 +29,8 @@ private:
 	/** The MCP endpoint the runtime calls editor tools through; declared to it with every session. */
 	TSharedPtr<FShuttlegentMcpEndpoint> Endpoint;
 
+	FOnShuttlegentContextBreakdown ContextBreakdownEvent;
+
 public:
 	//~ Begin IModuleInterface Interface.
 	virtual void StartupModule() override;
@@ -38,7 +45,16 @@ public:
 	/** Every tool the registered providers offer, switched on or off; for the settings' tool switches. */
 	TArray<TSharedRef<IShuttlegentTool>> GetRegisteredTools() const;
 
-private:
-	/** A runtime that starts gets a new endpoint token. */
-	void HandleAgentStateChanged(EShuttlegentAgentState NewState);
+	/** Name the runtime knows the editor endpoint by; its tool names carry it as a prefix. */
+	FString GetEndpointName() const;
+
+	/** Whether the editor endpoint listens, and its port (0 while not listening); for the panel. */
+	bool IsEndpointListening() const;
+	uint32 GetEndpointPort() const;
+
+	/** The project's external MCP servers and why any is left out of the next session's declaration; for the panel. */
+	TArray<FShuttlegentExternalMcpState> GetExternalServers() const;
+
+	/** Context breakdowns the context tap runtime plugin reports after each assistant message. */
+	FOnShuttlegentContextBreakdown& OnContextBreakdown() { return ContextBreakdownEvent; }
 };

@@ -26,6 +26,7 @@ private:
 
 	FTSTicker::FDelegateHandle TickerHandle;
 	FDelegateHandle SettingsChangedHandle;
+	FDelegateHandle ProjectSettingsChangedHandle;
 
 	/** Fingerprint of each entry as last sent, and the entry order as last sent. */
 	TMap<int32, uint32> SentFingerprints;
@@ -41,6 +42,7 @@ private:
 	bool bSessionsDirty = false;
 	bool bRunLogDirty = false;
 	bool bQueueDirty = false;
+	bool bMcpDirty = false;
 
 public:
 	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, TFunction<void(const FString&)> InPush);
@@ -69,6 +71,9 @@ private:
 	/** The current session's queue and whether the failed turn can be retried. */
 	void WriteQueue(const TSharedRef<FJsonObject>& Root) const;
 
+	/** MCP card: the editor endpoint and its tools, engine toolsets, the project's external servers. */
+	void WriteMcp(const TSharedRef<FJsonObject>& Root) const;
+
 	/** Oldest unanswered runtime permission request with what it is about, or null. */
 	void WritePendingPermission(const TSharedRef<FJsonObject>& Root) const;
 
@@ -88,4 +93,5 @@ private:
 	void HandleQueueChanged();
 	void HandleTurnFinished(bool bCompleted);
 	void HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);
+	void HandleProjectSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);
 };

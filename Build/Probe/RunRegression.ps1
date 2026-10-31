@@ -249,6 +249,12 @@ try {
         $TapOverlay = Join-Path $OutDir 'event-tap.overlay.yml'
         [IO.File]::WriteAllText($TapOverlay, "- insert:`n    - id: shuttlegent-event-tap`n      name: '$TapPlugin'`n", $Utf8NoBom)
         Invoke-Scenario -Name 's12_plugin' -HomeName 'plugin' -Prompts @('Call the ue_read_probe tool, then tell me its result in one sentence.') -Key $ApiKey -ExtraPatches @($TapOverlay) -ExtraEnv @{ SHUTTLEGENT_EVENT_TAP_LOG = (Join-Path $OutDir 's12_plugin.events.jsonl') }
+
+        # Context tap: the shipped plugin posts each session's context breakdown to the editor endpoint (here the mock)
+        $ContextTap = (Join-Path $PluginDir 'Runtime\plugins\shuttlegent-context-tap.mjs').Replace('\', '/')
+        $ContextOverlay = Join-Path $OutDir 'context-tap.overlay.yml'
+        [IO.File]::WriteAllText($ContextOverlay, "- insert:`n    - id: shuttlegent-context-tap`n      name: '$ContextTap'`n", $Utf8NoBom)
+        Invoke-Scenario -Name 's14_context' -HomeName 'context' -Prompts @('Say hello in one word.') -Key $ApiKey -ExtraPatches @($ContextOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token }
     }
 }
 finally {

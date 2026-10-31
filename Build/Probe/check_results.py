@@ -152,6 +152,20 @@ def check_plugin(ev):
     return loaded and bool(events) and answered, f"loaded={loaded} session_events={len(events)} types={types} answered={answered}"
 
 
+def check_context(ev):
+    entries = []
+    if os.path.exists(MCP_LOG):
+        with open(MCP_LOG, encoding="utf-8") as f:
+            entries = [json.loads(line) for line in f]
+    sessions = {e["data"].get("sessionId") for e in ev if e["kind"] == "session"}
+    notes = [e for e in entries if isinstance(e.get("body"), dict) and e["body"].get("method") == "shuttlegent/contextBreakdown"]
+    mine = [e for e in notes if e["body"].get("params", {}).get("sessionId") in sessions]
+    params = mine[-1]["body"]["params"] if mine else {}
+    authorized = bool(mine) and all(e.get("auth_ok") for e in mine)
+    counted = all(params.get(k, 0) > 0 for k in ("systemTokens", "toolsTokens", "messageTokens"))
+    return authorized and counted, f"notifications={len(mine)} auth_ok={authorized} last={params}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -168,6 +182,7 @@ CHECKS = [
     ("s11_image", "H6 image input: read by the model, or declined up front", check_image),
     ("s13_image_flash", "H6 image input on deepseek-flash: read by the model, or declined up front", check_image),
     ("s12_plugin", "H1 plugin from an absolute path loads and receives session events", check_plugin),
+    ("s14_context", "Context tap posts the session's context breakdown to the editor endpoint", check_context),
 ]
 
 failed = 0

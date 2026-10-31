@@ -111,6 +111,13 @@ namespace ShuttlegentMcpEndpointConstant
 	inline const TCHAR* MethodToolsCall = TEXT("tools/call");
 	inline const TCHAR* MethodPing = TEXT("ping");
 
+	// Notification from Shuttlegent's context tap runtime plugin: a session's context breakdown, in tokens
+	inline const TCHAR* MethodContextBreakdown = TEXT("shuttlegent/contextBreakdown");
+	inline const TCHAR* FieldSessionId = TEXT("sessionId");
+	inline const TCHAR* FieldSystemTokens = TEXT("systemTokens");
+	inline const TCHAR* FieldToolsTokens = TEXT("toolsTokens");
+	inline const TCHAR* FieldMessageTokens = TEXT("messageTokens");
+
 	// JSON-RPC and MCP fields
 	inline const TCHAR* FieldJsonRpc = TEXT("jsonrpc");
 	inline const TCHAR* FieldId = TEXT("id");

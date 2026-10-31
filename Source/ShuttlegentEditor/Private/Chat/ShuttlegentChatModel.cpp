@@ -8,6 +8,8 @@
 #include "Chat/FShuttlegentToolPresentation.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
+#include "Modules/ModuleManager.h"
+#include "Endpoint/FShuttlegentContextBreakdown.h"
 #include "ShuttlegentMcpServerModule.h"
 #include "QuestionGate/FShuttlegentQuestionGate.h"
 #include "WriteGate/FShuttlegentWriteGate.h"
@@ -174,6 +176,7 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	InService->OnRuntimeExited.AddSP(this, &FShuttlegentChatModel::HandleRuntimeExited);
 	InService->OnError.AddSP(this, &FShuttlegentChatModel::HandleError);
 	InService->OnConfigOptionsChanged.AddSP(this, &FShuttlegentChatModel::HandleConfigOptionsChanged);
+	FShuttlegentMcpServerModule::Get().OnContextBreakdown().AddSP(this, &FShuttlegentChatModel::HandleContextBreakdown);
 
 	const TSharedPtr<FShuttlegentQuestionGate> Questions = FShuttlegentMcpServerModule::Get().GetQuestionGate();
 	if (Questions.IsValid())
@@ -208,6 +211,9 @@ void FShuttlegentChatModel::Shutdown()
 		Pinned->OnConfigOptionsChanged.RemoveAll(this);
 	}
 	Service.Reset();
+
+	FShuttlegentMcpServerModule* McpServer = FModuleManager::GetModulePtr<FShuttlegentMcpServerModule>(ShuttlegentEditorName::McpServerModule);
+	if (McpServer != nullptr) McpServer->OnContextBreakdown().RemoveAll(this);
 
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid())
@@ -820,6 +826,15 @@ bool FShuttlegentChatModel::DeleteSession(const FString& SessionId)
 	if (Held.IsValid()) DropConversation(*Held);
 	OnSessionsChanged.Broadcast();
 	return true;
+}
+
+void FShuttlegentChatModel::HandleContextBreakdown(const FString& SessionId, const FShuttlegentContextBreakdown& Breakdown)
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
+	if (!Conversation.IsValid()) return;
+
+	Conversation->ContextBreakdown = Breakdown;
+	if (IsCurrent(*Conversation)) OnStatusChanged.Broadcast();
 }
 
 TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::FindConversation(const FString& SessionId) const

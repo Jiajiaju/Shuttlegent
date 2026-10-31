@@ -76,7 +76,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 	const bool bWorkspaceWrite = IsValid(Settings) && Settings->bAllowWorkspaceWrite;
 	const bool bShell = IsValid(Settings) && Settings->bAllowShell;
 	FString GeneratedPatch;
-	if (!FShuttlegentGeneratedPatch::Write(DshHome, bShell, GeneratedPatch, OutError)) return false;
+	if (!FShuttlegentGeneratedPatch::Write(DshHome, PluginDir, bShell, GeneratedPatch, OutError)) return false;
 
 	OutSpec = FShuttlegentRuntimeLaunchSpec {};
 	OutSpec.Executable = Executable;

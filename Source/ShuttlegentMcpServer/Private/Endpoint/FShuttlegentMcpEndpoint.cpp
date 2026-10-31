@@ -12,6 +12,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "Endpoint/FShuttlegentContextBreakdown.h"
 #include "Endpoint/FShuttlegentToolRegistry.h"
 #include "FShuttlegentProjectConfig.h"
 #include "Endpoint/FShuttlegentToolRunner.h"
@@ -135,11 +136,10 @@ TArray<TSharedPtr<FJsonValue>> FShuttlegentMcpEndpoint::MakeDeclaration() const
 	Authorization->SetStringField(ShuttlegentMcpEndpointConstant::FieldName, ShuttlegentMcpEndpointConstant::HeaderAuthorization);
 	Authorization->SetStringField(ShuttlegentMcpEndpointConstant::FieldValue, FString(ShuttlegentMcpEndpointConstant::BearerPrefix) + Token);
 
-	const FString Url = FString::Format(ShuttlegentMcpEndpointConstant::UrlFormat, { ShuttlegentMcpEndpointConstant::Host, Port, ShuttlegentMcpEndpointConstant::Path });
 	const TSharedRef<FJsonObject> Server = MakeShared<FJsonObject>();
 	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldType, ShuttlegentMcpEndpointConstant::DeclarationTypeHttp);
 	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldName, ShuttlegentMcpEndpointConstant::ServerName);
-	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldUrl, Url);
+	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldUrl, GetUrl());
 	Server->SetArrayField(ShuttlegentMcpEndpointConstant::FieldHeaders, { MakeShared<FJsonValueObject>(Authorization) });
 	Servers.Add(MakeShared<FJsonValueObject>(Server));
 	return Servers;
@@ -182,6 +182,10 @@ bool FShuttlegentMcpEndpoint::HandleRequest(const FHttpServerRequest& Request, c
 	Message->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldMethod, Method);
 	if (!Id.IsValid())
 	{
+		const TSharedPtr<FJsonObject>* NotificationParams = nullptr;
+		Message->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldParams, NotificationParams);
+		HandleNotification(Method, NotificationParams != nullptr ? *NotificationParams : nullptr);
+
 		TUniquePtr<FHttpServerResponse> Accepted = FHttpServerResponse::Ok();
 		Accepted->Code = EHttpServerResponseCodes::Accepted;
 		OnComplete(MoveTemp(Accepted));
@@ -212,6 +216,25 @@ bool FShuttlegentMcpEndpoint::IsAuthorized(const FHttpServerRequest& Request) co
 
 	// The token is case-sensitive, unlike FString's default comparison
 	return (*Values)[0].Equals(FString(ShuttlegentMcpEndpointConstant::BearerPrefix) + Token, ESearchCase::CaseSensitive);
+}
+
+FString FShuttlegentMcpEndpoint::GetUrl() const
+{
+	return FString::Format(ShuttlegentMcpEndpointConstant::UrlFormat, { ShuttlegentMcpEndpointConstant::Host, Port, ShuttlegentMcpEndpointConstant::Path });
+}
+
+void FShuttlegentMcpEndpoint::HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params) const
+{
+	if (Method != ShuttlegentMcpEndpointConstant::MethodContextBreakdown || !Params.IsValid() || !OnContextBreakdown) return;
+
+	FString SessionId;
+	if (!Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId) || SessionId.IsEmpty()) return;
+
+	FShuttlegentContextBreakdown Breakdown;
+	Params->TryGetNumberField(ShuttlegentMcpEndpointConstant::FieldSystemTokens, Breakdown.SystemTokens);
+	Params->TryGetNumberField(ShuttlegentMcpEndpointConstant::FieldToolsTokens, Breakdown.ToolsTokens);
+	Params->TryGetNumberField(ShuttlegentMcpEndpointConstant::FieldMessageTokens, Breakdown.MessageTokens);
+	OnContextBreakdown(SessionId, Breakdown);
 }
 
 void FShuttlegentMcpEndpoint::Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, TFunction<void(const TSharedRef<FJsonObject>&, int32, const FString&)> OnAnswer)

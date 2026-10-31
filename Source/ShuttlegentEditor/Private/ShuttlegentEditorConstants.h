@@ -21,6 +21,9 @@ namespace ShuttlegentEditorName
 	// Module that hosts the settings viewer
 	inline const FName SettingsModule = TEXT("Settings");
 
+	// Module of the editor endpoint, which may already be gone when the chat model shuts down
+	inline const FName McpServerModule = TEXT("ShuttlegentMcpServer");
+
 	// Settings viewer location of UShuttlegentSettings
 	inline const FName SettingsContainer = TEXT("Editor");
 	inline const FName SettingsCategory = TEXT("Shuttlegent");
@@ -209,6 +212,12 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* InspectorWidth = TEXT("inspectorWidth");
 	inline const TCHAR* UsedTokens = TEXT("usedTokens");
 	inline const TCHAR* ContextSize = TEXT("contextSize");
+
+	// Context breakdown estimated by the runtime (system prompts, tool definitions, messages), or null before the first report
+	inline const TCHAR* ContextBreakdown = TEXT("contextBreakdown");
+	inline const TCHAR* SystemTokens = TEXT("system");
+	inline const TCHAR* ToolsTokens = TEXT("tools");
+	inline const TCHAR* MessageTokens = TEXT("messages");
 	inline const TCHAR* Config = TEXT("config");
 
 	// Slash templates, sent with the snapshot: name, description, body
@@ -288,6 +297,28 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* CanUndo = TEXT("canUndo");
 	inline const TCHAR* UndoReason = TEXT("undoReason");
 	inline const TCHAR* Undone = TEXT("undone");
+
+	// MCP card: the editor endpoint (name, listening, port, tools), engine toolsets and external servers
+	inline const TCHAR* Mcp = TEXT("mcp");
+	inline const TCHAR* Endpoint = TEXT("endpoint");
+	inline const TCHAR* Listening = TEXT("listening");
+	inline const TCHAR* Port = TEXT("port");
+	inline const TCHAR* Tools = TEXT("tools");
+	inline const TCHAR* Enabled = TEXT("enabled");
+	inline const TCHAR* Toolsets = TEXT("toolsets");
+	inline const TCHAR* ToolCount = TEXT("toolCount");
+	inline const TCHAR* Blocked = TEXT("blocked");
+	inline const TCHAR* Servers = TEXT("servers");
+	inline const TCHAR* Stdio = TEXT("stdio");
+
+	// External server: why it is left out of the next session's declaration; empty when declared
+	inline const TCHAR* Issue = TEXT("issue");
+	inline const TCHAR* IssueNone = TEXT("");
+	inline const TCHAR* IssueNameInvalid = TEXT("nameInvalid");
+	inline const TCHAR* IssueNameTaken = TEXT("nameTaken");
+	inline const TCHAR* IssueCommandNotAbsolute = TEXT("commandNotAbsolute");
+	inline const TCHAR* IssueUrlMissing = TEXT("urlMissing");
+	inline const TCHAR* IssueHeaderValueMissing = TEXT("headerValueMissing");
 
 	// Config option: current value and choices
 	inline const TCHAR* Current = TEXT("current");

@@ -28,9 +28,10 @@ DerivedDataCache/
 .env
 .env.*
 
-# Agent runtime build outputs (produced by Build/BuildRuntime.ps1); only the profile is tracked
+# Agent runtime build outputs (produced by Build/BuildRuntime.ps1); only the profile and Shuttlegent's runtime plugins are tracked
 Runtime/*
 !Runtime/profile/
+!Runtime/plugins/
 
 # Probe scripts' Python caches
 __pycache__/

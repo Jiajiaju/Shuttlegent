@@ -4,6 +4,7 @@
 #include "Dom/JsonValue.h"
 #include "Misc/Paths.h"
 
+#include "Endpoint/FShuttlegentExternalMcpState.h"
 #include "FShuttlegentSecrets.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentMcpServerConstants.h"
@@ -24,12 +25,45 @@ namespace FShuttlegentExternalMcpPrivate
 		return Entry;
 	}
 
-	/** The declaration of one server, or nullptr with the reason it is left out. */
-	TSharedPtr<FJsonObject> MakeDeclaration(const FShuttlegentExternalMcpServer& Server, FString& OutReason)
+	/** Log text of why a server is left out. */
+	FString IssueText(const FShuttlegentExternalMcpState& State)
+	{
+		switch (State.Issue)
+		{
+		case EShuttlegentExternalMcpIssue::NameInvalid:
+			{
+				return TEXT("its name is empty or taken by the editor endpoint");
+			}
+		case EShuttlegentExternalMcpIssue::NameTaken:
+			{
+				return TEXT("another external server has the same name");
+			}
+		case EShuttlegentExternalMcpIssue::CommandNotAbsolute:
+			{
+				return TEXT("its command is not an absolute path");
+			}
+		case EShuttlegentExternalMcpIssue::UrlMissing:
+			{
+				return TEXT("it has no URL");
+			}
+		case EShuttlegentExternalMcpIssue::HeaderValueMissing:
+			{
+				return FString::Printf(TEXT("a header needs %s, which has no value"), *State.Detail);
+			}
+		case EShuttlegentExternalMcpIssue::None:
+		default:
+			{
+				return FString();
+			}
+		}
+	}
+
+	/** The declaration of one server, or nullptr with why it is left out in OutState. */
+	TSharedPtr<FJsonObject> MakeDeclaration(const FShuttlegentExternalMcpServer& Server, FShuttlegentExternalMcpState& OutState)
 	{
 		if (Server.Name.IsEmpty() || Server.Name.Equals(ShuttlegentMcpEndpointConstant::ServerName, ESearchCase::IgnoreCase))
 		{
-			OutReason = TEXT("its name is empty or taken by the editor endpoint");
+			OutState.Issue = EShuttlegentExternalMcpIssue::NameInvalid;
 			return nullptr;
 		}
 
@@ -39,7 +73,7 @@ namespace FShuttlegentExternalMcpPrivate
 		{
 			if (Server.Command.IsEmpty() || FPaths::IsRelative(Server.Command))
 			{
-				OutReason = TEXT("its command is not an absolute path");
+				OutState.Issue = EShuttlegentExternalMcpIssue::CommandNotAbsolute;
 				return nullptr;
 			}
 
@@ -56,7 +90,7 @@ namespace FShuttlegentExternalMcpPrivate
 
 		if (Server.Url.IsEmpty())
 		{
-			OutReason = TEXT("it has no URL");
+			OutState.Issue = EShuttlegentExternalMcpIssue::UrlMissing;
 			return nullptr;
 		}
 
@@ -66,7 +100,8 @@ namespace FShuttlegentExternalMcpPrivate
 			FString Value;
 			if (!Header.ValueVariable.IsEmpty() && !FShuttlegentSecrets::Resolve(Header.ValueVariable, Value))
 			{
-				OutReason = FString::Printf(TEXT("header %s needs %s, which has no value"), *Header.Name, *Header.ValueVariable);
+				OutState.Issue = EShuttlegentExternalMcpIssue::HeaderValueMissing;
+				OutState.Detail = Header.ValueVariable;
 				return nullptr;
 			}
 			Headers.Add(MakeShared<FJsonValueObject>(MakeNameValue(Header.Name, Header.Prefix + Value)));
@@ -76,28 +111,47 @@ namespace FShuttlegentExternalMcpPrivate
 		Declaration->SetArrayField(ShuttlegentMcpEndpointConstant::FieldHeaders, Headers);
 		return Declaration;
 	}
+
+	/** The declarations of the servers that can work, and every server's state in settings order. */
+	void Evaluate(TArray<TSharedPtr<FJsonValue>>& OutDeclarations, TArray<FShuttlegentExternalMcpState>& OutStates)
+	{
+		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+		if (!IsValid(Project)) return;
+
+		TSet<FString> Names;
+		for (const FShuttlegentExternalMcpServer& Server : Project->ExternalMcpServers)
+		{
+			FShuttlegentExternalMcpState& State = OutStates.AddDefaulted_GetRef();
+			State.Name = Server.Name;
+			State.bStdio = Server.Type == EShuttlegentExternalMcpType::Stdio;
+
+			const TSharedPtr<FJsonObject> Declaration = MakeDeclaration(Server, State);
+			if (Declaration.IsValid() && Names.Contains(Server.Name.ToLower())) State.Issue = EShuttlegentExternalMcpIssue::NameTaken;
+			if (!Declaration.IsValid() || State.Issue != EShuttlegentExternalMcpIssue::None) continue;
+
+			Names.Add(Server.Name.ToLower());
+			OutDeclarations.Add(MakeShared<FJsonValueObject>(Declaration.ToSharedRef()));
+		}
+	}
 }
 
 TArray<TSharedPtr<FJsonValue>> FShuttlegentExternalMcp::MakeDeclarations()
 {
 	TArray<TSharedPtr<FJsonValue>> Declarations;
-	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
-	if (!IsValid(Project)) return Declarations;
+	TArray<FShuttlegentExternalMcpState> States;
+	FShuttlegentExternalMcpPrivate::Evaluate(Declarations, States);
 
-	TSet<FString> Names;
-	for (const FShuttlegentExternalMcpServer& Server : Project->ExternalMcpServers)
+	for (const FShuttlegentExternalMcpState& State : States)
 	{
-		FString Reason;
-		const TSharedPtr<FJsonObject> Declaration = FShuttlegentExternalMcpPrivate::MakeDeclaration(Server, Reason);
-		if (Declaration.IsValid() && Names.Contains(Server.Name.ToLower())) Reason = TEXT("another external server has the same name");
-		if (!Declaration.IsValid() || !Reason.IsEmpty())
-		{
-			UE_LOG(LogShuttlegent, Warning, TEXT("External MCP server '%s' left out: %s."), *Server.Name, *Reason);
-			continue;
-		}
-
-		Names.Add(Server.Name.ToLower());
-		Declarations.Add(MakeShared<FJsonValueObject>(Declaration.ToSharedRef()));
+		if (State.Issue != EShuttlegentExternalMcpIssue::None) UE_LOG(LogShuttlegent, Warning, TEXT("External MCP server '%s' left out: %s."), *State.Name, *FShuttlegentExternalMcpPrivate::IssueText(State));
 	}
 	return Declarations;
+}
+
+TArray<FShuttlegentExternalMcpState> FShuttlegentExternalMcp::DescribeServers()
+{
+	TArray<TSharedPtr<FJsonValue>> Declarations;
+	TArray<FShuttlegentExternalMcpState> States;
+	FShuttlegentExternalMcpPrivate::Evaluate(Declarations, States);
+	return States;
 }

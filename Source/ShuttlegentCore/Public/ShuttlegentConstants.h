@@ -48,6 +48,10 @@ namespace ShuttlegentEnvVar
 	// Display name of that provider in the start guide card
 	inline const TCHAR* ProviderName = TEXT("DeepSeek");
 
+	// URL and bearer token of the editor endpoint, for Shuttlegent's own runtime plugins (the context tap)
+	inline const TCHAR* EditorEndpointUrl = TEXT("SHUTTLEGENT_EDITOR_ENDPOINT");
+	inline const TCHAR* EditorEndpointToken = TEXT("SHUTTLEGENT_EDITOR_TOKEN");
+
 	// Value written to DSH_TELEMETRY_DISABLED; any non-empty value opts out
 	inline const TCHAR* TelemetryDisabledValue = TEXT("1");
 
@@ -119,6 +123,11 @@ namespace ShuttlegentProviderConstant
 	inline const TCHAR* FieldModel = TEXT("model");
 	inline const TCHAR* FieldIncludeDefaultRoots = TEXT("includeDefaultRoots");
 	inline const TCHAR* FieldCustomSkillDirs = TEXT("customSkillDirs");
+
+	// Row that inserts the context tap plugin, loaded from its absolute path
+	inline const TCHAR* RowContextTap = TEXT("shuttlegent-context-tap");
+	inline const TCHAR* FieldInsert = TEXT("insert");
+	inline const TCHAR* FieldPluginName = TEXT("name");
 }
 
 /** Plugin-relative and user-level paths. */
@@ -134,6 +143,9 @@ namespace ShuttlegentPath
 
 	// dsh profile launched over ACP
 	inline const TCHAR* AcpProfile = TEXT("acp");
+
+	// Runtime plugin that reports each session's context breakdown to the editor endpoint, relative to the plugin directory
+	inline const TCHAR* ContextTapPlugin = TEXT("Runtime/plugins/shuttlegent-context-tap.mjs");
 
 	// DSH_HOME, relative to %LOCALAPPDATA%; also the runtime's launch directory, which must be on the system drive
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");

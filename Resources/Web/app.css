@@ -35,7 +35,22 @@ h1,h2,h3,h4,p{margin:0}
 .scrim{position:absolute;inset:0;width:100%;height:100%;background:#0008;border:0;border-radius:0;z-index:4;padding:0}
 .sidebar,.inspector{flex-shrink:0;display:flex;flex-direction:column;background:var(--sidebar);border-color:var(--subtle)}
 .sidebar{position:relative;width:var(--sidebar-width,248px);padding:0 12px 14px;border-right:1px solid var(--subtle)}
-.inspector{position:relative;width:var(--inspector-width,360px);border-left:1px solid var(--subtle)}
+.inspector{position:relative;width:var(--inspector-width,360px);background:var(--bg)}
+
+/* Stage: the header runs across the conversation and the inspector to the right edge; below it the inspector squeezes the conversation */
+.stage{flex:1;min-width:0;display:flex;flex-direction:column}
+.stage-body{--scrollbar-size:10px;--inspector-space:0px;position:relative;flex:1;min-height:0;display:flex}
+
+/* The conversation scrolls across the whole stage so its scrollbar sits on the panel's right edge (as in Claude); a
+   docked inspector lies over the conversation's right part, left of that scrollbar, and the conversation's content
+   keeps clear of it through --inspector-space (app.js sets workbench.inspector-docked) */
+.workbench.inspector-docked .stage-body{--inspector-space:var(--inspector-width,360px)}
+.inspector[data-mode=docked]{position:absolute;top:0;bottom:0;right:var(--scrollbar-size);z-index:2}
+.chat .conversation{padding-right:calc(24px + var(--inspector-space))}
+.chat>.banner{margin-right:var(--inspector-space)}
+.chat.is-empty{padding-right:var(--inspector-space)}
+.chat.is-empty .conversation{padding-right:24px}
+#toggle-inspector[aria-expanded=true]{background:var(--raised);color:var(--text)}
 
 /* Drag grip on a docked pane's inner edge (app.js clamps the width so the conversation keeps its minimum) */
 .pane-resizer{position:absolute;top:0;bottom:0;width:6px;z-index:2;cursor:col-resize;background:transparent;transition:background .15s}
@@ -74,28 +89,70 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 .role-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-left:11px;font-size:11px;color:var(--muted)}
 .role-row span{flex:1}
 
-.inspector>header{height:var(--header-height);padding:0 16px;display:flex;align-items:center;border-bottom:1px solid var(--subtle);flex-shrink:0}
-.tabs{display:flex;padding:0 14px;border-bottom:1px solid var(--line);flex-shrink:0}
-.tabs button{border:0;border-radius:0;background:transparent;font-size:12px;padding:12px 8px;color:var(--muted);border-bottom:2px solid transparent}
-.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--red)}
-#inspection{flex:1;overflow:auto;padding:18px}
-#inspection .empty-note{color:var(--muted);font-size:12px}
-.inspector footer{padding:16px 18px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;flex-shrink:0}
-.tool-detail{border-bottom:1px solid var(--line);padding:4px 0}
-.tool-detail.selected{background:var(--surface);border-radius:var(--control-radius)}
-.tool-detail>button{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:0;text-align:left;font-size:12px;padding:8px 6px;min-width:0}
-.tool-detail .tool-summary{flex:1}
+/* Inspector cards (after Claude's side panel): one topic each, expanded on its own; the pane scrolls as a whole */
+.cards{--context-used:#4F8EF7;--context-tools:#2BB596;--context-system:#E0A43A;flex:1;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid var(--line);border-radius:14px;flex-shrink:0;min-width:0}
+.card-head{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:14px;padding:14px 16px;text-align:left;font-size:13px;font-weight:500;color:var(--text);min-width:0}
+.card-head:hover .card-caret{color:var(--text)}
+.card-caret{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:5px solid currentColor;color:var(--muted);transition:transform .15s}
+.card.open .card-caret{transform:rotate(90deg)}
+.card-summary{margin-left:auto;color:var(--muted);font-size:12px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-summary.warn{color:var(--warning)}
+.card.open .card-head{padding-bottom:8px}
+.card-body{padding:0 16px 14px;min-width:0;font-size:12px}
+.card-body .empty-note{color:var(--muted);font-size:12px;margin:4px 0}
+.card-body .fine{color:var(--muted);font-size:11px;line-height:1.6;margin:10px 0 0}
+.context-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:13px;color:var(--text)}
+.context-head .count{color:var(--muted);font-size:12px}
+.meter{display:flex;gap:2px;height:4px;border-radius:2px;background:var(--line);margin:8px 0 10px;overflow:hidden}
+.meter span{display:block;height:100%;border-radius:2px;background:var(--context-used);transition:width .3s}
+.meter.high span{background:var(--warning)}
+.meter.full span{background:var(--error)}
+/* Context parts, coloured like Claude's context panel: messages blue, tool definitions teal, system prompts amber */
+.meter span.messages,.kv .swatch.messages{background:var(--context-used)}
+.meter span.tools,.kv .swatch.tools{background:var(--context-tools)}
+.meter span.system,.kv .swatch.system{background:var(--context-system)}
+.kv-list{list-style:none;margin:0;padding:0}
+.kv-list+.kv-list,.kv-list+.card-group{margin-top:8px}
+.kv{display:flex;align-items:center;gap:10px;padding:5px 0;min-width:0;line-height:18px;font-size:12.5px}
+.kv .lead{display:inline-flex;color:var(--muted);flex-shrink:0}
+.kv .swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;background:var(--subtle)}
+.kv .swatch.used{background:var(--context-used)}
+.kv .swatch.used.high{background:var(--warning)}
+.kv .swatch.used.full{background:var(--error)}
+.kv .k{flex:1;min-width:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv.lit .k{color:var(--text)}
+.kv .v{color:var(--text);white-space:nowrap}
+.legend .v{color:var(--muted)}
+.kv .x{width:52px;text-align:right;color:var(--text);flex-shrink:0}
+.kv.mono .k{color:var(--text);font:11.5px Consolas,monospace}
+.kv.mono .v{color:var(--muted)}
+.kv.warn .v{color:var(--warning);white-space:normal;text-align:right}
+.kv .tag{color:var(--muted);background:var(--raised);padding:0 5px;border-radius:3px;font-size:10px;line-height:16px}
+.group-head{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;padding:5px 0;text-align:left;font-size:12.5px;min-width:0}
+.group-chevron{display:inline-flex;width:16px;justify-content:center;color:var(--muted);transition:transform .15s}
+.card-group.open .group-chevron{transform:rotate(90deg)}
+.group-head .k{flex:1;color:var(--text)}
+.group-head .v{color:var(--muted)}
+.group-head:hover .group-chevron{color:var(--text)}
+.nested{padding-left:26px}
+.tool-detail{border-radius:8px}
+.tool-detail.selected{background:var(--raised)}
+.tool-detail>button{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:8px;text-align:left;font-size:12px;padding:5px 6px;min-width:0}
+.tool-detail>button:hover{background:var(--raised)}
+.tool-detail .tool-name{white-space:nowrap}
+.tool-detail .tool-summary{flex:1;min-width:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tool-detail .tool-state{color:var(--muted);font-size:11px;white-space:nowrap}
-.tool-detail-body{padding:0 6px 10px 28px}
+.tool-detail-body{padding:0 6px 10px 26px}
 .tool-detail-body h4{font-size:11px;font-weight:400;color:var(--muted);margin:6px 0 4px}
-.tool-detail-body pre{margin:0;font:11px/1.7 Consolas,monospace;color:var(--info);white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;user-select:text}
-.log{font:11px/1.8 Consolas,'Microsoft YaHei',monospace;color:var(--muted);padding:8px 0;border-bottom:1px solid #443c35}
-.log time{color:var(--info);display:block}
+.tool-detail-body pre{margin:0;padding:8px;border-radius:6px;background:var(--surface);font:11px/1.7 Consolas,monospace;color:var(--info);white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;user-select:text}
+.log{display:flex;gap:10px;font:11px/18px Consolas,'Microsoft YaHei',monospace;color:var(--text);padding:3px 0;min-width:0}
+.log time{color:var(--muted);flex-shrink:0}
 .log.warning{color:var(--warning)}
 
 .chat{display:flex;flex-direction:column;flex:1;min-width:0;position:relative}
 .workbench.full .chat{min-width:320px}
-.chat-header{display:flex;align-items:center;gap:8px;height:var(--header-height);flex-shrink:0;border-bottom:1px solid var(--subtle);padding:0 12px}
+.chat-header{display:flex;align-items:center;gap:8px;height:var(--header-height);flex-shrink:0;padding:0 12px}
 .chat-heading{flex:1;min-width:0;display:flex;align-items:center;gap:12px}
 .chat-heading strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .chat-heading span{font-size:11px;color:var(--muted);white-space:nowrap}
@@ -183,9 +240,28 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .state-icon.running .sg-icon,.stop.is-stopping .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
 @keyframes sg-rotate{to{transform:rotate(360deg)}}
 
-.back-bottom{position:absolute;left:50%;transform:translateX(-50%);bottom:150px;font-size:12px;box-shadow:0 2px 14px #0007;z-index:3;display:inline-flex;align-items:center;gap:4px}
+.back-bottom{position:absolute;left:calc((100% - var(--inspector-space)) / 2);transform:translateX(-50%);bottom:calc(var(--composer-height,140px) + 10px);font-size:12px;box-shadow:0 2px 14px #0007;z-index:3;display:inline-flex;align-items:center;gap:4px}
 
 .composer-column{padding:0 24px 18px;flex-shrink:0}
+
+/* Once there is a conversation it scrolls the full height under the composer, which floats over its bottom (as in
+   Claude): the scrollbar runs from the header to the bottom edge. app.js keeps --composer-height on #chat current. */
+.chat:not(.is-empty) .conversation{padding-bottom:calc(var(--composer-height,140px) + 16px)}
+.chat:not(.is-empty) .composer-column{position:absolute;left:0;right:calc(var(--scrollbar-size) + var(--inspector-space));bottom:0;width:auto;padding-top:16px;background:linear-gradient(to bottom,transparent,var(--bg) 16px)}
+
+/* Round-ended thumb on a transparent track for the conversation and the inspector; the standard properties are
+   reset so the webkit ones apply */
+.conversation,.cards{scrollbar-width:auto;scrollbar-color:auto}
+.conversation::-webkit-scrollbar,.cards::-webkit-scrollbar{width:var(--scrollbar-size)}
+.conversation::-webkit-scrollbar-track,.cards::-webkit-scrollbar-track{background:transparent}
+.conversation::-webkit-scrollbar-thumb,.cards::-webkit-scrollbar-thumb{background:var(--line);border:3px solid transparent;border-radius:999px;background-clip:padding-box}
+.conversation::-webkit-scrollbar-thumb:hover,.cards::-webkit-scrollbar-thumb:hover{background-color:var(--muted)}
+.conversation::-webkit-scrollbar-button,.cards::-webkit-scrollbar-button{display:none;height:0}
+
+/* The inspector's own thumb sits just left of the conversation's; it shows only while the pointer is over the inspector */
+.cards::-webkit-scrollbar-thumb{background-color:transparent}
+.cards:hover::-webkit-scrollbar-thumb{background-color:var(--line)}
+.cards:hover::-webkit-scrollbar-thumb:hover{background-color:var(--muted)}
 .composer{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) auto auto;align-items:end;gap:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:8px}
 .composer>.references{grid-column:1/-1}
 .composer>#add-reference{grid-column:1;grid-row:2}

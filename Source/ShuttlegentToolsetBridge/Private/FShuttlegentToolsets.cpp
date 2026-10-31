@@ -2,12 +2,15 @@
 
 #include "Editor.h"
 #include "Internationalization/Regex.h"
+#include "CoreGlobals.h"
+#include "Templates/UnrealTemplate.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "ToolsetRegistry/Toolset.h"
 #include "ToolsetRegistry/ToolsetRegistry.h"
 #include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
 
+#include "FShuttlegentEngineMessageCapture.h"
 #include "ShuttlegentProjectSettings.h"
 #include "ShuttlegentSettings.h"
 #include "ShuttlegentToolsetBridgeConstants.h"
@@ -80,6 +83,18 @@ namespace FShuttlegentToolsetsPrivate
 		return Project->ReadOnlyToolPrefixes.ContainsByPredicate([&Tool](const FString& Prefix) { return StartsWithWord(Tool.Name, Prefix.TrimStartAndEnd()); });
 	}
 
+	bool IsUndoable(const FShuttlegentToolsetTool& Tool)
+	{
+		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+		return !IsValid(Project) || !IsNamed(Project->NonUndoableTools, Tool);
+	}
+
+	bool IsDestructive(const FShuttlegentToolsetTool& Tool)
+	{
+		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+		return IsValid(Project) && Project->DestructiveToolPrefixes.ContainsByPredicate([&Tool](const FString& Prefix) { return StartsWithWord(Tool.Name, Prefix.TrimStartAndEnd()); });
+	}
+
 	/** The tools of a toolset's schema the project does not block, sorted by name. */
 	TArray<FShuttlegentToolsetTool> ParseTools(const FString& ToolsetName, const FString& SchemaJson)
 	{
@@ -109,6 +124,8 @@ namespace FShuttlegentToolsetsPrivate
 			const TSharedPtr<FJsonObject>* InputSchema = nullptr;
 			if ((*EntryObject)->TryGetObjectField(ShuttlegentToolsetBridgeConstant::FieldInputSchema, InputSchema) && InputSchema != nullptr) Tool.InputSchema = *InputSchema;
 			Tool.bReadOnly = IsReadOnly(Tool);
+			Tool.bUndoable = IsUndoable(Tool);
+			Tool.bDestructive = IsDestructive(Tool);
 			Tools.Add(MoveTemp(Tool));
 		}
 
@@ -183,6 +200,20 @@ bool FShuttlegentToolsets::GetTools(const FString& ToolsetName, TArray<FShuttleg
 	return false;
 }
 
+bool FShuttlegentToolsets::ReturnedFalse(const FString& ResultText)
+{
+	// The engine messages may follow the JSON; only the part before them is the tool's answer
+	const int32 NoteStart = ResultText.Find(ShuttlegentToolsetBridgeConstant::EngineMessagesHeading, ESearchCase::CaseSensitive);
+	const FString Answer = NoteStart == INDEX_NONE ? ResultText : ResultText.Left(NoteStart);
+
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Answer);
+	TSharedPtr<FJsonObject> Result;
+	if (!FJsonSerializer::Deserialize(Reader, Result) || !Result.IsValid()) return false;
+
+	bool bValue = true;
+	return Result->TryGetBoolField(ShuttlegentToolsetBridgeConstant::FieldReturnValue, bValue) && !bValue;
+}
+
 bool FShuttlegentToolsets::FindTool(const FString& ToolsetName, const FString& ToolName, FShuttlegentToolsetTool& OutTool, FString& OutError)
 {
 	TArray<FShuttlegentToolsetTool> Tools;
@@ -204,5 +235,20 @@ TFuture<TValueOrError<FString, FString>> FShuttlegentToolsets::Execute(const FSt
 	UE::ToolsetRegistry::FToolsetRegistry* Registry = FShuttlegentToolsetsPrivate::GetRegistry();
 	if (Registry == nullptr) return MakeFulfilledPromise<TValueOrError<FString, FString>>(MakeError(FString(TEXT("The engine Toolset Registry is not available in this editor.")))).GetFuture();
 
-	return Registry->ExecuteTool(UE::ToolsetRegistry::FToolDescriptor { ToolsetName, ToolName }, JsonArguments);
+	// An engine message dialog would block the editor until someone answers it: run the tool unattended, so dialogs only
+	// log and take their default answer, and hand what the engine reported to the assistant with the result
+	FShuttlegentEngineMessageCapture Capture;
+	TFuture<TValueOrError<FString, FString>> Future;
+	{
+		TGuardValue<bool> Unattended(GIsRunningUnattendedScript, true);
+		Future = Registry->ExecuteTool(UE::ToolsetRegistry::FToolDescriptor { ToolsetName, ToolName }, JsonArguments);
+	}
+
+	const FString Messages = Capture.GetMessages();
+	const FString Note = Messages.IsEmpty() ? FString() : ShuttlegentToolsetBridgeConstant::EngineMessagesHeading + Messages;
+	return Future.Next([Note](TValueOrError<FString, FString> Result) -> TValueOrError<FString, FString>
+	{
+		if (Result.HasError()) return MakeError(Result.GetError() + Note);
+		return MakeValue(Result.GetValue() + Note);
+	});
 }

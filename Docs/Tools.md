@@ -69,9 +69,12 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 
 - 引擎记录了改动的，可以撤销；
 - 没有记录的（如新建资源、保存文件），标为不可撤销；
-- 结果异步返回的，标为“仍在后台执行”，不等待结果。
+- 结果异步返回的，标为“仍在后台执行”，不等待结果；
+- 在 **项目设置 > Engine Toolsets > Non Undoable Tools** 中的，不记入事务，确认卡与结果都标为不可撤销。默认包括 DataTableTools 的 `add_rows`、`set_rows`、`rename_rows`：它们在原位置重建整张表，撤销这次重建会销毁表对象。
 
-确认卡标题会注明“能否撤销以执行结果为准”。
+其余工具的确认卡标题会注明“能否撤销以执行结果为准”。
+
+写操作返回 `{"returnValue": false}` 时按失败处理：资源类工具（如删除、改名）以返回 false 表示没有执行。
 
 ### 3.4 屏蔽
 
@@ -88,3 +91,15 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 | 截图类工具 | 名字以 `Capture` 开头或为 `Screenshot` 的工具 | 图片结果暂不交给模型 |
 
 个人还可以在 **编辑器偏好设置 > Shuttlegent > General > Engine Toolsets** 中关掉单个 Toolset。
+
+### 3.5 引擎提示框
+
+引擎工具执行时，引擎内部可能弹出模态提示框（如参数不对时的“Cannot create a blueprint based on the class ...”），提示框会卡住编辑器直到有人点击。Shuttlegent 调用引擎工具期间按无人值守方式运行：
+
+- 提示框不弹出，按默认答案处理：只有“确定”的直接关闭；“确定/取消”“是/否”等取默认值，多为取消或否；
+- 工具执行期间引擎在游戏线程输出的警告、错误与提示框文字（最多 20 条）附在工具结果之后交给 Agent，Agent 据此修正参数或向用户说明；
+- 只覆盖工具同步执行的部分；工具把工作推迟到之后的帧执行时，那部分仍可能弹框。
+
+### 3.6 破坏性操作
+
+名字以 **项目设置 > Engine Toolsets > Destructive Tool Prefixes** 中某个词开头的引擎工具（默认 `Delete`、`Remove`、`Destroy`、`Move`、`Rename`），以及内置的 `delete_actors`，确认卡顶部显示醒目提示，提醒逐个核对对象。

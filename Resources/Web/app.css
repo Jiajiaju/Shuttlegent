@@ -258,6 +258,7 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .decision:not(.elevation){border-color:#77534d}
 .decision:not(.elevation) .badge{color:var(--success)}
 .decision .badge.warn{color:var(--warning)}
+.decision .destructive-note{color:var(--warning);border-left:2px solid var(--warning);padding:4px 8px;margin:6px 0;background:var(--raised);font-size:12px}
 .decision-table{max-height:220px;overflow:auto;margin:10px 0;border-top:1px solid var(--line)}
 .decision-table table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .decision-table th{position:sticky;top:0;background:var(--surface);text-align:left;font-weight:400;color:var(--muted)}

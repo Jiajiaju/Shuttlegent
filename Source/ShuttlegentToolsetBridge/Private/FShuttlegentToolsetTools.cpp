@@ -213,7 +213,11 @@ namespace FShuttlegentToolsetToolsPrivate
 			FString Toolset;
 			if (!FindCalledTool(Arguments, Tool, Toolset, OutError)) return false;
 
-			OutRequest.Action = FText::Format(LOCTEXT("Action", "调用引擎工具 {0} · {1}（能否撤销以执行结果为准）"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString();
+			OutRequest.Action = Tool.bUndoable
+				? FText::Format(LOCTEXT("Action", "调用引擎工具 {0} · {1}（能否撤销以执行结果为准）"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString()
+				: FText::Format(LOCTEXT("ActionNonUndoable", "调用引擎工具 {0} · {1}"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString();
+			OutRequest.bUndoable = OutRequest.bUndoable && Tool.bUndoable;
+			OutRequest.bDestructive = Tool.bDestructive;
 			const UWorld* World = GEditor != nullptr ? GEditor->GetEditorWorldContext().World() : nullptr;
 			if (IsValid(World)) OutRequest.Level = World->GetMapName();
 
@@ -251,9 +255,23 @@ namespace FShuttlegentToolsetToolsPrivate
 				}
 
 				const TValueOrError<FString, FString> Result = Future.Get();
-				Item.Status = Result.HasError() ? EShuttlegentWriteObjectStatus::Failed : EShuttlegentWriteObjectStatus::Completed;
-				if (Result.HasError()) Item.Message = Result.GetError();
-				else Item.Output = Result.GetValue();
+				if (Result.HasError())
+				{
+					Item.Status = EShuttlegentWriteObjectStatus::Failed;
+					Item.Message = Result.GetError();
+					continue;
+				}
+
+				// Asset tools answer false instead of raising when a delete or rename did not happen
+				if (FShuttlegentToolsets::ReturnedFalse(Result.GetValue()))
+				{
+					Item.Status = EShuttlegentWriteObjectStatus::Failed;
+					Item.Message = ShuttlegentToolsetBridgeConstant::ReturnedFalseError + Result.GetValue();
+					continue;
+				}
+
+				Item.Status = EShuttlegentWriteObjectStatus::Completed;
+				Item.Output = Result.GetValue();
 			}
 		}
 	};

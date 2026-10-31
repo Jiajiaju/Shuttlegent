@@ -675,7 +675,10 @@
     const rows = request.objects.map((object) => '<tr><td title="' + esc(object.path) + '">' + esc(object.name) + '</td><td>' + esc(object.field) + '</td><td>' + esc(object.current) + '</td><td>' + esc(object.planned) + '</td></tr>').join('');
     const badge = request.undoable ? '同步事务 · 可撤销' : '不可撤销';
     const level = request.level ? ' · ' + esc(request.level) : '';
+    // Deletes, moves and renames are called out so they are not approved in passing
+    const destructive = request.destructive ? '<p class="destructive-note">删除、移动或改名操作：确认前请逐个核对下方对象，这类改动可能无法恢复。</p>' : '';
     return '<header><h3 id="decision-title" tabindex="-1">' + esc(request.action) + '</h3><span class="badge' + (request.undoable ? '' : ' warn') + '">' + badge + '</span></header>'
+      + destructive
       + '<p>影响 ' + request.objects.length + ' 个对象' + level + ' · 工具 <code>' + esc(request.tool) + '</code></p>'
       + '<div class="decision-table"><table><thead><tr><th>对象</th><th>字段</th><th>当前</th><th>计划</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<details><summary>原始参数</summary><pre>' + esc(prettyRaw(request.raw)) + '</pre></details>'

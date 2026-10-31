@@ -236,6 +236,7 @@ namespace FShuttlegentEditToolsPrivate
 		{
 			const TArray<FString> Targets = FShuttlegentToolArguments::GetStringArray(Arguments, ArgTargets);
 			OutRequest.Action = LOCTEXT("DeleteAction", "删除 Actor").ToString();
+			OutRequest.bDestructive = true;
 			for (const FString& Target : Targets)
 			{
 				const AActor* Actor = Cast<AActor>(FShuttlegentToolObjects::ResolveObject(Target));

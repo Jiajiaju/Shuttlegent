@@ -19,8 +19,11 @@ struct FShuttlegentWriteRequest
 	/** Level the objects belong to. */
 	FString Level;
 
-	/** The tool runs it as one synchronous editor transaction, so it can be undone. */
+	/** The tool runs it as one synchronous editor transaction, so it can be undone; false runs it outside any transaction. */
 	bool bUndoable = false;
+
+	/** Deletes, moves or renames things; the confirmation card warns about it. */
+	bool bDestructive = false;
 
 	TArray<FShuttlegentWriteObject> Objects;
 

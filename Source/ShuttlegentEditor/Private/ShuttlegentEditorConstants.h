@@ -260,6 +260,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Action = TEXT("action");
 	inline const TCHAR* Level = TEXT("level");
 	inline const TCHAR* Undoable = TEXT("undoable");
+	inline const TCHAR* Destructive = TEXT("destructive");
 	inline const TCHAR* Objects = TEXT("objects");
 	inline const TCHAR* Raw = TEXT("raw");
 

@@ -59,6 +59,8 @@ Shuttlegent 的设置分两处：
 | Integration > Ui Guides | Agent 可以帮用户打开的编辑器位置 |
 | Engine Toolsets > Blocked Toolset Names | 全团队屏蔽的引擎 Toolset 或工具 |
 | Engine Toolsets > Read Only Tool Prefixes / Read Only Tools / Write Tools | 引擎 Toolset 工具的读写判断规则 |
+| Engine Toolsets > Non Undoable Tools | 不记入编辑器事务、标为不可撤销的引擎工具（撤销会损坏对象的工具），见 [Tools.md §3.3](Tools.md#33-撤销) |
+| Engine Toolsets > Destructive Tool Prefixes | 名字以这些词开头的引擎工具，确认卡标为删除、移动或改名操作 |
 
 引擎 Toolset 的规则与默认值见 [Tools.md §3](Tools.md#3-引擎-toolset)；技能、模板、外部 MCP 与界面指路的写法见 [Extending.md](Extending.md)。
 

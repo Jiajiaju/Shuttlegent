@@ -84,7 +84,8 @@ namespace FShuttlegentToolRunnerPrivate
 
 		FString Outcome;
 		if (bRolledBack) Outcome = TEXT("Failed; the whole change was rolled back, nothing remains written.");
-		else if (Completed == Result.Objects.Num()) Outcome = FString::Printf(TEXT("Done: %d object(s) written in one undoable step."), Completed);
+		else if (Completed == Result.Objects.Num() && Result.bUndoable) Outcome = FString::Printf(TEXT("Done: %d object(s) written in one undoable step."), Completed);
+		else if (Completed == Result.Objects.Num()) Outcome = FString::Printf(TEXT("Done: %d object(s) written."), Completed);
 		else Outcome = FString::Printf(TEXT("Partly done: %d of %d object(s) written."), Completed, Result.Objects.Num());
 		if (!Result.bUndoable && Completed > 0) Outcome += TEXT(" This change cannot be undone from the editor.");
 		return Outcome + TEXT("\n") + FString::Join(Lines, TEXT("\n"));
@@ -100,7 +101,8 @@ namespace FShuttlegentToolRunnerPrivate
 		Result.Objects = Request.Objects;
 		bOutRolledBack = false;
 
-		if (!Tool->GetDefinition().bTransactional)
+		// Not transactional, or the tool's preview found that this call must not be undone (its undo breaks the object)
+		if (!Tool->GetDefinition().bTransactional || !Request.bUndoable)
 		{
 			Tool->Execute(Arguments, Result.Objects);
 			return Result;

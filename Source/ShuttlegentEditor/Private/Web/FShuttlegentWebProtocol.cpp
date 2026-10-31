@@ -531,6 +531,7 @@ void FShuttlegentWebProtocol::WritePendingWrite(const TSharedRef<FJsonObject>& R
 	Item->SetStringField(ShuttlegentEditorWebField::Action, Request->Action);
 	Item->SetStringField(ShuttlegentEditorWebField::Level, Request->Level);
 	Item->SetBoolField(ShuttlegentEditorWebField::Undoable, Request->bUndoable);
+	Item->SetBoolField(ShuttlegentEditorWebField::Destructive, Request->bDestructive);
 	Item->SetArrayField(ShuttlegentEditorWebField::Objects, FShuttlegentWebProtocolPrivate::MakeWriteObjects(Request->Objects));
 	Item->SetStringField(ShuttlegentEditorWebField::Raw, Request->RawArguments);
 	Item->SetNumberField(ShuttlegentEditorWebField::ExpiresAt, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Request->ExpiresAtUtc));

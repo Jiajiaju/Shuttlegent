@@ -57,6 +57,20 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
 	TArray<FString> WriteTools;
 
+	/**
+	 * Engine toolset tools that run outside an editor transaction and are shown as not undoable, by tool name or full
+	 * name. For tools whose undo breaks the edited object, e.g. DataTable tools that rebuild the table in place.
+	 */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> NonUndoableTools;
+
+	/**
+	 * Engine toolset tools whose name starts with one of these words delete, move or rename things; their confirmation
+	 * card is marked as destructive. Matched like Read Only Tool Prefixes.
+	 */
+	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
+	TArray<FString> DestructiveToolPrefixes;
+
 	//~ Begin UDeveloperSettings Interface.
 	virtual FName GetContainerName() const override;
 	virtual FName GetCategoryName() const override;

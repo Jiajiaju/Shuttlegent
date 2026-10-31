@@ -37,6 +37,12 @@ struct FShuttlegentToolsetTool
 
 	/** Runs without confirmation; every other tool asks the user first. */
 	bool bReadOnly = false;
+
+	/** Runs inside an editor transaction; false for the project's Non Undoable Tools. */
+	bool bUndoable = true;
+
+	/** Deletes, moves or renames things (the project's Destructive Tool Prefixes); its confirmation card says so. */
+	bool bDestructive = false;
 };
 
 /**
@@ -56,9 +62,16 @@ public:
 	/** The toolset's tools the assistant may use; false with OutError when the toolset is unknown or not usable. */
 	static bool GetTools(const FString& ToolsetName, TArray<FShuttlegentToolsetTool>& OutTools, FString& OutError);
 
+	/** The tool answered {"returnValue": false}; for a write this means it did not do what was asked (a failed delete or rename). */
+	static bool ReturnedFalse(const FString& ResultText);
+
 	/** The usable tool of that name; false with OutError otherwise. */
 	static bool FindTool(const FString& ToolsetName, const FString& ToolName, FShuttlegentToolsetTool& OutTool, FString& OutError);
 
-	/** Runs a tool with JSON arguments; the future holds the tool's JSON result or an error. */
+	/**
+	 * Runs a tool with JSON arguments; the future holds the tool's JSON result or an error. The tool runs unattended:
+	 * engine message dialogs it raises are not shown, and the warnings, errors and dialog texts the engine logs while it
+	 * runs on the game thread are appended to the result.
+	 */
 	static TFuture<TValueOrError<FString, FString>> Execute(const FString& ToolsetName, const FString& ToolName, const FString& JsonArguments);
 };

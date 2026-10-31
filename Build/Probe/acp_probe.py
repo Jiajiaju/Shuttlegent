@@ -30,6 +30,8 @@ import sys
 import threading
 import time
 import queue
+import urllib.error
+import urllib.request
 
 SCENARIO = json.load(open(sys.argv[1], encoding="utf-8"))
 LOG = open(SCENARIO["log"], "w", encoding="utf-8")
@@ -225,6 +227,39 @@ try:
 
         result = request("session/prompt", {"sessionId": session_id, "prompt": prompt_blocks(text)}, on_wait=maybe_cancel)
         log("prompt_done", {"index": index, "elapsed": round(time.time() - started, 3), "result": result.get("result"), "error": result.get("error")})
+
+    fork = SCENARIO.get("fork")
+    if fork:
+        # The session control plugin announces its port to the editor endpoint (here the mock, which logs it)
+        control = None
+        deadline = time.time() + 15
+        while control is None and time.time() < deadline:
+            if os.path.exists(fork["mcp_log"]):
+                with open(fork["mcp_log"], encoding="utf-8") as f:
+                    for line in f:
+                        body = json.loads(line).get("body")
+                        if isinstance(body, dict) and body.get("method") == "shuttlegent/runtimeControl":
+                            control = body["params"]["url"]
+            if control is None:
+                time.sleep(0.2)
+        log("fork_control", {"url": control})
+        if control:
+            payload = json.dumps({"method": "fork", "params": {"sessionId": session_id, "userMessage": fork["user_message"], "cut": fork["cut"]}}).encode("utf-8")
+            req = urllib.request.Request(control, data=payload, method="POST", headers={"Content-Type": "application/json", "Authorization": "Bearer " + fork["token"]})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    answer = json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as error:
+                answer = json.loads(error.read().decode("utf-8") or "{}")
+            log("fork", answer)
+            child = (answer.get("result") or {}).get("sessionId")
+            if child:
+                resumed = request("session/resume", {"sessionId": child, "cwd": SCENARIO["cwd"], "mcpServers": mcp})
+                log("fork_session", {"sessionId": child, "error": resumed.get("error")})
+                for index, text in enumerate(fork.get("prompts", [])):
+                    result = request("session/prompt", {"sessionId": child, "prompt": prompt_blocks(text)})
+                    log("fork_prompt_done", {"index": index, "result": result.get("result"), "error": result.get("error")})
+                request("session/close", {"sessionId": child})
 
     mem = subprocess.run(["tasklist", "/FI", f"PID eq {proc.pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True)
     log("memory", mem.stdout.strip())

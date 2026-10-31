@@ -117,16 +117,26 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	Shell->SetBoolField(ShuttlegentProviderConstant::FieldDisabled, !bShell);
 	Rows.Add(MakeShared<FJsonValueObject>(Shell));
 
-	// context tap 向编辑器端点上报各会话的上下文分项；运行时按绝对路径加载插件
-	const FString ContextTap = FPaths::Combine(PluginDir, ShuttlegentPath::ContextTapPlugin);
-	if (FPaths::FileExists(ContextTap))
+	// Shuttlegent 自带的运行时插件：context tap 上报上下文分项，session control 供编辑器分叉会话；运行时按绝对路径加载插件
+	const TPair<const TCHAR*, const TCHAR*> RuntimePlugins[] = {
+		{ ShuttlegentProviderConstant::RowContextTap, ShuttlegentPath::ContextTapPlugin },
+		{ ShuttlegentProviderConstant::RowSessionControl, ShuttlegentPath::SessionControlPlugin },
+	};
+	TArray<TSharedPtr<FJsonValue>> Plugins;
+	for (const TPair<const TCHAR*, const TCHAR*>& RuntimePlugin : RuntimePlugins)
 	{
-		const TSharedRef<FJsonObject> Plugin = MakeShared<FJsonObject>();
-		Plugin->SetStringField(ShuttlegentProviderConstant::FieldId, ShuttlegentProviderConstant::RowContextTap);
-		Plugin->SetStringField(ShuttlegentProviderConstant::FieldPluginName, ContextTap);
+		const FString Path = FPaths::Combine(PluginDir, RuntimePlugin.Value);
+		if (!FPaths::FileExists(Path)) continue;
 
+		const TSharedRef<FJsonObject> Plugin = MakeShared<FJsonObject>();
+		Plugin->SetStringField(ShuttlegentProviderConstant::FieldId, RuntimePlugin.Key);
+		Plugin->SetStringField(ShuttlegentProviderConstant::FieldPluginName, Path);
+		Plugins.Add(MakeShared<FJsonValueObject>(Plugin));
+	}
+	if (!Plugins.IsEmpty())
+	{
 		const TSharedRef<FJsonObject> Insert = MakeShared<FJsonObject>();
-		Insert->SetArrayField(ShuttlegentProviderConstant::FieldInsert, { MakeShared<FJsonValueObject>(Plugin) });
+		Insert->SetArrayField(ShuttlegentProviderConstant::FieldInsert, Plugins);
 		Rows.Add(MakeShared<FJsonValueObject>(Insert));
 	}
 

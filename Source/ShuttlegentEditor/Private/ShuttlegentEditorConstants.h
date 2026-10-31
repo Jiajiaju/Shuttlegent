@@ -415,6 +415,13 @@ namespace ShuttlegentEditorWebField
 
 	// 一次性事件：回合正常结束，或以其他方式结束
 	inline const TCHAR* EventTurnCompleted = TEXT("turnCompleted");
+
+	// 回到某条消息后要放回输入框的原文（一次性）
+	inline const TCHAR* RestoreDraft = TEXT("restoreDraft");
+
+	// 当前对话能否回到某条消息或从它分支，以及不能时的原因
+	inline const TCHAR* CanEditHistory = TEXT("canEditHistory");
+	inline const TCHAR* EditHistoryReason = TEXT("editHistoryReason");
 	inline const TCHAR* EventTurnStopped = TEXT("turnStopped");
 
 	// 没有计时推理的助手条目所报告的思考时长

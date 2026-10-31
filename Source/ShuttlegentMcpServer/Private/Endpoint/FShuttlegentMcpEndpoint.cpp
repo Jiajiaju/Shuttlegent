@@ -225,7 +225,15 @@ FString FShuttlegentMcpEndpoint::GetUrl() const
 
 void FShuttlegentMcpEndpoint::HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params) const
 {
-	if (Method != ShuttlegentMcpEndpointConstant::MethodContextBreakdown || !Params.IsValid() || !OnContextBreakdown) return;
+	if (!Params.IsValid()) return;
+
+	if (Method == ShuttlegentMcpEndpointConstant::MethodRuntimeControl)
+	{
+		FString Url;
+		if (OnRuntimeControl && Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldUrl, Url) && !Url.IsEmpty()) OnRuntimeControl(Url);
+		return;
+	}
+	if (Method != ShuttlegentMcpEndpointConstant::MethodContextBreakdown || !OnContextBreakdown) return;
 
 	FString SessionId;
 	if (!Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId) || SessionId.IsEmpty()) return;

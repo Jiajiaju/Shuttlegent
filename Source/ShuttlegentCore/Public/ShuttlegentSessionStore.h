@@ -47,6 +47,9 @@ public:
 	/** 读回整个会话记录，按时间先后返回各条记录对象。 */
 	TArray<TSharedPtr<FJsonObject>> LoadTranscript(const FString& SessionId) const;
 
+	/** 用给定的记录对象（保留各自的时间戳）整体写出一个会话记录，覆盖已有内容；用于分叉会话时复制截断前的记录。 */
+	bool WriteTranscript(const FString& SessionId, const TArray<TSharedPtr<FJsonObject>>& Entries) const;
+
 private:
 	void EnsureLoaded();
 	void SaveIndex() const;

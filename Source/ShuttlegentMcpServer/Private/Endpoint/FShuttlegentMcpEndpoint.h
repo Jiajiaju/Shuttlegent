@@ -31,6 +31,9 @@ public:
 	/** 收到来自 context tap 运行时插件的 shuttlegent/contextBreakdown 通知；游戏线程。 */
 	TFunction<void(const FString& /*SessionId*/, const FShuttlegentContextBreakdown& /*Breakdown*/)> OnContextBreakdown;
 
+	/** 收到来自 session control 运行时插件的 shuttlegent/runtimeControl 通知（其控制端口 URL）；游戏线程。 */
+	TFunction<void(const FString& /*Url*/)> OnRuntimeControl;
+
 	/** 开始监听；范围内没有可绑定的端口时返回 false。 */
 	bool Start(const TSharedRef<FShuttlegentWriteGate>& InGate);
 	void Stop();

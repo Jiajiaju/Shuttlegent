@@ -120,6 +120,22 @@ bool FShuttlegentWriteGate::Undo(const FGuid& TransactionId)
 	return GEditor->UndoTransaction();
 }
 
+bool FShuttlegentWriteGate::AreOnUndoTop(const TArray<FGuid>& NewestFirst)
+{
+	if (NewestFirst.IsEmpty()) return true;
+	if (GEditor == nullptr || !IsValid(GEditor->Trans)) return false;
+
+	// 撤销栈顶是缓冲区中最后一个尚未被撤销的事务，其下依次是更早的事务
+	int32 Expected = GEditor->Trans->GetQueueLength() - GEditor->Trans->GetUndoCount() - 1;
+	for (const FGuid& TransactionId : NewestFirst)
+	{
+		if (!TransactionId.IsValid() || GEditor->Trans->FindTransactionIndex(TransactionId) != Expected) return false;
+
+		--Expected;
+	}
+	return true;
+}
+
 void FShuttlegentWriteGate::Close(int32 RequestId, EShuttlegentWriteDecision Decision)
 {
 	TFunction<void(EShuttlegentWriteDecision)> Callback;

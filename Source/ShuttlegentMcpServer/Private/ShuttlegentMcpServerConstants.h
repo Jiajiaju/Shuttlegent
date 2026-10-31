@@ -94,6 +94,7 @@ namespace ShuttlegentMcpEndpointConstant
 	inline const TCHAR* HeaderAuthorization = TEXT("Authorization");
 	inline const TCHAR* BearerPrefix = TEXT("Bearer ");
 	inline const TCHAR* ContentTypeJson = TEXT("application/json");
+	inline const TCHAR* HeaderContentType = TEXT("Content-Type");
 
 	// 客户端未指定时答复的 MCP 协议版本
 	inline const TCHAR* DefaultProtocolVersion = TEXT("2025-06-18");
@@ -113,6 +114,19 @@ namespace ShuttlegentMcpEndpointConstant
 
 	// 来自 Shuttlegent context tap 运行时插件的通知：某个会话的上下文构成，以 token 计
 	inline const TCHAR* MethodContextBreakdown = TEXT("shuttlegent/contextBreakdown");
+
+	// 来自 session control 运行时插件的通知：其本机控制端口的 URL（字段 url）
+	inline const TCHAR* MethodRuntimeControl = TEXT("shuttlegent/runtimeControl");
+
+	// session control 插件的 fork 请求：把会话截在第 userMessage 条用户消息（从 0 计）之前或该轮结束之后，另存为新会话
+	inline const TCHAR* MethodFork = TEXT("fork");
+	inline const TCHAR* FieldUserMessage = TEXT("userMessage");
+	inline const TCHAR* FieldCut = TEXT("cut");
+	inline const TCHAR* CutBefore = TEXT("before");
+	inline const TCHAR* CutAfter = TEXT("after");
+
+	// fork 请求的超时，单位秒
+	inline constexpr float ForkTimeoutSeconds = 30.0f;
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");
 	inline const TCHAR* FieldSystemTokens = TEXT("systemTokens");
 	inline const TCHAR* FieldToolsTokens = TEXT("toolsTokens");

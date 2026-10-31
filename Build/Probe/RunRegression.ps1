@@ -147,7 +147,8 @@ function Invoke-Scenario {
         [string]$Key = '',
         [string[]]$ExtraPatches = @(),
         [string[]]$ParallelPrompts = @(),
-        [hashtable]$ExtraEnv = @{}
+        [hashtable]$ExtraEnv = @{},
+        [hashtable]$Fork = $null
     )
 
     if ($Only.Count -gt 0 -and $Only -notcontains $Name) { return }
@@ -178,6 +179,7 @@ function Invoke-Scenario {
     if ($CancelAfter -ge 0) { $Scenario.cancel_after = $CancelAfter }
     if ($Resume) { $Scenario.resume = $Resume }
     if ($ParallelPrompts.Count -gt 0) { $Scenario.parallel_prompts = $ParallelPrompts }
+    if ($Fork) { $Scenario.fork = $Fork }
     if ($SplitLaunchDir) {
         New-Item -ItemType Directory -Force $DshHome | Out-Null
         $Scenario.process_cwd = $DshHome
@@ -255,6 +257,15 @@ try {
         $ContextOverlay = Join-Path $OutDir 'context-tap.overlay.yml'
         [IO.File]::WriteAllText($ContextOverlay, "- insert:`n    - id: shuttlegent-context-tap`n      name: '$ContextTap'`n", $Utf8NoBom)
         Invoke-Scenario -Name 's14_context' -HomeName 'context' -Prompts @('Say hello in one word.') -Key $ApiKey -ExtraPatches @($ContextOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token }
+
+        # Session control: cut the conversation before its second user message into a new session, resume it over ACP
+        # and ask what it remembers; only the first code word may come back
+        $ControlPlugin = (Join-Path $PluginDir 'Runtime\plugins\shuttlegent-session-control.mjs').Replace('\', '/')
+        $ControlOverlay = Join-Path $OutDir 'session-control.overlay.yml'
+        [IO.File]::WriteAllText($ControlOverlay, "- insert:`n    - id: shuttlegent-session-control`n      name: '$ControlPlugin'`n", $Utf8NoBom)
+        $ForkPrompts = @('Remember the code word ALPHA for later. Reply with just OK.', 'Remember the code word BRAVO for later. Reply with just OK.')
+        $ForkSpec = @{ mcp_log = $MockLog; token = $Token; user_message = 1; cut = 'before'; prompts = @('Without using any tool: list every code word I asked you to remember, separated by spaces, nothing else.') }
+        Invoke-Scenario -Name 's15_fork' -HomeName 'fork' -Prompts $ForkPrompts -Key $ApiKey -ExtraPatches @($ControlOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token } -Fork $ForkSpec
     }
 }
 finally {

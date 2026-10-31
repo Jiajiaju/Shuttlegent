@@ -31,6 +31,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatTurnFinished, bool /*bComp
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatSessionsChanged);
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatRunLogChanged);
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatQueueChanged);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatDraftRestored, const FString& /*Text*/);
 
 /**
  * 介于 FShuttlegentAgentService 与聊天面板之间的编辑器侧对话状态。
@@ -70,6 +71,9 @@ public:
 
 	/** 当前对话的队列已变化：条目被添加、发送、移除或取回，或队列被暂停或继续。 */
 	FOnShuttlegentChatQueueChanged OnQueueChanged;
+
+	/** 回到某条消息后，其原文应放回输入框以便修改重发。 */
+	FOnShuttlegentChatDraftRestored OnDraftRestored;
 
 private:
 	TWeakPtr<FShuttlegentAgentService> Service;
@@ -215,6 +219,18 @@ public:
 	/** 当写入结果的事务仍位于编辑器撤销缓冲区顶部时将其撤销。 */
 	void UndoWrite(int32 EntryId);
 
+	/** 当前对话能否回到某条消息或从它分支：会话已在运行时打开、空闲，且运行时的 session control 插件可用；不能时给出原因。 */
+	bool CanEditHistory(FText& OutReason) const;
+
+	/** 从当前对话的这条用户消息分支：新会话含到该消息这一轮结束为止的对话，原会话与编辑器状态不变。 */
+	void BranchFrom(int32 EntryId);
+
+	/**
+	 * 回到当前对话的这条用户消息之前：按倒序撤销其后（含这一轮）的编辑器写入，对话截到该消息之前（原会话归档保留），
+	 * 原文放回输入框。中间夹着用户自己的编辑、事务不在撤销栈顶时整体拒绝，不做任何改动。
+	 */
+	void RewindTo(int32 EntryId);
+
 	/** Agent 提出的、仍在等待答复的最早一个问题，或 nullptr。 */
 	const FShuttlegentQuestion* GetPendingQuestion() const;
 
@@ -320,6 +336,15 @@ private:
 	bool ApplyUpdate(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Update, const FDateTime& At);
 	void ApplyTurnEnd(FShuttlegentConversation& Conversation, const FString& StopReason, const FString& ErrorMessage);
 	void ReplayTranscript(FShuttlegentConversation& Conversation);
+
+	/** 条目在对话中的位置，以及它是第几条用户消息（从 0 计，与运行时的 user/message 计数一致）；不是用户消息时返回 false。 */
+	bool FindUserMessage(const FShuttlegentConversation& Conversation, int32 EntryId, int32& OutIndex, int32& OutOrdinal) const;
+
+	/**
+	 * 接手运行时分叉出的新会话：复制截断前的会话记录，登记索引（分支加后缀，回退沿用原标题），回退时归档原会话，
+	 * 然后打开新会话。
+	 */
+	void AdoptFork(const FString& SourceSessionId, const FString& NewSessionId, int32 Ordinal, bool bThroughTurn, bool bRewind);
 
 	void HandleStateChanged(EShuttlegentAgentState NewState);
 	void HandleSessionReady(const FString& SessionId);

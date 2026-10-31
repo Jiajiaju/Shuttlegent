@@ -35,6 +35,10 @@ private:
 	/** 等待随下一条消息发送的一次性事件。 */
 	TArray<FString> PendingEvents;
 
+	/** 回到某条消息后要放回输入框的原文，随下一条消息发送一次。 */
+	FString PendingDraft;
+	bool bDraftPending = false;
+
 	bool bPageReady = false;
 	bool bResetPending = false;
 	bool bStatusDirty = false;
@@ -91,6 +95,7 @@ private:
 	void HandleSessionsChanged();
 	void HandleRunLogChanged();
 	void HandleQueueChanged();
+	void HandleDraftRestored(const FString& Text);
 	void HandleTurnFinished(bool bCompleted);
 	void HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);
 	void HandleProjectSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);

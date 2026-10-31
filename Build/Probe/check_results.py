@@ -166,6 +166,24 @@ def check_context(ev):
     return authorized and counted, f"notifications={len(mine)} auth_ok={authorized} last={params}"
 
 
+def check_fork(ev):
+    forked = [e["data"] for e in ev if e["kind"] == "fork"]
+    result = (forked[-1].get("result") or {}) if forked else {}
+    child = result.get("sessionId")
+    # Cut before the second message: the whole first turn, with its DeepSeek delivery markers, and nothing of the second
+    kept_first_turn = result.get("userMessages") == 1
+    resumed = [e["data"] for e in ev if e["kind"] == "fork_session"]
+    resume_ok = bool(resumed) and not resumed[-1].get("error")
+    text = []
+    for d in received(ev, "session/update"):
+        u = d["params"]["update"]
+        if d["params"].get("sessionId") == child and u.get("sessionUpdate") == "agent_message_chunk":
+            text.append(u["content"].get("text", ""))
+    answer = "".join(text).upper()
+    remembered = "ALPHA" in answer and "BRAVO" not in answer
+    return bool(child) and kept_first_turn and resume_ok and remembered, f"fork={forked[-1] if forked else None} kept_first_turn={kept_first_turn} resume_ok={resume_ok} answer={answer.strip()[:80]!r}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -183,6 +201,7 @@ CHECKS = [
     ("s13_image_flash", "H6 image input on deepseek-flash: read by the model, or declined up front", check_image),
     ("s12_plugin", "H1 plugin from an absolute path loads and receives session events", check_plugin),
     ("s14_context", "Context tap posts the session's context breakdown to the editor endpoint", check_context),
+    ("s15_fork", "Session control cuts a conversation into a new session that session/resume opens", check_fork),
 ]
 
 failed = 0

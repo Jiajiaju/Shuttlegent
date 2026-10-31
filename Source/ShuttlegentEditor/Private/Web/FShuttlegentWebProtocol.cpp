@@ -319,6 +319,7 @@ void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatModel>
 	InModel->OnSessionsChanged.AddSP(this, &FShuttlegentWebProtocol::HandleSessionsChanged);
 	InModel->OnRunLogChanged.AddSP(this, &FShuttlegentWebProtocol::HandleRunLogChanged);
 	InModel->OnQueueChanged.AddSP(this, &FShuttlegentWebProtocol::HandleQueueChanged);
+	InModel->OnDraftRestored.AddSP(this, &FShuttlegentWebProtocol::HandleDraftRestored);
 
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings)) SettingsChangedHandle = Settings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleSettingChanged);
@@ -352,6 +353,7 @@ void FShuttlegentWebProtocol::Shutdown()
 		Model->OnSessionsChanged.RemoveAll(this);
 		Model->OnRunLogChanged.RemoveAll(this);
 		Model->OnQueueChanged.RemoveAll(this);
+		Model->OnDraftRestored.RemoveAll(this);
 	}
 	Model.Reset();
 	Push = nullptr;
@@ -369,7 +371,7 @@ void FShuttlegentWebProtocol::HandlePageReady()
 
 bool FShuttlegentWebProtocol::HandleTick(float DeltaTime)
 {
-	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || bMcpDirty || PendingEvents.Num() > 0)) Flush();
+	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || bMcpDirty || bDraftPending || PendingEvents.Num() > 0)) Flush();
 	return true;
 }
 
@@ -414,6 +416,9 @@ void FShuttlegentWebProtocol::Flush()
 		Root->SetArrayField(ShuttlegentEditorWebField::Events, Events);
 	}
 
+	// 放在会话切换的同一条消息里，页面先切换会话再填入原文
+	if (bDraftPending) Root->SetStringField(ShuttlegentEditorWebField::RestoreDraft, PendingDraft);
+
 	bResetPending = false;
 	bStatusDirty = false;
 	bEntriesDirty = false;
@@ -421,6 +426,8 @@ void FShuttlegentWebProtocol::Flush()
 	bRunLogDirty = false;
 	bQueueDirty = false;
 	bMcpDirty = false;
+	bDraftPending = false;
+	PendingDraft.Reset();
 	PendingEvents.Reset();
 	if (Root->Values.IsEmpty()) return;
 
@@ -463,6 +470,10 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	}
 	Root->SetField(ShuttlegentEditorWebField::StartIssue, FShuttlegentWebProtocolPrivate::MakeStartIssue(Model->GetStartIssue(), Model->GetStartIssueDetail()));
 	Root->SetBoolField(ShuttlegentEditorWebField::ResumeFailed, Model->IsResumeFailed());
+
+	FText HistoryReason;
+	Root->SetBoolField(ShuttlegentEditorWebField::CanEditHistory, Model->CanEditHistory(HistoryReason));
+	Root->SetStringField(ShuttlegentEditorWebField::EditHistoryReason, HistoryReason.ToString());
 	Root->SetBoolField(ShuttlegentEditorWebField::NeedsVerify, Model->NeedsVerify());
 }
 
@@ -765,6 +776,7 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		}
 		Item->SetStringField(ShuttlegentEditorWebField::Text, Text);
 		Item->SetArrayField(ShuttlegentEditorWebField::References, Lines);
+		if (Entry.TimeUtc.GetTicks() > 0) Item->SetNumberField(ShuttlegentEditorWebField::Time, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Entry.TimeUtc));
 	}
 	else
 	{
@@ -864,4 +876,10 @@ void FShuttlegentWebProtocol::HandleSettingChanged(UObject* Settings, FPropertyC
 void FShuttlegentWebProtocol::HandleProjectSettingChanged(UObject* Settings, FPropertyChangedEvent& Event)
 {
 	bMcpDirty = true;
+}
+
+void FShuttlegentWebProtocol::HandleDraftRestored(const FString& Text)
+{
+	PendingDraft = Text;
+	bDraftPending = true;
 }

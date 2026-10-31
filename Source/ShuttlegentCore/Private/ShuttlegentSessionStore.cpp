@@ -195,6 +195,30 @@ void FShuttlegentSessionStore::AppendTranscript(const FString& SessionId, const 
 	}
 }
 
+bool FShuttlegentSessionStore::WriteTranscript(const FString& SessionId, const TArray<TSharedPtr<FJsonObject>>& Entries) const
+{
+	if (SessionId.IsEmpty()) return false;
+
+	FString Text;
+	for (const TSharedPtr<FJsonObject>& Entry : Entries)
+	{
+		if (!Entry.IsValid()) continue;
+
+		FString Line;
+		const TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = ShuttlegentSessionStorePrivate::FCondensedWriterFactory::Create(&Line);
+		FJsonSerializer::Serialize(Entry.ToSharedRef(), Writer);
+		Text.Append(Line);
+		Text.Append(ShuttlegentSessionStorePrivate::LineTerminator);
+	}
+
+	const FString Path = GetTranscriptPath(SessionId);
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
+	if (FFileHelper::SaveStringToFile(Text, *Path, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM)) return true;
+
+	UE_LOG(LogShuttlegent, Warning, TEXT("Writing transcript failed: %s"), *Path);
+	return false;
+}
+
 TArray<TSharedPtr<FJsonObject>> FShuttlegentSessionStore::LoadTranscript(const FString& SessionId) const
 {
 	TArray<TSharedPtr<FJsonObject>> Entries;

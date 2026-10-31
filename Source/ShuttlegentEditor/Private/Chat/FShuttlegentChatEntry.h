@@ -57,4 +57,7 @@ struct FShuttlegentChatEntry
 
 	/** 用于答复待处理权限请求的稳定 id。 */
 	int32 Id = 0;
+
+	/** 条目产生的时间（UTC）；重放的用户消息取自会话记录中的时间戳。 */
+	FDateTime TimeUtc {};
 };

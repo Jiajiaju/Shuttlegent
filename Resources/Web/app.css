@@ -186,6 +186,18 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 
 .message{margin-bottom:24px;overflow-wrap:anywhere}
 .message.user{margin-left:auto;max-width:90%;width:fit-content;background:var(--surface);padding:10px 14px;border-radius:var(--panel-radius);white-space:pre-wrap;user-select:text}
+
+/* Under a user message, shown on hover or keyboard focus (as in Claude): time, copy, rewind to here, branch from here */
+.user-turn{margin-bottom:24px}
+.user-turn .message.user{margin-bottom:0}
+.user-actions{display:flex;align-items:center;justify-content:flex-end;gap:2px;height:28px;margin-top:4px;color:var(--muted);font-size:12px;visibility:hidden;opacity:0;transition:opacity .12s}
+.user-turn:hover .user-actions,.user-turn:focus-within .user-actions{visibility:visible;opacity:1}
+.user-time{margin-right:2px;white-space:nowrap}
+.user-dot{margin:0 4px}
+.user-action{width:26px;height:26px;border-radius:6px}
+.user-action:hover{background:var(--raised)}
+.user-action.locked{opacity:.4;cursor:not-allowed}
+.user-action.locked:hover{background:transparent}
 .assistant-name{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.92em;margin-bottom:12px}
 .assistant-name img{width:22px;height:22px}
 .note{color:var(--muted);font-size:.92em;border-left:2px solid var(--line);padding-left:12px;margin:8px 0;overflow-wrap:anywhere}
@@ -365,6 +377,7 @@ dialog{width:min(420px,calc(100vw - 32px));background:var(--surface);color:var(-
 dialog::backdrop{background:#0009}
 dialog h2{font-size:15px;margin-bottom:14px}
 dialog p{color:var(--muted);font-size:12px}
+.dialog-list{margin:0 0 4px;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.8}
 dialog input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:var(--control-radius);padding:6px 8px}
 .danger{background:transparent;border-color:var(--error);color:var(--error);font-weight:600}
 .danger:hover:not(:disabled){background:var(--error);color:var(--bg)}

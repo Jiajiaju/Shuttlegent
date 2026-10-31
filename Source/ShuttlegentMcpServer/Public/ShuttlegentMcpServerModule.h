@@ -31,6 +31,9 @@ private:
 
 	FOnShuttlegentContextBreakdown ContextBreakdownEvent;
 
+	/** session control 运行时插件报来的控制端口 URL；运行时每次启动前清空，插件加载后重新报来。 */
+	FString RuntimeControlUrl;
+
 public:
 	//~ Begin IModuleInterface Interface.
 	virtual void StartupModule() override;
@@ -57,4 +60,13 @@ public:
 
 	/** context tap 运行时插件在每条 assistant 消息之后上报的上下文构成。 */
 	FOnShuttlegentContextBreakdown& OnContextBreakdown() { return ContextBreakdownEvent; }
+
+	/** 当前运行时的 session control 插件已报来控制端口，可以分叉会话。 */
+	bool CanForkSessions() const { return !RuntimeControlUrl.IsEmpty(); }
+
+	/**
+	 * 让运行时把会话截在第 UserMessage 条用户消息（从 0 计）之前，或 bThroughTurn 时截在该轮结束之后，另存为新会话。
+	 * OnDone 在游戏线程收到新会话 id；失败时 id 为空并给出原因。会话须已在运行时打开且没有进行中的回合。
+	 */
+	void ForkSession(const FString& SessionId, int32 UserMessage, bool bThroughTurn, TFunction<void(const FString& /*NewSessionId*/, const FString& /*Error*/)> OnDone) const;
 };

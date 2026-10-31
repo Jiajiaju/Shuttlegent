@@ -60,6 +60,15 @@
   const TOKENS_PER_THOUSAND = 1000;
   const TOKENS_PER_MILLION = 1000000;
 
+  // Relative message times (Claude style), and how often they refresh, in milliseconds
+  const MINUTE_MS = 60 * 1000;
+  const HOUR_MS = 60 * MINUTE_MS;
+  const WEEK_MS = 7 * DAY_MS;
+  const TIME_REFRESH_MS = 30000;
+
+  // How long the copy button shows its check mark, in milliseconds
+  const COPIED_MS = 1500;
+
   // Inspector cards, top to bottom
   const INSPECTOR_CARDS = ['context', 'mcp', 'tools', 'log'];
 
@@ -133,6 +142,8 @@
     pendingQuestion: null,
     queue: { paused: false, items: [] },
     canRetry: false,
+    canEditHistory: false,
+    editHistoryReason: '',
     mcp: null
   };
 
@@ -152,6 +163,8 @@
     cardGroups: new Set(),
     selectedTool: null,
     shownDecisionKey: null,
+    // User message the rewind dialog is about
+    rewindEntryId: null,
     answeringDecisionKey: null,
     // Elements focus returns to as dialogs close; a dialog can open over another (delete over the archived list)
     dialogOpeners: [],
@@ -271,9 +284,81 @@
     return '已完成 ›';
   }
 
+  /** Time of a message as Claude shows it: just now, minutes or hours ago, then the date. */
+  function relativeTime(time) {
+    const elapsed = Date.now() - time;
+    if (elapsed < MINUTE_MS) return '刚刚';
+    if (elapsed < HOUR_MS) return Math.floor(elapsed / MINUTE_MS) + ' 分钟前';
+    if (elapsed < DAY_MS) return Math.floor(elapsed / HOUR_MS) + ' 小时前';
+    if (elapsed < WEEK_MS) return Math.floor(elapsed / DAY_MS) + ' 天前';
+    const date = new Date(time);
+    return (date.getMonth() + 1) + ' 月 ' + date.getDate() + ' 日';
+  }
+
+  function fullTime(time) {
+    const date = new Date(time);
+    const pad = (value) => String(value).padStart(2, '0');
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  /** A user message with the row Claude shows under it on hover: time, copy, rewind to here, branch from here. */
   function renderUser(entry) {
     const references = entry.references && entry.references.length ? '<div class="user-references">' + entry.references.map((line) => '<div>' + esc(line) + '</div>').join('') + '</div>' : '';
-    return '<article class="message user">' + esc(entry.text) + references + '</article>';
+    const time = entry.time ? '<time class="user-time" data-time="' + entry.time + '" title="' + fullTime(entry.time) + '">' + relativeTime(entry.time) + '</time><span class="user-dot">·</span>' : '';
+    const actions = '<div class="user-actions">' + time
+      + '<button class="icon user-action" data-user-copy="' + entry.id + '" title="复制" aria-label="复制">' + icons.svg('copy', 15) + '</button>'
+      + '<button class="icon user-action history" data-user-rewind="' + entry.id + '" aria-label="回到这里">' + icons.svg('rewind', 15) + '</button>'
+      + '<button class="icon user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 15) + '</button>'
+      + '</div>';
+    return '<div class="user-turn"><article class="message user">' + esc(entry.text) + references + '</article>' + actions + '</div>';
+  }
+
+  /** Rewind and branch need an idle conversation the runtime has open; otherwise they stay visible but say why they are off. */
+  function refreshHistoryActions() {
+    const locked = !state.canEditHistory;
+    for (const button of document.querySelectorAll('#messages .user-action.history')) {
+      button.classList.toggle('locked', locked);
+      button.setAttribute('aria-disabled', String(locked));
+      const what = button.dataset.userRewind ? '回到这里：撤销之后的编辑器修改，对话截到这条消息之前，原文放回输入框' : '从这里分支：新开一个会话，保留到这一轮为止的对话';
+      button.title = locked ? what + '（' + (state.editHistoryReason || '暂不可用') + '）' : what;
+    }
+  }
+
+  function refreshMessageTimes() {
+    for (const element of document.querySelectorAll('#messages .user-time[data-time]')) {
+      element.textContent = relativeTime(Number(element.dataset.time));
+    }
+  }
+
+  /** What rewinding to a user message will do, counted from the entries after it, for the confirmation dialog. */
+  function rewindSummary(entryId) {
+    const start = state.order.indexOf(entryId);
+    let undo = 0;
+    let kept = 0;
+    let messages = 0;
+    for (const id of state.order.slice(start)) {
+      const entry = state.entries.get(id);
+      if (!entry) continue;
+      if (entry.kind === 'user') messages++;
+      if (entry.kind === 'writeResult' && !entry.undone) {
+        if (entry.undoable) undo++;
+        else kept++;
+      }
+      if (entry.kind === 'writeUnknown') kept++;
+    }
+    return { undo, kept, messages };
+  }
+
+  function openRewind(entryId, opener) {
+    const summary = rewindSummary(entryId);
+    const lines = [];
+    lines.push(summary.undo ? '撤销其后的 ' + summary.undo + ' 次编辑器修改' : '其后没有需要撤销的编辑器修改');
+    if (summary.kept) lines.push(summary.kept + ' 次修改不可撤销，会保留在编辑器中');
+    lines.push('移除这条及之后的 ' + summary.messages + ' 条消息；原对话归档，可从“已归档”恢复');
+    lines.push('这条消息的原文放回输入框，可修改后重新发送');
+    $('rewind-list').innerHTML = lines.map((line) => '<li>' + esc(line) + '</li>').join('');
+    view.rewindEntryId = entryId;
+    openDialog($('rewind-dialog'), opener);
   }
 
   function isThinking(entry) {
@@ -1581,7 +1666,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -1649,6 +1734,13 @@
     }
     if ('pendingPermission' in message || 'pendingWrite' in message || 'pendingQuestion' in message) renderDecision();
     renderComposer();
+    refreshHistoryActions();
+
+    // After a rewind the message's text comes back into the input, once the new session is shown
+    if ('restoreDraft' in message) {
+      setDraft(message.restoreDraft);
+      $('draft').focus();
+    }
 
     const inspectorVisible = paneMode('inspector') !== 'hidden';
     if (inspectorVisible) {
@@ -1865,6 +1957,27 @@
         return;
       }
 
+      const copyUser = event.target.closest('[data-user-copy]');
+      if (copyUser) {
+        const entry = state.entries.get(Number(copyUser.dataset.userCopy));
+        if (entry) call('copytext', entry.text || '');
+        copyUser.innerHTML = icons.svg('check', 15);
+        setTimeout(() => { copyUser.innerHTML = icons.svg('copy', 15); }, COPIED_MS);
+        return;
+      }
+
+      const rewind = event.target.closest('[data-user-rewind]');
+      if (rewind) {
+        if (state.canEditHistory) openRewind(Number(rewind.dataset.userRewind), rewind);
+        return;
+      }
+
+      const branch = event.target.closest('[data-user-branch]');
+      if (branch) {
+        if (state.canEditHistory) call('branchfrom', Number(branch.dataset.userBranch));
+        return;
+      }
+
       const copyCode = event.target.closest('[data-copy-code]');
       if (copyCode) {
         const article = copyCode.closest('[data-entry]');
@@ -2013,6 +2126,10 @@
       call('archivesession', view.targetSessionId);
       $('archive-dialog').close();
     });
+    $('rewind-confirm').addEventListener('click', () => {
+      call('rewindto', view.rewindEntryId);
+      $('rewind-dialog').close();
+    });
     $('delete-confirm').addEventListener('click', () => {
       call('deletesession', view.targetSessionId);
       $('delete-dialog').close();
@@ -2106,6 +2223,7 @@
   document.addEventListener('visibilitychange', () => console.log('Shuttlegent page visibility: ' + document.visibilityState));
   bindComposer();
   bindConversation();
+  window.setInterval(refreshMessageTimes, TIME_REFRESH_MS);
   bindPanes();
   bindDialogs();
   bindKeyboard();

@@ -163,6 +163,41 @@ namespace ShuttlegentChatModelPrivate
 	}
 }
 
+namespace ShuttlegentChatModelPrivate
+{
+	/** 这条消息之后仍可撤销的写入（同步事务、尚未撤销、确有执行），按发生顺序。 */
+	TArray<TSharedPtr<FShuttlegentChatEntry>> UndoableWritesAfter(const FShuttlegentConversation& Conversation, int32 Index)
+	{
+		TArray<TSharedPtr<FShuttlegentChatEntry>> Writes;
+		for (int32 EntryIndex = Index + 1; EntryIndex < Conversation.Entries.Num(); ++EntryIndex)
+		{
+			const TSharedPtr<FShuttlegentChatEntry>& Entry = Conversation.Entries[EntryIndex];
+			if (Entry->Kind == EShuttlegentChatEntryKind::WriteResult && Entry->WriteResult.bUndoable && !Entry->bUndone && Entry->WriteResult.TransactionId.IsValid()) Writes.Add(Entry);
+		}
+		return Writes;
+	}
+
+	/** 这些写入的事务（从新到旧）恰好依次占据撤销栈顶。 */
+	bool AreWritesOnUndoTop(const TArray<TSharedPtr<FShuttlegentChatEntry>>& Writes)
+	{
+		TArray<FGuid> NewestFirst;
+		for (int32 Index = Writes.Num() - 1; Index >= 0; --Index)
+		{
+			NewestFirst.Add(Writes[Index]->WriteResult.TransactionId);
+		}
+		return FShuttlegentWriteGate::AreOnUndoTop(NewestFirst);
+	}
+
+	/** 从新到旧撤销这些写入；调用前已确认它们都在撤销栈顶。 */
+	void UndoWrites(const TArray<TSharedPtr<FShuttlegentChatEntry>>& Writes)
+	{
+		for (int32 Index = Writes.Num() - 1; Index >= 0; --Index)
+		{
+			if (FShuttlegentWriteGate::Undo(Writes[Index]->WriteResult.TransactionId)) Writes[Index]->bUndone = true;
+		}
+	}
+}
+
 void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService>& InService)
 {
 	Service = InService;
@@ -562,6 +597,185 @@ void FShuttlegentChatModel::UndoWrite(int32 EntryId)
 	Entry->bUndone = true;
 	AddRunLog(*Current, LOCTEXT("LogUndoWrite", "撤销本次修改"), false);
 	NotifyContent(*Current);
+}
+
+bool FShuttlegentChatModel::CanEditHistory(FText& OutReason) const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || Current->SessionId.IsEmpty())
+	{
+		OutReason = LOCTEXT("HistoryNoSession", "这段对话还没有会话。");
+		return false;
+	}
+	if (IsBusy(*Current) || !Current->Queue.Items.IsEmpty())
+	{
+		OutReason = LOCTEXT("HistoryBusy", "本轮还在进行或有排队的消息，结束后再操作。");
+		return false;
+	}
+	if (bRuntimeLost || GetState() != EShuttlegentAgentState::Ready || !Pinned->IsSessionOpen(Current->SessionId))
+	{
+		OutReason = LOCTEXT("HistoryNotOpen", "会话尚未在运行时中就绪。");
+		return false;
+	}
+	if (!FShuttlegentMcpServerModule::Get().CanForkSessions())
+	{
+		OutReason = LOCTEXT("HistoryNoControl", "运行时的会话控制插件不可用。");
+		return false;
+	}
+
+	OutReason = FText::GetEmpty();
+	return true;
+}
+
+void FShuttlegentChatModel::BranchFrom(int32 EntryId)
+{
+	int32 Index = INDEX_NONE;
+	int32 Ordinal = INDEX_NONE;
+	if (!FindUserMessage(*Current, EntryId, Index, Ordinal)) return;
+
+	FText Reason;
+	if (!CanEditHistory(Reason))
+	{
+		AddNotice(*Current, FText::Format(LOCTEXT("BranchBlocked", "不能分支：{0}"), Reason), true);
+		return;
+	}
+
+	const FString SourceSessionId = Current->SessionId;
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	AddRunLog(*Current, LOCTEXT("LogBranch", "从这条消息分支"), false);
+	FShuttlegentMcpServerModule::Get().ForkSession(SourceSessionId, Ordinal, true, [WeakThis, SourceSessionId, Ordinal](const FString& NewSessionId, const FString& Error)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		if (!This.IsValid()) return;
+
+		if (NewSessionId.IsEmpty())
+		{
+			const TSharedPtr<FShuttlegentConversation> Source = This->FindConversation(SourceSessionId);
+			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("BranchFailed", "分支失败：{0}"), FText::FromString(Error)), true);
+			return;
+		}
+		This->AdoptFork(SourceSessionId, NewSessionId, Ordinal, true, false);
+	});
+}
+
+void FShuttlegentChatModel::RewindTo(int32 EntryId)
+{
+	int32 Index = INDEX_NONE;
+	int32 Ordinal = INDEX_NONE;
+	if (!FindUserMessage(*Current, EntryId, Index, Ordinal)) return;
+
+	FText Reason;
+	if (!CanEditHistory(Reason))
+	{
+		AddNotice(*Current, FText::Format(LOCTEXT("RewindBlocked", "不能回到这里：{0}"), Reason), true);
+		return;
+	}
+
+	// 用户在编辑器里另做的编辑夹在中间时，直接撤销会连带撤掉它们，因此整体拒绝
+	const TArray<TSharedPtr<FShuttlegentChatEntry>> Writes = ShuttlegentChatModelPrivate::UndoableWritesAfter(*Current, Index);
+	if (!ShuttlegentChatModelPrivate::AreWritesOnUndoTop(Writes))
+	{
+		AddNotice(*Current, LOCTEXT("RewindNotTop", "不能回到这里：这之后编辑器里还有其他编辑，直接撤销会连带撤掉它们。未做任何改动。"), true);
+		return;
+	}
+
+	const FString SourceSessionId = Current->SessionId;
+	// 放回输入框的是用户写的原文，不含随提问附带的引用块
+	FString Draft;
+	TArray<FString> ReferenceLines;
+	FShuttlegentReferencePrompt::Split(Current->Entries[Index]->Text, Draft, ReferenceLines);
+	AddRunLog(*Current, LOCTEXT("LogRewind", "回到这条消息之前"), false);
+
+	// 第一条消息之前没有对话可保留：撤销写入后开始新对话
+	if (Ordinal == 0)
+	{
+		ShuttlegentChatModelPrivate::UndoWrites(Writes);
+		ArchiveSession(SourceSessionId);
+		OnDraftRestored.Broadcast(Draft);
+		return;
+	}
+
+	// 先分叉（可能失败），成功后再撤销写入，失败时编辑器与对话都保持原样
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	FShuttlegentMcpServerModule::Get().ForkSession(SourceSessionId, Ordinal, false, [WeakThis, SourceSessionId, Ordinal, Draft, Writes](const FString& NewSessionId, const FString& Error)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		if (!This.IsValid()) return;
+
+		const TSharedPtr<FShuttlegentConversation> Source = This->FindConversation(SourceSessionId);
+		if (NewSessionId.IsEmpty())
+		{
+			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("RewindFailed", "回退失败：{0}。未做任何改动。"), FText::FromString(Error)), true);
+			return;
+		}
+		if (!ShuttlegentChatModelPrivate::AreWritesOnUndoTop(Writes))
+		{
+			if (Source.IsValid()) This->AddNotice(*Source, LOCTEXT("RewindRaced", "不能回到这里：等待期间编辑器里又有了其他编辑。未做任何改动。"), true);
+			return;
+		}
+
+		ShuttlegentChatModelPrivate::UndoWrites(Writes);
+		This->AdoptFork(SourceSessionId, NewSessionId, Ordinal, false, true);
+		This->OnDraftRestored.Broadcast(Draft);
+	});
+}
+
+bool FShuttlegentChatModel::FindUserMessage(const FShuttlegentConversation& Conversation, int32 EntryId, int32& OutIndex, int32& OutOrdinal) const
+{
+	int32 Ordinal = INDEX_NONE;
+	for (int32 Index = 0; Index < Conversation.Entries.Num(); ++Index)
+	{
+		const TSharedPtr<FShuttlegentChatEntry>& Entry = Conversation.Entries[Index];
+		if (Entry->Kind != EShuttlegentChatEntryKind::User) continue;
+
+		++Ordinal;
+		if (Entry->Id != EntryId) continue;
+
+		OutIndex = Index;
+		OutOrdinal = Ordinal;
+		return true;
+	}
+	return false;
+}
+
+void FShuttlegentChatModel::AdoptFork(const FString& SourceSessionId, const FString& NewSessionId, int32 Ordinal, bool bThroughTurn, bool bRewind)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid()) return;
+
+	// 会话记录截在与运行时相同的位置：第 Ordinal 条提问之前，或该轮结束之后
+	FShuttlegentSessionStore& Store = Pinned->GetSessionStore();
+	const TArray<TSharedPtr<FJsonObject>> Items = Store.LoadTranscript(SourceSessionId);
+	int32 Keep = Items.Num();
+	int32 Seen = INDEX_NONE;
+	for (int32 Index = 0; Index < Items.Num(); ++Index)
+	{
+		FString Kind;
+		Items[Index]->TryGetStringField(ShuttlegentChatModelPrivate::FieldKind, Kind);
+		if (Kind == ShuttlegentChatModelPrivate::TranscriptPrompt && ++Seen == Ordinal && !bThroughTurn)
+		{
+			Keep = Index;
+			break;
+		}
+		if (bThroughTurn && Seen == Ordinal && Kind == ShuttlegentChatModelPrivate::TranscriptTurnEnd)
+		{
+			Keep = Index + 1;
+			break;
+		}
+	}
+	Store.WriteTranscript(NewSessionId, TArray<TSharedPtr<FJsonObject>>(Items.GetData(), Keep));
+
+	FShuttlegentSessionRecord Record;
+	const FShuttlegentSessionRecord* Source = Store.FindRecord(SourceSessionId);
+	if (Source != nullptr) Record = *Source;
+	Record.SessionId = NewSessionId;
+	Record.bArchived = false;
+	if (!bRewind) Record.Title = FText::Format(LOCTEXT("BranchTitle", "{0}（分支）"), FText::FromString(Record.Title)).ToString();
+	Store.UpsertRecord(Record);
+
+	// 回退后原会话归档保留，可从“已归档”恢复
+	if (bRewind) ArchiveSession(SourceSessionId);
+	OpenSession(NewSessionId);
 }
 
 void FShuttlegentChatModel::Cancel()
@@ -974,6 +1188,7 @@ TSharedPtr<FShuttlegentChatEntry> FShuttlegentChatModel::AddEntry(FShuttlegentCo
 	Entry->Kind = Kind;
 	Entry->Text = Text;
 	Entry->Id = NextEntryId++;
+	Entry->TimeUtc = FDateTime::UtcNow();
 	Conversation.Entries.Add(Entry);
 	return Entry;
 }
@@ -1207,7 +1422,11 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 		{
 			FString Text;
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldText, Text);
-			AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
+			const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
+
+			FString Time;
+			FDateTime At;
+			if (Item->TryGetStringField(ShuttlegentChatModelPrivate::FieldTime, Time) && FDateTime::ParseIso8601(*Time, At)) Entry->TimeUtc = At;
 		}
 		else if (Kind == ShuttlegentChatModelPrivate::TranscriptUpdate)
 		{

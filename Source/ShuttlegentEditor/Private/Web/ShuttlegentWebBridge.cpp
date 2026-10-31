@@ -125,6 +125,16 @@ void UShuttlegentWebBridge::UndoWrite(int32 EntryId)
 	if (OnUndoWrite) OnUndoWrite(EntryId);
 }
 
+void UShuttlegentWebBridge::RewindTo(int32 EntryId)
+{
+	if (OnRewindTo) OnRewindTo(EntryId);
+}
+
+void UShuttlegentWebBridge::BranchFrom(int32 EntryId)
+{
+	if (OnBranchFrom) OnBranchFrom(EntryId);
+}
+
 void UShuttlegentWebBridge::RetryStart()
 {
 	if (OnRetryStart) OnRetryStart();

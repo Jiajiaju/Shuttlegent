@@ -65,6 +65,10 @@ public:
 
 	TFunction<void(int32)> OnUndoWrite;
 
+	TFunction<void(int32)> OnRewindTo;
+
+	TFunction<void(int32)> OnBranchFrom;
+
 	TFunction<void()> OnRetryStart;
 
 	TFunction<void()> OnRetryResume;
@@ -171,6 +175,14 @@ public:
 	/** 写入结果上的“撤销本次修改”。 */
 	UFUNCTION()
 	void UndoWrite(int32 EntryId);
+
+	/** 用户消息上的“回到这里”（页面已让用户确认）。 */
+	UFUNCTION()
+	void RewindTo(int32 EntryId);
+
+	/** 用户消息上的“分支”。 */
+	UFUNCTION()
+	void BranchFrom(int32 EntryId);
 
 	/** 启动引导卡片上的“重试”：再次启动运行时（若正在运行则重启）。 */
 	UFUNCTION()

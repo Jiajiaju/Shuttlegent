@@ -126,6 +126,9 @@ namespace ShuttlegentProviderConstant
 
 	// 插入 context tap 插件的行，按绝对路径加载
 	inline const TCHAR* RowContextTap = TEXT("shuttlegent-context-tap");
+
+	// 插入 session control 插件的行，按绝对路径加载
+	inline const TCHAR* RowSessionControl = TEXT("shuttlegent-session-control");
 	inline const TCHAR* FieldInsert = TEXT("insert");
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
@@ -146,6 +149,9 @@ namespace ShuttlegentPath
 
 	// 向编辑器端点上报各会话上下文分项的运行时插件，相对插件目录
 	inline const TCHAR* ContextTapPlugin = TEXT("Runtime/plugins/shuttlegent-context-tap.mjs");
+
+	// 供编辑器分叉会话（回到这里、分支）的运行时插件，相对插件目录
+	inline const TCHAR* SessionControlPlugin = TEXT("Runtime/plugins/shuttlegent-session-control.mjs");
 
 	// DSH_HOME，相对 %LOCALAPPDATA%；同时是运行时的启动目录，必须在系统盘
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");

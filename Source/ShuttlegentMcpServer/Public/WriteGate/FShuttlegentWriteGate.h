@@ -65,6 +65,9 @@ public:
 	/** 该事务位于撤销缓冲区顶部时将其撤销；否则返回 false。 */
 	static bool Undo(const FGuid& TransactionId);
 
+	/** 这些事务（从新到旧）恰好依次占据撤销栈顶，中间没有夹着其他编辑；为空时返回 true。 */
+	static bool AreOnUndoTop(const TArray<FGuid>& NewestFirst);
+
 private:
 	void Close(int32 RequestId, EShuttlegentWriteDecision Decision);
 	void HandleMapChange(uint32 Flags);

@@ -152,6 +152,8 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnAnswerWrite = nullptr;
 	Bridge->OnAnswerQuestion = nullptr;
 	Bridge->OnUndoWrite = nullptr;
+	Bridge->OnRewindTo = nullptr;
+	Bridge->OnBranchFrom = nullptr;
 	Bridge->OnRetryStart = nullptr;
 	Bridge->OnRetryResume = nullptr;
 	Bridge->OnAcknowledgeWrite = nullptr;
@@ -361,6 +363,16 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
 		if (Pinned.IsValid()) Pinned->UndoWrite(EntryId);
+	};
+	Bridge->OnRewindTo = [WeakModel](int32 EntryId)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->RewindTo(EntryId);
+	};
+	Bridge->OnBranchFrom = [WeakModel](int32 EntryId)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->BranchFrom(EntryId);
 	};
 	Bridge->OnRetryStart = [WeakModel]()
 	{

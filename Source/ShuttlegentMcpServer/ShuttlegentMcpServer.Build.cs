@@ -21,6 +21,7 @@ public class ShuttlegentMcpServer : ModuleRules
 				"Engine",
 				"UnrealEd",
 				"HTTPServer",
+				"HTTP",
 				"Projects",
 				"ShuttlegentCore",
 			}

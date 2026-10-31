@@ -10,44 +10,43 @@ DECLARE_MULTICAST_DELEGATE(FOnShuttlegentQuestionsChanged);
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnShuttlegentQuestionClosed, const FShuttlegentQuestion& /*Question*/, EShuttlegentQuestionOutcome /*Outcome*/, const FString& /*Answer*/);
 
 /**
- * Questions the agent asks the user through ask_user, waiting for the panel to answer them. Works like the write
- * gate: a question waits until the panel answers or skips it once, it expires (the owner expires everything when the
- * turn ends or the runtime is lost) or it times out unanswered. Without an attached panel a question is closed at once
- * as NoPanel, so the agent asks in its reply instead. Game thread only.
+ * agent 通过 ask_user 向用户提出的问题，等待面板作答。工作方式与写入门相同：问题一直等待，直到面板对其
+ * 作答或跳过一次、问题过期（本轮结束或运行时丢失时由所有者令全部问题过期），或无人作答而超时。未挂接面板时，
+ * 问题立即以 NoPanel 关闭，agent 改为在回复中提问。仅限游戏线程。
  */
 class SHUTTLEGENTMCPSERVER_API FShuttlegentQuestionGate : public TSharedFromThis<FShuttlegentQuestionGate>
 {
 public:
-	/** A question arrived or left; the panel shows the first waiting one. */
+	/** 有问题到达或离开；面板显示第一个等待中的问题。 */
 	FOnShuttlegentQuestionsChanged OnChanged;
 
-	/** A question left the gate, with how and the answer when there is one. */
+	/** 有问题离开提问通道，附带离开方式及答案（如有）。 */
 	FOnShuttlegentQuestionClosed OnClosed;
 
 private:
-	/** Waiting questions in arrival order, with the tool's callback. */
+	/** 按到达顺序排列的等待中问题，及工具的回调。 */
 	TArray<FShuttlegentQuestion> Pending;
 	TMap<int32, TFunction<void(EShuttlegentQuestionOutcome, const FString&)>> Callbacks;
 
 	int32 NextQuestionId = 1;
 	bool bAnswererAttached = false;
 
-	/** Checks waiting questions for the time limit; runs only while something waits. */
+	/** 检查等待中问题是否超出时限；仅在有问题等待时运行。 */
 	FTSTicker::FDelegateHandle TimeoutHandle;
 
 public:
 	void Shutdown();
 
-	/** The panel is open to answer questions; detaching closes what still waits as NoPanel. */
+	/** 面板已打开，可回答问题；解除挂接时将仍在等待的问题以 NoPanel 关闭。 */
 	void SetAnswererAttached(bool bAttached);
 
-	/** Asks the user; OnClosed runs once with the outcome and the answer. Returns the question id. */
+	/** 向用户提问；OnClosed 以结果和答案运行一次。返回问题 id。 */
 	int32 Ask(FShuttlegentQuestion Question, TFunction<void(EShuttlegentQuestionOutcome, const FString&)> OnClosedCallback);
 
-	/** The user's answer, or a skip; false when the question is no longer waiting, so a second click does nothing. */
+	/** 用户的答案或跳过；问题已不在等待时返回 false，因此重复点击不产生作用。 */
 	bool Answer(int32 QuestionId, const FString& InAnswer, bool bSkip);
 
-	/** Every waiting question expires unanswered. */
+	/** 令所有等待中的问题在未作答状态下过期。 */
 	void ExpireAll();
 
 	const TArray<FShuttlegentQuestion>& GetPending() const { return Pending; }

@@ -12,7 +12,7 @@
 
 namespace ShuttlegentAcpConnectionPrivate
 {
-	// JSON-RPC envelope fields
+	// JSON-RPC 信封字段
 	inline const TCHAR* FieldJsonRpc = TEXT("jsonrpc");
 	inline const TCHAR* FieldId = TEXT("id");
 	inline const TCHAR* FieldMethod = TEXT("method");
@@ -23,10 +23,10 @@ namespace ShuttlegentAcpConnectionPrivate
 	inline const TCHAR* FieldMessage = TEXT("message");
 	inline const TCHAR* JsonRpcVersion = TEXT("2.0");
 
-	// Name of the core ticker that pumps the connection
+	// 驱动连接的 core ticker 名称
 	inline const TCHAR* TickerName = TEXT("ShuttlegentAcpConnection");
 
-	// Maximum stdout lines dispatched per frame, so a burst of updates cannot stall the editor
+	// 每帧最多分发的 stdout 行数，避免突发的大量更新卡住编辑器
 	inline constexpr int32 MaxLinesPerTick = 256;
 
 	using FCondensedWriter = TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>;
@@ -241,7 +241,7 @@ void FShuttlegentAcpConnection::Dispatch(const FString& Line)
 	}
 	else
 	{
-		// "result": null and other non-object results count as success without fields.
+		// "result": null 及其他非对象结果视为不含字段的成功。
 		Response.bSuccess = Message->HasField(ShuttlegentAcpConnectionPrivate::FieldResult);
 	}
 

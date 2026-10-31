@@ -2,89 +2,89 @@
 
 #include "CoreMinimal.h"
 
-/** Names registered by the editor module. */
+/** 编辑器模块注册的名称。 */
 namespace ShuttlegentEditorName
 {
-	// Nomad tab of the chat panel
+	// 聊天面板的 Nomad 标签页
 	inline const FName ChatTabId = TEXT("ShuttlegentChat");
 
-	// Slate style set
+	// Slate 样式集
 	inline const FName StyleSetName = TEXT("ShuttlegentStyle");
 
-	// Binding context of the panel shortcuts (FShuttlegentPanelCommands)
+	// 面板快捷键的绑定上下文（FShuttlegentPanelCommands）
 	inline const FName CommandContext = TEXT("Shuttlegent");
 
-	// Menu extended with the "Shuttlegent" entry
+	// 扩展了 "Shuttlegent" 条目的菜单
 	inline const TCHAR* WindowMenu = TEXT("LevelEditor.MainMenu.Window");
 	inline const FName WindowMenuSection = TEXT("ShuttlegentSection");
 
-	// Module that hosts the settings viewer
+	// 承载设置查看器的模块
 	inline const FName SettingsModule = TEXT("Settings");
 
-	// Module of the editor endpoint, which may already be gone when the chat model shuts down
+	// 编辑器端点所在的模块，聊天模型关闭时它可能已不存在
 	inline const FName McpServerModule = TEXT("ShuttlegentMcpServer");
 
-	// Settings viewer location of UShuttlegentSettings
+	// UShuttlegentSettings 在设置查看器中的位置
 	inline const FName SettingsContainer = TEXT("Editor");
 	inline const FName SettingsCategory = TEXT("Shuttlegent");
 	inline const FName SettingsSection = TEXT("General");
 }
 
-/** Shuttlegent VI 1.1 metrics of the Slate parts left around the web page, in Slate units. */
+/** 网页周围保留的 Slate 部分所用的 Shuttlegent VI 1.1 尺寸，单位为 Slate 单位。 */
 namespace ShuttlegentEditorMetric
 {
-	// Tab icon size required by the editor
+	// 编辑器要求的标签页图标尺寸
 	inline constexpr float TabIconSize = 16.0f;
 
-	// Brand mark of the loading placeholder (empty-state mark size, Shuttlegent UI interaction spec section 14.3.3)
+	// 加载占位的品牌标志（空状态标志尺寸，Shuttlegent UI 交互规范第 14.3.3 节）
 	inline constexpr float MarkSizePlaceholder = 64.0f;
 
-	// Space between the placeholder mark and its caption
+	// 占位标志与其说明文字之间的间距
 	inline constexpr float PlaceholderSpacing = 16.0f;
 
-	// Placeholder caption, 12 px in the prototype, as an editor font size (pt)
+	// 占位说明文字，原型中为 12 px，此处为编辑器字号（pt）
 	inline constexpr int32 FontCaption = 9;
 }
 
-/** Resource file names under <Plugin>/Resources. */
+/** <Plugin>/Resources 下的资源文件名。 */
 namespace ShuttlegentEditorResource
 {
 	inline const TCHAR* ResourcesDir = TEXT("Resources");
 	inline const TCHAR* PngDir = TEXT("png");
 	inline const TCHAR* PngExtension = TEXT(".png");
 
-	// Brand mark for dark backgrounds; the dock tab icon uses it (VI: two-colour marks only from 32 px)
+	// 深色背景用品牌标志；停靠标签页图标使用它（VI：双色标志仅用于 32 px 及以上）
 	inline const TCHAR* MarkReverse = TEXT("mark-reverse");
 
-	// Silk warps and red shuttle; the loading placeholder shows it, matching the page's mark
+	// 丝质经线与红色梭子；加载占位显示它，与页面的标志一致
 	inline const TCHAR* MarkRedWhite = TEXT("mark-red-white");
 }
 
-/** Placeholder colours: the page background and caption text (Shuttlegent UI design-tokens.css --bg, --muted). */
+/** 占位颜色：页面背景与说明文字（Shuttlegent UI design-tokens.css --bg、--muted）。 */
 namespace ShuttlegentEditorColor
 {
 	inline const FColor Background(0x1C, 0x1C, 0x1B);
 	inline const FColor Muted(0xA9, 0xA8, 0xA2);
 }
 
-/** Web panel host (SShuttlegentWebPanel): page location, JS entry points and the Content Browser drawer. */
+/** 网页面板宿主（SShuttlegentWebPanel）：页面位置、JS 入口与 Content Browser 抽屉。 */
 namespace ShuttlegentEditorWeb
 {
-	// Engine module SWebBrowser needs loaded before it is created; SWebBrowserView does not load it itself
+	// SWebBrowser 创建前必须已加载的引擎模块；SWebBrowserView 自身不会加载它
 	inline const FName WebBrowserModule = TEXT("WebBrowser");
 
-	// Page under <Plugin>/Resources and the file URL scheme it is loaded with
+	// <Plugin>/Resources 下的页面，以及加载它所用的文件 URL 方案
 	inline const TCHAR* PageDir = TEXT("Web");
 	inline const TCHAR* PageFile = TEXT("index.html");
 	inline const TCHAR* FileUrlPrefix = TEXT("file:///");
 
-	// JS binding name: the page calls window.ue.bridge.<lower-case function>
+	// JS 绑定名称：页面调用 window.ue.bridge.<小写函数名>
 	inline const TCHAR* BridgeName = TEXT("bridge");
 
-	// CEF paint rate of the panel, frames per second
+	// 面板的 CEF 绘制帧率，单位为帧每秒
 	inline constexpr int32 BrowserFrameRate = 60;
 
-	// Page entry points called from C++, as JsCallPrefix + entry + JsCallOpen + argument + JsCallSuffix
+	// 由 C++ 调用的页面入口，形式为 JsCallPrefix + 入口 + JsCallOpen + 参数 + JsCallSuffix
 	inline const TCHAR* JsCallPrefix = TEXT("window.Shuttlegent && window.Shuttlegent.");
 	inline const TCHAR* JsCallOpen = TEXT("(");
 	inline const TCHAR* JsCallSuffix = TEXT(");");
@@ -95,7 +95,7 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* JsOnSubmitResult = TEXT("onSubmitResult");
 	inline const TCHAR* JsOnQueueItemTaken = TEXT("onQueueItemTaken");
 
-	// Panel shortcut names passed to runCommand, one per FShuttlegentPanelCommands entry
+	// 传给 runCommand 的面板快捷键名称，与 FShuttlegentPanelCommands 的条目一一对应
 	inline const TCHAR* CommandToggleSidebar = TEXT("toggleSidebar");
 	inline const TCHAR* CommandToggleInspector = TEXT("toggleInspector");
 	inline const TCHAR* CommandNewSession = TEXT("newSession");
@@ -106,121 +106,121 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* JsOnDrawerState = TEXT("onDrawerState");
 	inline const TCHAR* JsFocusDraft = TEXT("focusDraft");
 
-	// JS literals passed to the entry points
+	// 传给入口的 JS 字面量
 	inline const TCHAR* JsTrue = TEXT("true");
 	inline const TCHAR* JsFalse = TEXT("false");
 	inline const TCHAR* JsNoArgument = TEXT("");
 
-	// http(s) links open in the system browser instead of the panel
+	// http(s) 链接在系统浏览器而非面板中打开
 	inline const TCHAR* HttpPrefix = TEXT("http://");
 	inline const TCHAR* HttpsPrefix = TEXT("https://");
 
-	// Content Browser drawer hosted by the panel: module, global instance name, default height as a share of the panel and its floor
+	// 面板承载的 Content Browser 抽屉：模块、全局实例名、占面板比例的默认高度及其下限
 	inline const FName ContentBrowserModule = TEXT("ContentBrowser");
 	inline const FName ContentBrowserInstance = TEXT("ShuttlegentContentBrowser");
 	inline constexpr float DrawerHeightShare = 0.5f;
 	inline constexpr float DrawerMinHeight = 240.0f;
 
-	// Tallest drawer as a share of the panel (Shuttlegent UI interaction spec section 4.2)
+	// 抽屉最大高度占面板的比例（Shuttlegent UI 交互规范第 4.2 节）
 	inline constexpr float DrawerMaxShare = 0.9f;
 
-	// Height of the resize grip on the drawer's top edge
+	// 抽屉顶边调整尺寸手柄的高度
 	inline constexpr float DrawerGripHeight = 6.0f;
 
-	// Slide in / out duration, the same as the editor's status bar drawer (SWidgetDrawer.cpp, QuadOut ease)
+	// 滑入 / 滑出时长，与编辑器状态栏抽屉相同（SWidgetDrawer.cpp，QuadOut 缓动）
 	inline constexpr float DrawerSlideSeconds = 0.15f;
 
-	// A page button click that just closed the drawer must not reopen it when the same click reaches the page (seconds)
+	// 刚关闭抽屉的页面按钮点击在到达页面时不得重新打开抽屉（秒）
 	inline constexpr double ClickCloseGuardSeconds = 0.5;
 
-	// Per-user config (GEditorPerProjectIni) holding the drawer height share, like the editor's DrawerSizes section
+	// 保存抽屉高度比例的按用户配置（GEditorPerProjectIni），类似编辑器的 DrawerSizes 节
 	inline const TCHAR* ConfigSection = TEXT("ShuttlegentPanel");
 	inline const TCHAR* ConfigKeyDrawerHeightShare = TEXT("DrawerHeightShare");
 
-	// Widths of the docked sidebar and inspector the user dragged, in CSS pixels; absent means the page's default
+	// 用户拖拽调整的停靠侧栏与检视器宽度，单位为 CSS 像素；缺省表示使用页面默认值
 	inline const TCHAR* ConfigKeySidebarWidth = TEXT("SidebarWidth");
 	inline const TCHAR* ConfigKeyInspectorWidth = TEXT("InspectorWidth");
 
-	// Editor style brushes of the drawer body and its resize grip
+	// 抽屉主体及其调整尺寸手柄所用的编辑器样式画刷
 	inline const FName DrawerBodyBrush = TEXT("Brushes.Panel");
 	inline const FName DrawerGripBrush = TEXT("Brushes.Header");
 }
 
-/** Fields and values of the JSON pushed to the page (FShuttlegentWebProtocol); Resources/Web/app.js reads the same names. */
-/** The personal settings page's editor tool switches. */
+/** 推送给页面的 JSON（FShuttlegentWebProtocol）的字段与取值；Resources/Web/app.js 读取相同的名称。 */
+/** 个人设置页面中的编辑器工具开关。 */
 namespace ShuttlegentEditorSettingsUi
 {
-	// Category of UShuttlegentSettings::DisabledTools, where the switches replace the array
+	// UShuttlegentSettings::DisabledTools 所在的类别，开关在此替代该数组
 	inline const TCHAR* ToolsCategory = TEXT("Editor Tools");
 
-	// Category of UShuttlegentSettings::DisabledToolsets, where one switch per engine toolset replaces the array
+	// UShuttlegentSettings::DisabledToolsets 所在的类别，每个引擎 Toolset 一个开关，在此替代该数组
 	inline const TCHAR* ToolsetsCategory = TEXT("Engine Toolsets");
 
-	// End of the first line of a tool description, shown as the switch's tooltip
+	// 工具描述第一行的结束符，该行显示为开关的提示信息
 	inline const TCHAR* LineBreak = TEXT("\n");
 
-	// Module that registers detail customizations
+	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
 }
 
-/** Slash templates (Shuttlegent.md section 11). */
+/** 斜杠模板（Shuttlegent.md 第 11 节）。 */
 namespace ShuttlegentEditorTemplate
 {
-	// Template files of a template directory
+	// 模板目录中的模板文件
 	inline const TCHAR* FilePattern = TEXT("*.md");
 
-	// End of the description line
+	// 描述行的结束符
 	inline const TCHAR* LineBreak = TEXT("\n");
 
-	// Markdown heading mark trimmed off the description line
+	// 从描述行中去除的 Markdown 标题标记
 	inline constexpr TCHAR HeadingMark = TEXT('#');
 
-	// Longest description shown in the / menu, in characters
+	// / 菜单中显示的描述最大长度，单位为字符
 	inline constexpr int32 MaxDescriptionChars = 80;
 }
 
-/** Runtime start from the editor module. */
+/** 由编辑器模块启动运行时。 */
 namespace ShuttlegentEditorRuntime
 {
-	// Build script named by the missing-runtime guide card, relative to the plugin directory
+	// 缺少运行时引导卡片所指明的构建脚本，相对于插件目录
 	inline const TCHAR* BuildScript = TEXT("Build/BuildRuntime.ps1");
 
-	// Delay after the editor finished starting before the runtime is prewarmed, so startup work is done first, in seconds
+	// 编辑器完成启动后到预热运行时之间的延迟，使启动工作先完成，单位为秒
 	inline constexpr float PrewarmDelaySeconds = 3.0f;
 }
 
 namespace ShuttlegentEditorWebField
 {
-	// Top level: full snapshot flag, status fields, entry list and order, one-shot events
+	// 顶层：完整快照标志、状态字段、条目列表与顺序、一次性事件
 	inline const TCHAR* Reset = TEXT("reset");
 	inline const TCHAR* Status = TEXT("status");
 	inline const TCHAR* Connected = TEXT("connected");
 	inline const TCHAR* Prompting = TEXT("prompting");
 	inline const TCHAR* Stopping = TEXT("stopping");
 
-	// A turn runs, a stop is pending, or the runtime or session is coming up: a new draft is queued
+	// 有回合正在运行、停止待完成，或运行时或会话正在就绪：新草稿将进入队列
 	inline const TCHAR* Busy = TEXT("busy");
 	inline const TCHAR* RuntimeLost = TEXT("runtimeLost");
 	inline const TCHAR* AnimateMark = TEXT("animateMark");
 
-	// Appearance settings: conversation font size in CSS pixels and the wide layout switch
+	// 外观设置：以 CSS 像素为单位的对话字号，以及宽布局开关
 	inline const TCHAR* FontSize = TEXT("fontSize");
 	inline const TCHAR* WideLayout = TEXT("wideLayout");
 
-	// Remembered pane widths, sent with the snapshot; 0 when the user never resized the pane
+	// 记录的窗格宽度，随快照发送；用户从未调整过窗格时为 0
 	inline const TCHAR* SidebarWidth = TEXT("sidebarWidth");
 	inline const TCHAR* InspectorWidth = TEXT("inspectorWidth");
 	inline const TCHAR* UsedTokens = TEXT("usedTokens");
 	inline const TCHAR* ContextSize = TEXT("contextSize");
 
-	// Context breakdown estimated by the runtime (system prompts, tool definitions, messages), or null before the first report
+	// 运行时估算的上下文构成（系统提示、工具定义、消息），首次上报前为 null
 	inline const TCHAR* ContextBreakdown = TEXT("contextBreakdown");
 	inline const TCHAR* SystemTokens = TEXT("system");
 	inline const TCHAR* ToolsTokens = TEXT("tools");
 	inline const TCHAR* MessageTokens = TEXT("messages");
 	inline const TCHAR* Config = TEXT("config");
 
-	// Slash templates, sent with the snapshot: name, description, body
+	// 斜杠模板，随快照发送：名称、描述、正文
 	inline const TCHAR* Templates = TEXT("templates");
 	inline const TCHAR* TemplateDescription = TEXT("description");
 	inline const TCHAR* TemplateBody = TEXT("body");
@@ -228,7 +228,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Order = TEXT("order");
 	inline const TCHAR* Events = TEXT("events");
 
-	// Sessions: the active and archived lists, the current session, the rename limit and the read-only permission preset
+	// 会话：活动列表与已归档列表、当前会话、重命名长度上限与只读权限预设
 	inline const TCHAR* Sessions = TEXT("sessions");
 	inline const TCHAR* Archived = TEXT("archived");
 	inline const TCHAR* CurrentSessionId = TEXT("currentSessionId");
@@ -237,34 +237,34 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* RenameMaxChars = TEXT("renameMaxChars");
 	inline const TCHAR* PermissionMode = TEXT("permissionMode");
 
-	// The user's Shell switch
+	// 用户的 Shell 开关
 	inline const TCHAR* ShellEnabled = TEXT("shellEnabled");
 	inline const TCHAR* Title = TEXT("title");
 	inline const TCHAR* ModelName = TEXT("modelName");
 	inline const TCHAR* UpdatedAt = TEXT("updatedAt");
 
-	// Session item of a conversation the panel holds: its status (Status values below) and its queued prompt count
+	// 面板所持有对话的会话项：其状态（取值见下方 Status）及排队提示数量
 	inline const TCHAR* QueuedCount = TEXT("queuedCount");
 
-	// Session item: whether it may be archived or deleted now (not running and not waiting for a confirmation)
+	// 会话项：当前能否归档或删除（未在运行且未在等待确认）
 	inline const TCHAR* CanArchive = TEXT("canArchive");
 
-	// Sandbox of the runtime's file tools (UShuttlegentSettings::bAllowWorkspaceWrite)
+	// 运行时文件工具的沙箱（UShuttlegentSettings::bAllowWorkspaceWrite）
 	inline const TCHAR* PermissionReadOnly = TEXT("readOnly");
 	inline const TCHAR* PermissionWorkspaceWrite = TEXT("workspaceWrite");
 
-	// Run log of the current conversation: event time (Unix milliseconds), text, warning flag
+	// 当前对话的运行日志：事件时间（Unix 毫秒）、文本、警告标志
 	inline const TCHAR* RunLog = TEXT("runLog");
 	inline const TCHAR* Time = TEXT("time");
 	inline const TCHAR* Warning = TEXT("warning");
 
-	// Oldest unanswered runtime permission request, or null: the operation, its target, its content and the tool's justification
+	// 最早一个未答复的运行时权限请求，或 null：操作、目标、内容与工具的理由
 	inline const TCHAR* PendingPermission = TEXT("pendingPermission");
 	inline const TCHAR* Target = TEXT("target");
 	inline const TCHAR* Content = TEXT("content");
 	inline const TCHAR* Detail = TEXT("detail");
 
-	// Oldest editor write waiting for confirmation, or null: tool, action, level, undoable, objects, raw arguments
+	// 最早一个等待确认的编辑器写入，或 null：工具、动作、级别、可否撤销、对象、原始参数
 	inline const TCHAR* PendingWrite = TEXT("pendingWrite");
 	inline const TCHAR* Action = TEXT("action");
 	inline const TCHAR* Level = TEXT("level");
@@ -273,7 +273,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Objects = TEXT("objects");
 	inline const TCHAR* Raw = TEXT("raw");
 
-	// One object of a write: what changes, from what to what, how it went
+	// 一次写入中的一个对象：改动内容、由何值改为何值、执行结果
 	inline const TCHAR* Field = TEXT("field");
 	inline const TCHAR* CurrentValue = TEXT("current");
 	inline const TCHAR* PlannedValue = TEXT("planned");
@@ -284,21 +284,21 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* ObjectFailed = TEXT("failed");
 	inline const TCHAR* ObjectRolledBack = TEXT("rolledBack");
 
-	// Pending write: when it times out unanswered (Unix milliseconds)
+	// 待处理写入：无人答复时的超时时刻（Unix 毫秒）
 	inline const TCHAR* ExpiresAt = TEXT("expiresAt");
 
-	// Oldest question the agent asked (ask_user), or null: id, question, options, allowOther, expiresAt
+	// Agent 提出的最早一个问题（ask_user），或 null：id、question、options、allowOther、expiresAt
 	inline const TCHAR* PendingQuestion = TEXT("pendingQuestion");
 	inline const TCHAR* Question = TEXT("question");
 	inline const TCHAR* Options = TEXT("options");
 	inline const TCHAR* AllowOther = TEXT("allowOther");
 
-	// Write result entry: whether "undo this change" is available now, why not, and whether it was undone
+	// 写入结果条目：“撤销本次修改”当前是否可用、不可用的原因，以及是否已撤销
 	inline const TCHAR* CanUndo = TEXT("canUndo");
 	inline const TCHAR* UndoReason = TEXT("undoReason");
 	inline const TCHAR* Undone = TEXT("undone");
 
-	// MCP card: the editor endpoint (name, listening, port, tools), engine toolsets and external servers
+	// MCP 卡片：编辑器端点（名称、是否监听、端口、工具）、引擎 Toolset 与外部服务器
 	inline const TCHAR* Mcp = TEXT("mcp");
 	inline const TCHAR* Endpoint = TEXT("endpoint");
 	inline const TCHAR* Listening = TEXT("listening");
@@ -311,7 +311,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Servers = TEXT("servers");
 	inline const TCHAR* Stdio = TEXT("stdio");
 
-	// External server: why it is left out of the next session's declaration; empty when declared
+	// 外部服务器：未列入下一个会话声明的原因；已声明时为空
 	inline const TCHAR* Issue = TEXT("issue");
 	inline const TCHAR* IssueNone = TEXT("");
 	inline const TCHAR* IssueNameInvalid = TEXT("nameInvalid");
@@ -320,39 +320,39 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* IssueUrlMissing = TEXT("urlMissing");
 	inline const TCHAR* IssueHeaderValueMissing = TEXT("headerValueMissing");
 
-	// Config option: current value and choices
+	// 配置选项：当前值与可选值
 	inline const TCHAR* Current = TEXT("current");
 	inline const TCHAR* Choices = TEXT("choices");
 	inline const TCHAR* Value = TEXT("value");
 	inline const TCHAR* Name = TEXT("name");
 
-	// Reference (dragged, searched or sent): kind, asset object path or actor path, display name, class
+	// 引用（拖入、搜索或已发送）：类型、资产对象路径或 Actor 路径、显示名称、类
 	inline const TCHAR* Path = TEXT("path");
 	inline const TCHAR* Class = TEXT("cls");
 	inline const TCHAR* KindAsset = TEXT("asset");
 	inline const TCHAR* KindActor = TEXT("actor");
 
-	// @ menu results: the query they answer, matching actors and assets, the selection snapshot (empty query only)
+	// @ 菜单结果：所对应的查询、匹配的 Actor 与资产、选中项快照（仅限空查询）
 	inline const TCHAR* Query = TEXT("query");
 	inline const TCHAR* Actors = TEXT("actors");
 	inline const TCHAR* Assets = TEXT("assets");
 	inline const TCHAR* Selection = TEXT("selection");
 
-	// Submit result: whether the prompt was sent, and the references that no longer exist
+	// 提交结果：提示是否已发送，以及已不存在的引用
 	inline const TCHAR* Accepted = TEXT("accepted");
 	inline const TCHAR* Queued = TEXT("queued");
 	inline const TCHAR* Invalid = TEXT("invalid");
 
-	// User entry: the reference lines split off its prompt; queue item and taken item: the frozen references
+	// 用户条目：从其提示中拆出的引用行；队列条目与取回的条目：固定的引用
 	inline const TCHAR* References = TEXT("references");
 
-	// Current session's queue: whether it is paused, its items; whether a failed turn can be retried
+	// 当前会话的队列：是否已暂停及其条目；失败的回合能否重试
 	inline const TCHAR* Queue = TEXT("queue");
 	inline const TCHAR* Paused = TEXT("paused");
 	inline const TCHAR* Items = TEXT("items");
 	inline const TCHAR* CanRetry = TEXT("canRetry");
 
-	// Entry fields
+	// 条目字段
 	inline const TCHAR* Id = TEXT("id");
 	inline const TCHAR* Kind = TEXT("kind");
 	inline const TCHAR* Text = TEXT("text");
@@ -370,7 +370,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Allowed = TEXT("allowed");
 	inline const TCHAR* Error = TEXT("error");
 
-	// Entry kinds (EShuttlegentChatEntryKind)
+	// 条目类型（EShuttlegentChatEntryKind）
 	inline const TCHAR* KindUser = TEXT("user");
 	inline const TCHAR* KindAssistant = TEXT("assistant");
 	inline const TCHAR* KindToolCall = TEXT("toolCall");
@@ -380,7 +380,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* KindWriteResult = TEXT("writeResult");
 	inline const TCHAR* KindWriteUnknown = TEXT("writeUnknown");
 
-	// Status values (EShuttlegentChatStatus)
+	// 状态取值（EShuttlegentChatStatus）
 	inline const TCHAR* StatusNotConnected = TEXT("notConnected");
 	inline const TCHAR* StatusConnecting = TEXT("connecting");
 	inline const TCHAR* StatusConnected = TEXT("connected");
@@ -396,48 +396,48 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* StatusStartBlocked = TEXT("startBlocked");
 	inline const TCHAR* StatusResumeFailed = TEXT("resumeFailed");
 
-	// Start guide card (null when nothing blocks the runtime): kind, launcher reason, provider, runtime path, build script
+	// 启动引导卡片（没有阻碍运行时启动的问题时为 null）：类型、启动器给出的原因、提供方、运行时路径、构建脚本
 	inline const TCHAR* StartIssue = TEXT("startIssue");
 	inline const TCHAR* IssueKind = TEXT("kind");
 	inline const TCHAR* IssueProvider = TEXT("provider");
 	inline const TCHAR* IssueRuntimePath = TEXT("runtimePath");
 	inline const TCHAR* IssueBuildScript = TEXT("buildScript");
 
-	// Start issue kinds (EShuttlegentStartIssue)
+	// 启动问题类型（EShuttlegentStartIssue）
 	inline const TCHAR* IssueMissingRuntime = TEXT("missingRuntime");
 	inline const TCHAR* IssueMissingKey = TEXT("missingKey");
 	inline const TCHAR* IssueAuthFailed = TEXT("authFailed");
 	inline const TCHAR* IssueOther = TEXT("other");
 
-	// The current session's last resume failed; the current session has an unverified unknown write result
+	// 当前会话上一次恢复失败；当前会话存在未核对的未知写入结果
 	inline const TCHAR* ResumeFailed = TEXT("resumeFailed");
 	inline const TCHAR* NeedsVerify = TEXT("needsVerify");
 
-	// One-shot events: a turn ended normally, or ended any other way
+	// 一次性事件：回合正常结束，或以其他方式结束
 	inline const TCHAR* EventTurnCompleted = TEXT("turnCompleted");
 	inline const TCHAR* EventTurnStopped = TEXT("turnStopped");
 
-	// Thought duration reported for an assistant entry without timed reasoning
+	// 没有计时推理的助手条目所报告的思考时长
 	inline constexpr int32 NoThoughtSeconds = -1;
 
-	// Milliseconds per second, for the Unix times sent to the page
+	// 每秒的毫秒数，用于发送给页面的 Unix 时间
 	inline constexpr int64 MillisecondsPerSecond = 1000;
 }
 
-/** Draft references (FShuttlegentReferenceFinder, FShuttlegentReferencePrompt; Shuttlegent UI interaction spec section 4.2). */
+/** 草稿引用（FShuttlegentReferenceFinder、FShuttlegentReferencePrompt；Shuttlegent UI 交互规范第 4.2 节）。 */
 namespace ShuttlegentEditorReference
 {
-	// Module that owns the asset registry
+	// 拥有资产注册表的模块
 	inline const FName AssetRegistryModule = TEXT("AssetRegistry");
 
-	// Content root searched for @ menu assets
+	// 为 @ 菜单搜索资产的内容根目录
 	inline const FName SearchRootPath = TEXT("/Game");
 
-	// Most actors and assets the @ menu lists for one query
+	// @ 菜单针对一次查询最多列出的 Actor 与资产数量
 	inline constexpr int32 MaxActorResults = 8;
 	inline constexpr int32 MaxAssetResults = 12;
 
-	// Reference block appended to a prompt: separator, header, one line per reference ({0} kind, {1} name, {2} class, {3} path)
+	// 追加到提示后的引用块：分隔符、标题、每个引用一行（{0} 类型、{1} 名称、{2} 类、{3} 路径）
 	inline const TCHAR* BlockSeparator = TEXT("\n\n");
 	inline const TCHAR* BlockHeader = TEXT("引用的编辑器对象：");
 	inline const TCHAR* LineBreak = TEXT("\n");
@@ -446,14 +446,14 @@ namespace ShuttlegentEditorReference
 	inline const TCHAR* KindLabelActor = TEXT("Actor");
 }
 
-/** Session config option ids the page offers as pickers. */
+/** 页面以选择器形式提供的会话配置选项 id。 */
 namespace ShuttlegentEditorConfigId
 {
 	inline const TCHAR* Model = TEXT("model");
 	inline const TCHAR* Reasoning = TEXT("reasoning_effort");
 }
 
-/** Runtime tool names as reported in tool_call titles (dsh packages fs/tool-fs, fs/tool-fs-search, web/tool-web, subagent, todo, goal). */
+/** tool_call 标题中报告的运行时工具名称（dsh 包 fs/tool-fs、fs/tool-fs-search、web/tool-web、subagent、todo、goal）。 */
 namespace ShuttlegentEditorTool
 {
 	inline const TCHAR* Read = TEXT("read");
@@ -471,11 +471,11 @@ namespace ShuttlegentEditorTool
 	inline const TCHAR* GetGoal = TEXT("get_goal");
 	inline const TCHAR* UpdateGoal = TEXT("update_goal");
 
-	// Editor and external MCP tools appear as mcp__<server>__<tool>
+	// 编辑器与外部 MCP 工具以 mcp__<server>__<tool> 形式出现
 	inline const TCHAR* McpPrefix = TEXT("mcp__");
 	inline const TCHAR* McpSeparator = TEXT("__");
 
-	// rawInput keys tried in order for the one-line object summary
+	// 生成单行对象摘要时依次尝试的 rawInput 键
 	inline const TCHAR* SummaryKeys[] =
 	{
 		TEXT("file_path"),
@@ -487,17 +487,17 @@ namespace ShuttlegentEditorTool
 		TEXT("title"),
 	};
 
-	// An engine toolset call (call_toolset_tool, describe_toolset) is summarized as tool and toolset; the toolset shows its last name part
+	// 引擎 Toolset 调用（call_toolset_tool、describe_toolset）摘要为工具与 Toolset；Toolset 仅显示其名称的最后一段
 	inline const TCHAR* ToolsetKey = TEXT("toolset");
 	inline const TCHAR* ToolKey = TEXT("tool");
 	inline const TCHAR* ToolsetNameSeparator = TEXT(".");
 
-	// A pattern summary also shows the searched path; keys ending in PathKeySuffix (or equal to SearchPathKey) hold paths
+	// 模式摘要同时显示搜索路径；以 PathKeySuffix 结尾（或等于 SearchPathKey）的键存放路径
 	inline const TCHAR* PatternKey = TEXT("pattern");
 	inline const TCHAR* SearchPathKey = TEXT("path");
 	inline const TCHAR* PathKeySuffix = TEXT("_path");
 
-	// rawInput keys tried in order for the content line of a permission request (written text, edit replacement, command)
+	// 生成权限请求内容行时依次尝试的 rawInput 键（写入的文本、编辑替换内容、命令）
 	inline const TCHAR* ContentKeys[] =
 	{
 		TEXT("content"),
@@ -505,18 +505,18 @@ namespace ShuttlegentEditorTool
 		TEXT("command"),
 	};
 
-	// Prefix the runtime puts before failure text
+	// 运行时在失败文本前添加的前缀
 	inline const TCHAR* ErrorPrefix = TEXT("Error:");
 
-	// Longest summary and failure reason shown on a tool row, in characters
+	// 工具行上显示的摘要与失败原因的最大长度，单位为字符
 	inline constexpr int32 MaxSummaryChars = 80;
 	inline constexpr int32 MaxReasonChars = 160;
 
-	// Tool call status of a failed call (ACP tool_call_update)
+	// 失败调用的工具调用状态（ACP tool_call_update）
 	inline const TCHAR* StatusFailed = TEXT("failed");
 }
 
-/** Style keys registered by FShuttlegentStyle. */
+/** FShuttlegentStyle 注册的样式键。 */
 namespace ShuttlegentEditorStyleKey
 {
 	inline const FName Mark = TEXT("Shuttlegent.Mark");

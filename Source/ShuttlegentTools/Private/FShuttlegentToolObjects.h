@@ -9,42 +9,42 @@ class UObject;
 class UStruct;
 class UWorld;
 
-/** Finds the objects tool arguments name, and describes them for the model. Game thread only. */
+/** 查找工具参数所指的对象，并为模型描述这些对象。仅限游戏线程。 */
 struct FShuttlegentToolObjects
 {
-	/** The level being edited; nullptr while there is none. */
+	/** 正在编辑的关卡；没有时为 nullptr。 */
 	static UWorld* GetEditorWorld();
 
 	/**
-	 * The object an argument names: a full object path (loaded when it is an unloaded asset), or the label of an actor
-	 * in the edited level. nullptr when nothing matches.
+	 * 参数所指的对象：完整对象路径（若为未加载的资源则加载），或正在编辑关卡中某个 Actor 的标签。
+	 * 无匹配时为 nullptr。
 	 */
 	static UObject* ResolveObject(const FString& PathOrLabel);
 
-	/** The actor of the edited level with that label, or nullptr. */
+	/** 正在编辑关卡中具有该标签的 Actor，或 nullptr。 */
 	static AActor* FindActorByLabel(const FString& Label);
 
-	/** A class by name (StaticMeshActor, AStaticMeshActor) or path (/Script/Engine.StaticMeshActor, a Blueprint asset). */
+	/** 按名称（StaticMeshActor、AStaticMeshActor）或路径（/Script/Engine.StaticMeshActor、Blueprint 资源）查找的类。 */
 	static UClass* ResolveClass(const FString& NameOrPath);
 
-	/** Actor label, or object name. */
+	/** Actor 标签，或对象名称。 */
 	static FString GetDisplayName(const UObject* Object);
 
-	/** One line for lists: name, class and path. */
+	/** 用于列表的单行描述：名称、类与路径。 */
 	static FString Describe(const UObject* Object);
 
-	/** A property's value as editor text, cut to the per-value budget. Default values (False, 0, empty) are written out too. */
+	/** 属性值的编辑器文本，按单值长度上限截断。默认值（False、0、空）同样会输出。 */
 	static FString ExportValue(const FProperty* Property, const UObject* Object);
 
-	/** How tools name a property: Name "Details panel name" [Category] (type); bool for any bool property. */
+	/** 工具对属性的表述方式：Name "Details panel name" [Category] (type)；任何 bool 属性的类型均写作 bool。 */
 	static FString DescribeProperty(const FProperty* Property);
 
-	/** A property of the class by name or by its Details panel name, case-insensitive; nullptr when none matches. */
+	/** 按名称或 Details 面板名称（不区分大小写）查找类的属性；无匹配时为 nullptr。 */
 	static FProperty* FindProperty(const UStruct* Struct, const FString& NameOrDisplayName);
 
-	/** Whether the name is the property's name or its Details panel name, case-insensitive. */
+	/** 该名称是否为属性名称或其 Details 面板名称（不区分大小写）。 */
 	static bool MatchesProperty(const FProperty* Property, const FString& NameOrDisplayName);
 
-	/** Level name of an object in a world, or empty. */
+	/** 对象在 World 中所属关卡的名称，或为空。 */
 	static FString GetLevelName(const UObject* Object);
 };

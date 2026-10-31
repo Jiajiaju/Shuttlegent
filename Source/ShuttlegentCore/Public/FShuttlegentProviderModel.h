@@ -4,17 +4,17 @@
 
 #include "FShuttlegentProviderModel.generated.h"
 
-/** One model a provider route serves. */
+/** 供应商路由提供的一个模型。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentProviderModel
 {
 	GENERATED_BODY()
 
-	/** Model id the endpoint expects, e.g. gpt-4.1 or qwen-max. */
+	/** 端点要求的模型 ID，例如 gpt-4.1 或 qwen-max。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Model")
 	FString Id;
 
-	/** Name shown in the panel's model picker; the id when empty. */
+	/** 在面板模型选择器中显示的名称；为空时显示模型 ID。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Model")
 	FString Name;
 };

@@ -19,29 +19,27 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentRuntimeExited, int32 /*ExitCo
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentError, const FString& /*SessionId*/, const FString& /*Message*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentConfigOptionsChanged, const FString& /*SessionId*/);
 
-/** Answers one permission request: call Respond(true) to allow once, Respond(false) to reject. */
+/** 答复一个权限请求：调用 Respond(true) 允许一次，Respond(false) 拒绝。 */
 DECLARE_DELEGATE_TwoParams(FShuttlegentPermissionHandler, const TSharedPtr<FJsonObject>& /*Params*/, TFunction<void(bool /*bAllow*/)> /*Respond*/);
 
-/** One session the runtime has open: whether it runs a prompt, its turn generation and its config options. */
+/** 运行时打开的一个会话：是否正在执行提问、回合代次与配置选项。 */
 struct FShuttlegentOpenSession
 {
 	bool bPrompting = false;
 
-	/** Bumped by every prompt and close; a prompt response of an older generation is dropped. */
+	/** 每次提问与关闭时递增；旧代次的提问答复会被丢弃。 */
 	uint64 TurnGeneration = 0;
 
-	/** From the last session/new, session/resume or set_config_option response of this session. */
+	/** 取自该会话最近一次 session/new、session/resume 或 set_config_option 的答复。 */
 	TArray<TSharedPtr<FJsonValue>> ConfigOptions;
 };
 
 /**
- * Owns the agent runtime and the ACP sessions it has open.
+ * 持有 Agent 运行时及其打开的 ACP 会话。
  *
- * Lifecycle: Start -> (NewSession | ResumeSession)* -> Prompt / Cancel per session ... -> Stop.
- * Several sessions can be open and prompted at the same time; the runtime schedules each
- * session on its own (Shuttlegent.md section 14.3.7). Everything runs on the game thread.
- * Updates of a session's turn that has ended (cancelled or finished) are dropped, so late
- * chunks never leak into its next turn. Every event names its session.
+ * 生命周期：Start -> (NewSession | ResumeSession)* -> 各会话 Prompt / Cancel ... -> Stop。
+ * 可以同时打开并提问多个会话，运行时分别调度各会话（Shuttlegent.md 第 14.3.7 节）。全部在游戏线程运行。
+ * 会话中已结束（取消或完成）的回合的更新会被丢弃，迟到的片段不会混入下一回合。每个事件都注明所属会话。
  */
 class SHUTTLEGENTCORE_API FShuttlegentAgentService : public TSharedFromThis<FShuttlegentAgentService>
 {
@@ -53,16 +51,16 @@ public:
 	FOnShuttlegentRuntimeExited OnRuntimeExited;
 	FOnShuttlegentError OnError;
 
-	/** A session's config options changed (session created or resumed, or an option was set). */
+	/** 会话的配置选项发生变化（会话创建或恢复，或设置了某个选项）。 */
 	FOnShuttlegentConfigOptionsChanged OnConfigOptionsChanged;
 
-	/** When bound, permission requests go here (their params name the session); otherwise UShuttlegentSettings::PermissionPolicy answers them. */
+	/** 绑定后权限请求交由它处理（参数中注明会话）；未绑定时按 UShuttlegentSettings::PermissionPolicy 答复。 */
 	FShuttlegentPermissionHandler PermissionHandler;
 
-	/** ACP mcpServers entries declared with every session/new and session/resume; ShuttlegentMcpServer declares the editor endpoint here. Empty when unbound. */
+	/** 每次 session/new 与 session/resume 声明的 ACP mcpServers 条目；ShuttlegentMcpServer 在此声明编辑器端点。未绑定时为空。 */
 	TFunction<TArray<TSharedPtr<FJsonValue>>()> McpServersProvider;
 
-	/** Adds variables to the runtime's environment right before it launches; ShuttlegentMcpServer adds the endpoint URL and a new token. */
+	/** 在运行时启动前向其环境追加变量；ShuttlegentMcpServer 在此加入端点 URL 与新 token。 */
 	TFunction<void(TMap<FString, FString>& /*Environment*/)> RuntimeEnvironmentProvider;
 
 private:
@@ -77,41 +75,41 @@ public:
 	FShuttlegentAgentService();
 	~FShuttlegentAgentService();
 
-	/** Launches the runtime and sends initialize. A fresh runtime has no session until NewSession or ResumeSession. On failure GetStartIssue tells the kind. */
+	/** 启动运行时并发送 initialize。新启动的运行时在 NewSession 或 ResumeSession 之前没有会话。失败时由 GetStartIssue 给出类型。 */
 	bool Start(FString& OutError);
 
-	/** Kind of the last Start failure (also a failed initialize); None after a successful start. */
+	/** 最近一次 Start 失败（含 initialize 失败）的类型；启动成功后为 None。 */
 	EShuttlegentStartIssue GetStartIssue() const { return StartIssue; }
 
-	/** Kind of a runtime error message: a missing or rejected provider key, or Other. */
+	/** 运行时错误消息的类型：缺少密钥、密钥被拒，或 Other。 */
 	static EShuttlegentStartIssue ClassifyError(const FString& Message);
 
-	/** Shuts the runtime down. Its sessions can be resumed after the next Start. */
+	/** 关闭运行时。其会话可在下次 Start 后恢复。 */
 	void Stop();
 
-	/** Creates a session whose cwd is the project directory; OnSessionReady names it. Other open sessions are not touched. */
+	/** 新建一个以项目目录为 cwd 的会话，由 OnSessionReady 给出其 ID。不影响其他已打开的会话。 */
 	bool NewSession(FString& OutError);
 
-	/** Reattaches to a persisted session; its model context is restored by the runtime. Other open sessions are not touched. */
+	/** 重新接入一个已保存的会话，由运行时恢复其模型上下文。不影响其他已打开的会话。 */
 	bool ResumeSession(const FString& SessionId, FString& OutError);
 
-	/** Sends one text prompt to an open session that runs no prompt. */
+	/** 向一个已打开且没有进行中提问的会话发送一条文本提问。 */
 	bool Prompt(const FString& SessionId, const FString& Text, FString& OutError);
 
-	/** Cancels the session's in-flight prompt, if any. */
+	/** 取消该会话进行中的提问（如有）。 */
 	void Cancel(const FString& SessionId);
 
-	/** Changes a config option of an open, idle session, such as "model" or "reasoning_effort". */
+	/** 修改一个已打开且空闲的会话的配置选项，例如 "model" 或 "reasoning_effort"。 */
 	bool SetConfigOption(const FString& SessionId, const FString& ConfigId, const FString& Value, FString& OutError);
 
-	/** Closes an open session; it stays resumable. */
+	/** 关闭一个已打开的会话；之后仍可恢复。 */
 	void CloseSession(const FString& SessionId);
 
 	EShuttlegentAgentState GetState() const { return State; }
 	bool IsSessionOpen(const FString& SessionId) const { return OpenSessions.Contains(SessionId); }
 	bool IsPrompting(const FString& SessionId) const;
 
-	/** Config options of an open session; empty for a session that is not open. */
+	/** 已打开会话的配置选项；未打开的会话返回空。 */
 	TArray<TSharedPtr<FJsonValue>> GetConfigOptions(const FString& SessionId) const;
 
 	FShuttlegentSessionStore& GetSessionStore() { return SessionStore; }
@@ -120,7 +118,7 @@ private:
 	void SetState(EShuttlegentAgentState NewState);
 	TSharedRef<FJsonObject> MakeSessionParams(const FString& SessionId) const;
 	void ApplySessionResult(const FString& SessionId, const TSharedPtr<FJsonObject>& Result, bool bCreated);
-	/** Current "model" value among config options and its display name (the value itself when the choice has no name). */
+	/** 配置选项中当前的 "model" 值及其显示名（选项没有名称时即为该值）。 */
 	static void GetCurrentModel(const TArray<TSharedPtr<FJsonValue>>& ConfigOptions, FString& OutValue, FString& OutName);
 	void HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params);
 	void HandleAgentRequest(const FString& Method, const TSharedPtr<FJsonValue>& Id, const TSharedPtr<FJsonObject>& Params);

@@ -6,7 +6,7 @@ class FSlateStyleSet;
 class ISlateStyle;
 struct FSlateBrush;
 
-/** Slate style set of the Shuttlegent panel: the dock tab icon and the brand mark of the loading placeholder. The panel itself is a web page (Resources/Web). */
+/** Shuttlegent 面板的 Slate 样式集：停靠标签页图标与加载占位的品牌标志。面板本身是网页（Resources/Web）。 */
 class FShuttlegentStyle
 {
 private:

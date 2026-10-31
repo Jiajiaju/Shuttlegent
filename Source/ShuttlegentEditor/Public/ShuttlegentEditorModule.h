@@ -13,10 +13,10 @@ class FShuttlegentEditorModule : public IModuleInterface
 private:
 	TSharedPtr<FShuttlegentChatModel> ChatModel;
 
-	/** The chat panel, kept across tab close and reopen so the page keeps its state. */
+	/** 聊天面板，在标签页关闭与重新打开之间保留，使页面保持其状态。 */
 	TSharedPtr<SShuttlegentWebPanel> Panel;
 
-	/** One-shot prewarm of the runtime once the editor has started (UShuttlegentSettings::bPrewarmRuntime). */
+	/** 编辑器启动后对运行时执行一次性预热（UShuttlegentSettings::bPrewarmRuntime）。 */
 	FTSTicker::FDelegateHandle PrewarmHandle;
 
 public:

@@ -6,8 +6,8 @@
 #include "ShuttlegentWebBridge.generated.h"
 
 /**
- * Commands the panel page sends to the editor. The page calls window.ue.bridge.<function> (names are lower-cased by the binding).
- * Glue only: SShuttlegentWebPanel keeps it alive with a strong pointer, binds the callbacks and clears them before releasing it.
+ * 面板页面发送给编辑器的命令。页面调用 window.ue.bridge.<function>（名称由绑定转为小写）。
+ * 仅作衔接：SShuttlegentWebPanel 以强指针保持其存活，绑定回调，并在释放前清除回调。
  */
 UCLASS()
 class UShuttlegentWebBridge : public UObject
@@ -74,117 +74,117 @@ public:
 	TFunction<void()> OnOpenPluginFolder;
 
 public:
-	/** The page finished initializing and wants the full state; called once per document load. */
+	/** 页面已完成初始化并请求完整状态；每次文档加载调用一次。 */
 	UFUNCTION()
 	void Ready();
 
-	/** Sends the draft as a prompt with its reference chips (a JSON array); the answer comes back through onSubmitResult. */
+	/** 将草稿连同其引用标签（JSON 数组）作为提示发送；结果通过 onSubmitResult 返回。 */
 	UFUNCTION()
 	void Submit(const FString& Text, const FString& ReferencesJson);
 
-	/** Stops the running turn. */
+	/** 停止正在运行的回合。 */
 	UFUNCTION()
 	void Cancel();
 
 	UFUNCTION()
 	void NewConversation();
 
-	/** Restarts a lost runtime and resumes the last session. */
+	/** 重启已丢失的运行时并恢复上一个会话。 */
 	UFUNCTION()
 	void Reconnect();
 
-	/** Changes a session config option ("model", "reasoning_effort"). */
+	/** 修改会话配置选项（"model"、"reasoning_effort"）。 */
 	UFUNCTION()
 	void SetConfig(const FString& ConfigId, const FString& Value);
 
-	/** Puts text on the system clipboard (the page's clipboard API is not available for file:// pages). */
+	/** 将文本放入系统剪贴板（file:// 页面无法使用页面的剪贴板 API）。 */
 	UFUNCTION()
 	void CopyText(const FString& Text);
 
-	/** The page's add-reference button: opens or closes the Content Browser drawer. */
+	/** 页面的添加引用按钮：打开或关闭 Content Browser 抽屉。 */
 	UFUNCTION()
 	void ToggleContentBrowser();
 
-	/** Shows a stored session's transcript and resumes it in the runtime. */
+	/** 显示已存储会话的对话记录，并在运行时中恢复该会话。 */
 	UFUNCTION()
 	void OpenSession(const FString& SessionId);
 
-	/** Renames a stored session; the editor trims the name and rejects an empty or too long one. */
+	/** 重命名已存储的会话；编辑器会裁剪名称首尾空白，并拒绝空名称或过长的名称。 */
 	UFUNCTION()
 	void RenameSession(const FString& SessionId, const FString& Title);
 
-	/** Hides a session from the list; a running or permission-waiting session is refused. */
+	/** 从列表中隐藏会话；正在运行或等待权限的会话会被拒绝。 */
 	UFUNCTION()
 	void ArchiveSession(const FString& SessionId);
 
 	UFUNCTION()
 	void RestoreSession(const FString& SessionId);
 
-	/** Deletes a session's record and transcript for good; a running or permission-waiting session is refused. */
+	/** 永久删除会话的记录与对话记录；正在运行或等待权限的会话会被拒绝。 */
 	UFUNCTION()
 	void DeleteSession(const FString& SessionId);
 
-	/** A docked pane was resized: remembers the sidebar and inspector widths in CSS pixels for the next page load. */
+	/** 停靠窗格的尺寸已调整：以 CSS 像素记录侧栏与检视器的宽度，供下次页面加载使用。 */
 	UFUNCTION()
 	void SetPaneWidths(int32 SidebarWidth, int32 InspectorWidth);
 
-	/** Answers the runtime permission request shown by the decision card. */
+	/** 答复决策卡片所显示的运行时权限请求。 */
 	UFUNCTION()
 	void AnswerPermission(int32 EntryId, bool bAllow);
 
-	/** Opens the Shuttlegent page of Editor Preferences. */
+	/** 打开 Editor Preferences 中的 Shuttlegent 页面。 */
 	UFUNCTION()
 	void OpenSettings();
 
-	/** The @ menu's query changed; candidates come back through onReferenceResults. */
+	/** @ 菜单的查询已变化；候选项通过 onReferenceResults 返回。 */
 	UFUNCTION()
 	void QueryReferences(const FString& Query);
 
-	/** The draft's reference chips (a JSON array) changed; their existence comes back through onReferenceValidity, now and whenever it changes. */
+	/** 草稿的引用标签（JSON 数组）已变化；其存在状态立即并在每次变化时通过 onReferenceValidity 返回。 */
 	UFUNCTION()
 	void WatchReferences(const FString& ReferencesJson);
 
-	/** Drops a queued prompt; a running turn is not affected. */
+	/** 移除一条排队的提示；不影响正在运行的回合。 */
 	UFUNCTION()
 	void RemoveQueued(int32 ItemId);
 
-	/** Takes a queued prompt back into the draft; the current draft (text and a JSON array of references) takes its place. The item comes back through onQueueItemTaken. */
+	/** 将一条排队的提示取回草稿；当前草稿（文本与引用的 JSON 数组）占据其位置。该条目通过 onQueueItemTaken 返回。 */
 	UFUNCTION()
 	void TakeQueued(int32 ItemId, const FString& DraftText, const FString& DraftReferencesJson);
 
-	/** Continues a paused queue. */
+	/** 继续已暂停的队列。 */
 	UFUNCTION()
 	void ResumeQueue();
 
-	/** Sends the failed turn's prompt again. */
+	/** 重新发送失败回合的提示。 */
 	UFUNCTION()
 	void Retry();
 
-	/** Confirms or refuses the editor write shown by the confirmation card. */
+	/** 确认或拒绝确认卡片所显示的编辑器写入。 */
 	UFUNCTION()
 	void AnswerWrite(int32 RequestId, bool bApprove);
 
-	/** Answers the question the agent asked (ask_user) with the option picked or the user's own text, or skips it. */
+	/** 以所选选项或用户自行输入的文本答复 Agent 提出的问题（ask_user），或跳过该问题。 */
 	UFUNCTION()
 	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
-	/** "Undo this change" on a write result. */
+	/** 写入结果上的“撤销本次修改”。 */
 	UFUNCTION()
 	void UndoWrite(int32 EntryId);
 
-	/** "Retry" on the start guide card: starts the runtime again (restarting a running one). */
+	/** 启动引导卡片上的“重试”：再次启动运行时（若正在运行则重启）。 */
 	UFUNCTION()
 	void RetryStart();
 
-	/** "Resume again" on the failed-resume banner. */
+	/** 恢复失败横幅上的“重试恢复”。 */
 	UFUNCTION()
 	void RetryResume();
 
-	/** "Verified" on a write whose result is unknown. */
+	/** 结果未知的写入上的“已核对”。 */
 	UFUNCTION()
 	void AcknowledgeWrite(int32 EntryId);
 
-	/** "Open plugin folder" on the start guide card, where Runtime/ lives. */
+	/** 启动引导卡片上的“打开插件目录”，Runtime/ 位于该目录下。 */
 	UFUNCTION()
 	void OpenPluginFolder();
 };

@@ -2,30 +2,30 @@
 
 #include "CoreMinimal.h"
 
-/** Kind of one row in the chat panel. */
+/** 聊天面板中一行的类型。 */
 enum class EShuttlegentChatEntryKind : uint8
 {
-	// A prompt the user sent
+	// 用户发送的提示
 	User,
 
-	// Assistant reply text (and its folded reasoning) of one message id
+	// 某一消息 id 的助手回复文本（及其折叠的推理内容）
 	Assistant,
 
-	// One tool call and its latest status
+	// 一次工具调用及其最新状态
 	ToolCall,
 
-	// A runtime permission request, answered from the panel
+	// 运行时的权限请求，在面板中作答
 	Permission,
 
-	// A turn that did not end normally (cancelled or failed)
+	// 未正常结束的回合（已取消或已失败）
 	TurnEnd,
 
-	// Connection and session notices
+	// 连接与会话通知
 	Notice,
 
-	// What an approved editor write did, object by object, with its undo
+	// 一次已批准的编辑器写入逐个对象的执行结果，及其撤销
 	WriteResult,
 
-	// An approved editor write whose result never arrived because the runtime was lost; the user verifies its objects
+	// 一次已批准的编辑器写入因运行时丢失而未收到结果；由用户核对其对象
 	WriteUnknown
 };

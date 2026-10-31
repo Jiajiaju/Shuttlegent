@@ -6,24 +6,25 @@
 
 #include "FShuttlegentUiGuide.generated.h"
 
-/** One place in the editor the assistant can open for the user, with a sentence on what to do there (Shuttlegent.md section 11). */
+/** 助手可以为用户打开的一个编辑器位置，附一句在那里做什么的说明（Shuttlegent.md 第 11 节）。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentUiGuide
 {
 	GENERATED_BODY()
 
-	/** Key the model passes to show_editor_ui, e.g. world-settings. */
+	/** 模型传给 show_editor_ui 的键，例如 world-settings。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Guide")
 	FString Id;
 
+	/** 打开的位置类型：编辑器页签或设置页面。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Guide")
 	EShuttlegentUiGuideKind Kind = EShuttlegentUiGuideKind::Tab;
 
-	/** Tab: the tab id. Settings: Container/Category/Section, e.g. Project/Engine/Rendering. */
+	/** Tab：页签 ID。Settings：容器/分类/分节，例如 Project/Engine/Rendering。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Guide")
 	FString Target;
 
-	/** What the user finds or does there; told to the model and returned when opened. */
+	/** 用户在那里能找到或要做的事；会告知模型，并在打开时返回。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Guide")
 	FString Description;
 };

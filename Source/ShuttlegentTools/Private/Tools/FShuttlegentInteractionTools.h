@@ -4,7 +4,7 @@
 
 class IShuttlegentTool;
 
-/** Interaction tools: ask_user, a question with a choice of answers that the user answers in the panel. */
+/** 交互工具：ask_user，提出一个带备选答案的问题，由用户在面板中作答。 */
 struct FShuttlegentInteractionTools
 {
 	static void Append(TArray<TSharedRef<IShuttlegentTool>>& OutTools);

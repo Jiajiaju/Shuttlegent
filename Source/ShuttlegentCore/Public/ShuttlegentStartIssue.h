@@ -2,21 +2,21 @@
 
 #include "CoreMinimal.h"
 
-/** Why the runtime cannot serve prompts, as the panel's start guide card tells it (Shuttlegent.md section 14.3.8). */
+/** 运行时无法处理提问的原因，由面板的启动引导卡展示（Shuttlegent.md 第 14.3.8 节）。 */
 enum class EShuttlegentStartIssue : uint8
 {
-	// Nothing known to be wrong
+	// 没有已知问题
 	None,
 
-	// The runtime executable or its profile patch is not where the plugin expects it
+	// 运行时可执行文件或其配置补丁不在插件预期的位置
 	MissingRuntime,
 
-	// No key for the default model provider in the user's settings
+	// 个人设置中没有默认模型供应商的密钥
 	MissingKey,
 
-	// The provider rejected the key
+	// 供应商拒绝了密钥
 	AuthFailed,
 
-	// The runtime failed to start or initialize for another reason
+	// 运行时因其他原因启动或初始化失败
 	Other
 };

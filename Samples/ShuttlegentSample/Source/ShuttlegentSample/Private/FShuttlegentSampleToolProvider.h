@@ -5,8 +5,8 @@
 #include "Tool/IShuttlegentToolProvider.h"
 
 /**
- * A project's own editor tools, offered to Shuttlegent through IShuttlegentToolProvider (Shuttlegent.md section 11):
- * sample_count_actors reads, sample_set_actor_label writes through the confirmation card in one undoable step.
+ * 项目自有的编辑器工具，通过 IShuttlegentToolProvider 提供给 Shuttlegent（Shuttlegent.md 第 11 节）：
+ * sample_count_actors 只读，sample_set_actor_label 经确认卡片以一个可撤销步骤执行写入。
  */
 class FShuttlegentSampleToolProvider : public IShuttlegentToolProvider
 {

@@ -4,11 +4,11 @@
 
 #include "Chat/FShuttlegentQueuedPrompt.h"
 
-/** FIFO of one session's prompts sent while a turn was running. A paused queue waits for "continue queue" (Shuttlegent UI interaction spec section 4.3). */
+/** 某会话在回合运行期间所发送提示的 FIFO 队列。暂停的队列等待“继续队列”（Shuttlegent UI 交互规范第 4.3 节）。 */
 struct FShuttlegentPromptQueue
 {
 	TArray<FShuttlegentQueuedPrompt> Items;
 
-	/** Set by a stop, a rejected permission, a failed turn or a lost runtime; cleared only by the user. */
+	/** 由停止、被拒绝的权限、失败的回合或丢失的运行时置位；只能由用户清除。 */
 	bool bPaused = false;
 };

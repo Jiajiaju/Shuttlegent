@@ -12,12 +12,12 @@
 
 namespace FShuttlegentReflectionToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* GetPropertiesName = TEXT("get_properties");
 	inline const TCHAR* DescribeClassName = TEXT("describe_class");
 	inline const TCHAR* GetSettingsName = TEXT("get_settings");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgPath = TEXT("path");
 	inline const TCHAR* ArgNames = TEXT("names");
 	inline const TCHAR* ArgAll = TEXT("all");
@@ -26,13 +26,13 @@ namespace FShuttlegentReflectionToolsPrivate
 	inline const TCHAR* ArgOffset = TEXT("offset");
 	inline const TCHAR* ArgLimit = TEXT("limit");
 
-	/** Properties shown by default: the ones the Details panel shows. */
+	/** 默认显示的属性：即 Details 面板中显示的属性。 */
 	bool IsEditable(const FProperty* Property)
 	{
 		return Property != nullptr && Property->HasAnyPropertyFlags(CPF_Edit) && !Property->HasAnyPropertyFlags(CPF_Deprecated);
 	}
 
-	/** name (type) = value lines of an object's properties; names limits them to those, bAll includes non-editable ones. */
+	/** 对象属性的 name (type) = value 文本行；names 将结果限定为指定属性，bAll 时包含不可编辑的属性。 */
 	TArray<FString> DescribeProperties(const UObject* Object, const TArray<FString>& Names, bool bAll, TArray<FString>& OutMissing)
 	{
 		TArray<FString> Lines;

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
 
-/** Reads tool call arguments with defaults, and pages list results (Shuttlegent.md section 10.2). */
+/** 按默认值读取工具调用参数，并对列表结果分页（Shuttlegent.md 第 10.2 节）。 */
 struct SHUTTLEGENTMCPSERVER_API FShuttlegentToolArguments
 {
 	static FString GetString(const TSharedRef<FJsonObject>& Arguments, const FString& Name, const FString& Default = FString());
@@ -11,12 +11,12 @@ struct SHUTTLEGENTMCPSERVER_API FShuttlegentToolArguments
 	static bool GetBoolean(const TSharedRef<FJsonObject>& Arguments, const FString& Name, bool bDefault);
 	static TArray<FString> GetStringArray(const TSharedRef<FJsonObject>& Arguments, const FString& Name);
 
-	/** A fixed-length number array such as [x, y, z]; false when absent or of another length. */
+	/** 定长数值数组，例如 [x, y, z]；缺失或长度不符时返回 false。 */
 	static bool GetNumberTuple(const TSharedRef<FJsonObject>& Arguments, const FString& Name, int32 Length, TArray<double>& OutValues);
 
-	/** The "offset" and "limit" arguments of a paged tool, clamped to the page size limits. */
+	/** 分页工具的 "offset" 与 "limit" 参数，限制在分页大小的上下限之内。 */
 	static void GetPage(const TSharedRef<FJsonObject>& Arguments, int32& OutOffset, int32& OutLimit);
 
-	/** First line of a paged answer; states exactly the range sent, and how to ask for the next page. */
+	/** 分页答复的首行；准确说明本次发送的范围，以及如何请求下一页。 */
 	static FString MakePageHeader(int32 Offset, int32 Count, int32 Total);
 };

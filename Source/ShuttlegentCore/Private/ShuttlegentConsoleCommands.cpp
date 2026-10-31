@@ -16,7 +16,7 @@ namespace ShuttlegentConsoleCommandsPrivate
 	inline const TCHAR* CommandList = TEXT("Shuttlegent.List");
 	inline const TCHAR* CommandModel = TEXT("Shuttlegent.Model");
 
-	// session/update fields printed to the log
+	// 打印到日志的 session/update 字段
 	inline const TCHAR* FieldSessionUpdate = TEXT("sessionUpdate");
 	inline const TCHAR* FieldContent = TEXT("content");
 	inline const TCHAR* FieldText = TEXT("text");
@@ -29,7 +29,7 @@ namespace ShuttlegentConsoleCommandsPrivate
 	inline const TCHAR* KindToolCall = TEXT("tool_call");
 	inline const TCHAR* KindToolCallUpdate = TEXT("tool_call_update");
 
-	// Config option changed by Shuttlegent.Model
+	// Shuttlegent.Model 修改的配置选项
 	inline const TCHAR* ConfigIdModel = TEXT("model");
 
 	FString ChunkText(const TSharedPtr<FJsonObject>& Update)

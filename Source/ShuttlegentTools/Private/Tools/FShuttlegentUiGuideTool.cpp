@@ -12,24 +12,24 @@
 
 namespace FShuttlegentUiGuideToolPrivate
 {
-	// Tool and argument names
+	// 工具名称与参数名称
 	inline const TCHAR* ToolName = TEXT("show_editor_ui");
 	inline const TCHAR* ArgId = TEXT("id");
 
-	// Module of the settings viewer, and the separator of a settings target Container/Category/Section
+	// 设置查看器所在的模块，以及设置目标 Container/Category/Section 的分隔符
 	inline const TCHAR* SettingsModuleName = TEXT("Settings");
 	inline const TCHAR* TargetSeparator = TEXT("/");
 	inline constexpr int32 SettingsTargetParts = 3;
 
-	// Module whose own tab manager holds the level editor's tabs (World Settings, Outliner, Details)
+	// 由其自身的标签页管理器持有关卡编辑器标签页（World Settings、Outliner、Details）的模块
 	inline const TCHAR* LevelEditorModuleName = TEXT("LevelEditor");
 
-	/** Opens the guide's place; false with OutError when the tab or page does not exist. */
+	/** 打开指引所指的位置；标签页或页面不存在时返回 false 并填写 OutError。 */
 	bool Open(const FShuttlegentUiGuide& Guide, FString& OutError)
 	{
 		if (Guide.Kind == EShuttlegentUiGuideKind::Tab)
 		{
-			// Nomad tabs live in the global tab manager, the level editor's own tabs in its tab manager
+			// Nomad 标签页位于全局标签页管理器中，关卡编辑器自身的标签页位于其自己的标签页管理器中
 			const FTabId TabId(FName(*Guide.Target));
 			TSharedPtr<SDockTab> Tab = FGlobalTabmanager::Get()->TryInvokeTab(TabId);
 			FLevelEditorModule* LevelEditor = FModuleManager::GetModulePtr<FLevelEditorModule>(LevelEditorModuleName);

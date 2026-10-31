@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 
-/** What happened to one object of an editor write (Shuttlegent UI interaction spec section 5.2). */
+/** 编辑器写入中单个对象的处理结果（Shuttlegent UI 交互规范第 5.2 节）。 */
 enum class EShuttlegentWriteObjectStatus : uint8
 {
-	// Not written yet: the request waits for confirmation, or a batch stopped before this object
+	// 尚未写入：请求正在等待确认，或批次在该对象之前已停止
 	NotRun,
 
-	// Written
+	// 已写入
 	Completed,
 
-	// The write of this object failed; the message says why
+	// 该对象写入失败；原因见消息
 	Failed,
 
-	// Written, then reverted with the whole transaction because another object of the batch failed
+	// 已写入，但因同批次另一对象失败而随整个事务回滚
 	RolledBack
 };

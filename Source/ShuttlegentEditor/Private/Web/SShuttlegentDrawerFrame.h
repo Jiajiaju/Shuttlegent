@@ -5,9 +5,9 @@
 #include "Widgets/SCompoundWidget.h"
 
 /**
- * Frame of the panel's Content Browser drawer. Reports when a drag leaves it, so the drawer can get out of the way the
- * moment an asset is dragged out, as the editor's own content drawer does (SContentBrowser::OnDragLeave dismisses it).
- * Slate sends the leave only when the cursor exits the whole frame, not when it moves between widgets inside it.
+ * 面板 Content Browser 抽屉的外框。在拖拽离开时发出通知，使抽屉能在资产被拖出的瞬间让开，
+ * 与编辑器自带的内容抽屉行为一致（SContentBrowser::OnDragLeave 会将其收起）。
+ * Slate 仅在光标离开整个外框时发送离开事件，在外框内部的控件之间移动时不会发送。
  */
 class SShuttlegentDrawerFrame : public SCompoundWidget
 {

@@ -69,13 +69,13 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	TArray<TSharedPtr<FJsonValue>> Rows;
 
-	// Endpoint of the built-in DeepSeek route, always from the user's settings; empty falls back to DeepSeek's official one
+	// 内置 DeepSeek 路由的端点，始终取自个人设置；为空时退回 DeepSeek 官方端点
 	const FString DeepSeekBaseUrl = IsValid(Settings) ? Settings->DeepSeekBaseUrl.TrimStartAndEnd() : FString();
 	const TSharedRef<FJsonObject> DeepSeekConfig = MakeShared<FJsonObject>();
 	DeepSeekConfig->SetStringField(ShuttlegentProviderConstant::FieldBaseUrl, DeepSeekBaseUrl.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : DeepSeekBaseUrl);
 	Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowLlmDeepSeek, DeepSeekConfig)));
 
-	// Provider routes, keyed by route; the runtime reads each key from the variable the entry names
+	// 供应商路由，以路由名为键；运行时从条目指定的变量读取各自的密钥
 	const TSharedRef<FJsonObject> Providers = MakeShared<FJsonObject>();
 	if (IsValid(Settings))
 	{
@@ -91,7 +91,7 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 		Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowLlmPiAi, Config)));
 	}
 
-	// Default route and model of new sessions; the built-in route keeps the runtime's own default
+	// 新会话的默认路由与模型；使用内置路由时保留运行时自己的默认值
 	if (IsValid(Settings) && !Settings->DefaultProvider.IsEmpty())
 	{
 		const TSharedRef<FJsonObject> Config = MakeShared<FJsonObject>();
@@ -100,7 +100,7 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 		Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowAcp, Config)));
 	}
 
-	// Only the project's skills: the runtime's default roots stay off
+	// 只用项目的技能：运行时的默认技能根目录保持关闭
 	TArray<TSharedPtr<FJsonValue>> SkillDirs;
 	for (const FString& Dir : FShuttlegentProjectConfig::GetSkillDirs())
 	{
@@ -111,13 +111,13 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	SkillConfig->SetArrayField(ShuttlegentProviderConstant::FieldCustomSkillDirs, SkillDirs);
 	Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowSkillFilesystem, SkillConfig)));
 
-	// The base patch disables PowerShell; the user's Shell switch turns it back on
+	// 基础补丁关闭了 PowerShell；用户的 Shell 开关可重新打开
 	const TSharedRef<FJsonObject> Shell = MakeShared<FJsonObject>();
 	Shell->SetStringField(ShuttlegentProviderConstant::FieldId, ShuttlegentProviderConstant::RowToolPwsh);
 	Shell->SetBoolField(ShuttlegentProviderConstant::FieldDisabled, !bShell);
 	Rows.Add(MakeShared<FJsonValueObject>(Shell));
 
-	// The context tap reports each session's context breakdown to the editor endpoint; the runtime loads plugins by absolute path
+	// context tap 向编辑器端点上报各会话的上下文分项；运行时按绝对路径加载插件
 	const FString ContextTap = FPaths::Combine(PluginDir, ShuttlegentPath::ContextTapPlugin);
 	if (FPaths::FileExists(ContextTap))
 	{

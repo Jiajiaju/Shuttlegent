@@ -6,11 +6,10 @@
 #include "ShuttlegentSessionRecord.h"
 
 /**
- * Session index and transcripts under <Project>/Saved/Shuttlegent/Sessions.
+ * 位于 <Project>/Saved/Shuttlegent/Sessions 的会话索引与会话记录。
  *
- * The runtime cannot replay a session (no session/load), so every prompt, session/update
- * and turn end is appended here and replayed by the UI when a session is reopened.
- * Game thread only.
+ * 运行时无法回放会话（不支持 session/load），因此每次提问、session/update 与回合结束都追加到这里，
+ * 重新打开会话时由界面回放。仅限游戏线程。
  */
 class SHUTTLEGENTCORE_API FShuttlegentSessionStore
 {
@@ -22,30 +21,30 @@ private:
 public:
 	FShuttlegentSessionStore();
 
-	/** All known sessions, most recently updated first. */
+	/** 所有已知会话，最近更新的在前。 */
 	const TArray<FShuttlegentSessionRecord>& GetRecords();
 
 	const FShuttlegentSessionRecord* FindRecord(const FString& SessionId);
 
-	/** Creates or updates a record and saves the index. A new record is stamped now and listed first; an existing one keeps its UpdatedAt and place. */
+	/** 新建或更新一条记录并保存索引。新记录以当前时间为时间戳并排在最前；已有记录保留其 UpdatedAt 与位置。 */
 	void UpsertRecord(const FShuttlegentSessionRecord& Record);
 
-	/** The session has new content (a prompt sent, a turn ended): UpdatedAt is set to now and the session is listed first. */
+	/** 会话有了新内容（发出提问、回合结束）：UpdatedAt 设为当前时间，会话排到最前。 */
 	void TouchRecord(const FString& SessionId);
 
-	/** Removes a session from the index and deletes its transcript. Returns false for an unknown session. */
+	/** 从索引中移除会话并删除其记录。未知会话返回 false。 */
 	bool DeleteRecord(const FString& SessionId);
 
-	/** Sets a user-chosen title: trimmed, not empty, at most ShuttlegentSessionConstant::RenameMaxChars. Keeps UpdatedAt. Returns false when rejected. */
+	/** 设置用户指定的标题：去掉首尾空白、不能为空、最多 ShuttlegentSessionConstant::RenameMaxChars 个字符。保留 UpdatedAt。被拒绝时返回 false。 */
 	bool RenameRecord(const FString& SessionId, const FString& Title);
 
-	/** Archives or restores a session in the index. Keeps UpdatedAt. Returns false for an unknown session. */
+	/** 在索引中归档或恢复会话。保留 UpdatedAt。未知会话返回 false。 */
 	bool SetArchived(const FString& SessionId, bool bArchived);
 
-	/** Appends one transcript entry: {"t": ISO-8601, "kind": Kind, "data": Data}. */
+	/** 追加一条记录：{"t": ISO-8601, "kind": Kind, "data": Data}。 */
 	void AppendTranscript(const FString& SessionId, const FString& Kind, const TSharedPtr<FJsonObject>& Data);
 
-	/** Reads a whole transcript back as entry objects, oldest first. */
+	/** 读回整个会话记录，按时间先后返回各条记录对象。 */
 	TArray<TSharedPtr<FJsonObject>> LoadTranscript(const FString& SessionId) const;
 
 private:

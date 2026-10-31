@@ -3,21 +3,21 @@
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
 
-/** What tools/list tells the model about one editor tool (Shuttlegent.md section 10.2). */
+/** tools/list 向模型说明的单个编辑器工具信息（Shuttlegent.md 第 10.2 节）。 */
 struct FShuttlegentToolDefinition
 {
-	/** Name the model calls; lowercase letters, digits and underscores, unique among all providers. */
+	/** 模型调用时使用的名称；由小写字母、数字与下划线组成，在所有工具提供者之间唯一。 */
 	FString Name;
 
-	/** What the tool does and when to use it, for the model. */
+	/** 面向模型说明工具的作用及使用时机。 */
 	FString Description;
 
-	/** JSON Schema of the arguments object. */
+	/** 参数对象的 JSON Schema。 */
 	TSharedPtr<FJsonObject> InputSchema;
 
-	/** Reads only. A tool that is not read-only asks the write gate before it runs. */
+	/** 仅读取。非只读工具在运行前须请求写入门。 */
 	bool bReadOnly = true;
 
-	/** Write tools: runs as one synchronous editor transaction, undone as a whole when any object fails. */
+	/** 写入工具：作为一个同步编辑器事务运行，任一对象失败时整体撤销。 */
 	bool bTransactional = true;
 };

@@ -2,55 +2,55 @@
 
 #include "CoreMinimal.h"
 
-/** Engine toolsets of the Toolset Registry as Shuttlegent editor tools. */
+/** 将 Toolset Registry 中的引擎 Toolset 作为 Shuttlegent 编辑器工具提供。 */
 namespace ShuttlegentToolsetBridgeConstant
 {
-	// Tool names
+	// 工具名
 	inline const TCHAR* ListToolsetsName = TEXT("list_toolsets");
 	inline const TCHAR* DescribeToolsetName = TEXT("describe_toolset");
 	inline const TCHAR* CallToolsetToolName = TEXT("call_toolset_tool");
 
-	// Argument names
+	// 参数名
 	inline const TCHAR* ArgToolset = TEXT("toolset");
 	inline const TCHAR* ArgTool = TEXT("tool");
 	inline const TCHAR* ArgArguments = TEXT("arguments");
 
-	// Fields of a toolset's JSON schema
+	// Toolset JSON Schema 中的字段
 	inline const TCHAR* FieldTools = TEXT("tools");
 	inline const TCHAR* FieldName = TEXT("name");
 	inline const TCHAR* FieldDescription = TEXT("description");
 	inline const TCHAR* FieldInputSchema = TEXT("inputSchema");
 
-	// Field of a toolset tool's result holding what the tool returned
+	// Toolset 工具结果中存放工具返回值的字段
 	inline const TCHAR* FieldReturnValue = TEXT("returnValue");
 
-	// Error of a tool that returned false; its raw result follows
+	// 工具返回 false 时的错误信息，其后接原始结果
 	inline const TCHAR* ReturnedFalseError = TEXT("The tool returned false: it did not do what was asked. Nothing may have changed. Result: ");
 
-	// Separates toolset and tool in a full tool name (Toolset.Tool), and the parts of a toolset name
+	// 分隔完整工具名（Toolset.Tool）中的 Toolset 与工具，以及 Toolset 名称的各部分
 	inline const TCHAR* NameSeparator = TEXT(".");
 
-	// A pattern enclosed in these is a regular expression
+	// 以此符号包围的模式视为正则表达式
 	inline const TCHAR* RegexDelimiter = TEXT("/");
 
-	// Separates a tool name's leading word from the rest in snake_case names
+	// 在 snake_case 名称中分隔工具名的首个单词与其余部分
 	inline constexpr TCHAR WordSeparator = TEXT('_');
 
-	// End of the first line of a description
+	// 描述首行的结束符
 	inline const TCHAR* LineBreak = TEXT("\n");
 
-	// Longest description line and argument summary shown, in characters; longer ones end with an ellipsis
+	// 显示的描述行与参数摘要的最大长度（字符数）；超出部分以省略号结尾
 	inline constexpr int32 MaxSummaryChars = 160;
 	inline constexpr int32 MaxArgumentChars = 400;
 	inline const TCHAR* Ellipsis = TEXT("…");
 
-	// Arguments passed to a toolset tool that takes none
+	// 传给无参数 Toolset 工具的参数
 	inline const TCHAR* EmptyArguments = TEXT("{}");
 
-	// Log lines that carry a message dialog's text while dialogs only log (FMessageDialog::Open, MessageDialog.cpp)
+	// 对话框仅写日志时，承载消息对话框文本的日志行前缀（FMessageDialog::Open，MessageDialog.cpp）
 	inline const TCHAR* MessageDialogPrefix = TEXT("Message dialog");
 
-	// Most engine messages handed to the assistant with one tool result, and the heading they come under
+	// 随单次工具结果交给助手的引擎消息上限，以及这些消息所在的标题
 	inline constexpr int32 MaxEngineMessages = 20;
 	inline const TCHAR* EngineMessagesHeading = TEXT("\n\nEngine messages while the tool ran (dialogs were not shown):\n");
 }

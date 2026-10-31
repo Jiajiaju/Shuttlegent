@@ -18,13 +18,13 @@
 
 namespace ShuttlegentRuntimeProcessPrivate
 {
-	// Writer thread wake-up interval while idle, in milliseconds
+	// 写线程空闲时的唤醒间隔，单位毫秒
 	inline constexpr uint32 WriterIdleWaitMs = 100;
 
-	// Polling interval while waiting for a graceful exit, in seconds
+	// 等待进程正常退出时的轮询间隔，单位秒
 	inline constexpr float ExitPollSeconds = 0.05f;
 
-	// Line terminator of the ACP stdio transport
+	// ACP stdio 传输的行尾符
 	inline constexpr uint8 LineFeed = '\n';
 	inline constexpr uint8 CarriageReturn = '\r';
 
@@ -39,7 +39,7 @@ namespace ShuttlegentRuntimeProcessPrivate
 		return FString(Converter.Length(), Converter.Get());
 	}
 
-	/** Reads a pipe until EOF and pushes complete lines into a queue. */
+	/** 读取管道直至 EOF，并把完整的行放入队列。 */
 	class FPipeLineReader : public FRunnable
 	{
 	private:
@@ -94,7 +94,7 @@ namespace ShuttlegentRuntimeProcessPrivate
 		}
 	};
 
-	/** Drains the outbound queue into stdin; closes stdin once asked to and drained. */
+	/** 把待发送队列写入 stdin；收到关闭请求且队列写完后关闭 stdin。 */
 	class FPipeWriter : public FRunnable
 	{
 	private:
@@ -163,7 +163,7 @@ namespace ShuttlegentRuntimeProcessPrivate
 		}
 	};
 
-	/** Quotes one argument following the CommandLineToArgvW rules. */
+	/** 按 CommandLineToArgvW 的规则给单个参数加引号。 */
 	FString QuoteArgument(const FString& Argument)
 	{
 		const bool bNeedsQuotes = Argument.IsEmpty() || Argument.Contains(TEXT(" ")) || Argument.Contains(TEXT("\t")) || Argument.Contains(TEXT("\""));
@@ -207,7 +207,7 @@ namespace ShuttlegentRuntimeProcessPrivate
 		return CommandLine;
 	}
 
-	/** Builds a CREATE_UNICODE_ENVIRONMENT block: sorted NAME=VALUE entries, each NUL-terminated, then a final NUL. */
+	/** 构造 CREATE_UNICODE_ENVIRONMENT 环境块：排序后的 NAME=VALUE 条目，各以 NUL 结尾，最后再加一个 NUL。 */
 	TArray<TCHAR> BuildEnvironmentBlock(const TMap<FString, FString>& Environment)
 	{
 		TArray<FString> Names;
@@ -226,7 +226,7 @@ namespace ShuttlegentRuntimeProcessPrivate
 		return Block;
 	}
 
-	/** Creates a pipe whose child end is inheritable and whose parent end is not. */
+	/** 创建子进程端可继承、父进程端不可继承的管道。 */
 	bool CreateChildPipe(HANDLE& OutRead, HANDLE& OutWrite, bool bChildReads)
 	{
 		SECURITY_ATTRIBUTES Attributes {};
@@ -290,7 +290,7 @@ bool FShuttlegentRuntimeProcess::Launch(const FShuttlegentRuntimeLaunchSpec& Spe
 		return false;
 	}
 
-	// Only the three child pipe ends are inherited, never other editor handles.
+	// 只继承三个子进程管道端，绝不继承编辑器的其他句柄。
 	HANDLE InheritedHandles[] = { ChildStdIn, ChildStdOut, ChildStdErr };
 	SIZE_T AttributeListBytes = 0;
 	::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttributeListBytes);
@@ -409,7 +409,7 @@ void FShuttlegentRuntimeProcess::Shutdown(float TimeoutSeconds)
 #if PLATFORM_WINDOWS
 	if (ProcessHandle == nullptr) return;
 
-	// Closing stdin is the ACP way to ask the agent to exit.
+	// 关闭 stdin 是 ACP 约定的请求 Agent 退出的方式。
 	if (Writer.IsValid()) Writer->Stop();
 
 	const double Deadline = FPlatformTime::Seconds() + TimeoutSeconds;
@@ -432,7 +432,7 @@ void FShuttlegentRuntimeProcess::Shutdown(float TimeoutSeconds)
 		::WaitForSingleObject(ProcessHandle, INFINITE);
 	}
 
-	// Ends grandchildren that still hold the pipes, so the readers reach EOF.
+	// 结束仍占用管道的孙进程，使读线程能读到 EOF。
 	if (JobHandle != nullptr) ::TerminateJobObject(JobHandle, static_cast<UINT>(ShuttlegentProcessConstant::TerminatedExitCode));
 #endif // PLATFORM_WINDOWS
 

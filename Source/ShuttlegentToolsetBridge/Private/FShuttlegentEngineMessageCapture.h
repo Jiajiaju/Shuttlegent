@@ -4,8 +4,8 @@
 #include "Misc/OutputDevice.h"
 
 /**
- * Collects what the engine reports on the game thread while one toolset tool runs: warnings, errors and the text of
- * message dialogs, which only log while the tool runs unattended. Listens to GLog for its lifetime.
+ * 收集单个 Toolset 工具运行期间引擎在游戏线程上报告的内容：警告、错误，以及消息对话框的文本
+ * （工具以无人值守方式运行时，消息对话框只写入日志）。在其生命周期内监听 GLog。
  */
 class FShuttlegentEngineMessageCapture : public FOutputDevice
 {
@@ -17,7 +17,7 @@ public:
 	FShuttlegentEngineMessageCapture();
 	virtual ~FShuttlegentEngineMessageCapture() override;
 
-	/** The collected lines, oldest first, one per line; empty when the engine reported nothing. */
+	/** 已收集的消息，按时间由旧到新，每条一行；引擎未报告任何内容时为空。 */
 	FString GetMessages() const;
 
 	//~ Begin FOutputDevice Interface.

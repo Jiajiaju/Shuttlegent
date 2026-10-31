@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 
-/** One slash template: a Markdown file of a template directory, inserted into the draft from the / menu. */
+/** 一个斜杠模板：模板目录中的一个 Markdown 文件，通过 / 菜单插入草稿。 */
 struct FShuttlegentTemplate
 {
-	/** File name without extension; what the user types after /. */
+	/** 不含扩展名的文件名；即用户在 / 之后输入的内容。 */
 	FString Name;
 
-	/** First line of the file without Markdown heading marks, shown in the menu. */
+	/** 文件第一行去掉 Markdown 标题标记后的内容，显示在菜单中。 */
 	FString Description;
 
-	/** The whole file, inserted into the draft. */
+	/** 整个文件内容，插入草稿。 */
 	FString Body;
 };

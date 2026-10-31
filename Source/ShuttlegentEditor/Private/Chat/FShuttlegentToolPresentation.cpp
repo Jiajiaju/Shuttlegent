@@ -11,13 +11,13 @@
 
 namespace FShuttlegentToolPresentationPrivate
 {
-	// Shown after a truncated summary or reason
+	// 显示在被截断的摘要或原因之后
 	inline const TCHAR* Ellipsis = TEXT("…");
 
-	// Joins the lines of a multi-line summary into one row
+	// 将多行摘要的各行连接为一行
 	inline const TCHAR* LineJoiner = TEXT(" ");
 
-	// Directory separator after the project directory when making paths relative
+	// 生成相对路径时，项目目录之后的目录分隔符
 	inline const TCHAR* PathSeparator = TEXT("/");
 
 	FString Truncate(const FString& Text, int32 MaxChars)
@@ -27,7 +27,7 @@ namespace FShuttlegentToolPresentationPrivate
 		return Text.Left(MaxChars) + Ellipsis;
 	}
 
-	/** Absolute paths under the project become project-relative with forward slashes. */
+	/** 项目下的绝对路径转换为使用正斜杠的项目相对路径。 */
 	FString ShortenPath(const FString& Value)
 	{
 		FString Path = Value;
@@ -115,7 +115,7 @@ FString FShuttlegentToolPresentation::GetSummary(const FString& InputJson)
 		const bool bPath = KeyName == ShuttlegentEditorTool::SearchPathKey || KeyName.EndsWith(ShuttlegentEditorTool::PathKeySuffix);
 		FString Summary = bPath ? FShuttlegentToolPresentationPrivate::ShortenPath(Value) : Value;
 
-		// A search pattern also says where it looked
+		// 搜索模式同时注明其搜索位置
 		FString SearchPath;
 		if (KeyName == ShuttlegentEditorTool::PatternKey && FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::SearchPathKey, SearchPath))
 		{

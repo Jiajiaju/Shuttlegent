@@ -4,7 +4,7 @@
 
 #include "Tool/IShuttlegentToolProvider.h"
 
-/** Offers the engine toolset tools (list_toolsets, describe_toolset, call_toolset_tool) to the Shuttlegent MCP endpoint. */
+/** 向 Shuttlegent MCP 端点提供引擎 Toolset 工具（list_toolsets、describe_toolset、call_toolset_tool）。 */
 class FShuttlegentToolsetToolProvider : public IShuttlegentToolProvider
 {
 private:

@@ -2,20 +2,20 @@
 
 #include "CoreMinimal.h"
 
-/** A question the agent asks the user with a choice of answers (ask_user). Filled by the tool, numbered by the gate. */
+/** agent 向用户提出的带候选答案的问题（ask_user）。由工具填写，由提问通道编号。 */
 struct FShuttlegentQuestion
 {
-	/** Assigned by FShuttlegentQuestionGate. */
+	/** 由 FShuttlegentQuestionGate 分配。 */
 	int32 QuestionId = 0;
 
 	FString Question;
 
-	/** The answers offered, in the order shown. */
+	/** 提供的候选答案，按显示顺序排列。 */
 	TArray<FString> Options;
 
-	/** The user may write an answer of their own instead of picking an option. */
+	/** 用户可不选择选项，改为自行填写答案。 */
 	bool bAllowOther = true;
 
-	/** Set by the gate: when the question times out unanswered (UTC); the card counts down to it. */
+	/** 由提问通道设置：问题无人作答而超时的时刻（UTC）；卡片据此倒计时。 */
 	FDateTime ExpiresAtUtc {};
 };

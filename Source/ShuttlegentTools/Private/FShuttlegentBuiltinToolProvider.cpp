@@ -11,7 +11,7 @@
 
 FShuttlegentBuiltinToolProvider::FShuttlegentBuiltinToolProvider(const TSharedRef<FShuttlegentLogCapture>& LogCapture)
 {
-	// Read tools first, write tools last, as tools/list shows them
+	// 先读取类工具、后写入类工具，与 tools/list 的展示顺序一致
 	FShuttlegentAssetTools::Append(Tools);
 	FShuttlegentLevelTools::Append(Tools);
 	FShuttlegentReflectionTools::Append(Tools);
@@ -25,7 +25,7 @@ void FShuttlegentBuiltinToolProvider::GetTools(TArray<TSharedRef<IShuttlegentToo
 {
 	OutTools.Append(Tools);
 
-	// Built per call so it follows the project's UI guide list
+	// 每次调用时重新构建，以跟随项目的 UI 指引列表
 	const TSharedPtr<IShuttlegentTool> UiGuide = FShuttlegentUiGuideTool::Make();
 	if (UiGuide.IsValid()) OutTools.Add(UiGuide.ToSharedRef());
 }

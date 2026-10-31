@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** One captured editor log line. */
+/** 一行捕获到的编辑器日志。 */
 struct FShuttlegentLogLine
 {
 	FDateTime Time {};

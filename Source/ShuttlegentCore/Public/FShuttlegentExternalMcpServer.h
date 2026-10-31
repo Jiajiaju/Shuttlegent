@@ -7,30 +7,33 @@
 
 #include "FShuttlegentExternalMcpServer.generated.h"
 
-/** A knowledge or tool service the project declares to the runtime with every session (Shuttlegent.md section 11). */
+/** 项目在每个会话中声明给运行时的知识或工具服务（Shuttlegent.md 第 11 节）。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentExternalMcpServer
 {
 	GENERATED_BODY()
 
-	/** Server name; the runtime prefixes its tool names with it. Must not be "ue", which the editor endpoint uses. */
+	/** 服务名，运行时以它作为该服务工具名的前缀；不得为编辑器端点占用的 "ue"。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Name;
 
+	/** 传输方式：Http 通过 URL 访问，Stdio 由运行时启动本机进程。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	EShuttlegentExternalMcpType Type = EShuttlegentExternalMcpType::Http;
 
-	/** Http: absolute URL. */
+	/** Http：绝对 URL。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Url;
 
+	/** Http：随请求发送的请求头；值来自变量，密钥不写进配置。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	TArray<FShuttlegentMcpHeader> Headers;
 
-	/** Stdio: absolute path of the executable. */
+	/** Stdio：可执行文件的绝对路径。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Command;
 
+	/** Stdio：启动参数。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	TArray<FString> Arguments;
 };

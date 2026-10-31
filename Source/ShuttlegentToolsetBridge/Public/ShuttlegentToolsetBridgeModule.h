@@ -7,7 +7,7 @@ class FShuttlegentToolsetToolProvider;
 class FShuttlegentToolsetBridgeModule : public IModuleInterface
 {
 private:
-	/** The engine toolset tools, registered with the MCP endpoint as an IShuttlegentToolProvider. */
+	/** 引擎 Toolset 工具，以 IShuttlegentToolProvider 的形式注册到 MCP 端点。 */
 	TSharedPtr<FShuttlegentToolsetToolProvider> Provider;
 
 public:

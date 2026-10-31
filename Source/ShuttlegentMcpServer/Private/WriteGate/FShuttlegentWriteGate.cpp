@@ -35,7 +35,7 @@ namespace FShuttlegentWriteGatePrivate
 
 void FShuttlegentWriteGate::Initialize()
 {
-	// A level change invalidates every preview: the objects and their current values belong to the old level
+	// 关卡切换会使所有预览失效：其中的对象及当前值都属于旧关卡
 	MapChangeHandle = FEditorDelegates::MapChange.AddSP(this, &FShuttlegentWriteGate::HandleMapChange);
 }
 
@@ -55,7 +55,7 @@ void FShuttlegentWriteGate::SetConfirmerAttached(bool bAttached)
 	bConfirmerAttached = bAttached;
 	if (bAttached) return;
 
-	// Nobody is left to answer: what still waits is refused, never run unconfirmed
+	// 已无人可作答：仍在等待的请求一律拒绝，绝不在未确认的情况下执行
 	while (Pending.Num() > 0)
 	{
 		Close(Pending[0].RequestId, EShuttlegentWriteDecision::Rejected);
@@ -108,7 +108,7 @@ bool FShuttlegentWriteGate::IsOnUndoTop(const FGuid& TransactionId)
 {
 	if (!TransactionId.IsValid() || GEditor == nullptr || !IsValid(GEditor->Trans)) return false;
 
-	// The undo context names the transaction the next undo would revert; empty when nothing can be undone
+	// 撤销上下文指明下一次撤销将回滚的事务；无可撤销内容时为空
 	const FTransactionContext Context = GEditor->Trans->GetUndoContext(true);
 	return Context.TransactionId == TransactionId;
 }
@@ -128,7 +128,7 @@ void FShuttlegentWriteGate::Close(int32 RequestId, EShuttlegentWriteDecision Dec
 
 	UE_LOG(LogShuttlegent, Log, TEXT("Write request %d closed: %s."), RequestId, FShuttlegentWriteGatePrivate::DecisionName(Decision));
 
-	// Listeners learn the outcome before the tool acts on it, so the panel shows "writing" while it runs
+	// 监听者在工具据此执行之前获知结果，因此执行期间面板显示“写入中”
 	OnClosed.Broadcast(RequestId, Decision);
 	if (Callback) Callback(Decision);
 }

@@ -11,22 +11,22 @@ class FShuttlegentWriteProbe;
 struct FShuttlegentContextBreakdown;
 struct FShuttlegentExternalMcpState;
 
-/** A session's context breakdown arrived from the runtime (ACP session id, breakdown); game thread. */
+/** 收到运行时发来的会话上下文构成（ACP 会话 id、构成）；游戏线程。 */
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentContextBreakdown, const FString& /*SessionId*/, const FShuttlegentContextBreakdown& /*Breakdown*/);
 
 class SHUTTLEGENTMCPSERVER_API FShuttlegentMcpServerModule : public IModuleInterface
 {
 private:
-	/** Permission gate every editor write tool asks before it runs. */
+	/** 每个编辑器写入工具在运行前都须请求的权限门。 */
 	TSharedPtr<FShuttlegentWriteGate> WriteGate;
 
-	/** Questions the agent asks the user through ask_user, answered in the panel. */
+	/** agent 通过 ask_user 向用户提出、在面板中作答的问题。 */
 	TSharedPtr<FShuttlegentQuestionGate> QuestionGate;
 
-	/** Shuttlegent.WriteProbe console command, a write tool on the same gate for acceptance. */
+	/** Shuttlegent.WriteProbe 控制台命令，经同一写入门执行的写入工具，用于验收。 */
 	TSharedPtr<FShuttlegentWriteProbe> WriteProbe;
 
-	/** The MCP endpoint the runtime calls editor tools through; declared to it with every session. */
+	/** 运行时调用编辑器工具所经由的 MCP 端点；随每个会话向运行时声明。 */
 	TSharedPtr<FShuttlegentMcpEndpoint> Endpoint;
 
 	FOnShuttlegentContextBreakdown ContextBreakdownEvent;
@@ -42,19 +42,19 @@ public:
 	TSharedPtr<FShuttlegentWriteGate> GetWriteGate() const { return WriteGate; }
 	TSharedPtr<FShuttlegentQuestionGate> GetQuestionGate() const { return QuestionGate; }
 
-	/** Every tool the registered providers offer, switched on or off; for the settings' tool switches. */
+	/** 已注册工具提供者提供的全部工具，无论开启与否；供设置中的工具开关使用。 */
 	TArray<TSharedRef<IShuttlegentTool>> GetRegisteredTools() const;
 
-	/** Name the runtime knows the editor endpoint by; its tool names carry it as a prefix. */
+	/** 运行时识别编辑器端点所用的名称；其工具名以此为前缀。 */
 	FString GetEndpointName() const;
 
-	/** Whether the editor endpoint listens, and its port (0 while not listening); for the panel. */
+	/** 编辑器端点是否正在监听，及其端口（未监听时为 0）；供面板使用。 */
 	bool IsEndpointListening() const;
 	uint32 GetEndpointPort() const;
 
-	/** The project's external MCP servers and why any is left out of the next session's declaration; for the panel. */
+	/** 项目的外部 MCP 服务器，以及其中某个未被纳入下一个会话声明的原因；供面板使用。 */
 	TArray<FShuttlegentExternalMcpState> GetExternalServers() const;
 
-	/** Context breakdowns the context tap runtime plugin reports after each assistant message. */
+	/** context tap 运行时插件在每条 assistant 消息之后上报的上下文构成。 */
 	FOnShuttlegentContextBreakdown& OnContextBreakdown() { return ContextBreakdownEvent; }
 };

@@ -6,10 +6,9 @@
 class FShuttlegentWriteGate;
 
 /**
- * Shuttlegent.WriteProbe: a minimal synchronous write tool that goes through FShuttlegentWriteGate exactly as the MCP
- * endpoint's write tools will (Shuttlegent.md section 14.3.6). It asks to move the selected actors up, and once
- * confirmed moves them inside one editor transaction and reports each actor's real outcome. An optional index makes
- * that actor fail and leaves the rest unrun, to show a partial completion.
+ * Shuttlegent.WriteProbe：一个最小的同步写入工具，与 MCP 端点的写入工具完全一样经由 FShuttlegentWriteGate
+ * （Shuttlegent.md 第 14.3.6 节）。它请求将选中的 Actor 上移，确认后在一个编辑器事务内移动它们，并上报每个 Actor
+ * 的真实结果。可选的索引会令该 Actor 失败并使其余 Actor 不执行，用于演示部分完成的情形。
  */
 class FShuttlegentWriteProbe
 {

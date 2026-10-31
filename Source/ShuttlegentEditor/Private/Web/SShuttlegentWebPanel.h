@@ -21,12 +21,12 @@ struct FWebNavigationRequest;
 enum class EWebBrowserConsoleLogSeverity;
 
 /**
- * The Shuttlegent panel: hosts Resources/Web/index.html in CEF and connects it to FShuttlegentChatModel.
+ * Shuttlegent 面板：在 CEF 中承载 Resources/Web/index.html，并将其连接到 FShuttlegentChatModel。
  *
- * The browser is created the first time the panel is painted, with a placeholder until the page reports
- * ready. Around the page the host takes what CEF cannot: editor drag and drop, Ctrl+Space and Esc, the
- * panel's own Content Browser drawer, and http(s) links (opened in the system browser). The module keeps
- * one instance and puts it into every spawned tab, so closing and reopening the tab keeps the page.
+ * 浏览器在面板首次绘制时创建，页面报告就绪前显示占位内容。宿主在页面之外承担 CEF
+ * 无法处理的部分：编辑器拖放、Ctrl+Space 与 Esc、面板自有的 Content Browser 抽屉，
+ * 以及 http(s) 链接（在系统浏览器中打开）。模块只保留一个实例并将其放入每个生成的标签页，
+ * 因此关闭并重新打开标签页后页面得以保留。
  */
 class SShuttlegentWebPanel : public SCompoundWidget
 {
@@ -42,45 +42,45 @@ private:
 	TStrongObjectPtr<UShuttlegentWebBridge> Bridge;
 	TSharedPtr<SBox> BrowserSlot;
 
-	/** Draft references: candidates for the @ menu, and the chips whose existence the page is told about. */
+	/** 草稿引用：@ 菜单的候选项，以及需要向页面告知其存在状态的引用标签。 */
 	TSharedPtr<FShuttlegentReferenceFinder> ReferenceFinder;
 	TArray<FShuttlegentReference> WatchedReferences;
 
-	/** The page called ready at least once; until then the placeholder covers it. */
+	/** 页面至少调用过一次 ready；在此之前由占位内容覆盖。 */
 	bool bPageReady = false;
 
-	/** A dock tab shows the panel; only then does the panel answer runtime permission requests. */
+	/** 有停靠标签页正在显示面板；仅在此时面板才答复运行时权限请求。 */
 	bool bHostTabOpen = false;
 
-	/** Content Browser drawer: a real SContentBrowser created on first use and kept for the panel's lifetime. */
+	/** Content Browser 抽屉：首次使用时创建的真实 SContentBrowser，在面板生命周期内保留。 */
 	TSharedPtr<SWidget> ContentBrowser;
 	TSharedPtr<SBox> DrawerSlot;
 	TSharedPtr<SBorder> DrawerGrip;
 	bool bDrawerOpen = false;
 
-	/** Slide animation: bDrawerShown stays true until the closing slide ends. */
+	/** 滑动动画：bDrawerShown 保持为 true，直到关闭滑动结束。 */
 	FCurveSequence DrawerSlide;
 	TSharedPtr<FActiveTimerHandle> DrawerSlideTimer;
 	FThrottleRequest DrawerSlideThrottle;
 	bool bDrawerShown = false;
 
-	/** Closes the drawer when focus leaves the panel, while it is open. */
+	/** 抽屉打开期间，焦点离开面板时关闭抽屉。 */
 	FDelegateHandle DrawerFocusHandle;
 
-	/** When a click on the page last closed the drawer (FPlatformTime seconds). */
+	/** 页面上的点击最近一次关闭抽屉的时间（FPlatformTime 秒）。 */
 	double LastClickCloseSeconds = 0.0;
 
-	/** Drawer height as a share of the panel height; dragged with the grip and saved per user. */
+	/** 抽屉高度占面板高度的比例；通过拖动手柄调整并按用户保存。 */
 	float DrawerHeightShare = 0.0f;
 	bool bResizingDrawer = false;
 
 public:
-	// Defined in the .cpp, where UShuttlegentWebBridge is complete (TStrongObjectPtr needs it)
+	// 定义在 .cpp 中，那里 UShuttlegentWebBridge 是完整类型（TStrongObjectPtr 需要）
 	SShuttlegentWebPanel();
 	void Construct(const FArguments& InArgs);
 	virtual ~SShuttlegentWebPanel() override;
 
-	/** Called by the module when a tab starts or stops showing the panel; the instance outlives its tabs. */
+	/** 当某个标签页开始或停止显示面板时由模块调用；实例的生命周期长于其标签页。 */
 	void SetHostTabOpen(bool bOpen);
 
 	//~ Begin SWidget Interface.
@@ -95,38 +95,38 @@ public:
 private:
 	TSharedRef<SWidget> BuildPlaceholder() const;
 
-	/** First paint of the panel: creates the bridge and the browser. */
+	/** 面板首次绘制：创建桥接对象与浏览器。 */
 	EActiveTimerReturnType HandleCreateBrowser(double InCurrentTime, float InDeltaTime);
 	void BindBridge();
 
-	/** Page name of the panel shortcut bound to this key, or nullptr. Matches the current (rebindable) chords. */
+	/** 绑定到该按键的面板快捷键在页面中的名称，或 nullptr。按当前（可重新绑定的）组合键匹配。 */
 	const TCHAR* FindPanelCommand(const FKeyEvent& InKeyEvent) const;
 
-	/** Whether the key matches the current chord of FShuttlegentPanelCommands::ReloadPage. */
+	/** 该按键是否匹配 FShuttlegentPanelCommands::ReloadPage 的当前组合键。 */
 	bool IsReloadPageChord(const FKeyEvent& InKeyEvent) const;
 
-	/** Reloads the page from disk; the placeholder shows until the page reports ready again and gets a full snapshot. */
+	/** 从磁盘重新加载页面；占位内容一直显示，直到页面再次报告就绪并获得完整快照。 */
 	void ReloadPage();
 
 	FString GetPageUrl() const;
 
-	/** The assets or actors an editor drag carries, as a JS array of references; empty for anything else. */
+	/** 编辑器拖拽所携带的资产或 Actor，以 JS 引用数组表示；其他内容时为空。 */
 	FString GetDraggedItems(const FDragDropEvent& DragDropEvent) const;
 
-	/** Sends the prompt with its references, or refuses when a reference no longer exists; the page learns which through onSubmitResult. */
+	/** 发送提示及其引用，或在某个引用已不存在时拒绝；页面通过 onSubmitResult 获知结果。 */
 	void HandleSubmit(const FString& Text, const FString& ReferencesJson);
 	void HandleQueryReferences(const FString& Query);
 
-	/** Takes a queued item back into the draft (the current draft swaps into its place) and hands it to the page. */
+	/** 将排队的条目取回草稿（当前草稿换入其位置），并交给页面。 */
 	void HandleTakeQueued(int32 ItemId, const FString& DraftText, const FString& DraftReferencesJson);
 	void HandleWatchReferences(const FString& ReferencesJson);
 
-	/** Tells the page which watched references still exist. */
+	/** 告知页面哪些被监视的引用仍然存在。 */
 	void PushReferenceValidity();
 
 	void ExecuteJavascript(const FString& Script) const;
 
-	/** Calls a page entry point with an argument that is already a JS literal (object, array, boolean). */
+	/** 以一个已是 JS 字面量（对象、数组、布尔值）的参数调用页面入口。 */
 	void CallPage(const TCHAR* Entry, const FString& ArgumentLiteral) const;
 
 	void HandlePageReady();
@@ -136,15 +136,15 @@ private:
 
 	void ToggleDrawer();
 
-	/** The page's add-reference button; ignored right after the same click closed the drawer. */
+	/** 页面的添加引用按钮；若同一次点击刚刚关闭了抽屉则忽略。 */
 	void HandlePageToggleDrawer();
 	void OpenDrawer();
 
-	/** Starts the closing slide; focus returns to the page only when it was inside the drawer. */
+	/** 开始关闭滑动；仅当焦点原本位于抽屉内时才将焦点交还页面。 */
 	void CloseDrawer(const TCHAR* Reason);
 	void PlayDrawerSlide();
 
-	/** A drag left the drawer frame; the drawer closes while the drag goes on. */
+	/** 拖拽离开了抽屉外框；抽屉在拖拽继续进行时关闭。 */
 	void HandleDrawerDragLeft();
 	EActiveTimerReturnType HandleDrawerSlideTick(double InCurrentTime, float InDeltaTime);
 	TOptional<FSlateRenderTransform> GetDrawerTransform() const;

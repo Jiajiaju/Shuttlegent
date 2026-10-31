@@ -11,13 +11,12 @@ struct FHttpServerRequest;
 struct FShuttlegentContextBreakdown;
 
 /**
- * The editor's MCP endpoint (Shuttlegent.md section 10.1): Streamable HTTP on localhost, plain JSON answers, no SSE.
+ * 编辑器的 MCP 端点（Shuttlegent.md 第 10.1 节）：localhost 上的 Streamable HTTP，以纯 JSON 答复，不使用 SSE。
  *
- * Listens on the first free port from 47800 and accepts only requests that carry the current bearer token; the token
- * changes every time the runtime starts and reaches it through the ACP mcpServers declaration. Handles initialize,
- * tools/list, tools/call and ping; any other method gets "method not found", which also answers the client's
- * server/discover probe. GET gets 405. Requests are handled on the game thread; a write tool's answer waits for the
- * user's confirmation.
+ * 监听从 47800 起的第一个空闲端口，只接受携带当前 bearer token 的请求；token 在每次运行时启动时更换，并经由
+ * ACP mcpServers 声明传给运行时。处理 initialize、tools/list、tools/call 与 ping；其他方法一律答复
+ * "method not found"，这也同时答复了客户端的 server/discover 探测。GET 返回 405。请求在游戏线程上处理；
+ * 写入工具的答复须等待用户确认。
  */
 class FShuttlegentMcpEndpoint : public TSharedFromThis<FShuttlegentMcpEndpoint>
 {
@@ -29,10 +28,10 @@ private:
 	FString Token;
 
 public:
-	/** A shuttlegent/contextBreakdown notification arrived from the context tap runtime plugin; game thread. */
+	/** 收到来自 context tap 运行时插件的 shuttlegent/contextBreakdown 通知；游戏线程。 */
 	TFunction<void(const FString& /*SessionId*/, const FShuttlegentContextBreakdown& /*Breakdown*/)> OnContextBreakdown;
 
-	/** Starts listening; false when no port of the range could be bound. */
+	/** 开始监听；范围内没有可绑定的端口时返回 false。 */
 	bool Start(const TSharedRef<FShuttlegentWriteGate>& InGate);
 	void Stop();
 
@@ -40,23 +39,23 @@ public:
 	uint32 GetPort() const { return Port; }
 	const FString& GetToken() const { return Token; }
 
-	/** The endpoint's URL on localhost. */
+	/** 端点在 localhost 上的 URL。 */
 	FString GetUrl() const;
 
-	/** A new random token; requests with the old one are refused from now on. */
+	/** 生成新的随机 token；此后携带旧 token 的请求一律拒绝。 */
 	void RotateToken();
 
-	/** The ACP mcpServers entries that declare this endpoint, with the current token; empty while not listening. */
+	/** 声明本端点的 ACP mcpServers 条目，附带当前 token；未监听时为空。 */
 	TArray<TSharedPtr<FJsonValue>> MakeDeclaration() const;
 
 private:
 	bool HandleRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
 	bool IsAuthorized(const FHttpServerRequest& Request) const;
 
-	/** Handles a notification the endpoint understands (the context tap's breakdown); others are ignored. */
+	/** 处理端点能识别的通知（context tap 的上下文构成）；其他通知忽略。 */
 	void HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params) const;
 
-	/** Answers one JSON-RPC request; OnAnswer gets the result or error object (tools/call may answer later). */
+	/** 答复一个 JSON-RPC 请求；OnAnswer 接收结果对象或错误对象（tools/call 可能稍后答复）。 */
 	void Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, TFunction<void(const TSharedRef<FJsonObject>& /*Result*/, int32 /*ErrorCode*/, const FString& /*ErrorMessage*/)> OnAnswer);
 	TSharedRef<FJsonObject> MakeInitializeResult(const TSharedPtr<FJsonObject>& Params) const;
 	TSharedRef<FJsonObject> MakeToolsListResult() const;

@@ -22,7 +22,7 @@ namespace FShuttlegentSettingsCustomizationPrivate
 		return !IsValid(Settings) || !Settings->DisabledTools.ContainsByPredicate([&ToolName](const FString& Disabled) { return Disabled.Equals(ToolName, ESearchCase::IgnoreCase); });
 	}
 
-	/** Switches a tool and saves the personal settings; tools/list reads the switch on its next call. */
+	/** 切换某个工具的开关并保存个人设置；tools/list 在下次调用时读取该开关。 */
 	void SetEnabled(const FString& ToolName, bool bEnabled)
 	{
 		UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
@@ -39,7 +39,7 @@ namespace FShuttlegentSettingsCustomizationPrivate
 		return !IsValid(Settings) || !Settings->DisabledToolsets.ContainsByPredicate([&ToolsetName](const FString& Disabled) { return Disabled.Equals(ToolsetName, ESearchCase::IgnoreCase); });
 	}
 
-	/** Switches an engine toolset and saves the personal settings; the toolset tools read the switch on their next call. */
+	/** 切换某个引擎 Toolset 的开关并保存个人设置；Toolset 工具在下次调用时读取该开关。 */
 	void SetToolsetEnabled(const FString& ToolsetName, bool bEnabled)
 	{
 		UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
@@ -50,7 +50,7 @@ namespace FShuttlegentSettingsCustomizationPrivate
 		Settings->SaveConfig();
 	}
 
-	/** First line of a tool's description, for the tooltip. */
+	/** 工具描述的第一行，用作提示信息。 */
 	FText Summary(const FShuttlegentToolDefinition& Definition)
 	{
 		FString FirstLine = Definition.Description;

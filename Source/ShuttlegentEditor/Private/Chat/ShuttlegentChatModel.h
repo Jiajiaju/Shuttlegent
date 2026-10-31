@@ -33,90 +33,88 @@ DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatRunLogChanged);
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatQueueChanged);
 
 /**
- * Editor-side conversation state between FShuttlegentAgentService and the chat panel.
+ * 介于 FShuttlegentAgentService 与聊天面板之间的编辑器侧对话状态。
  *
- * Lives in the editor module, so conversations survive closing and reopening the panel.
- * Holds one FShuttlegentConversation per session the user has running, queued or open;
- * the panel shows the current one, and the others keep running and receiving updates in
- * the background (Shuttlegent.md section 14.3.7). Leaving a conversation that is idle
- * closes its session and drops it; opening it again replays its transcript.
+ * 位于编辑器模块中，因此对话在面板关闭并重新打开后依然保留。
+ * 用户每个正在运行、排队或打开的会话对应一个 FShuttlegentConversation；
+ * 面板显示当前对话，其余对话在后台继续运行并接收更新
+ * （Shuttlegent.md 第 14.3.7 节）。离开空闲的对话会关闭其会话并将其丢弃；
+ * 再次打开时重放其对话记录。
  *
- * Folds session/update chunks into entries (one per assistant message id, one per tool
- * call) and queues a conversation's first prompt until the runtime and its session are
- * ready. Drafts sent while a turn runs go to that conversation's FIFO queue and are sent
- * one by one when turns end normally; a stop, a rejected permission, a failed turn or a
- * lost runtime pauses the queue until the user continues it (Shuttlegent UI interaction
- * spec section 4.3). Events are about the current conversation; a background one only
- * raises OnSessionsChanged when its status or queue changes. Game thread only.
+ * 将 session/update 分块合并为条目（每个助手消息 id 一条，每次工具调用一条），
+ * 并将对话的第一条提示暂存至运行时及其会话就绪。回合运行期间发送的草稿进入该对话的
+ * FIFO 队列，在回合正常结束时逐条发送；停止、被拒绝的权限、失败的回合或丢失的运行时
+ * 会暂停队列，直至用户继续（Shuttlegent UI 交互规范第 4.3 节）。事件均针对当前对话；
+ * 后台对话仅在其状态或队列变化时触发 OnSessionsChanged。仅限游戏线程。
  */
 class FShuttlegentChatModel : public TSharedFromThis<FShuttlegentChatModel>
 {
 public:
-	/** Entries of the current conversation were added or the list was replaced; rebuild rows. */
+	/** 当前对话新增了条目或替换了列表；需要重建行。 */
 	FOnShuttlegentChatStructureChanged OnStructureChanged;
 
-	/** Text or status of the current conversation's entries changed; rows update through attributes. */
+	/** 当前对话条目的文本或状态已变化；行通过属性更新。 */
 	FOnShuttlegentChatContentChanged OnContentChanged;
 
-	/** Runtime state, config options, usage or the lost-runtime banner of the current conversation changed. */
+	/** 当前对话的运行时状态、配置选项、用量或运行时丢失横幅已变化。 */
 	FOnShuttlegentChatStatusChanged OnStatusChanged;
 
-	/** A turn of the current conversation ended; bCompleted is false when it was cancelled, failed or stopped for another reason. */
+	/** 当前对话的一个回合已结束；若被取消、失败或因其他原因停止，bCompleted 为 false。 */
 	FOnShuttlegentChatTurnFinished OnTurnFinished;
 
-	/** The session index, the current session, or the status or queue of any held conversation changed; refresh the session list and the title. */
+	/** 会话索引、当前会话或任一持有对话的状态或队列已变化；需要刷新会话列表与标题。 */
 	FOnShuttlegentChatSessionsChanged OnSessionsChanged;
 
-	/** An event was added to the current conversation's run log, or another conversation became current. */
+	/** 当前对话的运行日志新增了事件，或另一个对话成为当前对话。 */
 	FOnShuttlegentChatRunLogChanged OnRunLogChanged;
 
-	/** The current conversation's queue changed: items added, sent, removed or taken back, paused or continued. */
+	/** 当前对话的队列已变化：条目被添加、发送、移除或取回，或队列被暂停或继续。 */
 	FOnShuttlegentChatQueueChanged OnQueueChanged;
 
 private:
 	TWeakPtr<FShuttlegentAgentService> Service;
 
-	/** Conversations held in memory; always contains Current. */
+	/** 内存中持有的对话；始终包含 Current。 */
 	TArray<TSharedPtr<FShuttlegentConversation>> Conversations;
 	TSharedPtr<FShuttlegentConversation> Current;
 
-	/** Conversations whose session/new is in flight, oldest first; each answer goes to the oldest. */
+	/** session/new 正在进行中的对话，按从早到晚排列；每个答复归属最早的一个。 */
 	TArray<TWeakPtr<FShuttlegentConversation>> AwaitingNewSession;
 
-	/** Config options of the last session that reported them; shown for a conversation whose session is not open. */
+	/** 最近一个上报配置选项的会话所给出的选项；用于显示会话尚未打开的对话。 */
 	TArray<TSharedPtr<FJsonValue>> LastConfigOptions;
 
 	int32 NextEntryId = 1;
 	int32 NextQueueId = 1;
 	bool bRuntimeLost = false;
 
-	/** Why the runtime cannot start or serve prompts; shown as the start guide card until a retry or a ready runtime clears it. */
+	/** 运行时无法启动或无法处理提示的原因；以启动引导卡片显示，直至重试或运行时就绪将其清除。 */
 	EShuttlegentStartIssue StartIssue = EShuttlegentStartIssue::None;
 
-	/** Reason of a start that failed for another reason (English, from the runtime or the launcher); no key values. */
+	/** 因其他原因启动失败时的原因说明（英文，来自运行时或启动器）；不含密钥值。 */
 	FString StartIssueDetail;
 
-	/** A retry stopped the running runtime; it starts again once the old one has exited. */
+	/** 重试已停止正在运行的运行时；旧进程退出后再次启动。 */
 	bool bRestartPending = false;
 	bool bPermissionHandlerAttached = false;
 
-	/** Editor write gate (ShuttlegentMcpServer); the panel confirms its requests and shows its results. */
+	/** 编辑器写入门（ShuttlegentMcpServer）；面板确认其请求并显示其结果。 */
 	TWeakPtr<FShuttlegentWriteGate> WriteGate;
 
-	/** Questions the agent asks through ask_user (ShuttlegentMcpServer); the panel answers them. */
+	/** Agent 通过 ask_user 提出的问题（ShuttlegentMcpServer）；由面板答复。 */
 	TWeakPtr<FShuttlegentQuestionGate> QuestionGate;
 
-	/** Conversation the open write requests and their result belong to: the current one when the first of them arrived. */
+	/** 打开中的写入请求及其结果所属的对话：即其中第一个请求到达时的当前对话。 */
 	TWeakPtr<FShuttlegentConversation> WriteOwner;
 
-	/** A confirmed write is running; cleared when its result arrives or the runtime is lost. */
+	/** 已确认的写入正在执行；结果到达或运行时丢失时清除。 */
 	bool bWriting = false;
 
-	/** Write requests waiting for confirmation, by request id, and the one confirmed last: what a write unknown entry lists. */
+	/** 等待确认的写入请求（按请求 id 索引），以及最近一次确认的请求：即写入未知条目所列出的内容。 */
 	TMap<int32, FShuttlegentWriteRequest> OpenWriteRequests;
 	FShuttlegentWriteRequest ApprovedWrite;
 
-	/** Undo buffer listener, added once the editor exists, so write results can tell whether they are still undoable. */
+	/** 撤销缓冲区监听器，在编辑器存在后添加，使写入结果能判断其是否仍可撤销。 */
 	FDelegateHandle UndoBufferHandle;
 	FDelegateHandle PostUndoRedoHandle;
 
@@ -131,139 +129,139 @@ public:
 	EShuttlegentTurnOutcome GetLastOutcome() const { return Current->LastOutcome; }
 	const TArray<FShuttlegentRunLogEntry>& GetRunLog() const { return Current->RunLog; }
 
-	/** Session shown in the panel; empty for a new conversation. */
+	/** 面板中显示的会话；新对话时为空。 */
 	const FString& GetCurrentSessionId() const { return Current->SessionId; }
 
-	/** The current conversation's session runs a prompt. */
+	/** 当前对话的会话正在执行提示。 */
 	bool IsPrompting() const;
 
-	/** Status of the current conversation for the header. */
+	/** 当前对话供标题栏使用的状态。 */
 	EShuttlegentChatStatus GetStatus() const;
 
-	/** Status and queued prompt count of a session held in memory, for the session list; false for a session that is not held. */
+	/** 内存中持有的会话的状态与排队提示数量，供会话列表使用；会话未被持有时返回 false。 */
 	bool GetSessionActivity(const FString& SessionId, EShuttlegentChatStatus& OutStatus, int32& OutQueued) const;
 
-	/** Oldest runtime permission request of the current conversation still waiting for an answer, or nullptr. */
+	/** 当前对话中仍在等待答复的最早一个运行时权限请求，或 nullptr。 */
 	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission() const;
 
-	/** Tool call entry a permission request of the current conversation is about, or nullptr. */
+	/** 当前对话的某个权限请求所涉及的工具调用条目，或 nullptr。 */
 	TSharedPtr<FShuttlegentChatEntry> FindToolCallOf(const TSharedPtr<FShuttlegentChatEntry>& Permission) const;
 	int64 GetUsedTokens() const { return Current->UsedTokens; }
 	int64 GetContextSize() const { return Current->ContextSize; }
 	const FShuttlegentContextBreakdown& GetContextBreakdown() const { return Current->ContextBreakdown; }
 
-	/** Starts the runtime if it is not running; a failure becomes the start issue. */
+	/** 若运行时未在运行则启动它；失败时记为启动问题。 */
 	void EnsureRuntime();
 
-	/** Starts the runtime after editor startup when UShuttlegentSettings::bPrewarmRuntime is on and nothing blocks it. */
+	/** 在 UShuttlegentSettings::bPrewarmRuntime 开启且无阻碍时，于编辑器启动后启动运行时。 */
 	void Prewarm();
 
 	EShuttlegentStartIssue GetStartIssue() const { return StartIssue; }
 	const FString& GetStartIssueDetail() const { return StartIssueDetail; }
 
-	/** Clears the start issue and starts the runtime again (restarting a running one, so a fixed key is read). */
+	/** 清除启动问题并再次启动运行时（若正在运行则重启，以便读取修正后的密钥）。 */
 	void RetryStart();
 
-	/** The current conversation's last session/resume failed. */
+	/** 当前对话上一次 session/resume 失败。 */
 	bool IsResumeFailed() const { return Current->bResumeFailed; }
 
-	/** Resumes the current conversation's session again after a failed resume. */
+	/** 恢复失败后再次恢复当前对话的会话。 */
 	void RetryResume();
 
-	/** The current conversation has a write result the user has not verified; sending is disabled. */
+	/** 当前对话存在用户尚未核对的写入结果；禁止发送。 */
 	bool NeedsVerify() const { return Current->bNeedsVerify; }
 
-	/** Marks an unknown write result of the current conversation as verified by the user. */
+	/** 将当前对话的某个未知写入结果标记为已由用户核对。 */
 	void AcknowledgeUnknownWrite(int32 EntryId);
 
 	/**
-	 * Sends a draft with its references in the current conversation, or queues it while a turn runs there. Every
-	 * reference must still exist; the ones that do not are returned and nothing is sent or queued.
+	 * 在当前对话中发送草稿及其引用，若该对话有回合正在运行则将其入队。每个引用都必须
+	 * 仍然存在；不存在的引用会被返回，且不发送也不入队。
 	 */
 	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, TArray<FString>& OutInvalidPaths);
 
-	/** In the current conversation a turn runs, a stop is pending, or the runtime or the session is still coming up: new drafts are queued. */
+	/** 当前对话中有回合正在运行、停止待完成，或运行时或会话仍在就绪过程中：新草稿将入队。 */
 	bool IsBusy() const;
 
-	/** Queue of the current conversation. */
+	/** 当前对话的队列。 */
 	FShuttlegentPromptQueue GetCurrentQueue() const;
 
 	void RemoveQueued(int32 ItemId);
 
 	/**
-	 * Takes a queued item back into the draft. When the draft is not empty it takes the item's place in the queue,
-	 * so nothing the user wrote is lost. Returns false when the item is gone.
+	 * 将排队的条目取回草稿。草稿非空时，草稿占据该条目在队列中的位置，
+	 * 因此用户所写内容不会丢失。条目已不存在时返回 false。
 	 */
 	bool TakeQueued(int32 ItemId, const FString& DraftText, const TArray<FShuttlegentReference>& DraftReferences, FShuttlegentQueuedPrompt& OutItem);
 
-	/** Continues the current conversation's paused queue and sends its next item when nothing runs there. */
+	/** 继续当前对话已暂停的队列，并在该对话无运行内容时发送下一个条目。 */
 	void ResumeQueue();
 
-	/** The current conversation's failed turn can be sent again. */
+	/** 当前对话失败的回合可以重新发送。 */
 	bool CanRetry() const;
 
-	/** Sends the failed turn's prompt again; the queue stays paused. */
+	/** 重新发送失败回合的提示；队列保持暂停。 */
 	void Retry();
 
-	/** Oldest editor write waiting for confirmation when it belongs to the current conversation, or nullptr. */
+	/** 属于当前对话的最早一个等待确认的编辑器写入，或 nullptr。 */
 	const FShuttlegentWriteRequest* GetPendingWrite() const;
 
-	/** Confirms or refuses an editor write; a second answer to the same request does nothing. */
+	/** 确认或拒绝编辑器写入；对同一请求的再次答复不产生任何作用。 */
 	void AnswerWrite(int32 RequestId, bool bApprove);
 
-	/** Whether a write result can still be undone directly, and why not when it cannot (Shuttlegent UI interaction spec section 5.4). */
+	/** 写入结果是否仍可直接撤销，以及不可撤销时的原因（Shuttlegent UI 交互规范第 5.4 节）。 */
 	bool CanUndoWrite(const FShuttlegentChatEntry& Entry, FText& OutReason) const;
 
-	/** Undoes a write result's transaction when it is still on top of the editor's undo buffer. */
+	/** 当写入结果的事务仍位于编辑器撤销缓冲区顶部时将其撤销。 */
 	void UndoWrite(int32 EntryId);
 
-	/** Oldest question the agent asked that waits for an answer, or nullptr. */
+	/** Agent 提出的、仍在等待答复的最早一个问题，或 nullptr。 */
 	const FShuttlegentQuestion* GetPendingQuestion() const;
 
-	/** Answers or skips a question; a second answer to the same question does nothing. */
+	/** 答复或跳过一个问题；对同一问题的再次答复不产生任何作用。 */
 	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
-	/** Sends one cancellation for the current conversation's running turn; later calls wait for the turn to end. */
+	/** 为当前对话正在运行的回合发送一次取消；之后的调用等待该回合结束。 */
 	void Cancel();
 
-	/** Shows an empty conversation; the next prompt creates a new session. The conversation left keeps running if it is busy. */
+	/** 显示一个空对话；下一条提示将创建新会话。被离开的对话若处于忙碌状态则继续运行。 */
 	void NewConversation();
 
-	/** Shows a session: a held conversation as it is, otherwise its stored transcript, resumed in the runtime. */
+	/** 显示一个会话：已持有的对话按原样显示，否则显示其已存储的对话记录并在运行时中恢复。 */
 	void OpenSession(const FString& SessionId);
 
-	/** Restarts a lost runtime and resumes the current session. */
+	/** 重启已丢失的运行时并恢复当前会话。 */
 	void Reconnect();
 
-	/** While attached (panel open), runtime permission requests become panel entries of the conversation they name. */
+	/** 处于挂接状态（面板打开）时，运行时权限请求会成为其所指对话中的面板条目。 */
 	void SetPermissionHandlerAttached(bool bAttached);
 
 	void AnswerPermission(int32 EntryId, bool bAllow);
 
-	/** Choices and current value of a config option ("model", "reasoning_effort") of the current conversation. */
+	/** 当前对话某个配置选项（"model"、"reasoning_effort"）的可选值与当前值。 */
 	bool GetConfigChoices(const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
 
-	/** Sets a config option of the current conversation; before its session is open, the value waits for it. */
+	/** 设置当前对话的配置选项；其会话打开前，该值处于等待状态。 */
 	void SetConfigValue(const FString& ConfigId, const FString& Value);
 
-	/** Sessions of the index, most recently updated first: the active list, or the archived ones. */
+	/** 索引中的会话，按最近更新时间从新到旧排列：活动列表或已归档列表。 */
 	TArray<FShuttlegentSessionRecord> GetSessions(bool bArchived) const;
 
-	/** Title of the current session; empty for a new conversation or an untitled session. */
+	/** 当前会话的标题；新对话或未命名会话时为空。 */
 	FString GetCurrentTitle() const;
 
-	/** A running, permission-waiting or write-waiting session cannot be archived. */
+	/** 正在运行、等待权限或等待写入确认的会话不能归档。 */
 	bool CanArchive(const FString& SessionId) const;
 
-	/** Renames a stored session; false when the name is empty after trimming, too long, or the session is unknown. */
+	/** 重命名已存储的会话；名称裁剪后为空、过长或会话未知时返回 false。 */
 	bool RenameSession(const FString& SessionId, const FString& Title);
 
-	/** Hides a session from the list and drops its conversation; archiving the current session starts a new conversation. */
+	/** 从列表中隐藏会话并丢弃其对话；归档当前会话会开始一个新对话。 */
 	bool ArchiveSession(const FString& SessionId);
 
 	void RestoreSession(const FString& SessionId);
 
-	/** Removes a session's record and transcript for good, under the same rule as archiving; deleting the current session starts a new conversation. */
+	/** 永久移除会话的记录与对话记录，规则与归档相同；删除当前会话会开始一个新对话。 */
 	bool DeleteSession(const FString& SessionId);
 
 private:
@@ -274,15 +272,15 @@ private:
 	EShuttlegentChatStatus GetStatus(const FShuttlegentConversation& Conversation) const;
 	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission(const FShuttlegentConversation& Conversation) const;
 
-	/** Whether the open write requests and their result belong to the conversation (the current one when no request is open). */
+	/** 打开中的写入请求及其结果是否属于该对话（没有打开的请求时视为属于当前对话）。 */
 	bool OwnsWrite(const FShuttlegentConversation& Conversation) const;
 
-	/** Leaves the current conversation: an idle one is dropped and its session closed, a busy one keeps running. */
+	/** 离开当前对话：空闲的对话被丢弃并关闭其会话，忙碌的对话继续运行。 */
 	void LeaveCurrent();
 	bool CanDrop(const FShuttlegentConversation& Conversation) const;
 	void DropConversation(FShuttlegentConversation& Conversation);
 
-	/** Every event of the current conversation, after another one became current. */
+	/** 在另一个对话成为当前对话后，广播当前对话的全部事件。 */
 	void BroadcastAll();
 	void NotifyStructure(const FShuttlegentConversation& Conversation);
 	void NotifyContent(const FShuttlegentConversation& Conversation);
@@ -297,28 +295,28 @@ private:
 
 	void RecordStartIssue(EShuttlegentStartIssue Issue, const FString& Detail);
 
-	/** Prompts that waited for the runtime or a session go back to the front of their queue, paused, instead of being lost. */
+	/** 等待运行时或会话的提示回到其队列最前端并暂停，而不是丢失。 */
 	void ParkPendingPrompts();
 	void ParkPendingPrompt(FShuttlegentConversation& Conversation);
 
-	/** Sends a prompt, starting the runtime and creating or resuming the conversation's session first when needed. */
+	/** 发送提示，必要时先启动运行时并创建或恢复该对话的会话。 */
 	void SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text);
 	void SendPrompt(FShuttlegentConversation& Conversation, const FString& Text);
 
-	/** Creates (no session id yet) or resumes the conversation's session, or marks it for when the runtime is ready. */
+	/** 创建（尚无会话 id 时）或恢复该对话的会话，或将其标记为待运行时就绪后处理。 */
 	void RequestSession(FShuttlegentConversation& Conversation);
 
 	bool GetConfigChoices(const FShuttlegentConversation& Conversation, const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
 	void SetConfigValue(FShuttlegentConversation& Conversation, const FString& ConfigId, const FString& Value);
 
-	/** Frozen with the options selected now, so a later change of model does not rewrite what was queued. */
+	/** 以当前所选选项固定，因此之后更换模型不会改写已入队的内容。 */
 	FShuttlegentQueuedPrompt MakeQueued(const FString& Text, const TArray<FShuttlegentReference>& References);
 	void PauseQueue(FShuttlegentConversation& Conversation);
 
-	/** Sends the conversation's next queued item when its queue runs and nothing else does there. */
+	/** 当对话的队列处于运行状态且该对话没有其他运行内容时，发送下一个排队条目。 */
 	void SendNextQueued(FShuttlegentConversation& Conversation);
 
-	/** Folds one session/update into entries; At is when it arrived (live) or was recorded (replay). Returns true when entries were added. */
+	/** 将一个 session/update 合并为条目；At 为其到达时间（实时）或记录时间（重放）。新增了条目时返回 true。 */
 	bool ApplyUpdate(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Update, const FDateTime& At);
 	void ApplyTurnEnd(FShuttlegentConversation& Conversation, const FString& StopReason, const FString& ErrorMessage);
 	void ReplayTranscript(FShuttlegentConversation& Conversation);

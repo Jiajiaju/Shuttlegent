@@ -2,48 +2,48 @@
 
 #include "CoreMinimal.h"
 
-/** What the panel's header reports for the current conversation (Shuttlegent UI interaction spec section 3). */
+/** 面板标题栏为当前对话报告的状态（Shuttlegent UI 交互规范第 3 节）。 */
 enum class EShuttlegentChatStatus : uint8
 {
-	// No runtime process yet
+	// 尚无运行时进程
 	NotConnected,
 
-	// Runtime launched, waiting for initialize
+	// 运行时已启动，等待 initialize
 	Connecting,
 
-	// Runtime ready and idle; the last turn, if any, completed
+	// 运行时就绪且空闲；上一回合（如有）已完成
 	Connected,
 
-	// A turn is running
+	// 回合正在运行
 	Querying,
 
-	// A turn is waiting for the user to answer a runtime permission request
+	// 回合正在等待用户答复运行时的权限请求
 	AwaitingPermission,
 
-	// An editor write waits for the user to confirm it
+	// 编辑器写入正在等待用户确认
 	AwaitingWriteConfirmation,
 
-	// A confirmed editor write is running
+	// 已确认的编辑器写入正在执行
 	Writing,
 
-	// Stop was sent; waiting for the turn to end
+	// 已发送停止；等待回合结束
 	Stopping,
 
-	// The last turn was stopped by the user or the runtime
+	// 上一回合被用户或运行时停止
 	Stopped,
 
-	// The last turn ended with an error
+	// 上一回合以错误结束
 	Failed,
 
-	// The runtime exited unexpectedly
+	// 运行时意外退出
 	Lost,
 
-	// A stored session is being resumed in the runtime
+	// 正在运行时中恢复已存储的会话
 	Resuming,
 
-	// The runtime cannot start or serve prompts (missing runtime or key, rejected key); the start guide card says why
+	// 运行时无法启动或无法处理提示（缺少运行时或密钥、密钥被拒绝）；由启动引导卡片说明原因
 	StartBlocked,
 
-	// The runtime could not resume the session's context; its local record is kept
+	// 运行时无法恢复会话上下文；其本地记录予以保留
 	ResumeFailed
 };

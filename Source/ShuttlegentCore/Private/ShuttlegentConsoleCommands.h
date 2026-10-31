@@ -7,8 +7,8 @@ class FJsonObject;
 class FShuttlegentAgentService;
 
 /**
- * Console commands that drive FShuttlegentAgentService without UI (Shuttlegent.*),
- * printing the conversation to the Output Log. Used for acceptance before the panel exists.
+ * 不经界面驱动 FShuttlegentAgentService 的控制台命令（Shuttlegent.*），对话内容打印到 Output Log。
+ * 用于面板完成之前的验收。
  */
 class FShuttlegentConsoleCommands
 {
@@ -17,7 +17,7 @@ private:
 	TArray<TUniquePtr<FAutoConsoleCommand>> Commands;
 	FString MessageText;
 
-	/** Session the commands act on: the last one created or resumed. */
+	/** 命令作用的会话：最近一次新建或恢复的会话。 */
 	FString CurrentSessionId;
 	int32 ThoughtChars = 0;
 

@@ -41,7 +41,7 @@ namespace FShuttlegentToolsetToolsPrivate
 		return Json;
 	}
 
-	/** Last part of a toolset name for the confirmation card: EditorToolset.EditorActorTools -> EditorActorTools. */
+	/** 确认卡片上显示的 Toolset 名称末段：EditorToolset.EditorActorTools -> EditorActorTools。 */
 	FString ShortName(const FString& ToolsetName)
 	{
 		FString Short = ToolsetName;
@@ -49,7 +49,7 @@ namespace FShuttlegentToolsetToolsPrivate
 		return Short;
 	}
 
-	/** The arguments object passed on to the toolset tool; a model that sends it as a JSON string is understood too. */
+	/** 转交给 Toolset 工具的参数对象；模型以 JSON 字符串形式发送时同样能够识别。 */
 	FString GetToolArguments(const TSharedRef<FJsonObject>& Arguments)
 	{
 		const TSharedPtr<FJsonObject>* Object = nullptr;
@@ -74,7 +74,7 @@ namespace FShuttlegentToolsetToolsPrivate
 		return FShuttlegentToolsets::FindTool(OutToolset, ToolName, OutTool, OutError);
 	}
 
-	/** Holds the definition each tool fills in its constructor. */
+	/** 保存各工具在构造函数中填写的定义。 */
 	class FToolsetToolBase : public IShuttlegentTool
 	{
 	protected:
@@ -154,8 +154,8 @@ namespace FShuttlegentToolsetToolsPrivate
 	};
 
 	/**
-	 * Runs one engine toolset tool. A read tool answers when its result arrives. Any other tool shows its arguments on the
-	 * confirmation card and runs inside the endpoint's transaction; it is undoable only where the engine records it.
+	 * 执行单个引擎 Toolset 工具。只读工具在结果返回时即应答。其他工具会在确认卡片上显示其参数，
+	 * 并在端点的事务中执行；仅当引擎记录了相应操作时才可撤销。
 	 */
 	class FCallToolsetTool : public FToolsetToolBase
 	{
@@ -202,7 +202,7 @@ namespace FShuttlegentToolsetToolsPrivate
 					return;
 				}
 
-				// The endpoint answers on the game thread
+				// 端点在游戏线程上应答
 				AsyncTask(ENamedThreads::GameThread, [OnDone, Answer]() { OnDone(Answer); });
 			});
 		}
@@ -248,7 +248,7 @@ namespace FShuttlegentToolsetToolsPrivate
 				TFuture<TValueOrError<FString, FString>> Future = FShuttlegentToolsets::Execute(Toolset, Tool.Name, GetToolArguments(Arguments));
 				if (!Future.IsReady())
 				{
-					// Already running; it finishes outside this transaction and its result is not waited for
+					// 工具已在运行；它会在本事务之外完成，且不等待其结果
 					Item.Status = EShuttlegentWriteObjectStatus::Completed;
 					Item.Message = LOCTEXT("StillRunning", "工具仍在后台执行，结果未返回").ToString();
 					continue;
@@ -262,7 +262,7 @@ namespace FShuttlegentToolsetToolsPrivate
 					continue;
 				}
 
-				// Asset tools answer false instead of raising when a delete or rename did not happen
+				// 删除或重命名未生效时，资源工具返回 false 而不是报错
 				if (FShuttlegentToolsets::ReturnedFalse(Result.GetValue()))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;

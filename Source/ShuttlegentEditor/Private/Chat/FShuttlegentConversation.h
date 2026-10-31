@@ -9,50 +9,50 @@
 #include "Endpoint/FShuttlegentContextBreakdown.h"
 
 /**
- * One conversation the panel holds: a session's entries, run log, queue and turn state.
- * Several conversations run at the same time; the panel shows one (Shuttlegent.md section 14.3.7).
+ * 面板持有的一个对话：某会话的条目、运行日志、队列与回合状态。
+ * 多个对话可同时运行；面板只显示其中一个（Shuttlegent.md 第 14.3.7 节）。
  */
 struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversation>
 {
-	/** Runtime session; empty for a new conversation until session/new answers. */
+	/** 运行时会话；新对话在 session/new 答复前为空。 */
 	FString SessionId;
 
 	TArray<TSharedPtr<FShuttlegentChatEntry>> Entries;
 
-	/** This conversation's permission requests still waiting for an answer, by entry id. */
+	/** 本对话中仍在等待答复的权限请求，按条目 id 索引。 */
 	TMap<int32, TFunction<void(bool)>> PendingPermissions;
 
 	TArray<FShuttlegentRunLogEntry> RunLog;
 	FShuttlegentPromptQueue Queue;
 
-	/** Prompt waiting for the runtime or the session to come up. */
+	/** 等待运行时或会话就绪的提示。 */
 	FString PendingPrompt;
 
-	/** The last prompt sent, as sent (with its reference block); a failed turn retries it. */
+	/** 最近一次发送的提示，保持发送时的原样（含引用块）；失败的回合会重试它。 */
 	FString LastSentPrompt;
 
-	/** Config values chosen while the session was not open, by config id; applied once it is. */
+	/** 会话未打开期间选择的配置值，按配置 id 索引；会话打开后应用。 */
 	TMap<FString, FString> PendingConfig;
 
 	int64 UsedTokens = 0;
 	int64 ContextSize = 0;
 
-	/** Latest context breakdown the runtime's context tap reported; empty until the first assistant message of this run. */
+	/** 运行时插件 context tap 上报的最新上下文构成；在本次运行的第一条助手消息之前为空。 */
 	FShuttlegentContextBreakdown ContextBreakdown {};
 	EShuttlegentTurnOutcome LastOutcome = EShuttlegentTurnOutcome::None;
 
-	/** Stop was sent for the running turn; cleared when the turn ends. */
+	/** 已为正在运行的回合发送停止；回合结束时清除。 */
 	bool bStopping = false;
 
-	/** A session/resume is in flight or waits for the runtime to start. */
+	/** session/resume 正在进行，或正在等待运行时启动。 */
 	bool bResuming = false;
 
-	/** Needs session/new or session/resume once the runtime is ready. */
+	/** 运行时就绪后需要执行 session/new 或 session/resume。 */
 	bool bWantsSession = false;
 
-	/** The last session/resume failed; the local record is kept and a new session would not carry its context. */
+	/** 上一次 session/resume 失败；本地记录予以保留，新会话不会继承其上下文。 */
 	bool bResumeFailed = false;
 
-	/** A write result is unknown and its objects are not verified yet; sending is disabled until they are. */
+	/** 某次写入结果未知且其对象尚未核对；核对完成前禁止发送。 */
 	bool bNeedsVerify = false;
 };

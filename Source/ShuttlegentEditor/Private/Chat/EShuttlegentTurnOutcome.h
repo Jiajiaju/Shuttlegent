@@ -2,18 +2,18 @@
 
 #include "CoreMinimal.h"
 
-/** How the last turn of the current conversation ended. */
+/** 当前对话上一回合的结束方式。 */
 enum class EShuttlegentTurnOutcome : uint8
 {
-	// No turn has ended since the conversation was opened or the last prompt was sent
+	// 自对话打开或上一条提示发送以来尚无回合结束
 	None,
 
-	// Ended normally
+	// 正常结束
 	Completed,
 
-	// Cancelled, or stopped for a reason other than an error
+	// 已取消，或因错误以外的原因停止
 	Stopped,
 
-	// Ended with an error
+	// 以错误结束
 	Failed
 };

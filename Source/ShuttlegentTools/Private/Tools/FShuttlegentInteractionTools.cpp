@@ -9,15 +9,15 @@
 
 namespace FShuttlegentInteractionToolsPrivate
 {
-	// Tool name
+	// 工具名称
 	inline const TCHAR* AskUserName = TEXT("ask_user");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgQuestion = TEXT("question");
 	inline const TCHAR* ArgOptions = TEXT("options");
 	inline const TCHAR* ArgAllowOther = TEXT("allow_other");
 
-	/** What the agent learns for each way a question can end. */
+	/** 问题以各种方式结束时，Agent 得到的反馈文本。 */
 	FString OutcomeText(EShuttlegentQuestionOutcome Outcome, const FString& Answer)
 	{
 		switch (Outcome)
@@ -46,7 +46,7 @@ namespace FShuttlegentInteractionToolsPrivate
 		}
 	}
 
-	/** Asks the user in the panel and answers with their choice; it changes nothing in the editor. */
+	/** 在面板中向用户提问并返回其选择；不修改编辑器中的任何内容。 */
 	class FAskUserTool : public FShuttlegentToolBase
 	{
 	public:

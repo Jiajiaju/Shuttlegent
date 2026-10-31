@@ -2,24 +2,24 @@
 
 #include "CoreMinimal.h"
 
-/** Why an external MCP server of the project settings is left out of the runtime's mcpServers declaration. */
+/** 项目设置中的外部 MCP 服务器未被纳入运行时 mcpServers 声明的原因。 */
 enum class EShuttlegentExternalMcpIssue : uint8
 {
-	// Declared with every session
+	// 随每个会话一同声明
 	None,
 
-	// The name is empty or taken by the editor endpoint
+	// 名称为空，或已被编辑器端点占用
 	NameInvalid,
 
-	// Another external server has the same name
+	// 另一个外部服务器使用了相同的名称
 	NameTaken,
 
-	// Stdio: the command is not an absolute path
+	// Stdio：命令不是绝对路径
 	CommandNotAbsolute,
 
-	// Http: no URL
+	// Http：缺少 URL
 	UrlMissing,
 
-	// Http: a header's variable has no value
+	// Http：某个请求头引用的变量没有值
 	HeaderValueMissing
 };

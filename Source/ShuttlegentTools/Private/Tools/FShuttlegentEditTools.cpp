@@ -20,13 +20,13 @@
 
 namespace FShuttlegentEditToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* SetPropertyName = TEXT("set_property");
 	inline const TCHAR* SpawnActorName = TEXT("spawn_actor");
 	inline const TCHAR* DeleteActorsName = TEXT("delete_actors");
 	inline const TCHAR* SaveAssetsName = TEXT("save_assets");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgTargets = TEXT("targets");
 	inline const TCHAR* ArgProperty = TEXT("property");
 	inline const TCHAR* ArgValue = TEXT("value");
@@ -36,10 +36,10 @@ namespace FShuttlegentEditToolsPrivate
 	inline const TCHAR* ArgLabel = TEXT("label");
 	inline const TCHAR* ArgAllDirty = TEXT("all_dirty");
 
-	// Components of a location or rotation argument
+	// 位置或旋转参数的分量个数
 	inline constexpr int32 VectorLength = 3;
 
-	/** Checks Value against the property without touching the object: imports it into a scratch value and exports it back. */
+	/** 在不改动对象的前提下按属性校验 Value：先导入到临时值，再导出回文本。 */
 	bool NormalizeValue(const FProperty* Property, UObject* Owner, const FString& Value, FString& OutNormalized, FString& OutError)
 	{
 		void* Scratch = FMemory::Malloc(Property->GetSize(), Property->GetMinAlignment());
@@ -313,7 +313,7 @@ namespace FShuttlegentEditToolsPrivate
 			}
 			UEditorLoadingAndSavingUtils::SavePackages(Packages, false);
 
-			// A package is saved when it no longer has unsaved changes
+			// 包不再有未保存的更改时即视为已保存
 			for (FShuttlegentWriteObject& Item : InOutObjects)
 			{
 				const UPackage* Package = FindPackage(nullptr, *Item.Path);

@@ -6,7 +6,7 @@
 
 class FShuttlegentLogCapture;
 
-/** The general editor tools that hold for any UE project (Shuttlegent.md section 10.2). */
+/** 适用于任意 UE 项目的通用编辑器工具（Shuttlegent.md 第 10.2 节）。 */
 class FShuttlegentBuiltinToolProvider : public IShuttlegentToolProvider
 {
 private:

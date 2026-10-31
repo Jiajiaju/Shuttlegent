@@ -5,12 +5,12 @@
 class IShuttlegentTool;
 
 /**
- * show_editor_ui: opens a place in the editor the project lists as a UI guide (an editor tab or a settings page) and
- * returns the guide's sentence. Built anew on every tools/list, so the guide list follows the project settings; absent
- * while the project lists none. Opens a view only, so it needs no confirmation.
+ * show_editor_ui：打开项目登记为 UI 指引的编辑器位置（编辑器标签页或设置页面），并返回该指引的说明语句。
+ * 每次 tools/list 时重新构建，使指引列表跟随项目设置；项目未登记任何指引时不提供该工具。
+ * 仅打开视图，因此无需确认。
  */
 struct FShuttlegentUiGuideTool
 {
-	/** The tool, or nullptr when the project lists no UI guides. */
+	/** 该工具；项目未登记任何 UI 指引时为 nullptr。 */
 	static TSharedPtr<IShuttlegentTool> Make();
 };

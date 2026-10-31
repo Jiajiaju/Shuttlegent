@@ -10,11 +10,11 @@
 
 namespace FShuttlegentDiagnosticToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* ReadLogName = TEXT("read_log");
 	inline const TCHAR* GetCVarName = TEXT("get_cvar");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgLines = TEXT("lines");
 	inline const TCHAR* ArgLevel = TEXT("level");
 	inline const TCHAR* ArgCategory = TEXT("category");
@@ -23,13 +23,13 @@ namespace FShuttlegentDiagnosticToolsPrivate
 	inline const TCHAR* ArgOffset = TEXT("offset");
 	inline const TCHAR* ArgLimit = TEXT("limit");
 
-	// read_log levels, most severe first
+	// read_log 的日志级别，按严重程度从高到低排列
 	inline const TCHAR* LevelError = TEXT("error");
 	inline const TCHAR* LevelWarning = TEXT("warning");
 	inline const TCHAR* LevelLog = TEXT("log");
 	inline const TCHAR* LevelVerbose = TEXT("verbose");
 
-	// Time of day shown per log line
+	// 每行日志显示的当日时间
 	inline const TCHAR* TimeFormat = TEXT("%H:%M:%S");
 
 	ELogVerbosity::Type ParseLevel(const FString& Level)

@@ -10,12 +10,12 @@
 
 namespace FShuttlegentAssetToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* FindAssetsName = TEXT("find_assets");
 	inline const TCHAR* GetAssetName = TEXT("get_asset");
 	inline const TCHAR* GetReferencesName = TEXT("get_asset_references");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgQuery = TEXT("query");
 	inline const TCHAR* ArgClass = TEXT("class");
 	inline const TCHAR* ArgPath = TEXT("path");
@@ -24,7 +24,7 @@ namespace FShuttlegentAssetToolsPrivate
 	inline const TCHAR* ArgOffset = TEXT("offset");
 	inline const TCHAR* ArgLimit = TEXT("limit");
 
-	// get_asset_references directions
+	// get_asset_references 的查询方向
 	inline const TCHAR* DirectionDependencies = TEXT("dependencies");
 	inline const TCHAR* DirectionReferencers = TEXT("referencers");
 
@@ -33,7 +33,7 @@ namespace FShuttlegentAssetToolsPrivate
 		return FModuleManager::LoadModuleChecked<FAssetRegistryModule>(AssetRegistryConstants::ModuleName).Get();
 	}
 
-	/** The asset an object path or a package name names; invalid when the registry has none. */
+	/** 对象路径或包名所指的资源；资源注册表中不存在时为无效值。 */
 	FAssetData FindAsset(const FString& Path)
 	{
 		IAssetRegistry& Registry = GetRegistry();

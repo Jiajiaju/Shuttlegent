@@ -4,27 +4,27 @@
 
 struct FShuttlegentProviderEntry;
 
-/** Reads the effective configuration out of the project and personal settings (Shuttlegent.md section 11). Game thread only. */
+/** 从项目设置与个人设置中读取实际生效的配置（Shuttlegent.md 第 11 节）。仅限游戏线程。 */
 struct SHUTTLEGENTCORE_API FShuttlegentProjectConfig
 {
-	/** Whether the user's settings leave an editor tool switched on. */
+	/** 个人设置中某个编辑器工具是否处于开启状态。 */
 	static bool IsToolEnabled(const FString& ToolName);
 
-	/** Route new sessions start on: the user's default provider, else the built-in DeepSeek route. */
+	/** 新会话使用的路由：用户设置的默认供应商，否则为内置 DeepSeek 路由。 */
 	static FString GetDefaultRoute();
 
-	/** Key variable and display name of the default route; for the start check and the missing-key guide card. */
+	/** 默认路由的密钥变量与显示名；用于启动检查与缺少密钥的引导卡。 */
 	static void GetDefaultProviderKey(FString& OutKeyVariable, FString& OutProviderName);
 
-	/** Every variable the runtime may need: the built-in DeepSeek key (also used by web search) and each provider's key. */
+	/** 运行时可能需要的所有变量：内置 DeepSeek 密钥（网页搜索也会用到）与各供应商的密钥。 */
 	static TArray<FString> GetKeyVariables();
 
-	/** Variable a provider's key travels in to the runtime: SHUTTLEGENT_<ROUTE>_API_KEY. */
+	/** 把供应商密钥传给运行时所用的变量：SHUTTLEGENT_<ROUTE>_API_KEY。 */
 	static FString GetKeyVariable(const FShuttlegentProviderEntry& Entry);
 
-	/** Absolute folders of the project's skill directories that exist. */
+	/** 项目技能目录中实际存在的那些，绝对路径。 */
 	static TArray<FString> GetSkillDirs();
 
-	/** Absolute folders of the project's template directories that exist. */
+	/** 项目模板目录中实际存在的那些，绝对路径。 */
 	static TArray<FString> GetTemplateDirs();
 };

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** Text a tool call returns to the model; bError marks a call that did not do what was asked. */
+/** 工具调用返回给模型的文本；bError 标记未完成所请求操作的调用。 */
 struct SHUTTLEGENTMCPSERVER_API FShuttlegentToolResult
 {
 	FString Text;

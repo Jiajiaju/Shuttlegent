@@ -4,13 +4,13 @@
 
 #include "EShuttlegentUiGuideKind.generated.h"
 
-/** What a UI guide entry opens for the user. */
+/** 界面指路条目为用户打开的位置类型。 */
 UENUM()
 enum class EShuttlegentUiGuideKind : uint8
 {
-	// An editor tab, by its tab id
+	// 编辑器页签，按页签 ID 打开
 	Tab,
 
-	// A settings page, by container / category / section
+	// 设置页面，按 容器 / 分类 / 分节 打开
 	Settings
 };

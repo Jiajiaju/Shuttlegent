@@ -13,16 +13,16 @@
 
 namespace FShuttlegentHistoryToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* UndoName = TEXT("undo");
 	inline const TCHAR* RedoName = TEXT("redo");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgSteps = TEXT("steps");
 
 	/**
-	 * Undo or redo of the editor's transaction history. The steps are the editor's own transactions, so the history
-	 * itself is the undo of this tool: an undo is reverted by redo and the other way round; it opens no transaction.
+	 * 对编辑器事务历史执行撤销或重做。各步骤即编辑器自身的事务，因此历史本身就是该工具的撤销手段：
+	 * 撤销由重做还原，反之亦然；该工具不开启事务。
 	 */
 	class FHistoryTool : public FShuttlegentToolBase
 	{
@@ -53,7 +53,7 @@ namespace FShuttlegentHistoryToolsPrivate
 				return false;
 			}
 
-			// Undoable steps are the queue before the undone ones; the next undo is the newest of them, the next redo the oldest undone
+			// 可撤销步骤是队列中位于已撤销步骤之前的部分；下一次撤销取其中最新的一步，下一次重做取已撤销步骤中最早的一步
 			const int32 Steps = FMath::Clamp(FShuttlegentToolArguments::GetInteger(Arguments, ArgSteps, 1), 1, ShuttlegentToolsConstant::MaxHistorySteps);
 			const int32 FirstUndone = Transactor->GetQueueLength() - Transactor->GetUndoCount();
 			OutRequest.Action = bRedo ? LOCTEXT("RedoAction", "重做编辑器操作").ToString() : LOCTEXT("UndoAction", "撤销编辑器操作").ToString();
@@ -81,7 +81,7 @@ namespace FShuttlegentHistoryToolsPrivate
 				Item.Status = bDone ? EShuttlegentWriteObjectStatus::Completed : EShuttlegentWriteObjectStatus::Failed;
 				if (bDone) continue;
 
-				// The history changed since the preview; the remaining steps are not taken either
+				// 预览之后历史已发生变化；其余步骤同样不再执行
 				Item.Message = LOCTEXT("HistoryChanged", "编辑器历史已变化，未执行").ToString();
 				break;
 			}

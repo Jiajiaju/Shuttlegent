@@ -56,7 +56,7 @@ namespace FShuttlegentMcpEndpointPrivate
 		return Envelope;
 	}
 
-	/** MCP tools/call result: one text block and the error flag. */
+	/** MCP tools/call 结果：一个文本块及错误标志。 */
 	TSharedRef<FJsonObject> MakeToolResult(const FShuttlegentToolResult& Result)
 	{
 		const TSharedRef<FJsonObject> Block = MakeShared<FJsonObject>();
@@ -81,7 +81,7 @@ bool FShuttlegentMcpEndpoint::Start(const TSharedRef<FShuttlegentWriteGate>& InG
 	Gate = InGate;
 	RotateToken();
 
-	// Listeners must be enabled for GetHttpRouter to try the port, so a taken port is reported instead of shared silently
+	// 必须先启用监听器，GetHttpRouter 才会尝试该端口，从而在端口被占用时报告出来，而不是静默共用
 	FHttpServerModule& HttpServer = FHttpServerModule::Get();
 	HttpServer.StartAllListeners();
 
@@ -99,7 +99,7 @@ bool FShuttlegentMcpEndpoint::Start(const TSharedRef<FShuttlegentWriteGate>& InG
 		const TSharedPtr<IHttpRouter> CandidateRouter = HttpServer.GetHttpRouter(Candidate, true);
 		if (!CandidateRouter.IsValid()) continue;
 
-		// A port another module of this editor already listens on may have the path taken
+		// 本编辑器其他模块已在监听的端口上，该路径可能已被占用
 		const FHttpRouteHandle CandidateRoute = CandidateRouter->BindRoute(FHttpPath(ShuttlegentMcpEndpointConstant::Path), Verbs, Handler);
 		if (!CandidateRoute.IsValid()) continue;
 
@@ -154,7 +154,7 @@ bool FShuttlegentMcpEndpoint::HandleRequest(const FHttpServerRequest& Request, c
 		return true;
 	}
 
-	// No server-to-client stream; a DELETE ends a session this endpoint does not keep
+	// 不提供服务器到客户端的流；DELETE 用于结束会话，而本端点并不保存会话
 	if (Request.Verb == EHttpServerRequestVerbs::VERB_GET)
 	{
 		OnComplete(FHttpServerResponse::Error(EHttpServerResponseCodes::BadMethod));
@@ -176,7 +176,7 @@ bool FShuttlegentMcpEndpoint::HandleRequest(const FHttpServerRequest& Request, c
 		return true;
 	}
 
-	// A notification gets no answer
+	// 通知不予答复
 	const TSharedPtr<FJsonValue> Id = Message->TryGetField(ShuttlegentMcpEndpointConstant::FieldId);
 	FString Method;
 	Message->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldMethod, Method);
@@ -214,7 +214,7 @@ bool FShuttlegentMcpEndpoint::IsAuthorized(const FHttpServerRequest& Request) co
 	const TArray<FString>* Values = Request.Headers.Find(ShuttlegentMcpEndpointConstant::HeaderAuthorization);
 	if (Values == nullptr || Values->IsEmpty() || Token.IsEmpty()) return false;
 
-	// The token is case-sensitive, unlike FString's default comparison
+	// token 区分大小写，与 FString 的默认比较方式不同
 	return (*Values)[0].Equals(FString(ShuttlegentMcpEndpointConstant::BearerPrefix) + Token, ESearchCase::CaseSensitive);
 }
 
@@ -276,7 +276,7 @@ void FShuttlegentMcpEndpoint::Dispatch(const FString& Method, const TSharedPtr<F
 		return;
 	}
 
-	// The list already hides it; a call by name still meets the same switch
+	// 列表中已隐藏该工具；按名称直接调用时仍受同一开关约束
 	if (!FShuttlegentProjectConfig::IsToolEnabled(Name))
 	{
 		OnAnswer(FShuttlegentMcpEndpointPrivate::MakeToolResult(FShuttlegentToolResult::Error(FString::Printf(TEXT("The user switched %s off in the Shuttlegent settings."), *Name))), 0, FString());

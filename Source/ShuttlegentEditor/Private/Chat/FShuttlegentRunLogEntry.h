@@ -2,14 +2,14 @@
 
 #include "CoreMinimal.h"
 
-/** One event of the current conversation shown in the inspector's run log. Never holds runtime stderr, keys or environment. */
+/** 检视器运行日志中显示的当前对话的一个事件。从不包含运行时 stderr、密钥或环境变量。 */
 struct FShuttlegentRunLogEntry
 {
-	/** When the event happened (UTC). */
+	/** 事件发生的时间（UTC）。 */
 	FDateTime Time {};
 
 	FText Text;
 
-	/** Cancellation, failure or disconnection; shown in the warning color. */
+	/** 取消、失败或断开连接；以警告色显示。 */
 	bool bWarning = false;
 };

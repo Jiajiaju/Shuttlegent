@@ -12,11 +12,11 @@
 
 namespace ShuttlegentAgentServicePrivate
 {
-	// Runtime error texts of a missing key (llm-deepseek) and of a key the provider rejected
+	// 运行时报告缺少密钥（llm-deepseek）与密钥被供应商拒绝时的错误文字
 	inline const TCHAR* ErrorNoApiKey = TEXT("no API key");
 	inline const TCHAR* ErrorAuthentication[] = { TEXT("Authentication Fails"), TEXT("invalid api key") };
 
-	// ACP request and response fields
+	// ACP 请求与答复字段
 	inline const TCHAR* FieldProtocolVersion = TEXT("protocolVersion");
 	inline const TCHAR* FieldClientCapabilities = TEXT("clientCapabilities");
 	inline const TCHAR* FieldClientInfo = TEXT("clientInfo");
@@ -54,7 +54,7 @@ namespace ShuttlegentAgentServicePrivate
 	inline const TCHAR* OutcomeCancelled = TEXT("cancelled");
 	inline const TCHAR* ConfigIdModel = TEXT("model");
 
-	// session/update kinds that belong to a running turn and are dropped once it ended
+	// 属于进行中回合的 session/update 类型，回合结束后丢弃
 	inline const TCHAR* TurnUpdateKinds[] =
 	{
 		TEXT("agent_message_chunk"),
@@ -63,13 +63,13 @@ namespace ShuttlegentAgentServicePrivate
 		TEXT("tool_call_update"),
 	};
 
-	// Transcript entry kinds
+	// 会话记录的条目类型
 	inline const TCHAR* TranscriptPrompt = TEXT("prompt");
 	inline const TCHAR* TranscriptUpdate = TEXT("update");
 	inline const TCHAR* TranscriptTurnEnd = TEXT("turn_end");
 	inline const TCHAR* TranscriptPermission = TEXT("permission");
 
-	// clientInfo.name sent with initialize
+	// 随 initialize 发送的 clientInfo.name
 	inline const TCHAR* ClientName = TEXT("shuttlegent");
 
 	bool IsTurnUpdate(const FString& Kind)
@@ -87,7 +87,7 @@ namespace ShuttlegentAgentServicePrivate
 		return Plugin.IsValid() ? Plugin->GetDescriptor().VersionName : FString();
 	}
 
-	/** Display name of Value among a config option's choices, searching one level of grouped choices; empty when not listed. */
+	/** Value 在配置选项候选中的显示名，会查找一层分组；不在候选中时为空。 */
 	FString FindChoiceName(const TArray<TSharedPtr<FJsonValue>>& Choices, const FString& Value)
 	{
 		for (const TSharedPtr<FJsonValue>& ChoiceValue : Choices)
@@ -333,7 +333,7 @@ bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& T
 		const TSharedPtr<FShuttlegentAgentService> This = WeakThis.Pin();
 		if (!This.IsValid()) return;
 
-		// A closed session, a newer prompt or a lost runtime makes this answer stale
+		// 会话已关闭、已有更新的提问或运行时已断开时，这个答复已经过时
 		FShuttlegentOpenSession* Owner = This->OpenSessions.Find(SessionId);
 		if (Owner == nullptr || Generation != Owner->TurnGeneration) return;
 
@@ -407,7 +407,7 @@ void FShuttlegentAgentService::CloseSession(const FString& SessionId)
 {
 	if (!OpenSessions.Contains(SessionId)) return;
 
-	// The session's in-flight prompt, if any, is dropped with it
+	// 该会话进行中的提问（如有）随之丢弃
 	OpenSessions.Remove(SessionId);
 	if (!Connection.IsValid() || !Connection->IsOpen()) return;
 
@@ -435,7 +435,7 @@ TSharedRef<FJsonObject> FShuttlegentAgentService::MakeSessionParams(const FStrin
 
 void FShuttlegentAgentService::ApplySessionResult(const FString& SessionId, const TSharedPtr<FJsonObject>& Result, bool bCreated)
 {
-	// Resuming a session that is already open keeps its turn state; a fresh entry otherwise
+	// 恢复一个已打开的会话时保留其回合状态；否则新建条目
 	FShuttlegentOpenSession& Session = OpenSessions.FindOrAdd(SessionId);
 	Session.ConfigOptions.Reset();
 
@@ -565,7 +565,7 @@ void FShuttlegentAgentService::RespondPermission(const TSharedPtr<FJsonValue>& I
 	Entry->SetStringField(ShuttlegentAgentServicePrivate::FieldToolCallId, ToolCallId);
 	Entry->SetBoolField(ShuttlegentAgentServicePrivate::FieldAllowed, bAllow && !OptionId.IsEmpty());
 
-	// The request names the session it belongs to
+	// 请求中注明了所属会话
 	FString SessionId;
 	if (Params.IsValid()) Params->TryGetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	if (!SessionId.IsEmpty()) SessionStore.AppendTranscript(SessionId, ShuttlegentAgentServicePrivate::TranscriptPermission, Entry);

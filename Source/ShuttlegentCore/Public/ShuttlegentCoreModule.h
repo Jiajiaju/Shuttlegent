@@ -17,7 +17,7 @@ public:
 
 	static FShuttlegentCoreModule& Get();
 
-	/** The editor-wide agent service; created at startup, runtime launched on demand. */
+	/** 编辑器全局的 Agent 服务；启动时创建，运行时按需启动。 */
 	TSharedPtr<FShuttlegentAgentService> GetAgentService() const { return AgentService; }
 
 	//~ Begin IModuleInterface Interface.

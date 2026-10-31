@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** ACP method names (Agent Client Protocol v1). */
+/** ACP 方法名（Agent Client Protocol v1）。 */
 namespace ShuttlegentAcpMethod
 {
 	inline const TCHAR* Initialize = TEXT("initialize");
@@ -16,24 +16,24 @@ namespace ShuttlegentAcpMethod
 	inline const TCHAR* SessionRequestPermission = TEXT("session/request_permission");
 }
 
-/** ACP protocol values. */
+/** ACP 协议取值。 */
 namespace ShuttlegentAcpConstant
 {
-	// ACP protocol version this client speaks
+	// 本客户端使用的 ACP 协议版本
 	inline constexpr int32 ProtocolVersion = 1;
 
-	// JSON-RPC "method not found" error code
+	// JSON-RPC“方法不存在”错误码
 	inline constexpr int32 MethodNotFoundErrorCode = -32601;
 
-	// JSON-RPC error code used locally when the runtime exits before answering
+	// 运行时在答复前退出时，本地使用的 JSON-RPC 错误码
 	inline constexpr int32 RuntimeExitedErrorCode = -32000;
 
-	// Permission option kinds offered by session/request_permission
+	// session/request_permission 提供的权限选项类型
 	inline const TCHAR* PermissionKindAllowOnce = TEXT("allow_once");
 	inline const TCHAR* PermissionKindRejectOnce = TEXT("reject_once");
 }
 
-/** Environment variables passed to the DeepSeek Harness runtime. */
+/** 传给 DeepSeek Harness 运行时的环境变量。 */
 namespace ShuttlegentEnvVar
 {
 	inline const TCHAR* DshHome = TEXT("DSH_HOME");
@@ -42,20 +42,20 @@ namespace ShuttlegentEnvVar
 	inline const TCHAR* DshTelemetryDisabled = TEXT("DSH_TELEMETRY_DISABLED");
 	inline const TCHAR* LocalAppData = TEXT("LOCALAPPDATA");
 
-	// Variable the built-in DeepSeek route (deepseek-official) reads its key from; filled from UShuttlegentSettings::DeepSeekApiKey
+	// 内置 DeepSeek 路由（deepseek-official）读取密钥的变量；取值来自 UShuttlegentSettings::DeepSeekApiKey
 	inline const TCHAR* ProviderKey = TEXT("DEEPSEEK_API_KEY");
 
-	// Display name of that provider in the start guide card
+	// 该供应商在启动引导卡中的显示名
 	inline const TCHAR* ProviderName = TEXT("DeepSeek");
 
-	// URL and bearer token of the editor endpoint, for Shuttlegent's own runtime plugins (the context tap)
+	// 编辑器端点的 URL 与 bearer token，供 Shuttlegent 自带的运行时插件（context tap）使用
 	inline const TCHAR* EditorEndpointUrl = TEXT("SHUTTLEGENT_EDITOR_ENDPOINT");
 	inline const TCHAR* EditorEndpointToken = TEXT("SHUTTLEGENT_EDITOR_TOKEN");
 
-	// Value written to DSH_TELEMETRY_DISABLED; any non-empty value opts out
+	// 写入 DSH_TELEMETRY_DISABLED 的值；任何非空值都表示关闭遥测
 	inline const TCHAR* TelemetryDisabledValue = TEXT("1");
 
-	// Variables copied from the editor environment; everything else is dropped
+	// 从编辑器环境复制的变量；其余一律不传
 	inline const TCHAR* InheritedNames[] =
 	{
 		TEXT("SystemRoot"),
@@ -76,33 +76,33 @@ namespace ShuttlegentEnvVar
 	};
 }
 
-/** Model providers and the generated runtime patch (Shuttlegent.md sections 8.2, 9). */
+/** 模型供应商与生成的运行时补丁（Shuttlegent.md 第 8.2、9 节）。 */
 namespace ShuttlegentProviderConstant
 {
-	// The runtime's built-in DeepSeek route, used when the project names no default provider
+	// 运行时内置的 DeepSeek 路由，未指定默认供应商时使用
 	inline const TCHAR* BuiltinRoute = TEXT("deepseek-official");
 
-	// Official endpoint of the built-in route (Anthropic Messages); default of UShuttlegentSettings::DeepSeekBaseUrl
+	// 内置路由的官方端点（Anthropic Messages）；UShuttlegentSettings::DeepSeekBaseUrl 的默认值
 	inline const TCHAR* DeepSeekBaseUrl = TEXT("https://api.deepseek.com/anthropic");
 
-	// DeepSeek's OpenAI-compatible endpoint; default base URL of a new provider entry
+	// DeepSeek 的 OpenAI 兼容端点；新增供应商条目的默认基础 URL
 	inline const TCHAR* DeepSeekOpenAiBaseUrl = TEXT("https://api.deepseek.com");
 
-	// Key variable of a provider entry that names none: SHUTTLEGENT_<ROUTE>_API_KEY, dashes as underscores
+	// 供应商条目未指定密钥变量时使用的变量名：SHUTTLEGENT_<ROUTE>_API_KEY，连字符换成下划线
 	inline const TCHAR* KeyVariablePrefix = TEXT("SHUTTLEGENT_");
 	inline const TCHAR* KeyVariableSuffix = TEXT("_API_KEY");
 	inline const TCHAR* RouteSeparator = TEXT("-");
 	inline const TCHAR* VariableSeparator = TEXT("_");
 
-	// llm-pi-ai api values (EShuttlegentProviderApi)
+	// llm-pi-ai 的 api 取值（EShuttlegentProviderApi）
 	inline const TCHAR* ApiOpenAiCompletions = TEXT("openai-completions");
 	inline const TCHAR* ApiOpenAiResponses = TEXT("openai-responses");
 	inline const TCHAR* ApiAnthropicMessages = TEXT("anthropic-messages");
 
-	// Patch the plugin writes into DSH_HOME before every launch and passes as a second --patch (JSON is valid YAML)
+	// 插件每次启动前写入 DSH_HOME、作为第二个 --patch 传入的补丁（JSON 也是合法的 YAML）
 	inline const TCHAR* GeneratedPatchFile = TEXT("generated.patch.yml");
 
-	// Rows and fields of the generated patch
+	// 生成补丁中的行与字段
 	inline const TCHAR* RowLlmPiAi = TEXT("llm-pi-ai");
 	inline const TCHAR* RowLlmDeepSeek = TEXT("llm-deepseek");
 	inline const TCHAR* RowAcp = TEXT("acp");
@@ -124,66 +124,66 @@ namespace ShuttlegentProviderConstant
 	inline const TCHAR* FieldIncludeDefaultRoots = TEXT("includeDefaultRoots");
 	inline const TCHAR* FieldCustomSkillDirs = TEXT("customSkillDirs");
 
-	// Row that inserts the context tap plugin, loaded from its absolute path
+	// 插入 context tap 插件的行，按绝对路径加载
 	inline const TCHAR* RowContextTap = TEXT("shuttlegent-context-tap");
 	inline const TCHAR* FieldInsert = TEXT("insert");
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
 
-/** Plugin-relative and user-level paths. */
+/** 相对插件目录的路径与用户级路径。 */
 namespace ShuttlegentPath
 {
 	inline const TCHAR* PluginName = TEXT("Shuttlegent");
 
-	// Runtime executable, relative to the plugin directory
+	// 运行时可执行文件，相对插件目录
 	inline const TCHAR* RuntimeExecutable = TEXT("Runtime/shuttlegent-runtime.exe");
 
-	// Shuttlegent profile patch, relative to the plugin directory
+	// Shuttlegent 配置补丁，相对插件目录
 	inline const TCHAR* ProfilePatch = TEXT("Runtime/profile/shuttlegent.patch.yml");
 
-	// dsh profile launched over ACP
+	// 经 ACP 启动的 dsh 配置
 	inline const TCHAR* AcpProfile = TEXT("acp");
 
-	// Runtime plugin that reports each session's context breakdown to the editor endpoint, relative to the plugin directory
+	// 向编辑器端点上报各会话上下文分项的运行时插件，相对插件目录
 	inline const TCHAR* ContextTapPlugin = TEXT("Runtime/plugins/shuttlegent-context-tap.mjs");
 
-	// DSH_HOME, relative to %LOCALAPPDATA%; also the runtime's launch directory, which must be on the system drive
+	// DSH_HOME，相对 %LOCALAPPDATA%；同时是运行时的启动目录，必须在系统盘
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");
 
-	// DSH_AGENTS_HOME, relative to DSH_HOME
+	// DSH_AGENTS_HOME，相对 DSH_HOME
 	inline const TCHAR* DshAgentsHome = TEXT("agents");
 
-	// Session transcripts and index, relative to the project Saved directory
+	// 会话记录与索引，相对项目 Saved 目录
 	inline const TCHAR* SessionsDir = TEXT("Shuttlegent/Sessions");
 	inline const TCHAR* SessionIndexFile = TEXT("index.json");
 	inline const TCHAR* TranscriptExtension = TEXT(".jsonl");
 }
 
-/** Runtime process timings. */
+/** 运行时进程的时间参数。 */
 namespace ShuttlegentProcessConstant
 {
-	// Time the runtime gets to exit after stdin closes before it is terminated, in seconds
+	// 关闭 stdin 后留给运行时自行退出的时间，超时即强制结束，单位秒
 	inline constexpr float GracefulExitTimeoutSeconds = 5.0f;
 
-	// Size of each pipe read, in bytes
+	// 每次读取管道的大小，单位字节
 	inline constexpr int32 PipeReadChunkBytes = 64 * 1024;
 
-	// Exit code used when the runtime is terminated by Shuttlegent
+	// 运行时被 Shuttlegent 强制结束时使用的退出码
 	inline constexpr int32 TerminatedExitCode = -1;
 }
 
-/** Session bookkeeping. */
+/** 会话管理。 */
 namespace ShuttlegentSessionConstant
 {
-	// Maximum length of a session title derived from the first prompt, in characters
+	// 由首条提问生成的会话标题的最大长度，单位字符
 	inline constexpr int32 TitleMaxChars = 40;
 
-	// Maximum length of a title the user sets by renaming, in characters (Shuttlegent UI interaction spec section 6)
+	// 用户重命名时标题的最大长度，单位字符（Shuttlegent 界面交互规范第 6 节）
 	inline constexpr int32 RenameMaxChars = 60;
 }
 
 namespace ShuttlegentAppearanceConstant
 {
-	// Conversation font size of the panel page, in CSS pixels (UShuttlegentSettings::FontSize)
+	// 面板页面中对话的字号，单位 CSS 像素（UShuttlegentSettings::FontSize）
 	inline constexpr int32 DefaultFontSize = 13;
 }

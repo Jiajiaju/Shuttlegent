@@ -4,32 +4,32 @@
 
 #include "WriteGate/FShuttlegentWriteObject.h"
 
-/** An editor write waiting for confirmation (Shuttlegent UI interaction spec section 5.1). Filled by the tool, numbered by the gate. */
+/** 等待确认的编辑器写入（Shuttlegent UI 交互规范第 5.1 节）。由工具填写，由写入门编号。 */
 struct FShuttlegentWriteRequest
 {
-	/** Assigned by FShuttlegentWriteGate; the requestId of the interaction spec. */
+	/** 由 FShuttlegentWriteGate 分配；即交互规范中的 requestId。 */
 	int32 RequestId = 0;
 
-	/** Tool that asks, as the model called it. */
+	/** 发起请求的工具，名称与模型调用时一致。 */
 	FString ToolName;
 
-	/** What the write does, in words shown on the confirmation card. */
+	/** 写入所执行的操作，以确认卡上显示的文字描述。 */
 	FString Action;
 
-	/** Level the objects belong to. */
+	/** 对象所属的关卡。 */
 	FString Level;
 
-	/** The tool runs it as one synchronous editor transaction, so it can be undone; false runs it outside any transaction. */
+	/** 工具将其作为一个同步编辑器事务运行，因而可撤销；为 false 时在任何事务之外运行。 */
 	bool bUndoable = false;
 
-	/** Deletes, moves or renames things; the confirmation card warns about it. */
+	/** 会删除、移动或重命名内容；确认卡会对此给出警告。 */
 	bool bDestructive = false;
 
 	TArray<FShuttlegentWriteObject> Objects;
 
-	/** The tool's arguments as JSON, shown on request. */
+	/** 工具参数的 JSON 形式，按需显示。 */
 	FString RawArguments;
 
-	/** Set by the gate: when the request times out unanswered (UTC); the confirmation card counts down to it. */
+	/** 由写入门设置：请求无人作答而超时的时刻（UTC）；确认卡据此倒计时。 */
 	FDateTime ExpiresAtUtc {};
 };

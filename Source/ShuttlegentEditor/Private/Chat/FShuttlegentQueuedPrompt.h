@@ -4,18 +4,18 @@
 
 #include "Reference/FShuttlegentReference.h"
 
-/** One prompt waiting in a session's queue. Text, references and send options are frozen when it is queued (Shuttlegent UI interaction spec section 4.3). */
+/** 在会话队列中等待的一条提示。文本、引用与发送选项在入队时固定（Shuttlegent UI 交互规范第 4.3 节）。 */
 struct FShuttlegentQueuedPrompt
 {
-	/** Stable id for removing or taking back the item. */
+	/** 用于移除或取回该条目的稳定 id。 */
 	int32 Id = 0;
 
-	/** Draft text, without the reference block. */
+	/** 草稿文本，不含引用块。 */
 	FString Text;
 
 	TArray<FShuttlegentReference> References;
 
-	/** Model and reasoning effort selected when the item was queued; empty when the option was not offered. */
+	/** 入队时选择的模型与推理强度；未提供该选项时为空。 */
 	FString ModelValue;
 	FString ReasoningValue;
 };

@@ -4,27 +4,27 @@
 
 #include "WriteGate/EShuttlegentWriteObjectStatus.h"
 
-/** One object an editor write touches: what changes on it, from what to what, and how it went. */
+/** 编辑器写入涉及的单个对象：其上变更的内容、变更前后的值以及执行结果。 */
 struct FShuttlegentWriteObject
 {
-	/** Actor label or asset name. */
+	/** Actor 标签或资产名。 */
 	FString Name;
 
-	/** Object path, the stable identity. */
+	/** 对象路径，作为稳定标识。 */
 	FString Path;
 
-	/** What changes, e.g. a property name. */
+	/** 变更的内容，例如属性名。 */
 	FString Field;
 
-	/** Value before the write and the planned value, as shown to the user. */
+	/** 写入前的值与计划值，按向用户显示的形式表示。 */
 	FString CurrentValue;
 	FString PlannedValue;
 
 	EShuttlegentWriteObjectStatus Status = EShuttlegentWriteObjectStatus::NotRun;
 
-	/** Why the write of this object failed or did not run; on a completed object, a note such as "still running". */
+	/** 该对象写入失败或未执行的原因；对已完成的对象，为附注，例如“仍在运行”。 */
 	FString Message;
 
-	/** What the write returned for the model, e.g. an engine toolset tool's JSON result; not shown on the card. */
+	/** 写入返回给模型的内容，例如引擎 Toolset 工具的 JSON 结果；不在卡片上显示。 */
 	FString Output;
 };

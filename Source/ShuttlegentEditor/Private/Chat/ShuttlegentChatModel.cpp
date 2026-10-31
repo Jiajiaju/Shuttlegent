@@ -25,7 +25,7 @@
 
 namespace ShuttlegentChatModelPrivate
 {
-	// session/update fields
+	// session/update 字段
 	inline const TCHAR* FieldSessionUpdate = TEXT("sessionUpdate");
 	inline const TCHAR* FieldMessageId = TEXT("messageId");
 	inline const TCHAR* FieldContent = TEXT("content");
@@ -39,24 +39,24 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* FieldSize = TEXT("size");
 	inline const TCHAR* FieldToolCall = TEXT("toolCall");
 
-	// session/request_permission params: the session the request belongs to
+	// session/request_permission 参数：请求所属的会话
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");
 
-	// session/update kinds
+	// session/update 类型
 	inline const TCHAR* KindMessageChunk = TEXT("agent_message_chunk");
 	inline const TCHAR* KindThoughtChunk = TEXT("agent_thought_chunk");
 	inline const TCHAR* KindToolCall = TEXT("tool_call");
 	inline const TCHAR* KindToolCallUpdate = TEXT("tool_call_update");
 	inline const TCHAR* KindUsageUpdate = TEXT("usage_update");
 
-	// Config option fields
+	// 配置选项字段
 	inline const TCHAR* FieldId = TEXT("id");
 	inline const TCHAR* FieldName = TEXT("name");
 	inline const TCHAR* FieldValue = TEXT("value");
 	inline const TCHAR* FieldOptions = TEXT("options");
 	inline const TCHAR* FieldCurrentValue = TEXT("currentValue");
 
-	// Transcript entry fields and kinds (see FShuttlegentSessionStore)
+	// 对话记录条目的字段与类型（参见 FShuttlegentSessionStore）
 	inline const TCHAR* FieldTime = TEXT("t");
 	inline const TCHAR* FieldKind = TEXT("kind");
 	inline const TCHAR* FieldData = TEXT("data");
@@ -68,14 +68,14 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* TranscriptTurnEnd = TEXT("turn_end");
 	inline const TCHAR* TranscriptPermission = TEXT("permission");
 
-	// Separator between the text parts of one tool result
+	// 同一工具结果中各文本片段之间的分隔符
 	inline const TCHAR* ToolContentJoiner = TEXT("\n");
 
-	// Stop reasons
+	// 停止原因
 	inline const TCHAR* StopReasonCancelled = TEXT("cancelled");
 	inline const TCHAR* StopReasonEndTurn = TEXT("end_turn");
 
-	// Tool call status of a failed call
+	// 失败调用的工具调用状态
 	inline const TCHAR* ToolStatusFailed = TEXT("failed");
 
 	FString ChunkText(const TSharedPtr<FJsonObject>& Update)
@@ -86,7 +86,7 @@ namespace ShuttlegentChatModelPrivate
 		return Text;
 	}
 
-	/** Text of a tool_call(_update) content array: [{ type: "content", content: { type: "text", text } }]. Empty when absent. */
+	/** tool_call(_update) 内容数组的文本：[{ type: "content", content: { type: "text", text } }]。不存在时为空。 */
 	FString ToolContentText(const TSharedPtr<FJsonObject>& Update)
 	{
 		const TArray<TSharedPtr<FJsonValue>>* Items = nullptr;
@@ -123,7 +123,7 @@ namespace ShuttlegentChatModelPrivate
 		OutChoices.Add(MoveTemp(Choice));
 	}
 
-	/** Choices and current value of one config option among a session's config options; false when the option is absent. */
+	/** 会话配置选项中某一选项的可选值与当前值；该选项不存在时返回 false。 */
 	bool ParseConfigChoices(const TArray<TSharedPtr<FJsonValue>>& ConfigOptions, const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue)
 	{
 		for (const TSharedPtr<FJsonValue>& Value : ConfigOptions)
@@ -283,7 +283,7 @@ void FShuttlegentChatModel::RetryStart()
 	StartIssueDetail.Reset();
 	AddRunLog(*Current, LOCTEXT("LogRetryStart", "重试启动运行时"), false);
 
-	// A running runtime read its key when it started; it starts again once it has exited
+	// 正在运行的运行时在启动时已读取密钥；待其退出后再次启动
 	if (Pinned->GetState() != EShuttlegentAgentState::Stopped)
 	{
 		bRestartPending = true;
@@ -324,7 +324,7 @@ void FShuttlegentChatModel::RecordStartIssue(EShuttlegentStartIssue Issue, const
 {
 	StartIssue = Issue;
 
-	// A rejected key's message quotes part of the key, so only the kind is kept
+	// 密钥被拒绝时的消息会引用部分密钥，因此只保留问题类型
 	StartIssueDetail = Issue == EShuttlegentStartIssue::AuthFailed ? FString() : Detail;
 	if (Issue == EShuttlegentStartIssue::AuthFailed)
 	{
@@ -350,7 +350,7 @@ void FShuttlegentChatModel::ParkPendingPrompt(FShuttlegentConversation& Conversa
 	Conversation.bResuming = false;
 	if (Conversation.PendingPrompt.IsEmpty()) return;
 
-	// The text already carries its reference block, so the item has no separate references
+	// 文本已带有其引用块，因此该条目没有单独的引用
 	Conversation.Queue.Items.Insert(MakeQueued(Conversation.PendingPrompt, TArray<FShuttlegentReference>()), 0);
 	Conversation.Queue.bPaused = true;
 	Conversation.PendingPrompt.Reset();
@@ -403,7 +403,7 @@ bool FShuttlegentChatModel::TakeQueued(int32 ItemId, const FString& DraftText, c
 
 	OutItem = Items[Index];
 
-	// The draft being replaced swaps into the item's place instead of being lost
+	// 被替换的草稿换入该条目的位置，而不是丢失
 	if (!DraftText.TrimStartAndEnd().IsEmpty() || !DraftReferences.IsEmpty()) Items[Index] = MakeQueued(DraftText, DraftReferences);
 	else Items.RemoveAt(Index);
 
@@ -463,7 +463,7 @@ void FShuttlegentChatModel::SendNextQueued(FShuttlegentConversation& Conversatio
 	FShuttlegentPromptQueue& Queue = Conversation.Queue;
 	if (Queue.bPaused || Queue.Items.IsEmpty()) return;
 
-	// A reference that went away while the item waited stops the queue at that item
+	// 条目等待期间若有引用消失，队列在该条目处停止
 	const FShuttlegentQueuedPrompt& Next = Queue.Items[0];
 	const bool bAllExist = Next.References.FindByPredicate([](const FShuttlegentReference& Reference) { return !FShuttlegentReferenceFinder::Exists(Reference); }) == nullptr;
 	if (!bAllExist)
@@ -477,7 +477,7 @@ void FShuttlegentChatModel::SendNextQueued(FShuttlegentConversation& Conversatio
 	const FShuttlegentQueuedPrompt Item = Queue.Items[0];
 	Queue.Items.RemoveAt(0);
 
-	// Send options frozen with the item win over the current pickers
+	// 随条目固定的发送选项优先于当前选择器的取值
 	TArray<FShuttlegentConfigChoice> Choices;
 	FString CurrentModel;
 	FString CurrentReasoning;
@@ -589,7 +589,7 @@ void FShuttlegentChatModel::OpenSession(const FString& SessionId)
 
 	LeaveCurrent();
 
-	// A held conversation is shown as it is: still running, or idle with its entries and run log
+	// 已持有的对话按原样显示：仍在运行，或处于空闲并带有其条目与运行日志
 	const TSharedPtr<FShuttlegentConversation> Held = FindConversation(SessionId);
 	if (Held.IsValid())
 	{
@@ -612,7 +612,7 @@ void FShuttlegentChatModel::Reconnect()
 	bRuntimeLost = false;
 	AddRunLog(*Current, LOCTEXT("LogReconnect", "重新连接运行时"), false);
 
-	// Other held conversations resume their sessions when they next send a prompt
+	// 其他已持有的对话在下次发送提示时恢复其会话
 	if (!Current->SessionId.IsEmpty()) RequestSession(*Current);
 	else EnsureRuntime();
 	OnStatusChanged.Broadcast();
@@ -626,11 +626,11 @@ void FShuttlegentChatModel::SetPermissionHandlerAttached(bool bAttached)
 
 	bPermissionHandlerAttached = bAttached;
 
-	// Editor writes are confirmed only while the panel is there to ask; detached, the gate refuses them
+	// 编辑器写入仅在面板可供询问时才进行确认；解除挂接后，写入门会拒绝它们
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid()) Gate->SetConfirmerAttached(bAttached);
 
-	// Questions too: without the panel the agent asks in its reply instead
+	// 问题同理：没有面板时，Agent 改为在回复中提问
 	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
 	if (Questions.IsValid()) Questions->SetAnswererAttached(bAttached);
 
@@ -642,7 +642,7 @@ void FShuttlegentChatModel::SetPermissionHandlerAttached(bool bAttached)
 
 	Pinned->PermissionHandler.Unbind();
 
-	// Requests the panel can no longer answer fall back to a rejection.
+	// 面板已无法答复的请求一律按拒绝处理。
 	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
 	{
 		RejectPendingPermissions(*Conversation);
@@ -692,7 +692,7 @@ bool FShuttlegentChatModel::GetConfigChoices(const FShuttlegentConversation& Con
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return false;
 
-	// A conversation without an open session shows the last options any session reported, with the values chosen for it
+	// 没有已打开会话的对话显示最近任一会话上报的选项，以及为该对话选择的值
 	const bool bOpen = Pinned->IsSessionOpen(Conversation.SessionId);
 	const bool bFound = ShuttlegentChatModelPrivate::ParseConfigChoices(bOpen ? Pinned->GetConfigOptions(Conversation.SessionId) : LastConfigOptions, ConfigId, OutChoices, OutCurrentValue);
 
@@ -798,7 +798,7 @@ bool FShuttlegentChatModel::ArchiveSession(const FString& SessionId)
 		return true;
 	}
 
-	// An archived session is not kept running in the background; its queue goes with it
+	// 已归档的会话不在后台继续运行；其队列随之一并丢弃
 	const TSharedPtr<FShuttlegentConversation> Held = FindConversation(SessionId);
 	if (Held.IsValid()) DropConversation(*Held);
 	OnSessionsChanged.Broadcast();
@@ -880,7 +880,7 @@ EShuttlegentChatStatus FShuttlegentChatModel::GetStatus(const FShuttlegentConver
 		}
 	case EShuttlegentAgentState::Ready:
 		{
-			// The first prompt waits for session/new
+			// 第一条提示等待 session/new 完成
 			if (!Conversation.PendingPrompt.IsEmpty()) return EShuttlegentChatStatus::Connecting;
 			if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) return EShuttlegentChatStatus::Stopped;
 			if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Failed) return EShuttlegentChatStatus::Failed;
@@ -922,7 +922,7 @@ bool FShuttlegentChatModel::CanDrop(const FShuttlegentConversation& Conversation
 
 void FShuttlegentChatModel::DropConversation(FShuttlegentConversation& Conversation)
 {
-	// Held until the end of this call, whoever else lets go of it
+	// 无论其他持有者是否释放，都保持到本次调用结束
 	const TSharedRef<FShuttlegentConversation> Dropped = Conversation.AsShared();
 
 	RejectPendingPermissions(Conversation);
@@ -956,7 +956,7 @@ void FShuttlegentChatModel::NotifyStatus(const FShuttlegentConversation& Convers
 {
 	if (IsCurrent(Conversation)) OnStatusChanged.Broadcast();
 
-	// The session list shows every held conversation's status
+	// 会话列表显示每个已持有对话的状态
 	OnSessionsChanged.Broadcast();
 }
 
@@ -964,7 +964,7 @@ void FShuttlegentChatModel::NotifyQueue(const FShuttlegentConversation& Conversa
 {
 	if (IsCurrent(Conversation)) OnQueueChanged.Broadcast();
 
-	// The session list shows every held conversation's queued count
+	// 会话列表显示每个已持有对话的排队数量
 	OnSessionsChanged.Broadcast();
 }
 
@@ -1242,11 +1242,11 @@ void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
 {
 	if (NewState == EShuttlegentAgentState::Ready)
 	{
-		// A runtime that came up has its executable and key; a rejected key shows again on the next failed turn
+		// 已就绪的运行时已具备可执行文件与密钥；被拒绝的密钥会在下一个失败的回合再次显示
 		StartIssue = EShuttlegentStartIssue::None;
 		StartIssueDetail.Reset();
 
-		// Every conversation that asked for a session while the runtime was coming up gets it now
+		// 运行时就绪过程中请求过会话的每个对话现在都获得会话
 		const TArray<TSharedPtr<FShuttlegentConversation>> Held = Conversations;
 		for (const TSharedPtr<FShuttlegentConversation>& Conversation : Held)
 		{
@@ -1262,7 +1262,7 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 {
 	TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
 
-	// A session/new answer belongs to the oldest conversation waiting for one; a session nobody waits for is not the panel's
+	// session/new 的答复归属最早一个等待它的对话；无人等待的会话不属于面板
 	while (!Conversation.IsValid() && !AwaitingNewSession.IsEmpty())
 	{
 		Conversation = AwaitingNewSession[0].Pin();
@@ -1308,7 +1308,7 @@ void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const 
 
 	const bool bAdded = ApplyUpdate(Conversation, Update, FDateTime::UtcNow());
 
-	// Run log: a tool call's first update and its first failure
+	// 运行日志：工具调用的首次更新及其首次失败
 	const TSharedPtr<FShuttlegentChatEntry> ToolCall = ToolCallId.IsEmpty() ? nullptr : FindToolCall(Conversation, ToolCallId);
 	if (ToolCall.IsValid() && !Existing.IsValid()) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolCall", "工具调用：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), false);
 	if (ToolCall.IsValid() && Status == ShuttlegentChatModelPrivate::ToolStatusFailed && PreviousStatus != Status) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolFailed", "工具失败：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), true);
@@ -1333,7 +1333,7 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	if (bCompleted) Conversation.LastOutcome = EShuttlegentTurnOutcome::Completed;
 	else Conversation.LastOutcome = ErrorMessage.IsEmpty() ? EShuttlegentTurnOutcome::Stopped : EShuttlegentTurnOutcome::Failed;
 
-	// A missing or rejected key fails every turn, so it is shown as the start guide card rather than as one failed turn
+	// 缺少密钥或密钥被拒绝会导致每个回合都失败，因此以启动引导卡片显示，而不是显示为某一个失败的回合
 	const EShuttlegentStartIssue KeyIssue = ErrorMessage.IsEmpty() ? EShuttlegentStartIssue::None : FShuttlegentAgentService::ClassifyError(ErrorMessage);
 	if (KeyIssue == EShuttlegentStartIssue::MissingKey || KeyIssue == EShuttlegentStartIssue::AuthFailed) RecordStartIssue(KeyIssue, ErrorMessage);
 
@@ -1341,8 +1341,8 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	else if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) AddRunLog(Conversation, LOCTEXT("LogTurnStopped", "本轮已停止"), true);
 	else AddRunLog(Conversation, LOCTEXT("LogTurnFailed", "本轮查询失败"), true);
 
-	// A request still open when its turn ends can no longer be acted on. Write requests do not name their session,
-	// so they expire only when no session runs a turn any more.
+	// 回合结束时仍处于打开状态的请求已无法再处理。写入请求不指明其会话，
+	// 因此只有在不再有任何会话运行回合时才会过期。
 	RejectPendingPermissions(Conversation);
 	const bool bAnyPrompting = Conversations.ContainsByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Held) { return IsPrompting(*Held); });
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
@@ -1365,7 +1365,7 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 	if (!bExpected) bRuntimeLost = true;
 	ParkPendingPrompts();
 
-	// A confirmed write whose result has not arrived may or may not have happened; the user verifies its objects
+	// 已确认但尚未收到结果的写入可能已执行也可能未执行；由用户核对其对象
 	if (bWriting)
 	{
 		bWriting = false;
@@ -1382,7 +1382,7 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 		if (!PendingGate.IsValid() || PendingGate->GetPending().IsEmpty()) WriteOwner.Reset();
 	}
 
-	// One runtime serves every session, so every conversation stops with it
+	// 同一个运行时服务所有会话，因此所有对话随之一并停止
 	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
 	{
 		Conversation->bStopping = false;
@@ -1403,7 +1403,7 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 	OnQueueChanged.Broadcast();
 	OnSessionsChanged.Broadcast();
 
-	// A retry stopped the runtime so it reads a fixed key or executable; it starts again now
+	// 重试已停止运行时，以便其读取修正后的密钥或可执行文件；现在再次启动
 	if (bRestartPending)
 	{
 		bRestartPending = false;
@@ -1414,14 +1414,14 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 
 void FShuttlegentChatModel::HandleError(const FString& SessionId, const FString& Message)
 {
-	// An error without a session is a failed session/new (the oldest waiting conversation's) or a failed start (the current one's)
+	// 不带会话的错误是失败的 session/new（属于最早一个等待的对话）或失败的启动（属于当前对话）
 	TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
 	while (!Conversation.IsValid() && SessionId.IsEmpty() && !AwaitingNewSession.IsEmpty())
 	{
 		Conversation = AwaitingNewSession[0].Pin();
 		AwaitingNewSession.RemoveAt(0);
 	}
-	// A failed initialize belongs to no conversation; the start guide card shows it
+	// 失败的 initialize 不属于任何对话；由启动引导卡片显示
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Conversation.IsValid() && SessionId.IsEmpty() && Pinned.IsValid() && Pinned->GetStartIssue() != EShuttlegentStartIssue::None)
 	{
@@ -1431,7 +1431,7 @@ void FShuttlegentChatModel::HandleError(const FString& SessionId, const FString&
 	}
 	if (!Conversation.IsValid()) Conversation = Current;
 
-	// The local record stays; the banner offers to resume again or to start a new session without its context
+	// 本地记录保留；横幅提供再次恢复，或开始一个不带其上下文的新会话
 	if (Conversation->bResuming) Conversation->bResumeFailed = true;
 	ParkPendingPrompt(*Conversation);
 	AddNotice(*Conversation, FText::FromString(Message), true);
@@ -1456,7 +1456,7 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 	FString SessionId;
 	if (Params.IsValid()) Params->TryGetStringField(ShuttlegentChatModelPrivate::FieldSessionId, SessionId);
 
-	// A request of a session the panel does not hold has nobody to answer it
+	// 面板未持有的会话所发出的请求无人可答复
 	const TSharedPtr<FShuttlegentConversation> Owner = FindConversation(SessionId);
 	if (!Owner.IsValid())
 	{
@@ -1477,7 +1477,7 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 		Entry->Detail = Source->Detail;
 	}
 
-	// With escalation switched off the request is answered at once and leaves a readable record (interaction spec section 3)
+	// 关闭权限提升时，请求立即得到答复并留下可读记录（交互规范第 3 节）
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	if (IsValid(Settings) && !Settings->bAllowElevation)
 	{
@@ -1501,7 +1501,7 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 
 void FShuttlegentChatModel::HandleWriteRequested(const FShuttlegentWriteRequest& Request)
 {
-	// Write requests do not name their session; they go to the conversation shown when the first of them arrives
+	// 写入请求不指明其会话；它们归属第一个请求到达时所显示的对话
 	if (!WriteOwner.IsValid()) WriteOwner = Current;
 	OpenWriteRequests.Add(Request.RequestId, Request);
 
@@ -1523,7 +1523,7 @@ void FShuttlegentChatModel::HandleWriteClosed(int32 RequestId, EShuttlegentWrite
 	}
 	else
 	{
-		// Nothing was written; like a stop, the queue waits for the user
+		// 未写入任何内容；与停止相同，队列等待用户处理
 		const bool bExpired = Decision == EShuttlegentWriteDecision::Expired;
 		const bool bTimedOut = Decision == EShuttlegentWriteDecision::TimedOut;
 		FText Notice = LOCTEXT("WriteRejected", "已取消本次编辑器写入，未执行修改。");
@@ -1541,7 +1541,7 @@ void FShuttlegentChatModel::HandleWriteClosed(int32 RequestId, EShuttlegentWrite
 
 void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& Result)
 {
-	// A result that arrives after the runtime was lost replaces its unknown entry
+	// 运行时丢失后才到达的结果会替换其未知条目
 	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
 	{
 		const TSharedPtr<FShuttlegentChatEntry>* Unknown = Conversation->Entries.FindByPredicate([&Result](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::WriteUnknown && Entry->WriteResult.RequestId == Result.RequestId; });
@@ -1565,7 +1565,7 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 	TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Owner, EShuttlegentChatEntryKind::WriteResult, Result.Action);
 	Entry->WriteResult = Result;
 
-	// A batch that did not complete every object stops the queue (interaction spec section 4.3)
+	// 未完成全部对象的批次会使队列停止（交互规范第 4.3 节）
 	const bool bAllCompleted = !Result.Objects.ContainsByPredicate([](const FShuttlegentWriteObject& Object) { return Object.Status != EShuttlegentWriteObjectStatus::Completed; });
 	AddRunLog(*Owner, bAllCompleted ? LOCTEXT("LogWriteCompleted", "编辑器写入完成") : LOCTEXT("LogWritePartial", "编辑器写入未全部完成"), !bAllCompleted);
 	if (!bAllCompleted) PauseQueue(*Owner);
@@ -1579,14 +1579,14 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 
 void FShuttlegentChatModel::HandleUndoBufferChanged()
 {
-	// Any new transaction or undo can change whether a result is still on top
+	// 任何新的事务或撤销都可能改变某个结果是否仍位于顶部
 	const bool bHasWriteResults = Current->Entries.ContainsByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry.IsValid() && Entry->Kind == EShuttlegentChatEntryKind::WriteResult; });
 	if (bHasWriteResults) OnContentChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::HandleQuestionsChanged()
 {
-	// The panel shows the first waiting question in place of the composer
+	// 面板在输入区的位置显示第一个等待中的问题
 	NotifyStatus(*Current);
 }
 
@@ -1594,7 +1594,7 @@ void FShuttlegentChatModel::HandleQuestionClosed(const FShuttlegentQuestion& Que
 {
 	if (Question.Question.IsEmpty()) return;
 
-	// The transcript keeps what was asked and how it ended
+	// 对话记录保留所提的问题及其结束方式
 	FText Notice;
 	switch (Outcome)
 	{

@@ -4,7 +4,7 @@
 
 class IShuttlegentTool;
 
-/** Level tools: list_actors, get_selection, on the level being edited. */
+/** 关卡工具：list_actors、get_selection，作用于正在编辑的关卡。 */
 struct FShuttlegentLevelTools
 {
 	static void Append(TArray<TSharedRef<IShuttlegentTool>>& OutTools);

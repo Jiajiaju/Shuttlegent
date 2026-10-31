@@ -22,7 +22,7 @@ TArray<FShuttlegentTemplate> FShuttlegentTemplateLibrary::Load()
 			FString Body;
 			if (Names.Contains(Name.ToLower()) || !FFileHelper::LoadFileToString(Body, *File) || Body.TrimStartAndEnd().IsEmpty()) continue;
 
-			// The first line, with heading marks and spaces trimmed, says what the template is for
+			// 去掉标题标记与空格后的第一行，说明该模板的用途
 			FString FirstLine;
 			Body.TrimStartAndEnd().Split(ShuttlegentEditorTemplate::LineBreak, &FirstLine, nullptr);
 			if (FirstLine.IsEmpty()) FirstLine = Body.TrimStartAndEnd();

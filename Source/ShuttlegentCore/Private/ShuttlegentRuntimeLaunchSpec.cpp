@@ -14,11 +14,11 @@
 
 namespace ShuttlegentRuntimeLaunchSpecPrivate
 {
-	// DSH_PERMISSION_MODE values understood by dsh-permission-presets
+	// dsh-permission-presets 识别的 DSH_PERMISSION_MODE 取值
 	inline const TCHAR* PermissionModeReadOnly = TEXT("read-only");
 	inline const TCHAR* PermissionModeWorkspaceWrite = TEXT("workspace-write");
 
-	// Command-line switches of the dsh launcher
+	// dsh 启动器的命令行开关
 	inline const TCHAR* ProfileSwitch = TEXT("--profile");
 	inline const TCHAR* PatchSwitch = TEXT("--patch");
 
@@ -72,7 +72,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		return false;
 	}
 
-	// The user's providers and Shell switch and the project's skills go into a second patch on top of the plugin's
+	// 用户的供应商、Shell 开关与项目技能写入第二个补丁，叠加在插件补丁之上
 	const bool bWorkspaceWrite = IsValid(Settings) && Settings->bAllowWorkspaceWrite;
 	const bool bShell = IsValid(Settings) && Settings->bAllowShell;
 	FString GeneratedPatch;
@@ -89,7 +89,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		if (!Value.IsEmpty()) OutSpec.Environment.Add(Name, Value);
 	}
 
-	// Only the keys the user's settings hold are passed on, each in its route's variable
+	// 只传个人设置中已有的密钥，各自放在对应路由的变量中
 	for (const FString& Variable : FShuttlegentProjectConfig::GetKeyVariables())
 	{
 		FString Value;

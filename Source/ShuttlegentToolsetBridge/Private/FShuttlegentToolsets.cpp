@@ -25,7 +25,7 @@ namespace FShuttlegentToolsetsPrivate
 		return IsValid(Subsystem) ? &Subsystem->ToolsetRegistry : nullptr;
 	}
 
-	/** Case-insensitive substring, or a regular expression when enclosed in slashes; the Toolset Registry's own pattern syntax. */
+	/** 不区分大小写的子串匹配，以斜杠包围时视为正则表达式；与 Toolset Registry 自身的模式语法一致。 */
 	bool Matches(const FString& Name, const FString& Pattern)
 	{
 		const FString Trimmed = Pattern.TrimStartAndEnd();
@@ -53,7 +53,7 @@ namespace FShuttlegentToolsetsPrivate
 		return IsValid(Settings) && Settings->DisabledToolsets.ContainsByPredicate([&ToolsetName](const FString& Disabled) { return Disabled.Equals(ToolsetName, ESearchCase::IgnoreCase); });
 	}
 
-	/** An entry naming the tool by its own name or by its full name. */
+	/** 存在以工具自身名称或完整名称指明该工具的条目。 */
 	bool IsNamed(const TArray<FString>& Entries, const FShuttlegentToolsetTool& Tool)
 	{
 		return Entries.ContainsByPredicate([&Tool](const FString& Entry)
@@ -63,7 +63,7 @@ namespace FShuttlegentToolsetsPrivate
 		});
 	}
 
-	/** The name starts with the whole word: GetActors and get_actors start with Get, Getaway does not. */
+	/** 名称以完整单词开头：GetActors 与 get_actors 以 Get 开头，Getaway 则不是。 */
 	bool StartsWithWord(const FString& ToolName, const FString& Word)
 	{
 		if (Word.IsEmpty() || !ToolName.StartsWith(Word, ESearchCase::IgnoreCase)) return false;
@@ -73,7 +73,7 @@ namespace FShuttlegentToolsetsPrivate
 		return Next == ShuttlegentToolsetBridgeConstant::WordSeparator || FChar::IsUpper(Next);
 	}
 
-	/** Write list first, then the read list, then the read prefixes; anything else writes. */
+	/** 依次检查写入列表、只读列表、只读前缀；其余一律视为写入。 */
 	bool IsReadOnly(const FShuttlegentToolsetTool& Tool)
 	{
 		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
@@ -95,7 +95,7 @@ namespace FShuttlegentToolsetsPrivate
 		return IsValid(Project) && Project->DestructiveToolPrefixes.ContainsByPredicate([&Tool](const FString& Prefix) { return StartsWithWord(Tool.Name, Prefix.TrimStartAndEnd()); });
 	}
 
-	/** The tools of a toolset's schema the project does not block, sorted by name. */
+	/** Toolset Schema 中未被项目屏蔽的工具，按名称排序。 */
 	TArray<FShuttlegentToolsetTool> ParseTools(const FString& ToolsetName, const FString& SchemaJson)
 	{
 		TArray<FShuttlegentToolsetTool> Tools;
@@ -115,7 +115,7 @@ namespace FShuttlegentToolsetsPrivate
 			FShuttlegentToolsetTool Tool;
 			if (!(*EntryObject)->TryGetStringField(ShuttlegentToolsetBridgeConstant::FieldName, Tool.FullName) || Tool.FullName.IsEmpty()) continue;
 
-			// Full names are Toolset.Tool, and toolset names contain dots themselves
+			// 完整名称形如 Toolset.Tool，而 Toolset 名称本身也包含点号
 			if (Tool.FullName.StartsWith(Qualifier)) Tool.Name = Tool.FullName.RightChop(Qualifier.Len());
 			else if (!Tool.FullName.Split(ShuttlegentToolsetBridgeConstant::NameSeparator, nullptr, &Tool.Name, ESearchCase::CaseSensitive, ESearchDir::FromEnd)) Tool.Name = Tool.FullName;
 			if (Tool.Name.IsEmpty() || IsBlockedByProject(Tool.FullName)) continue;
@@ -133,7 +133,7 @@ namespace FShuttlegentToolsetsPrivate
 		return Tools;
 	}
 
-	/** The registered toolset if the registry enables it, the project does not block it and the user did not switch it off. */
+	/** 返回已注册的 Toolset，前提是注册表已启用它、项目未屏蔽它且用户未将其关闭。 */
 	TSharedPtr<UE::ToolsetRegistry::FToolset> FindUsable(const FString& ToolsetName, FString& OutError)
 	{
 		UE::ToolsetRegistry::FToolsetRegistry* Registry = GetRegistry();
@@ -202,7 +202,7 @@ bool FShuttlegentToolsets::GetTools(const FString& ToolsetName, TArray<FShuttleg
 
 bool FShuttlegentToolsets::ReturnedFalse(const FString& ResultText)
 {
-	// The engine messages may follow the JSON; only the part before them is the tool's answer
+	// JSON 之后可能附有引擎消息；只有其前面的部分才是工具的应答
 	const int32 NoteStart = ResultText.Find(ShuttlegentToolsetBridgeConstant::EngineMessagesHeading, ESearchCase::CaseSensitive);
 	const FString Answer = NoteStart == INDEX_NONE ? ResultText : ResultText.Left(NoteStart);
 
@@ -235,8 +235,8 @@ TFuture<TValueOrError<FString, FString>> FShuttlegentToolsets::Execute(const FSt
 	UE::ToolsetRegistry::FToolsetRegistry* Registry = FShuttlegentToolsetsPrivate::GetRegistry();
 	if (Registry == nullptr) return MakeFulfilledPromise<TValueOrError<FString, FString>>(MakeError(FString(TEXT("The engine Toolset Registry is not available in this editor.")))).GetFuture();
 
-	// An engine message dialog would block the editor until someone answers it: run the tool unattended, so dialogs only
-	// log and take their default answer, and hand what the engine reported to the assistant with the result
+	// 引擎消息对话框会阻塞编辑器直到有人响应：以无人值守方式运行工具，使对话框只写日志并采用默认答复，
+	// 并将引擎报告的内容随结果一并交给助手
 	FShuttlegentEngineMessageCapture Capture;
 	TFuture<TValueOrError<FString, FString>> Future;
 	{

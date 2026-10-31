@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 
-/** Lifecycle of the agent runtime as seen by FShuttlegentAgentService. Whether a session runs a prompt is per session (FShuttlegentAgentService::IsPrompting). */
+/** FShuttlegentAgentService 视角下 Agent 运行时的生命周期。会话是否在执行提问按会话区分（FShuttlegentAgentService::IsPrompting）。 */
 enum class EShuttlegentAgentState : uint8
 {
-	// No runtime process
+	// 没有运行时进程
 	Stopped,
 
-	// Process launched, waiting for the initialize response
+	// 进程已启动，等待 initialize 答复
 	Starting,
 
-	// Initialized; sessions can be created, resumed and prompted
+	// 已初始化；可以新建、恢复会话并提问
 	Ready
 };

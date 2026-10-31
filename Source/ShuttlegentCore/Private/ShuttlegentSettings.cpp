@@ -2,7 +2,7 @@
 
 namespace ShuttlegentSettingsPrivate
 {
-	// Settings viewer location: Editor Preferences > Shuttlegent > General
+	// 设置面板中的位置：编辑器偏好设置 > Shuttlegent > General
 	inline const TCHAR* ContainerName = TEXT("Editor");
 	inline const TCHAR* CategoryName = TEXT("Shuttlegent");
 	inline const TCHAR* SectionName = TEXT("General");

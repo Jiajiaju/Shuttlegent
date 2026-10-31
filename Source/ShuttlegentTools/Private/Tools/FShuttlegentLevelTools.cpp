@@ -13,17 +13,17 @@
 
 namespace FShuttlegentLevelToolsPrivate
 {
-	// Tool names
+	// 工具名称
 	inline const TCHAR* ListActorsName = TEXT("list_actors");
 	inline const TCHAR* GetSelectionName = TEXT("get_selection");
 
-	// Argument names
+	// 参数名称
 	inline const TCHAR* ArgClass = TEXT("class");
 	inline const TCHAR* ArgQuery = TEXT("query");
 	inline const TCHAR* ArgOffset = TEXT("offset");
 	inline const TCHAR* ArgLimit = TEXT("limit");
 
-	/** One list line: label | class | path | location. */
+	/** 列表中的一行：label | class | path | location。 */
 	FString DescribeActor(const AActor* Actor)
 	{
 		return FShuttlegentToolObjects::Describe(Actor) + TEXT(" | ") + Actor->GetActorLocation().ToCompactString();

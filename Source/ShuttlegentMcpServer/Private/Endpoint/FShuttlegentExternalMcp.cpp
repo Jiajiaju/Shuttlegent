@@ -12,7 +12,7 @@
 
 namespace FShuttlegentExternalMcpPrivate
 {
-	// ACP stdio entry fields; a stdio entry has no type field
+	// ACP stdio 条目的字段；stdio 条目没有 type 字段
 	inline const TCHAR* FieldCommand = TEXT("command");
 	inline const TCHAR* FieldArgs = TEXT("args");
 	inline const TCHAR* FieldEnv = TEXT("env");
@@ -25,7 +25,7 @@ namespace FShuttlegentExternalMcpPrivate
 		return Entry;
 	}
 
-	/** Log text of why a server is left out. */
+	/** 说明服务器被剔除原因的日志文本。 */
 	FString IssueText(const FShuttlegentExternalMcpState& State)
 	{
 		switch (State.Issue)
@@ -58,7 +58,7 @@ namespace FShuttlegentExternalMcpPrivate
 		}
 	}
 
-	/** The declaration of one server, or nullptr with why it is left out in OutState. */
+	/** 单个服务器的声明；被剔除时返回 nullptr，并在 OutState 中给出原因。 */
 	TSharedPtr<FJsonObject> MakeDeclaration(const FShuttlegentExternalMcpServer& Server, FShuttlegentExternalMcpState& OutState)
 	{
 		if (Server.Name.IsEmpty() || Server.Name.Equals(ShuttlegentMcpEndpointConstant::ServerName, ESearchCase::IgnoreCase))
@@ -112,7 +112,7 @@ namespace FShuttlegentExternalMcpPrivate
 		return Declaration;
 	}
 
-	/** The declarations of the servers that can work, and every server's state in settings order. */
+	/** 可正常工作的服务器的声明，以及按设置顺序排列的全部服务器状态。 */
 	void Evaluate(TArray<TSharedPtr<FJsonValue>>& OutDeclarations, TArray<FShuttlegentExternalMcpState>& OutStates)
 	{
 		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();

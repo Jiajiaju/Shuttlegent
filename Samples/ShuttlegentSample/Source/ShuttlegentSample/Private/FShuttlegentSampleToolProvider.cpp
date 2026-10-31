@@ -13,7 +13,7 @@
 
 namespace FShuttlegentSampleToolProviderPrivate
 {
-	// Tool and argument names
+	// 工具名与参数名
 	inline const TCHAR* CountActorsName = TEXT("sample_count_actors");
 	inline const TCHAR* SetLabelName = TEXT("sample_set_actor_label");
 	inline const TCHAR* ArgClass = TEXT("class");
@@ -26,7 +26,7 @@ namespace FShuttlegentSampleToolProviderPrivate
 		return IsValid(World) ? World : nullptr;
 	}
 
-	/** An actor of the open level by label or full path. */
+	/** 按标签或完整路径查找当前打开关卡中的 Actor。 */
 	AActor* FindActor(const FString& LabelOrPath)
 	{
 		UWorld* World = GetEditorWorld();

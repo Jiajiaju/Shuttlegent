@@ -47,7 +47,7 @@ namespace FShuttlegentToolRunnerPrivate
 		}
 	}
 
-	/** What the model learns of a refused or unanswered write; nothing was written in any of these cases. */
+	/** 模型获知的被拒绝或未答复写入的信息；这些情况下均未写入任何内容。 */
 	FString DecisionText(EShuttlegentWriteDecision Decision)
 	{
 		switch (Decision)
@@ -68,7 +68,7 @@ namespace FShuttlegentToolRunnerPrivate
 		}
 	}
 
-	/** One line per object and an outcome line, for the model. */
+	/** 每个对象一行，另加一行总体结果，供模型阅读。 */
 	FString ResultText(const FShuttlegentWriteResult& Result, bool bRolledBack)
 	{
 		TArray<FString> Lines;
@@ -91,7 +91,7 @@ namespace FShuttlegentToolRunnerPrivate
 		return Outcome + TEXT("\n") + FString::Join(Lines, TEXT("\n"));
 	}
 
-	/** Writes the confirmed objects; a transactional write that fails anywhere is undone as a whole. */
+	/** 写入已确认的对象；事务性写入在任一处失败时整体撤销。 */
 	FShuttlegentWriteResult Write(const FShuttlegentWriteRequest& Request, const TSharedRef<IShuttlegentTool>& Tool, const TSharedRef<FJsonObject>& Arguments, bool& bOutRolledBack)
 	{
 		FShuttlegentWriteResult Result;
@@ -101,14 +101,14 @@ namespace FShuttlegentToolRunnerPrivate
 		Result.Objects = Request.Objects;
 		bOutRolledBack = false;
 
-		// Not transactional, or the tool's preview found that this call must not be undone (its undo breaks the object)
+		// 非事务性写入，或工具预览发现本次调用不得撤销（撤销会损坏对象）
 		if (!Tool->GetDefinition().bTransactional || !Request.bUndoable)
 		{
 			Tool->Execute(Arguments, Result.Objects);
 			return Result;
 		}
 
-		// The newest transaction before the write; a write that records nothing leaves it on top
+		// 写入前最新的事务；未记录任何内容的写入会使它仍位于顶部
 		const bool bHasTransactor = GEditor != nullptr && IsValid(GEditor->Trans);
 		const FGuid PreviousTransactionId = bHasTransactor ? GEditor->Trans->GetUndoContext(true).TransactionId : FGuid();
 
@@ -123,7 +123,7 @@ namespace FShuttlegentToolRunnerPrivate
 		}
 		if (!bAnyWritten || GEditor == nullptr || !IsValid(GEditor->Trans)) return Result;
 
-		// A tool that changed nothing undoable (a saved file, a new asset) left no transaction; the one on top is someone else's
+		// 未修改任何可撤销内容的工具（如保存文件、新建资产）不会留下事务；此时顶部的事务属于其他操作
 		const FGuid TransactionId = GEditor->Trans->GetUndoContext(true).TransactionId;
 		if (!TransactionId.IsValid() || TransactionId == PreviousTransactionId)
 		{
@@ -136,7 +136,7 @@ namespace FShuttlegentToolRunnerPrivate
 			return Result;
 		}
 
-		// No partial state stays behind: the objects written before the failure are reverted with the transaction
+		// 不残留部分状态：失败前已写入的对象随事务一并回滚
 		bOutRolledBack = FShuttlegentWriteGate::Undo(TransactionId);
 		if (!bOutRolledBack)
 		{
@@ -186,7 +186,7 @@ void FShuttlegentToolRunner::Call(const TSharedRef<FShuttlegentWriteGate>& Gate,
 		return;
 	}
 
-	// The gate numbers the request; the decision can arrive before Request returns (no panel open)
+	// 由写入门为请求编号；决定可能在 Request 返回之前到达（未打开面板时）
 	const TSharedRef<FShuttlegentWriteRequest> Confirmed = MakeShared<FShuttlegentWriteRequest>(Request);
 	const TWeakPtr<FShuttlegentWriteGate> WeakGate = Gate;
 	const int32 RequestId = Gate->Request(MoveTemp(Request), [WeakGate, Confirmed, Tool, Arguments, OnDone](EShuttlegentWriteDecision Decision)

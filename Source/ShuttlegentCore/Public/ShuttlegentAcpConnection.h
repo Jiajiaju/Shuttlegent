@@ -16,27 +16,26 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentAcpStdErr, const FString& /*Li
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentAcpClosed, int32 /*ExitCode*/);
 
 /**
- * JSON-RPC 2.0 over the runtime's stdio, one message per line (ACP stdio transport).
+ * 基于运行时 stdio 的 JSON-RPC 2.0，每行一条消息（ACP stdio 传输）。
  *
- * All callbacks and delegates fire on the game thread: a core ticker drains the
- * process queues every frame. Requests that are pending when the runtime exits
- * complete with an error so callers never wait forever.
+ * 所有回调与委托都在游戏线程触发：由 core ticker 每帧取空进程队列。
+ * 运行时退出时仍未完成的请求以错误结束，调用方不会无限等待。
  */
 class SHUTTLEGENTCORE_API FShuttlegentAcpConnection
 {
 public:
 	using FResponseCallback = TFunction<void(const FShuttlegentAcpResponse&)>;
 
-	/** Notification from the agent (no id), e.g. session/update. */
+	/** 来自 Agent 的通知（无 id），例如 session/update。 */
 	FOnShuttlegentAcpNotification OnNotification;
 
-	/** Request from the agent that expects a reply through Respond / RespondError, e.g. session/request_permission. */
+	/** 来自 Agent、需经 Respond / RespondError 答复的请求，例如 session/request_permission。 */
 	FOnShuttlegentAcpAgentRequest OnAgentRequest;
 
-	/** One line the runtime wrote to stderr. */
+	/** 运行时写到 stderr 的一行。 */
 	FOnShuttlegentAcpStdErr OnStdErr;
 
-	/** The runtime process has exited; pending requests have already failed. */
+	/** 运行时进程已退出；未完成的请求已经以失败结束。 */
 	FOnShuttlegentAcpClosed OnClosed;
 
 private:
@@ -53,24 +52,24 @@ public:
 	FShuttlegentAcpConnection(const FShuttlegentAcpConnection&) = delete;
 	FShuttlegentAcpConnection& operator=(const FShuttlegentAcpConnection&) = delete;
 
-	/** Launches the runtime and starts dispatching. */
+	/** 启动运行时并开始分发消息。 */
 	bool Open(const FShuttlegentRuntimeLaunchSpec& Spec, FString& OutError);
 
-	/** Closes stdin, waits for the runtime to exit (terminating it after a timeout) and fails pending requests. */
+	/** 关闭 stdin，等待运行时退出（超时则强制结束），并让未完成的请求失败。 */
 	void Close();
 
 	bool IsOpen() const { return bOpen; }
 
-	/** Sends a request; Callback runs on the game thread with the response. Returns the request id. */
+	/** 发送请求；Callback 在游戏线程收到答复。返回请求 id。 */
 	int64 Request(const FString& Method, const TSharedPtr<FJsonObject>& Params, FResponseCallback Callback);
 
-	/** Sends a notification (no response expected). */
+	/** 发送通知（不需要答复）。 */
 	void Notify(const FString& Method, const TSharedPtr<FJsonObject>& Params);
 
-	/** Answers a request received through OnAgentRequest. */
+	/** 答复经 OnAgentRequest 收到的请求。 */
 	void Respond(const TSharedPtr<FJsonValue>& Id, const TSharedPtr<FJsonObject>& Result);
 
-	/** Answers a request received through OnAgentRequest with a JSON-RPC error. */
+	/** 以 JSON-RPC 错误答复经 OnAgentRequest 收到的请求。 */
 	void RespondError(const TSharedPtr<FJsonValue>& Id, int32 Code, const FString& Message);
 
 private:

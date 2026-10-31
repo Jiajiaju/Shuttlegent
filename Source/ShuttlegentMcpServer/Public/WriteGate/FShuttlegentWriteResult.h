@@ -5,19 +5,19 @@
 
 #include "WriteGate/FShuttlegentWriteObject.h"
 
-/** What an approved editor write actually did, object by object, as the tool reports it (Shuttlegent UI interaction spec sections 5.2, 5.4). */
+/** 已批准的编辑器写入的实际执行结果，按对象逐一列出，由工具上报（Shuttlegent UI 交互规范第 5.2、5.4 节）。 */
 struct FShuttlegentWriteResult
 {
 	int32 RequestId = 0;
 
 	FString Action;
 
-	/** Each object with its real status; the panel never infers them. */
+	/** 每个对象及其真实状态；面板从不自行推断。 */
 	TArray<FShuttlegentWriteObject> Objects;
 
-	/** The write ran as one synchronous editor transaction. */
+	/** 写入作为一个同步编辑器事务运行。 */
 	bool bUndoable = false;
 
-	/** That transaction in the editor's undo buffer; invalid when nothing was written or the write is not undoable. */
+	/** 该事务在编辑器撤销缓冲区中的标识；未写入任何内容或写入不可撤销时无效。 */
 	FGuid TransactionId;
 };

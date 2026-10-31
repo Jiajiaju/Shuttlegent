@@ -156,7 +156,7 @@ namespace FShuttlegentWebProtocolPrivate
 		}
 	}
 
-	/** The start guide card: what blocks the runtime and where to fix it. Names variables and paths, never a key value. */
+	/** 启动引导卡片：阻碍运行时启动的原因及修复位置。只给出变量名与路径，绝不包含密钥值。 */
 	TSharedPtr<FJsonValue> MakeStartIssue(EShuttlegentStartIssue Issue, const FString& Detail)
 	{
 		if (Issue == EShuttlegentStartIssue::None) return MakeShared<FJsonValueNull>();
@@ -167,7 +167,7 @@ namespace FShuttlegentWebProtocolPrivate
 		const bool bOverride = IsValid(Settings) && !Settings->RuntimeExecutableOverride.FilePath.IsEmpty();
 		const FString RuntimePath = bOverride ? FPaths::ConvertRelativePathToFull(Settings->RuntimeExecutableOverride.FilePath) : FPaths::Combine(PluginDir, ShuttlegentPath::RuntimeExecutable);
 
-		// The default route: the one a missing or rejected key is about
+		// 默认路由：缺少或被拒绝的密钥所对应的路由
 		FString KeyVariable;
 		FString ProviderName;
 		FShuttlegentProjectConfig::GetDefaultProviderKey(KeyVariable, ProviderName);
@@ -181,7 +181,7 @@ namespace FShuttlegentWebProtocolPrivate
 		return MakeShared<FJsonValueObject>(Item);
 	}
 
-	/** Changes whenever anything the page shows of the entry changes. Streamed text only grows, so lengths stand in for the text. */
+	/** 页面所显示的该条目任何内容发生变化时即随之变化。流式文本只会增长，因此以长度代替文本本身。 */
 	uint32 Fingerprint(const FShuttlegentChatEntry& Entry)
 	{
 		uint32 Hash = GetTypeHash(static_cast<uint8>(Entry.Kind));
@@ -198,7 +198,7 @@ namespace FShuttlegentWebProtocolPrivate
 		return Hash;
 	}
 
-	/** Seconds between the first and the latest reasoning chunk, at least one; NoThoughtSeconds without timed reasoning. */
+	/** 第一个与最新一个推理分块之间的秒数，至少为 1；没有计时推理时为 NoThoughtSeconds。 */
 	int32 ThoughtSeconds(const FShuttlegentChatEntry& Entry)
 	{
 		if (Entry.ThoughtStartUtc.GetTicks() <= 0) return ShuttlegentEditorWebField::NoThoughtSeconds;
@@ -280,13 +280,13 @@ namespace FShuttlegentWebProtocolPrivate
 		}
 	}
 
-	/** Unix time in milliseconds of a UTC time; the page formats it in local time. */
+	/** UTC 时间对应的 Unix 毫秒时间；页面按本地时间格式化。 */
 	double UnixMilliseconds(const FDateTime& UtcTime)
 	{
 		return static_cast<double>(UtcTime.ToUnixTimestamp() * ShuttlegentEditorWebField::MillisecondsPerSecond + UtcTime.GetMillisecond());
 	}
 
-	/** A session list item; a session the panel holds also carries its status and queued count. */
+	/** 会话列表项；面板所持有的会话还带有其状态与排队数量。 */
 	TSharedPtr<FJsonValue> MakeSession(const FShuttlegentSessionRecord& Record, const FShuttlegentChatModel& Model)
 	{
 		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
@@ -323,7 +323,7 @@ void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatModel>
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings)) SettingsChangedHandle = Settings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleSettingChanged);
 
-	// External MCP servers live in the project settings
+	// 外部 MCP 服务器配置在项目设置中
 	UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
 	if (IsValid(ProjectSettings)) ProjectSettingsChangedHandle = ProjectSettings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleProjectSettingChanged);
 
@@ -362,7 +362,7 @@ void FShuttlegentWebProtocol::HandlePageReady()
 	bPageReady = true;
 	bResetPending = true;
 
-	// Events from before the reload are already reflected in the snapshot
+	// 重新加载之前的事件已体现在快照中
 	PendingEvents.Reset();
 	Flush();
 }
@@ -396,12 +396,12 @@ void FShuttlegentWebProtocol::Flush()
 	if (bReset || bStatusDirty) WritePendingWrite(Root);
 	if (bReset || bStatusDirty) WritePendingQuestion(Root);
 
-	// Whether the current session can be archived follows the turn state as well as the session list
+	// 当前会话能否归档既取决于会话列表，也取决于回合状态
 	if (bReset || bSessionsDirty || bStatusDirty) WriteSessions(Root);
 	if (bReset || bRunLogDirty) WriteRunLog(Root);
 	if (bReset || bMcpDirty) WriteMcp(Root);
 
-	// Whether the queue can continue or a failed turn be retried also follows the turn state
+	// 队列能否继续、失败的回合能否重试同样取决于回合状态
 	if (bReset || bQueueDirty || bStatusDirty) WriteQueue(Root);
 
 	if (PendingEvents.Num() > 0)
@@ -583,7 +583,7 @@ void FShuttlegentWebProtocol::WriteMcp(const TSharedRef<FJsonObject>& Root) cons
 	Endpoint->SetNumberField(ShuttlegentEditorWebField::Port, McpServer.GetEndpointPort());
 	Endpoint->SetArrayField(ShuttlegentEditorWebField::Tools, ToolValues);
 
-	// Engine toolsets reach the model through the endpoint's toolset tools; empty while the registry is not up
+	// 引擎 Toolset 通过端点的 Toolset 工具提供给模型；注册表未就绪时为空
 	TArray<TSharedPtr<FJsonValue>> ToolsetValues;
 	for (const FShuttlegentToolsetInfo& Toolset : FShuttlegentToolsets::GetToolsets())
 	{
@@ -689,7 +689,7 @@ void FShuttlegentWebProtocol::WritePendingPermission(const TSharedRef<FJsonObjec
 		return;
 	}
 
-	// Target and content come from the tool call the request is about
+	// 目标与内容取自该请求所涉及的工具调用
 	const TSharedPtr<FShuttlegentChatEntry> ToolCall = Model->FindToolCallOf(Permission);
 	const FString Input = ToolCall.IsValid() ? ToolCall->Input : FString();
 
@@ -715,7 +715,7 @@ void FShuttlegentWebProtocol::WriteEntries(const TSharedRef<FJsonObject>& Root, 
 
 		uint32 Fingerprint = FShuttlegentWebProtocolPrivate::Fingerprint(*Entry);
 
-		// Whether a write can still be undone changes with the editor's undo buffer, not with the entry
+		// 写入能否撤销随编辑器撤销缓冲区变化，而不随条目变化
 		if (Entry->Kind == EShuttlegentChatEntryKind::WriteResult)
 		{
 			FText Reason;
@@ -751,7 +751,7 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 	Item->SetStringField(ShuttlegentEditorWebField::Kind, FShuttlegentWebProtocolPrivate::KindName(Entry.Kind));
 	Item->SetBoolField(ShuttlegentEditorWebField::Error, Entry.bError);
 
-	// A user prompt shows its text, with the references it carried listed under it
+	// 用户提示显示其文本，并在下方列出其携带的引用
 	if (Entry.Kind == EShuttlegentChatEntryKind::User)
 	{
 		FString Text;
@@ -802,7 +802,7 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		Item->SetBoolField(ShuttlegentEditorWebField::Undone, Entry.bUndone);
 	}
 
-	// What was confirmed, since what happened is unknown; answered once the user verified the objects
+	// 由于实际执行情况未知，显示已确认的内容；用户核对对象后标记为已答复
 	if (Entry.Kind == EShuttlegentChatEntryKind::WriteUnknown)
 	{
 		Item->SetStringField(ShuttlegentEditorWebField::Action, Entry.WriteResult.Action);
@@ -848,7 +848,7 @@ void FShuttlegentWebProtocol::HandleTurnFinished(bool bCompleted)
 {
 	bStatusDirty = true;
 
-	// Engine toolsets may have come up since the last look
+	// 自上次查看以来，引擎 Toolset 可能已就绪
 	bMcpDirty = true;
 	PendingEvents.Add(bCompleted ? ShuttlegentEditorWebField::EventTurnCompleted : ShuttlegentEditorWebField::EventTurnStopped);
 }
@@ -857,7 +857,7 @@ void FShuttlegentWebProtocol::HandleSettingChanged(UObject* Settings, FPropertyC
 {
 	bStatusDirty = true;
 
-	// Tool and toolset switches are personal settings
+	// 工具与 Toolset 开关属于个人设置
 	bMcpDirty = true;
 }
 

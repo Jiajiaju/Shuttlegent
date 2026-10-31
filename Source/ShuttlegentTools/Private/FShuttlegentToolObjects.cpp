@@ -25,7 +25,7 @@ UObject* FShuttlegentToolObjects::ResolveObject(const FString& PathOrLabel)
 	UObject* Found = StaticFindObject(UObject::StaticClass(), nullptr, *PathOrLabel);
 	if (IsValid(Found)) return Found;
 
-	// An asset that is not loaded yet; a path into a level that is not open stays unresolved
+	// 尚未加载的资源；指向未打开关卡的路径保持无法解析
 	UObject* Loaded = LoadObject<UObject>(nullptr, *PathOrLabel, nullptr, LOAD_NoWarn | LOAD_Quiet);
 	return IsValid(Loaded) ? Loaded : nullptr;
 }
@@ -56,7 +56,7 @@ UClass* FShuttlegentToolObjects::ResolveClass(const FString& NameOrPath)
 		UClass* Class = Cast<UClass>(Object);
 		if (IsValid(Class)) return Class;
 
-		// A Blueprint asset path without the generated class suffix
+		// 不带生成类后缀的 Blueprint 资源路径
 		UClass* Generated = LoadObject<UClass>(nullptr, *(NameOrPath + ShuttlegentToolsConstant::GeneratedClassSuffix), nullptr, LOAD_NoWarn | LOAD_Quiet);
 		return IsValid(Generated) ? Generated : nullptr;
 	}
@@ -93,7 +93,7 @@ FString FShuttlegentToolObjects::ExportValue(const FProperty* Property, const UO
 {
 	if (Property == nullptr || !IsValid(Object)) return FString();
 
-	// ExportText_InContainer skips values equal to the delta, and no delta counts as zero: False and 0 would come out empty
+	// ExportText_InContainer 会跳过与 delta 相等的值，且无 delta 时按零值处理：False 和 0 会导出为空
 	FString Value;
 	Property->ExportTextItem_Direct(Value, Property->ContainerPtrToValuePtr<void>(Object), nullptr, const_cast<UObject*>(Object), PPF_None);
 	if (Value.Len() <= ShuttlegentToolsConstant::MaxValueChars) return Value;
@@ -115,7 +115,7 @@ FProperty* FShuttlegentToolObjects::FindProperty(const UStruct* Struct, const FS
 {
 	if (!IsValid(Struct) || NameOrDisplayName.IsEmpty()) return nullptr;
 
-	// The C++ name wins over a Details panel name that happens to be the same
+	// C++ 名称优先于恰好同名的 Details 面板名称
 	FProperty* ByName = FindFProperty<FProperty>(Struct, FName(*NameOrDisplayName));
 	if (ByName != nullptr) return ByName;
 

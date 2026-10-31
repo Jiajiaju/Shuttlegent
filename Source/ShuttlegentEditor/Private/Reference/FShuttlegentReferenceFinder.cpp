@@ -26,7 +26,7 @@ namespace FShuttlegentReferenceFinderPrivate
 		return GEditor != nullptr ? GEditor->GetEditorWorldContext().World() : nullptr;
 	}
 
-	/** Names starting with the query rank first, then shorter names, then alphabetical. */
+	/** 以查询词开头的名称排在最前，其次按名称从短到长，最后按字母顺序。 */
 	void SortMatches(TArray<FShuttlegentReference>& Matches, const FString& Query)
 	{
 		Matches.Sort([&Query](const FShuttlegentReference& Left, const FShuttlegentReference& Right)
@@ -72,7 +72,7 @@ void FShuttlegentReferenceFinder::Shutdown()
 	FEditorDelegates::MapChange.Remove(MapChangeHandle);
 	FEditorDelegates::PostUndoRedo.Remove(UndoRedoHandle);
 
-	// The registry may already be gone when the editor shuts down; never load it here
+	// 编辑器关闭时注册表可能已不存在；此处绝不加载它
 	FAssetRegistryModule* Module = FModuleManager::GetModulePtr<FAssetRegistryModule>(ShuttlegentEditorReference::AssetRegistryModule);
 	if (Module != nullptr)
 	{
@@ -184,7 +184,7 @@ void FShuttlegentReferenceFinder::GatherAssets()
 	AssetRegistry->GetAssets(Filter, CachedAssets);
 	CachedAssets.RemoveAll([](const FAssetData& Asset) { return Asset.IsRedirector(); });
 
-	// While the registry still scans, keep asking on later searches
+	// 注册表仍在扫描时，后续搜索继续重新获取
 	bAssetsCached = !AssetRegistry->IsLoadingAssets();
 }
 
@@ -196,7 +196,7 @@ void FShuttlegentReferenceFinder::MarkChanged()
 
 bool FShuttlegentReferenceFinder::HandleTick(float DeltaTime)
 {
-	// Deletion events fire before the actor is gone, so references are checked a tick later
+	// 删除事件在 Actor 实际移除之前触发，因此延后一个 tick 再检查引用
 	TickerHandle.Reset();
 	if (!bChangePending) return false;
 

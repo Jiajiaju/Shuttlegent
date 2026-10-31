@@ -5,8 +5,8 @@
 class IShuttlegentTool;
 
 /**
- * Engine toolsets as three editor tools: list_toolsets and describe_toolset let the model find a tool among hundreds
- * without listing them all, call_toolset_tool runs one. Read tools run at once; every other tool goes through the write gate.
+ * 以三个编辑器工具提供引擎 Toolset：list_toolsets 与 describe_toolset 让模型无需全部列出即可在数百个工具中找到所需工具，
+ * call_toolset_tool 负责执行其中一个。只读工具立即执行；其他工具均须经过写入门。
  */
 struct FShuttlegentToolsetTools
 {

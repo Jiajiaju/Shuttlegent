@@ -4,7 +4,7 @@
 #include "Dom/JsonObject.h"
 
 /**
- * Builds the JSON Schema of a tool's arguments object:
+ * 构建工具参数对象的 JSON Schema：
  * FShuttlegentToolSchema().String(TEXT("path"), TEXT("Object path"), true).Integer(TEXT("limit"), TEXT("Page size")).Build()
  */
 class SHUTTLEGENTMCPSERVER_API FShuttlegentToolSchema
@@ -20,13 +20,13 @@ public:
 	FShuttlegentToolSchema& Boolean(const FString& Name, const FString& Description, bool bRequired = false);
 	FShuttlegentToolSchema& StringArray(const FString& Name, const FString& Description, bool bRequired = false);
 
-	/** A JSON object of any shape, such as the arguments passed on to another tool. */
+	/** 任意结构的 JSON 对象，例如转交给另一个工具的参数。 */
 	FShuttlegentToolSchema& Object(const FString& Name, const FString& Description, bool bRequired = false);
 
-	/** A string that must be one of Values. */
+	/** 取值必须为 Values 之一的字符串。 */
 	FShuttlegentToolSchema& Enum(const FString& Name, const FString& Description, const TArray<FString>& Values, bool bRequired = false);
 
-	/** An array of numbers of a fixed length, such as a location [x, y, z]. */
+	/** 定长数值数组，例如位置 [x, y, z]。 */
 	FShuttlegentToolSchema& NumberTuple(const FString& Name, const FString& Description, int32 Length, bool bRequired = false);
 
 	TSharedPtr<FJsonObject> Build() const;

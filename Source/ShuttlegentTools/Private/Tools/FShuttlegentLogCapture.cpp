@@ -14,7 +14,7 @@ TArray<FShuttlegentLogLine> FShuttlegentLogCapture::GetLatest(int32 Count, ELogV
 {
 	FScopeLock ScopeLock(&Lock);
 
-	// Newest first while collecting, then reversed to read in time order
+	// 收集时按从新到旧排列，随后反转为按时间顺序
 	TArray<FShuttlegentLogLine> Latest;
 	for (int32 Step = 1; Step <= Lines.Num() && Latest.Num() < Count; ++Step)
 	{

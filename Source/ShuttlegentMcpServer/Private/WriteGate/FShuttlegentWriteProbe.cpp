@@ -75,7 +75,7 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 		return;
 	}
 
-	// The preview: every actor with its Z now and the Z it will get
+	// 预览：每个 Actor 及其当前 Z 值与将要设置的 Z 值
 	FShuttlegentWriteRequest Request;
 	Request.ToolName = ShuttlegentWriteProbe::ToolName;
 	Request.Action = LOCTEXT("Action", "设置 Actor 位置").ToString();
@@ -108,13 +108,13 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 	Result.bUndoable = Request.bUndoable;
 	Result.Objects = Request.Objects;
 
-	// Writes the confirmed batch and reports it; runs right after confirmation, or DelaySeconds later
+	// 写入已确认的批次并上报结果；在确认后立即运行，或延迟 DelaySeconds 后运行
 	auto Execute = [WeakGate, RequestIdHolder, Actors, PlannedZ, FailFrom, Result]() mutable
 	{
 		const TSharedPtr<FShuttlegentWriteGate> Owner = WeakGate.Pin();
 		if (!Owner.IsValid()) return;
 
-		// One synchronous transaction for the whole batch; the planned values are what was confirmed
+		// 整个批次使用一个同步事务；计划值即为已确认的值
 		Result.RequestId = *RequestIdHolder;
 		int32 Completed = 0;
 		{
@@ -152,7 +152,7 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 			if (Completed == 0) Transaction.Cancel();
 		}
 
-		// The transaction just closed is the one the next undo would revert
+		// 刚关闭的事务即为下一次撤销将回滚的事务
 		if (Completed > 0 && GEditor != nullptr && IsValid(GEditor->Trans)) Result.TransactionId = GEditor->Trans->GetUndoContext(true).TransactionId;
 		Owner->ReportResult(Result);
 	};

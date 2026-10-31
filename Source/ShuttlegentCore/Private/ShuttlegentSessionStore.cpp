@@ -13,7 +13,7 @@
 
 namespace ShuttlegentSessionStorePrivate
 {
-	// Index document fields
+	// 索引文件的字段
 	inline const TCHAR* FieldSessions = TEXT("sessions");
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");
 	inline const TCHAR* FieldTitle = TEXT("title");
@@ -24,7 +24,7 @@ namespace ShuttlegentSessionStorePrivate
 	inline const TCHAR* FieldCreatedAt = TEXT("createdAt");
 	inline const TCHAR* FieldUpdatedAt = TEXT("updatedAt");
 
-	// Transcript entry fields
+	// 会话记录条目的字段
 	inline const TCHAR* FieldTime = TEXT("t");
 	inline const TCHAR* FieldKind = TEXT("kind");
 	inline const TCHAR* FieldData = TEXT("data");
@@ -66,7 +66,7 @@ namespace ShuttlegentSessionStorePrivate
 		return true;
 	}
 
-	/** Session ids come from the runtime; keep only characters that are safe in a file name. */
+	/** 会话 ID 来自运行时；只保留可安全用于文件名的字符。 */
 	FString SanitizeFileName(const FString& SessionId)
 	{
 		FString Safe = SessionId;
@@ -99,7 +99,7 @@ void FShuttlegentSessionStore::UpsertRecord(const FShuttlegentSessionRecord& Rec
 {
 	EnsureLoaded();
 
-	// Opening, resuming or reconfiguring a session is not new content: it keeps its place in the list
+	// 打开、恢复或修改会话配置不算新内容：它在列表中的位置不变
 	const int32 ExistingIndex = Records.IndexOfByPredicate([&Record](const FShuttlegentSessionRecord& Existing) { return Existing.SessionId == Record.SessionId; });
 	if (ExistingIndex != INDEX_NONE)
 	{

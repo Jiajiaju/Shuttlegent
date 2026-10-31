@@ -2,28 +2,28 @@
 
 #include "CoreMinimal.h"
 
-/** One entry of the session index kept by Shuttlegent (session/list of the runtime is not relied on). */
+/** Shuttlegent 自行维护的会话索引中的一条（不依赖运行时的 session/list）。 */
 struct FShuttlegentSessionRecord
 {
-	/** ACP session id. */
+	/** ACP 会话 ID。 */
 	FString SessionId;
 
-	/** Display title, taken from the first prompt. */
+	/** 显示标题，取自首条提问。 */
 	FString Title;
 
-	/** Session cwd (the project directory). */
+	/** 会话的 cwd（项目目录）。 */
 	FString WorkingDirectory;
 
-	/** Model selection as reported by the runtime's config options. */
+	/** 运行时配置选项报告的所选模型。 */
 	FString Model;
 
-	/** Display name of Model, from the same config option; shown in the session list. */
+	/** Model 的显示名，取自同一配置选项；显示在会话列表中。 */
 	FString ModelName;
 
 	FDateTime CreatedAt {};
 
 	FDateTime UpdatedAt {};
 
-	/** Hidden from the session list until restored; the runtime session is kept. */
+	/** 恢复前不在会话列表中显示；运行时会话仍保留。 */
 	bool bArchived = false;
 };

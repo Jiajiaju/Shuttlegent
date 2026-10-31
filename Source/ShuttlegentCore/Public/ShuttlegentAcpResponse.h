@@ -3,18 +3,18 @@
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
 
-/** Outcome of one JSON-RPC request sent to the agent runtime. */
+/** 发给 Agent 运行时的一个 JSON-RPC 请求的结果。 */
 struct FShuttlegentAcpResponse
 {
-	/** true for a "result" response, false for an "error" response or a local failure. */
+	/** "result" 答复时为 true，"error" 答复或本地失败时为 false。 */
 	bool bSuccess = false;
 
-	/** The "result" object; may be empty for results that carry no fields. */
+	/** "result" 对象；不含字段的结果可能为空。 */
 	TSharedPtr<FJsonObject> Result;
 
-	/** JSON-RPC error code when bSuccess is false. */
+	/** bSuccess 为 false 时的 JSON-RPC 错误码。 */
 	int32 ErrorCode = 0;
 
-	/** JSON-RPC error message when bSuccess is false. */
+	/** bSuccess 为 false 时的 JSON-RPC 错误消息。 */
 	FString ErrorMessage;
 };

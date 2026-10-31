@@ -18,10 +18,10 @@
 
 namespace ShuttlegentMcpServerModulePrivate
 {
-	// Module name registered by IMPLEMENT_MODULE below
+	// 由下方 IMPLEMENT_MODULE 注册的模块名
 	inline const FName ModuleName = TEXT("ShuttlegentMcpServer");
 
-	// Core module, which may already be gone when this module shuts down
+	// Core 模块，本模块关闭时它可能已被卸载
 	inline const FName CoreModuleName = TEXT("ShuttlegentCore");
 }
 
@@ -32,7 +32,7 @@ void FShuttlegentMcpServerModule::StartupModule()
 	WriteProbe = MakeShared<FShuttlegentWriteProbe>(WriteGate.ToSharedRef());
 	QuestionGate = MakeShared<FShuttlegentQuestionGate>();
 
-	// Commandlets have no runtime to serve
+	// Commandlet 没有需要服务的运行时
 	if (IsRunningCommandlet()) return;
 
 	Endpoint = MakeShared<FShuttlegentMcpEndpoint>();
@@ -49,7 +49,7 @@ void FShuttlegentMcpServerModule::StartupModule()
 	const TWeakPtr<FShuttlegentMcpEndpoint> WeakEndpoint = Endpoint;
 	Service->McpServersProvider = [WeakEndpoint]()
 	{
-		// The editor endpoint first, then the project's external servers
+		// 先编辑器端点，后项目的外部服务器
 		const TSharedPtr<FShuttlegentMcpEndpoint> Pinned = WeakEndpoint.Pin();
 		TArray<TSharedPtr<FJsonValue>> Servers = Pinned.IsValid() ? Pinned->MakeDeclaration() : TArray<TSharedPtr<FJsonValue>>();
 		Servers.Append(FShuttlegentExternalMcp::MakeDeclarations());
@@ -57,7 +57,7 @@ void FShuttlegentMcpServerModule::StartupModule()
 	};
 	Service->RuntimeEnvironmentProvider = [WeakEndpoint](TMap<FString, FString>& Environment)
 	{
-		// A runtime that starts gets a new endpoint token; Shuttlegent's own runtime plugins learn it from the environment
+		// 每次启动的运行时都会获得新的端点 token；Shuttlegent 自有的运行时插件从环境变量中获取它
 		const TSharedPtr<FShuttlegentMcpEndpoint> Pinned = WeakEndpoint.Pin();
 		if (!Pinned.IsValid() || !Pinned->IsListening()) return;
 

@@ -2,7 +2,7 @@
 
 namespace ShuttlegentProjectSettingsPrivate
 {
-	// Settings viewer location: Project Settings > Shuttlegent > General
+	// 设置面板中的位置：项目设置 > Shuttlegent > General
 	inline const TCHAR* ContainerName = TEXT("Project");
 	inline const TCHAR* CategoryName = TEXT("Shuttlegent");
 	inline const TCHAR* SectionName = TEXT("General");

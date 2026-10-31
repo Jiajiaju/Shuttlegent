@@ -67,7 +67,7 @@ void FShuttlegentEditorModule::ShutdownModule()
 
 TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs& Args)
 {
-	// One panel for the module's lifetime: a reopened tab shows the same page instead of loading it again
+	// 模块生命周期内只有一个面板：重新打开的标签页显示同一页面，而不是重新加载
 	if (!Panel.IsValid()) Panel = SNew(SShuttlegentWebPanel).Model(ChatModel);
 	Panel->SetHostTabOpen(true);
 
@@ -86,7 +86,7 @@ TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs&
 
 void FShuttlegentEditorModule::HandleEngineInitComplete()
 {
-	// Waits a moment so the editor's own startup work comes first; the setting is read when the delay ends
+	// 稍作等待，让编辑器自身的启动工作先行；延迟结束时才读取该设置
 	const TWeakPtr<FShuttlegentChatModel> WeakModel = ChatModel;
 	PrewarmHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakModel](float DeltaTime)
 	{

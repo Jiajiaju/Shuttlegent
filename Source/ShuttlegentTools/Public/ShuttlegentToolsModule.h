@@ -8,10 +8,10 @@ class FShuttlegentLogCapture;
 class FShuttlegentToolsModule : public IModuleInterface
 {
 private:
-	/** Output Log lines since startup, for read_log. */
+	/** 自启动以来的 Output Log 日志行，供 read_log 使用。 */
 	TSharedPtr<FShuttlegentLogCapture> LogCapture;
 
-	/** The general editor tools, registered with the MCP endpoint as an IShuttlegentToolProvider. */
+	/** 通用编辑器工具，作为 IShuttlegentToolProvider 注册到 MCP 端点。 */
 	TSharedPtr<FShuttlegentBuiltinToolProvider> Provider;
 
 public:

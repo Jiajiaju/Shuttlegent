@@ -4,7 +4,7 @@
 
 #include "Tool/IShuttlegentTool.h"
 
-/** Common base of the built-in tools: holds the definition each tool fills in its constructor. */
+/** 内置工具的公共基类：持有各工具在构造函数中填写的定义。 */
 class FShuttlegentToolBase : public IShuttlegentTool
 {
 protected:

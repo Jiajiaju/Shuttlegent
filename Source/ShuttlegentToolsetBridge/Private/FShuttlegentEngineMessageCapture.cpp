@@ -22,7 +22,7 @@ FString FShuttlegentEngineMessageCapture::GetMessages() const
 
 void FShuttlegentEngineMessageCapture::Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category)
 {
-	// Background work (asset builds, streaming) logs from other threads at the same time; only the tool's own thread counts
+	// 后台任务（资源构建、流送）会同时从其他线程写日志；只统计工具自身所在线程的消息
 	if (!IsInGameThread() || Message == nullptr) return;
 
 	const ELogVerbosity::Type Level = static_cast<ELogVerbosity::Type>(Verbosity & ELogVerbosity::VerbosityMask);

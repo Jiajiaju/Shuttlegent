@@ -4,7 +4,7 @@
 
 #include "FShuttlegentSampleToolProvider.h"
 
-/** Registers the sample's tool provider with Shuttlegent while the module is loaded. */
+/** 在模块加载期间向 Shuttlegent 注册示例的工具提供者。 */
 class FShuttlegentSampleModule : public IModuleInterface
 {
 private:

@@ -2,45 +2,45 @@
 
 #include "CoreMinimal.h"
 
-/** Limits shared by the built-in editor tools (Shuttlegent.md section 10.2). */
+/** 内置编辑器工具共用的限制值（Shuttlegent.md 第 10.2 节）。 */
 namespace ShuttlegentToolsConstant
 {
-	// Longest property value shown per property, in characters; longer values end with an ellipsis
+	// 每个属性显示的属性值最大长度（字符数）；超出部分以省略号结尾
 	inline constexpr int32 MaxValueChars = 400;
 
-	// Asset tags shown by get_asset at most
+	// get_asset 最多显示的资源标签数
 	inline constexpr int32 MaxAssetTags = 40;
 
-	// Log lines kept since editor start for read_log, and how many it returns by default and at most
+	// 自编辑器启动以来为 read_log 保留的日志行数，以及其默认返回行数与最大返回行数
 	inline constexpr int32 LogCapacity = 5000;
 	inline constexpr int32 DefaultLogLines = 100;
 	inline constexpr int32 MaxLogLines = 500;
 
-	// Undo and redo steps one call takes at most
+	// 单次调用最多执行的撤销与重做步数
 	inline constexpr int32 MaxHistorySteps = 20;
 
-	// Answers ask_user offers at least and at most; the panel maps them to the number keys 1-6
+	// ask_user 提供答案数的下限与上限；面板将其映射到数字键 1-6
 	inline constexpr int32 MinQuestionOptions = 2;
 	inline constexpr int32 MaxQuestionOptions = 6;
 
-	// First character of an object or package path; a name without it is an actor label
+	// 对象路径或包路径的首字符；不以该字符开头的名称视为 Actor 标签
 	inline const TCHAR* PathPrefix = TEXT("/");
 
-	// Default package path searched by find_assets
+	// find_assets 默认搜索的包路径
 	inline const TCHAR* DefaultAssetRoot = TEXT("/Game");
 
-	// Class name prefixes a model may write that UE class names omit (AStaticMeshActor -> StaticMeshActor)
+	// 模型可能写出、而 UE 类名中省略的类名前缀（AStaticMeshActor -> StaticMeshActor）
 	inline const TCHAR* ClassPrefixes[] = { TEXT("A"), TEXT("U") };
 
-	// Suffix of a Blueprint generated class
+	// Blueprint 生成类的后缀
 	inline const TCHAR* GeneratedClassSuffix = TEXT("_C");
 
-	// Shown after a value cut to MaxValueChars
+	// 截断至 MaxValueChars 的值后附加的显示内容
 	inline const TCHAR* Ellipsis = TEXT("…");
 
-	// Property metadata key of the Details panel category
+	// Details 面板分类的属性元数据键
 	inline const TCHAR* MetaCategory = TEXT("Category");
 
-	// Type shown for bool properties, which C++ declares as uint8 bitfields as often as bool
+	// bool 属性显示的类型；C++ 中 bool 属性声明为 uint8 位域与声明为 bool 同样常见
 	inline const TCHAR* BoolTypeName = TEXT("bool");
 }

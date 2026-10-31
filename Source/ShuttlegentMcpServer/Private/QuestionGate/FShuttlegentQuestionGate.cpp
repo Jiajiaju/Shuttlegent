@@ -48,7 +48,7 @@ void FShuttlegentQuestionGate::SetAnswererAttached(bool bAttached)
 	bAnswererAttached = bAttached;
 	if (bAttached) return;
 
-	// Nobody is left to answer: the agent asks in its reply instead
+	// 已无人可作答：agent 改为在回复中提问
 	while (Pending.Num() > 0)
 	{
 		Close(Pending[0].QuestionId, EShuttlegentQuestionOutcome::NoPanel, FString());

@@ -46,7 +46,7 @@
 
 namespace SShuttlegentWebPanelPrivate
 {
-	// Editor brush filled with the placeholder colour, and the typeface of its caption
+	// 以占位颜色填充的编辑器画刷，及其说明文字的字体
 	inline const FName WhiteBrush = TEXT("WhiteBrush");
 	inline const TCHAR* TypefaceRegular = TEXT("Regular");
 }
@@ -68,7 +68,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 			SAssignNew(BrowserSlot, SBox)
 		]
 
-		// Covers the page until it reports ready: the first load overlaps editor startup and can take many seconds
+		// 在页面报告就绪前覆盖页面：首次加载与编辑器启动重叠，可能耗时数秒乃至更久
 		+ SOverlay::Slot()
 		[
 			SNew(SBox)
@@ -78,7 +78,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 			]
 		]
 
-		// Content Browser drawer, slid over the bottom of the page like the editor's status bar drawer
+		// Content Browser 抽屉，与编辑器状态栏抽屉一样从页面底部滑出覆盖
 		+ SOverlay::Slot()
 		.VAlign(VAlign_Bottom)
 		[
@@ -105,7 +105,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 	ReferenceFinder->Initialize();
 	ReferenceFinder->OnReferencesChanged.AddSP(this, &SShuttlegentWebPanel::PushReferenceValidity);
 
-	// Active timers only run once the widget is painted, so a panel restored behind another tab creates no browser
+	// 活动计时器仅在控件被绘制后才运行，因此恢复在其他标签页之后的面板不会创建浏览器
 	RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &SShuttlegentWebPanel::HandleCreateBrowser));
 	Model->EnsureRuntime();
 }
@@ -163,32 +163,32 @@ void SShuttlegentWebPanel::SetHostTabOpen(bool bOpen)
 {
 	if (bHostTabOpen == bOpen) return;
 
-	// While no tab shows the panel, requests fall back to UShuttlegentSettings::PermissionPolicy; pending ones are rejected
+	// 没有标签页显示面板时，请求回退到 UShuttlegentSettings::PermissionPolicy 处理；待处理的请求被拒绝
 	bHostTabOpen = bOpen;
 	if (Model.IsValid()) Model->SetPermissionHandlerAttached(bOpen);
 }
 
 FReply SShuttlegentWebPanel::OnPreviewKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
 {
-	// CEF consumes every key it receives, so the panel's own chords must be taken here, before the page
+	// CEF 会消耗其收到的每个按键，因此面板自身的组合键必须在此处、先于页面截获
 	if (InKeyEvent.GetKey() == EKeys::Escape && bDrawerOpen)
 	{
 		CloseDrawer(TEXT("Esc"));
 		return FReply::Handled();
 	}
 
-	// Works before the page is ready too, so a page that failed to load can be reloaded
+	// 页面就绪前同样生效，因此加载失败的页面也可以重新加载
 	if (IsReloadPageChord(InKeyEvent))
 	{
 		ReloadPage();
 		return FReply::Handled();
 	}
 
-	// Panel shortcuts go to the page as commands, whether the page or the drawer has focus
+	// 无论焦点在页面还是抽屉，面板快捷键都以命令形式发送给页面
 	const TCHAR* Command = FindPanelCommand(InKeyEvent);
 	if (Command != nullptr && bPageReady)
 	{
-		// Commands that put the caret in the page need the browser to own keyboard focus (it may sit in the drawer)
+		// 将光标置于页面中的命令需要浏览器拥有键盘焦点（焦点可能位于抽屉中）
 		const bool bFocusesPage = Command == ShuttlegentEditorWeb::CommandSearchSessions || Command == ShuttlegentEditorWeb::CommandFocusInput || Command == ShuttlegentEditorWeb::CommandNewSession;
 		if (bFocusesPage && Browser.IsValid()) FSlateApplication::Get().SetKeyboardFocus(Browser, EFocusCause::SetDirectly);
 
@@ -199,17 +199,17 @@ FReply SShuttlegentWebPanel::OnPreviewKeyDown(const FGeometry& MyGeometry, const
 	const bool bCtrlSpace = InKeyEvent.GetKey() == EKeys::SpaceBar && InKeyEvent.IsControlDown() && !InKeyEvent.IsAltDown() && !InKeyEvent.IsShiftDown();
 	if (!bCtrlSpace) return SCompoundWidget::OnPreviewKeyDown(MyGeometry, InKeyEvent);
 
-	// Ctrl+Space opens the panel's own Content Browser drawer in every host window; the status bar drawer is not used
+	// 在任何宿主窗口中，Ctrl+Space 都打开面板自有的 Content Browser 抽屉；不使用状态栏抽屉
 	ToggleDrawer();
 	return FReply::Handled();
 }
 
 FReply SShuttlegentWebPanel::OnPreviewMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
-	// A click on the page outside the drawer closes it; the click still reaches the page
+	// 在抽屉以外的页面区域点击会关闭抽屉；该点击仍会传递到页面
 	if (!bDrawerOpen || !DrawerSlot.IsValid()) return FReply::Unhandled();
 
-	// The widget path actually under the cursor decides, not cached geometry (the drawer slides with a render transform)
+	// 以光标下实际的控件路径为准，而非缓存的几何信息（抽屉通过渲染变换滑动）
 	const FWidgetPath PathUnderCursor = FSlateApplication::Get().LocateWindowUnderMouse(MouseEvent.GetScreenSpacePosition(), FSlateApplication::Get().GetInteractiveTopLevelWindows());
 	if (PathUnderCursor.ContainsWidget(DrawerSlot.Get())) return FReply::Unhandled();
 
@@ -283,7 +283,7 @@ TSharedRef<SWidget> SShuttlegentWebPanel::BuildPlaceholder() const
 
 EActiveTimerReturnType SShuttlegentWebPanel::HandleCreateBrowser(double InCurrentTime, float InDeltaTime)
 {
-	// SWebBrowserView only checks whether the module is loaded; without this the view spins forever
+	// SWebBrowserView 只检查模块是否已加载；缺少这一步，视图会一直处于加载转圈状态
 	FModuleManager::Get().LoadModuleChecked(ShuttlegentEditorWeb::WebBrowserModule);
 
 	Bridge.Reset(NewObject<UShuttlegentWebBridge>(GetTransientPackage()));
@@ -302,9 +302,9 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleCreateBrowser(double InCurren
 		.OnConsoleMessage(this, &SShuttlegentWebPanel::HandleConsoleMessage)
 		.OnSuppressContextMenu_Lambda([]() { return true; }));
 
-	// The browser window creates its 1x1 shared view texture asynchronously on the render thread (CEFWebBrowserWindow.cpp:523).
-	// Its first resize, in this same frame, needs that texture to exist; otherwise the engine releases it and never recreates it,
-	// and the page stays blank with "EnsureShareable() - Invalid SlateTexture" errors (CEFWebBrowserWindowRHIHelper.cpp:242, :186)
+	// 浏览器窗口在渲染线程上异步创建其 1x1 共享视图纹理（CEFWebBrowserWindow.cpp:523）。
+	// 其首次调整尺寸发生在同一帧内，需要该纹理已存在；否则引擎会释放它且不再重建，
+	// 页面将保持空白并报 "EnsureShareable() - Invalid SlateTexture" 错误（CEFWebBrowserWindowRHIHelper.cpp:242、:186）
 	FlushRenderingCommands();
 
 	Browser->BindUObject(ShuttlegentEditorWeb::BridgeName, Bridge.Get());
@@ -516,7 +516,7 @@ FString SShuttlegentWebPanel::GetDraggedItems(const FDragDropEvent& DragDropEven
 		}
 	}
 
-	// Outliner drags arrive as a composite operation that carries the actor operation
+	// 来自 Outliner 的拖拽以携带 Actor 操作的复合操作形式到达
 	TSharedPtr<FActorDragDropOp> ActorOp = DragDropEvent.GetOperationAs<FActorDragDropOp>();
 	const TSharedPtr<FCompositeDragDropOp> CompositeOp = DragDropEvent.GetOperationAs<FCompositeDragDropOp>();
 	if (!ActorOp.IsValid() && CompositeOp.IsValid()) ActorOp = CompositeOp->GetSubOp<FActorDragDropOp>();
@@ -535,7 +535,7 @@ void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& Refe
 {
 	if (!Model.IsValid()) return;
 
-	// A reference that no longer exists blocks the send; the page marks it and keeps the draft
+	// 已不存在的引用会阻止发送；页面将其标记出来并保留草稿
 	TArray<FString> InvalidPaths;
 	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), InvalidPaths);
 
@@ -571,7 +571,7 @@ void SShuttlegentWebPanel::HandleQueryReferences(const FString& Query)
 	TArray<FShuttlegentReference> Assets;
 	ReferenceFinder->Search(Query, Actors, Assets);
 
-	// The selection snapshot is offered only before the user narrows the menu
+	// 仅在用户缩小菜单范围之前提供选中项快照
 	const TArray<FShuttlegentReference> Selection = Query.TrimStartAndEnd().IsEmpty() ? ReferenceFinder->GetSelection() : TArray<FShuttlegentReference>();
 
 	const TSharedRef<FJsonObject> Result = MakeShared<FJsonObject>();
@@ -610,7 +610,7 @@ void SShuttlegentWebPanel::CallPage(const TCHAR* Entry, const FString& ArgumentL
 
 void SShuttlegentWebPanel::HandlePageReady()
 {
-	// The page asks again after any reload, so the snapshot never relies on OnLoadCompleted (it also fires after a cancelled navigation)
+	// 页面在每次重新加载后都会再次请求，因此快照从不依赖 OnLoadCompleted（它在导航被取消后也会触发）
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent panel: page ready%s"), bPageReady ? TEXT(" again") : TEXT(""));
 	bPageReady = true;
 
@@ -633,7 +633,7 @@ bool SShuttlegentWebPanel::HandleBeforePopup(FString Url, FString Frame)
 	const bool bExternal = Url.StartsWith(ShuttlegentEditorWeb::HttpPrefix) || Url.StartsWith(ShuttlegentEditorWeb::HttpsPrefix);
 	if (bExternal) FPlatformProcess::LaunchURL(*Url, nullptr, nullptr);
 
-	// The panel never opens a second browser window
+	// 面板从不打开第二个浏览器窗口
 	return true;
 }
 
@@ -672,7 +672,7 @@ void SShuttlegentWebPanel::OpenDrawer()
 {
 	if (!ContentBrowser.IsValid())
 	{
-		// Not the primary browser: SyncBrowserTo and "Browse to asset" keep going to the editor's own Content Browser
+		// 不作为主浏览器：SyncBrowserTo 与 "Browse to asset" 仍指向编辑器自身的 Content Browser
 		FContentBrowserConfig Config;
 		Config.bCanSetAsPrimaryBrowser = false;
 
@@ -684,7 +684,7 @@ void SShuttlegentWebPanel::OpenDrawer()
 			[
 				SNew(SVerticalBox)
 
-				// Resize grip on the top edge, dragged like the editor drawer's edge
+				// 顶边的调整尺寸手柄，拖动方式与编辑器抽屉的边缘相同
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				[
@@ -714,7 +714,7 @@ void SShuttlegentWebPanel::OpenDrawer()
 			]);
 	}
 
-	// Keyboard focus stays where it was; the drawer only takes focus when the user clicks into it
+	// 键盘焦点保持原位；仅当用户点击进入抽屉时抽屉才获得焦点
 	bDrawerOpen = true;
 	bDrawerShown = true;
 	DrawerSlide.Play(AsShared(), false, DrawerSlide.IsPlaying() ? DrawerSlide.GetSequenceTime() : 0.0f, false);
@@ -740,7 +740,7 @@ void SShuttlegentWebPanel::CloseDrawer(const TCHAR* Reason)
 	PlayDrawerSlide();
 	CallPage(ShuttlegentEditorWeb::JsOnDrawerState, ShuttlegentEditorWeb::JsFalse);
 
-	// Focus that was inside the drawer would be lost with it; give it back to the page's draft
+	// 原本位于抽屉内的焦点会随抽屉一同丢失；将其交还给页面的草稿输入框
 	if (bFocusInDrawer && Browser.IsValid())
 	{
 		FSlateApplication::Get().SetKeyboardFocus(Browser, EFocusCause::SetDirectly);
@@ -751,7 +751,7 @@ void SShuttlegentWebPanel::CloseDrawer(const TCHAR* Reason)
 
 void SShuttlegentWebPanel::HandleDrawerDragLeft()
 {
-	// Like the editor's content drawer: a drag that leaves the drawer (an asset on its way to the page or the viewport) dismisses it
+	// 与编辑器的内容抽屉相同：离开抽屉的拖拽（资产正被拖向页面或视口）会将其收起
 	if (bDrawerOpen && FSlateApplication::Get().IsDragDropping()) CloseDrawer(TEXT("drag left the drawer"));
 }
 
@@ -767,7 +767,7 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleDrawerSlideTick(double InCurr
 {
 	if (DrawerSlide.IsPlaying()) return EActiveTimerReturnType::Continue;
 
-	// The closing slide reached the start: hide the drawer
+	// 关闭滑动已回到起点：隐藏抽屉
 	if (DrawerSlide.IsAtStart()) bDrawerShown = false;
 	FSlateThrottleManager::Get().LeaveResponsiveMode(DrawerSlideThrottle);
 	DrawerSlideTimer.Reset();
@@ -776,7 +776,7 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleDrawerSlideTick(double InCurr
 
 TOptional<FSlateRenderTransform> SShuttlegentWebPanel::GetDrawerTransform() const
 {
-	// Bottom-aligned drawer pushed down by the part of its height not yet slid in, as SDrawerOverlay does
+	// 底部对齐的抽屉按其尚未滑入的高度部分向下偏移，与 SDrawerOverlay 的做法相同
 	const float Height = GetDrawerHeight().Get();
 	return FSlateRenderTransform(FVector2f(0.0f, Height * (1.0f - DrawerSlide.GetLerp())));
 }
@@ -785,12 +785,12 @@ void SShuttlegentWebPanel::HandleDrawerFocusChanging(const FFocusEvent& FocusEve
 {
 	if (!bDrawerOpen || NewPath.Widgets.Num() == 0 || NewPath.ContainsWidget(this)) return;
 
-	// Clicking something in the panel that takes no focus (the resize grip, a border) hands focus to the nearest
-	// focusable ancestor, typically the hosting SDockingTabStack: that is still this panel, not leaving it
+	// 点击面板中不接受焦点的元素（调整尺寸手柄、边框）会将焦点交给最近的可聚焦祖先，
+	// 通常是承载面板的 SDockingTabStack：这仍属于本面板，不算离开
 	FWidgetPath PanelPath;
 	if (NewWidget.IsValid() && FSlateApplication::Get().GeneratePathToWidgetUnchecked(AsShared(), PanelPath, EVisibility::Visible) && PanelPath.ContainsWidget(NewWidget.Get())) return;
 
-	// A menu opened from inside the drawer (e.g. a Content Browser context menu) keeps it open, as the editor drawer does
+	// 从抽屉内部打开的菜单（例如 Content Browser 上下文菜单）会使抽屉保持打开，与编辑器抽屉的行为一致
 	const TSharedPtr<SWidget> MenuHost = FSlateApplication::Get().GetMenuHostWidget();
 	if (MenuHost.IsValid())
 	{
@@ -821,7 +821,7 @@ FReply SShuttlegentWebPanel::HandleGripMouseMove(const FGeometry& Geometry, cons
 {
 	if (!bResizingDrawer) return FReply::Unhandled();
 
-	// The drawer is bottom-aligned: its height is the distance from the cursor to the panel's bottom edge
+	// 抽屉底部对齐：其高度为光标到面板底边的距离
 	const FGeometry PanelGeometry = GetTickSpaceGeometry();
 	const float PanelHeight = PanelGeometry.GetLocalSize().Y;
 	if (PanelHeight <= 0.0f) return FReply::Handled();

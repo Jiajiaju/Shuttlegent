@@ -9,15 +9,13 @@ class FRunnableThread;
 class FEvent;
 
 /**
- * The DeepSeek Harness runtime as a child process with redirected stdio.
+ * 以子进程运行、标准输入输出重定向的 DeepSeek Harness 运行时。
  *
- * Windows only. The process starts suspended with an explicit environment block and
- * launch directory, is assigned to a kill-on-close Job Object, then resumed, so it and
- * its children never outlive the editor.
+ * 仅限 Windows。进程以显式的环境块与启动目录挂起启动，加入关闭即终止的 Job Object 后再恢复，
+ * 保证它及其子进程不会比编辑器存活更久。
  *
- * Threading: stdin is written by a dedicated writer thread (a full pipe never blocks
- * the caller); stdout and stderr are read by one thread each and split into lines.
- * Every public method is safe to call from the game thread.
+ * 线程：stdin 由专用写线程写入（管道写满也不会阻塞调用方）；stdout 与 stderr 各由一个线程读取并按行切分。
+ * 所有公开方法都可在游戏线程安全调用。
  */
 class FShuttlegentRuntimeProcess
 {
@@ -50,31 +48,31 @@ public:
 	FShuttlegentRuntimeProcess& operator=(const FShuttlegentRuntimeProcess&) = delete;
 
 	/**
-	 * Starts the process. Fails when a process is already running.
-	 * @param Spec      Executable, arguments, launch directory and the complete environment.
-	 * @param OutError  Reason on failure.
+	 * 启动进程。已有进程在运行时失败。
+	 * @param Spec      可执行文件、参数、启动目录与完整环境。
+	 * @param OutError  失败原因。
 	 */
 	bool Launch(const FShuttlegentRuntimeLaunchSpec& Spec, FString& OutError);
 
-	/** Queues one line for stdin; a trailing LF is appended. Thread-safe and non-blocking. */
+	/** 将一行加入 stdin 写入队列，末尾追加 LF。线程安全，不阻塞。 */
 	void EnqueueLine(const FString& Line);
 
-	/** Pops one complete stdout line (without the line terminator). */
+	/** 取出一整行 stdout（不含行尾符）。 */
 	bool DequeueStdOutLine(FString& OutLine) { return StdOutLines.Dequeue(OutLine); }
 
-	/** Pops one complete stderr line (without the line terminator). */
+	/** 取出一整行 stderr（不含行尾符）。 */
 	bool DequeueStdErrLine(FString& OutLine) { return StdErrLines.Dequeue(OutLine); }
 
 	bool IsRunning() const;
 
-	/** Exit code once the process has exited (kept after Shutdown); INDEX_NONE while running or never started. */
+	/** 进程退出后的退出码（Shutdown 后仍保留）；运行中或从未启动时为 INDEX_NONE。 */
 	int32 GetExitCode() const;
 
 	uint32 GetProcessId() const { return ProcessId; }
 
 	/**
-	 * Closes stdin so the runtime exits on its own, waits up to TimeoutSeconds, then terminates
-	 * it. Joins all I/O threads and releases every handle. Safe to call repeatedly.
+	 * 关闭 stdin 让运行时自行退出，最多等待 TimeoutSeconds，超时则强制结束。
+	 * 等待所有 I/O 线程结束并释放全部句柄。可重复调用。
 	 */
 	void Shutdown(float TimeoutSeconds);
 

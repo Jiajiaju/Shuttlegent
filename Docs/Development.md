@@ -59,7 +59,8 @@ git submodule update --init
 - 初始化、缺少密钥、密钥错误；
 - MCP 读写工具、只读沙箱；
 - 会话恢复、取消；
-- 网关路由、并行会话。
+- 网关路由、并行会话；
+- 图片输入（默认模型与 `deepseek-flash`）、从绝对路径加载的 Harness 插件能否收到会话事件。
 
 升级 Harness 子模块或重新构建运行时后都要跑一遍。
 
@@ -76,6 +77,16 @@ git submodule update --init
 ```
 
 场景清单与参数见 [Build/Probe/README.md](../Build/Probe/README.md)。
+
+### 4.1 工具选择评测
+
+`Build/Eval/RunEval.ps1` 把一组策划与美术的常见任务（如“把选中灯光强度改成 5000”“给数据表加一行”）交给真实模型，对一个仿真编辑器运行，检查 Agent 是否调用了正确的工具、参数是否正确、有没有多余的写操作。改动系统提示词、工具说明、技能或模型后跑一遍，对比通过数（会消耗模型 token）：
+
+```powershell
+& .\Build\Eval\RunEval.ps1
+```
+
+任务、检查项与工具快照的维护见 [Build/Eval/README.md](../Build/Eval/README.md)。
 
 ## 5. 控制台命令
 

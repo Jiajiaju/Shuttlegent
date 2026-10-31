@@ -27,6 +27,10 @@ Output directory for logs and the test workspace. Defaults to <plugin>/Saved/Pro
 Project whose editor preferences hold the model key. Defaults to the first directory
 above the plugin that contains a .uproject file.
 
+.PARAMETER Only
+Run only the named scenarios (e.g. -Only s11_image,s13_image_flash); the others are reported as SKIP.
+s07_resume needs s05_tools in the same run.
+
 .PARAMETER SkipLiveModel
 Skip scenarios that need a valid model key.
 
@@ -45,6 +49,7 @@ param(
     [string]$OutDir = '',
     [string]$ProjectDir = '',
     [int]$Port = 27999,
+    [string[]]$Only = @(),
     [switch]$SkipLiveModel,
     [switch]$LaunchFromWorkspace
 )
@@ -135,14 +140,17 @@ function Invoke-Scenario {
     param(
         [string]$Name,
         [string]$HomeName,
-        [string[]]$Prompts = @(),
+        [object[]]$Prompts = @(),
         [string]$Permission = 'reject',
         [double]$CancelAfter = -1,
         [string]$Resume = '',
         [string]$Key = '',
         [string[]]$ExtraPatches = @(),
-        [string[]]$ParallelPrompts = @()
+        [string[]]$ParallelPrompts = @(),
+        [hashtable]$ExtraEnv = @{}
     )
+
+    if ($Only.Count -gt 0 -and $Only -notcontains $Name) { return }
 
     $Command = $BaseCommand + @('--profile', 'acp', '--patch', $PatchFile)
     foreach ($Extra in $ExtraPatches) { $Command += @('--patch', $Extra) }
@@ -166,6 +174,7 @@ function Invoke-Scenario {
         permission = $Permission
         timeout = 240
     }
+    foreach ($EnvName in $ExtraEnv.Keys) { $Scenario.env[$EnvName] = $ExtraEnv[$EnvName] }
     if ($CancelAfter -ge 0) { $Scenario.cancel_after = $CancelAfter }
     if ($Resume) { $Scenario.resume = $Resume }
     if ($ParallelPrompts.Count -gt 0) { $Scenario.parallel_prompts = $ParallelPrompts }
@@ -184,7 +193,9 @@ function Invoke-Scenario {
 function Get-SessionId {
     param([string]$Name)
 
-    $Line = Get-Content (Join-Path $OutDir "$Name.jsonl") | Where-Object { $_ -match '"kind": "session"' } | Select-Object -First 1
+    $LogFile = Join-Path $OutDir "$Name.jsonl"
+    if (-not (Test-Path $LogFile)) { return '' }
+    $Line = Get-Content $LogFile | Where-Object { $_ -match '"kind": "session"' } | Select-Object -First 1
     if (-not $Line) { return '' }
     return ($Line | ConvertFrom-Json).data.sessionId
 }
@@ -223,6 +234,21 @@ try {
         # M3.7 precondition: two sessions of one runtime prompted at the same time (Shuttlegent.md section 14.3.7)
         $LongPrompt = 'Without using any tool, write the numbers from 1 to 120 in English words, one per line.'
         Invoke-Scenario -Name 's10_parallel' -HomeName 'parallel' -ParallelPrompts @($LongPrompt, $LongPrompt) -Key $ApiKey
+
+        # H6: does the default model route accept and read an image (left half red, right half blue)
+        $ImagePrompt = @{ text = 'Without using any tool: what colour is the left half of this image, and what colour is the right half? Answer in English in one short sentence.'; image = (Join-Path $ProbeDir 'fixtures\split-red-blue.png') }
+        Invoke-Scenario -Name 's11_image' -HomeName 'image' -Prompts @($ImagePrompt) -Key $ApiKey
+
+        # H6: the same image on deepseek-flash, which the llm-deepseek catalog lists with image input
+        $FlashOverlay = Join-Path $OutDir 'image-flash.overlay.yml'
+        [IO.File]::WriteAllText($FlashOverlay, "- id: acp`n  config:`n    provider: deepseek-official`n    model: deepseek-flash`n", $Utf8NoBom)
+        Invoke-Scenario -Name 's13_image_flash' -HomeName 'imageflash' -Prompts @($ImagePrompt) -Key $ApiKey -ExtraPatches @($FlashOverlay)
+
+        # H1: a plugin loaded from an absolute path by a patch, without changing Harness sources, receives session events
+        $TapPlugin = (Join-Path $ProbeDir 'fixtures\event-tap.mjs').Replace('\', '/')
+        $TapOverlay = Join-Path $OutDir 'event-tap.overlay.yml'
+        [IO.File]::WriteAllText($TapOverlay, "- insert:`n    - id: shuttlegent-event-tap`n      name: '$TapPlugin'`n", $Utf8NoBom)
+        Invoke-Scenario -Name 's12_plugin' -HomeName 'plugin' -Prompts @('Call the ue_read_probe tool, then tell me its result in one sentence.') -Key $ApiKey -ExtraPatches @($TapOverlay) -ExtraEnv @{ SHUTTLEGENT_EVENT_TAP_LOG = (Join-Path $OutDir 's12_plugin.events.jsonl') }
     }
 }
 finally {

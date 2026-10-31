@@ -1,0 +1,40 @@
+{
+  "$comment": "The editor state the evaluation mock answers from. A small level, a few assets, settings, log lines and engine toolsets; write tools report success without changing it.",
+  "level": "/Game/Maps/Hall",
+  "actors": [
+    { "label": "PlayerStart", "class": "PlayerStart", "location": [0, 0, 100] },
+    { "label": "Floor", "class": "StaticMeshActor", "location": [0, 0, 0] },
+    { "label": "PointLight_Hall", "class": "PointLight", "location": [200, 0, 300], "properties": { "Intensity": 3000, "LightColor": "(R=255,G=255,B=255,A=255)" } },
+    { "label": "PointLight_Corridor", "class": "PointLight", "location": [800, 0, 300], "properties": { "Intensity": 2000, "LightColor": "(R=255,G=255,B=255,A=255)" } },
+    { "label": "PointLight_Stage", "class": "PointLight", "location": [-600, 400, 300], "properties": { "Intensity": 2500, "LightColor": "(R=255,G=255,B=255,A=255)" } },
+    { "label": "DirectionalLight_Sun", "class": "DirectionalLight", "location": [0, 0, 1000] },
+    { "label": "SkyLight", "class": "SkyLight", "location": [0, 0, 1200] },
+    { "label": "TempCube_1", "class": "StaticMeshActor", "location": [300, 300, 50] },
+    { "label": "TempCube_2", "class": "StaticMeshActor", "location": [350, -200, 50] },
+    { "label": "StaticMeshActor_12", "class": "StaticMeshActor", "location": [900, 600, 0] },
+    { "label": "StaticMeshActor_13", "class": "StaticMeshActor", "location": [-900, 600, 0] }
+  ],
+  "selection": ["PointLight_Corridor", "PointLight_Stage"],
+  "assets": [
+    { "path": "/Game/Characters/Hero/SK_Hero", "class": "SkeletalMesh", "referencedBy": ["/Game/Characters/Hero/BP_Hero", "/Game/Characters/Hero/ABP_Hero", "/Game/Maps/Hall"] },
+    { "path": "/Game/Characters/Hero/BP_Hero", "class": "Blueprint", "parentClass": "Character", "properties": { "Health": 100, "MaxWalkSpeed": 600, "JumpZVelocity": 420 } },
+    { "path": "/Game/Characters/Hero/ABP_Hero", "class": "AnimBlueprint" },
+    { "path": "/Game/Data/DT_Items", "class": "DataTable", "rowStruct": "ItemRow", "rows": ["Potion_Small", "Sword_Iron"] },
+    { "path": "/Game/Data/DT_Broken", "class": "DataTable", "rowStruct": "ItemRow", "rows": ["Potion_Small"], "broken": true },
+    { "path": "/Game/Maps/Hall", "class": "World" }
+  ],
+  "settings": { "Engine - Rendering": { "Anti-Aliasing Method": "Temporal Super-Resolution (TSR)" } },
+  "cvars": { "r.AntiAliasingMethod": "4", "r.Lumen.DiffuseIndirect.Allow": "1" },
+  "log": [
+    "LogEditorServer: Finished looking for orphan Actors (0.000 secs)",
+    "LogBlueprint: Error: [Compiler] Accessed None trying to read property DoorMesh in BP_Door",
+    "LogTemp: Warning: Hall lighting build is out of date"
+  ],
+  "toolsets": [
+    { "name": "editor_toolset.toolsets.data_table.DataTableTools", "description": "Tools for reading and editing DataTable assets.", "tools": ["search_row_structs", "get_schema", "list_rows", "get_rows", "set_rows", "add_rows", "remove_rows", "rename_rows", "create", "import_file"] },
+    { "name": "NiagaraToolsets.NiagaraSystemToolset", "description": "Tools for inspecting and editing Niagara systems and emitters.", "tools": ["GetSystemInfo", "ListEmitters", "SetEmitterEnabled"] },
+    { "name": "NiagaraToolsets.NiagaraParameterToolset", "description": "Tools for reading and setting Niagara user parameters.", "tools": ["GetUserParameters", "SetUserParameter"] },
+    { "name": "editor_toolset.toolsets.asset.AssetTools", "description": "Provides tools for interacting with assets in the Unreal project.", "tools": ["is_dirty", "load_asset", "delete", "move", "duplicate"] },
+    { "name": "UMGToolSet.WidgetBlueprintToolset", "description": "Tools for editing widget blueprints.", "tools": ["GetWidgetTree", "AddWidget"] }
+  ]
+}

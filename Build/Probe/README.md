@@ -12,6 +12,8 @@ Scripts that drive the Shuttlegent agent runtime (DeepSeek Harness over ACP) wit
 | `check_results.py` | Evaluates the logs and prints PASS / FAIL / SKIP per scenario |
 | `show_log.py` | Prints one scenario log as a timeline, or only the assistant's messages with `--messages` |
 | `gateway.overlay.yml` | Extra patch that routes the model through the OpenAI-compatible protocol |
+| `fixtures/split-red-blue.png` | Image for the image-input scenarios: left half red, right half blue |
+| `fixtures/event-tap.mjs` | Harness plugin for `s12_plugin`: writes the session events it receives to `SHUTTLEGENT_EVENT_TAP_LOG` |
 
 ## Requirements
 
@@ -24,6 +26,7 @@ Scripts that drive the Shuttlegent agent runtime (DeepSeek Harness over ACP) wit
 ```powershell
 Build\Probe\RunRegression.ps1                        # all scenarios, launched as the editor does
 Build\Probe\RunRegression.ps1 -SkipLiveModel         # only scenarios that need no valid key
+Build\Probe\RunRegression.ps1 -Only s11_image,s13_image_flash   # only the named scenarios
 Build\Probe\RunRegression.ps1 -LaunchFromWorkspace -OutDir $env:TEMP\ShuttlegentProbe   # launch from the workspace (Q5 comparison)
 ```
 
@@ -50,3 +53,7 @@ python -I Build\Probe\show_log.py Saved\Probe\s05_tools.jsonl
 | `s07_resume` | `session/resume` restores context |
 | `s08_cancel` | `session/cancel` ends the turn; the session keeps working |
 | `s09_gateway` | Model routed through `llm-pi-ai` with the `openai-completions` protocol |
+| `s10_parallel` | Two sessions of one runtime prompted at once both finish |
+| `s11_image` | Image input on the default model: read by the model, or declined at `initialize` (`promptCapabilities.image`) |
+| `s12_plugin` | A plugin inserted by a patch from an absolute path loads in the packed runtime and receives session events |
+| `s13_image_flash` | Image input on `deepseek-flash` |

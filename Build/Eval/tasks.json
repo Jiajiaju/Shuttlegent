@@ -1,0 +1,215 @@
+{
+  "$comment": "Designer and artist tasks for the tool-choice evaluation. Checks: calls = tools that must be called; forbid = tools that must not be called; args = per tool, substrings that one of its calls' arguments must contain (case-insensitive); maxWrites = most write calls allowed (writes are the tools whose snapshot entry has readOnly false). The mock editor answers from world.json.",
+  "tasks": [
+    {
+      "id": "t01_light_intensity",
+      "prompt": "把选中的灯光强度统一改成 5000",
+      "calls": [
+        "get_selection",
+        "set_property"
+      ],
+      "args": {
+        "set_property": [
+          "5000"
+        ]
+      },
+      "maxWrites": 2,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t02_default_names",
+      "prompt": "列出关卡里还在用默认名称的 Actor，不要改动任何东西",
+      "calls": [
+        "list_actors"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t03_references",
+      "prompt": "查一下哪些资源引用了 SK_Hero",
+      "calls": [
+        "get_asset_references"
+      ],
+      "args": {
+        "get_asset_references": [
+          "SK_Hero"
+        ]
+      },
+      "maxWrites": 0
+    },
+    {
+      "id": "t04_spawn_light",
+      "prompt": "在玩家出生点附近放一个点光源",
+      "calls": [
+        "list_actors",
+        "spawn_actor"
+      ],
+      "args": {
+        "spawn_actor": [
+          "PointLight"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t05_aa_setting",
+      "prompt": "项目的抗锯齿方法在哪里设置？现在用的是哪种？",
+      "callsAny": [
+        "get_settings",
+        "get_cvar"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t06_undo",
+      "prompt": "撤销上一步操作",
+      "calls": [
+        "undo"
+      ],
+      "forbid": [
+        "redo",
+        "set_property",
+        "delete_actors",
+        "spawn_actor"
+      ],
+      "maxWrites": 1
+    },
+    {
+      "id": "t07_log_errors",
+      "prompt": "刚才编辑器有没有报错？",
+      "calls": [
+        "read_log"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t08_describe_blueprint",
+      "prompt": "BP_Hero 这个蓝图有哪些可以调的属性？",
+      "callsAny": [
+        "describe_class",
+        "get_properties"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t09_delete_cubes",
+      "prompt": "把关卡里名字以 TempCube 开头的临时方块都删掉",
+      "calls": [
+        "list_actors",
+        "delete_actors"
+      ],
+      "args": {
+        "delete_actors": [
+          "TempCube_1",
+          "TempCube_2"
+        ]
+      },
+      "argsAbsent": {
+        "delete_actors": [
+          "Floor",
+          "PlayerStart",
+          "PointLight"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t10_datatable_row",
+      "prompt": "给 DT_Items 数据表加一行，行名叫 Potion_Large",
+      "calls": [
+        "call_toolset_tool"
+      ],
+      "args": {
+        "call_toolset_tool": [
+          "add_rows",
+          "Potion_Large"
+        ]
+      },
+      "maxWrites": 2,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t11_niagara_toolsets",
+      "prompt": "这个项目里有哪些和 Niagara 相关的 AI 工具可以用？",
+      "calls": [
+        "list_toolsets"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t12_save",
+      "prompt": "把当前关卡保存一下",
+      "calls": [
+        "save_assets"
+      ],
+      "maxWrites": 1
+    },
+    {
+      "id": "t13_ambiguous",
+      "prompt": "把那个灯调亮一点",
+      "forbid": [
+        "set_property",
+        "spawn_actor",
+        "delete_actors"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t14_cvar",
+      "prompt": "看一下 r.Lumen.DiffuseIndirect.Allow 现在是多少",
+      "calls": [
+        "get_cvar"
+      ],
+      "args": {
+        "get_cvar": [
+          "r.Lumen.DiffuseIndirect.Allow"
+        ]
+      },
+      "maxWrites": 0
+    },
+    {
+      "id": "t15_light_color",
+      "prompt": "把 PointLight_Hall 的颜色改成暖黄色",
+      "calls": [
+        "set_property"
+      ],
+      "args": {
+        "set_property": [
+          "PointLight_Hall",
+          "LightColor"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t16_broken_asset",
+      "prompt": "给 DT_Broken 数据表加一行，行名叫 Potion_Large",
+      "forbid": [
+        "save_assets",
+        "delete_actors"
+      ],
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "delete",
+          "move",
+          "duplicate",
+          "DT_Broken_"
+        ]
+      },
+      "maxWrites": 2
+    }
+  ]
+}

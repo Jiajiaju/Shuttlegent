@@ -1,0 +1,567 @@
+{
+  "source": "generated from C++ sources on 2026-10-30 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
+  "serverInfo": {
+    "name": "shuttlegent-editor",
+    "version": "0.1.0"
+  },
+  "instructions": "Unreal Editor tools of the open project. Read tools answer at once; write tools ask the user to confirm in the editor (55 s limit) and run as one undoable transaction that is rolled back as a whole if any object fails. Object paths are full paths such as /Game/Maps/Main.Main:PersistentLevel.Cube_1. Unreal Engine toolsets (UMG, Niagara, PCG and more) are reached through list_toolsets, describe_toolset and call_toolset_tool.",
+  "tools": [
+    {
+      "name": "find_assets",
+      "description": "Find assets in the asset registry by name, class and folder, without loading them. Lists name | class | object path, sorted by name.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Part of the asset name, case-insensitive; empty matches all."
+          },
+          "class": {
+            "type": "string",
+            "description": "Asset class name, e.g. StaticMesh, Material, Blueprint, World; empty matches all."
+          },
+          "path": {
+            "type": "string",
+            "description": "Package folder to search, e.g. /Game/Maps. Defaults to /Game."
+          },
+          "recursive": {
+            "type": "boolean",
+            "description": "Search sub-folders too. Defaults to true."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first result, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Results per page, 1-200. Defaults to 50."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_asset",
+      "description": "Details of one asset from the asset registry, without loading it: class, package, registry tags, and how many packages it depends on and are referencing it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Object path (/Game/Props/SM_Box.SM_Box) or package name (/Game/Props/SM_Box)."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_asset_references",
+      "description": "Packages an asset depends on, or packages that reference it, from the asset registry. Lists package names, sorted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Object path or package name of the asset."
+          },
+          "direction": {
+            "type": "string",
+            "description": "dependencies: what the asset uses; referencers: what uses the asset.",
+            "enum": [
+              "dependencies",
+              "referencers"
+            ]
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first result, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Results per page, 1-200. Defaults to 50."
+          }
+        },
+        "required": [
+          "path",
+          "direction"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "list_actors",
+      "description": "List actors of the level open in the editor (loaded World Partition cells only). Lists label | class | path | location, sorted by label.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "string",
+            "description": "Only actors of this class or a subclass, e.g. StaticMeshActor, PointLight; empty matches all."
+          },
+          "query": {
+            "type": "string",
+            "description": "Part of the actor label, case-insensitive; empty matches all."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first result, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Results per page, 1-200. Defaults to 50."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_selection",
+      "description": "Actors currently selected in the level editor: label | class | path | location.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_properties",
+      "description": "Property values of one object as editor text (the format set_property accepts): an actor, a component, an asset or a class default object. Each line is Name \"Details panel name\" [Category] (type) = value. Without names, lists the properties the Details panel shows. A user who names a setting in words means the Details panel name: match it on the object they selected (the actor) before looking at its components.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Full object path, or the label of an actor in the open level. A component path is the actor path plus .ComponentName."
+          },
+          "names": {
+            "type": "array",
+            "description": "Only these properties, by name or Details panel name.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Include properties the Details panel hides. Defaults to false."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first property, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Properties per page, 1-200. Defaults to 50."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "describe_class",
+      "description": "A class's parent chain, editable properties with their types, and Blueprint-callable functions; optionally the class default values.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "string",
+            "description": "Class name (StaticMeshActor), script path (/Script/Engine.StaticMeshActor) or Blueprint asset path."
+          },
+          "defaults": {
+            "type": "boolean",
+            "description": "Show each property's class default value. Defaults to false."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first line, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Lines per page, 1-200. Defaults to 50."
+          }
+        },
+        "required": [
+          "class"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_settings",
+      "description": "Project settings and editor preferences pages (UDeveloperSettings). Without a class, lists the pages as class | container / category / section; with one, its current values.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "string",
+            "description": "Settings class name, e.g. RendererSettings; empty lists the pages."
+          },
+          "names": {
+            "type": "array",
+            "description": "Only these property names.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first line, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Lines per page, 1-200. Defaults to 50."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "read_log",
+      "description": "The latest lines of the editor's Output Log since the editor started, oldest first: time [category] verbosity: text.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "integer",
+            "description": "How many lines, 1-500. Defaults to 100."
+          },
+          "level": {
+            "type": "string",
+            "description": "Least severe level to include. Defaults to log.",
+            "enum": [
+              "error",
+              "warning",
+              "log",
+              "verbose"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "description": "Only this log category, e.g. LogTemp, LogBlueprint; empty includes all."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "get_cvar",
+      "description": "A console variable's value, flags and help; or, with query, the console variables and commands whose names contain it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact console variable name, e.g. r.ScreenPercentage."
+          },
+          "query": {
+            "type": "string",
+            "description": "Part of a name to search for, used when name is empty."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Index of the first search result, for paging. Defaults to 0."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Search results per page, 1-200. Defaults to 50."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "set_property",
+      "description": "Set one property to the same value on one or more objects (actors, components, assets), as the Details panel would. The value uses editor text format, the same get_properties prints: 1.5, true, (X=0,Y=0,Z=100), /Game/Mat/M_Red.M_Red. When the user names a setting in words, it is the Details panel name of the object they selected (usually the actor itself, not its components); check it with get_properties first. The user confirms first; it runs as one undoable step and is rolled back as a whole if any object fails.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Full object paths, or labels of actors in the open level.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "property": {
+            "type": "string",
+            "description": "Property name or Details panel name, as get_properties lists it."
+          },
+          "value": {
+            "type": "string",
+            "description": "New value in editor text format."
+          }
+        },
+        "required": [
+          "targets",
+          "property",
+          "value"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "spawn_actor",
+      "description": "Place a new actor in the open level, from a native class or a Blueprint. The user confirms first; it runs as one undoable step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "string",
+            "description": "Actor class name (PointLight), script path, or Blueprint asset path (/Game/BP/BP_Door)."
+          },
+          "location": {
+            "type": "array",
+            "description": "Location [x, y, z] in cm. Defaults to [0, 0, 0].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "rotation": {
+            "type": "array",
+            "description": "Rotation [pitch, yaw, roll] in degrees. Defaults to [0, 0, 0].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "label": {
+            "type": "string",
+            "description": "Actor label shown in the Outliner; defaults to the class name."
+          }
+        },
+        "required": [
+          "class"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "delete_actors",
+      "description": "Delete actors from the open level. The user confirms first; it runs as one undoable step and is rolled back as a whole if any actor fails.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Full actor paths, or labels of actors in the open level.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "targets"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "save_assets",
+      "description": "Save assets or levels to disk. Saving cannot be undone from the editor; the user confirms first. Source control may ask the user to check files out.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Object paths or package names of the assets or levels to save.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "all_dirty": {
+            "type": "boolean",
+            "description": "Save every asset and level with unsaved changes instead. Defaults to false."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "undo",
+      "description": "Undo the editor's most recent steps, as Ctrl+Z would; this includes steps the user made by hand. The user confirms first and sees which steps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "description": "How many steps, 1-20. Defaults to 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "redo",
+      "description": "Redo the editor's most recently undone steps, as Ctrl+Y would. The user confirms first and sees which steps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "type": "integer",
+            "description": "How many steps, 1-20. Defaults to 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "list_toolsets",
+      "description": "List the Unreal Engine toolsets enabled in this editor (UMG, Niagara, PCG, Gameplay Tags, StateTree and more), with what each is for. They hold many more editor tools than this server's own. Use describe_toolset to see a toolset's tools, then call_toolset_tool. Prefer this server's own tools when one fits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "describe_toolset",
+      "description": "Show an engine toolset's tools, each marked read (runs at once) or write (the user confirms first). Pass tool to see that tool's full description and its arguments schema before calling it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "toolset": {
+            "type": "string",
+            "description": "Toolset name exactly as list_toolsets gives it."
+          },
+          "tool": {
+            "type": "string",
+            "description": "One tool's name, to see its description and arguments; leave out to list the toolset's tools."
+          }
+        },
+        "required": [
+          "toolset"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "call_toolset_tool",
+      "description": "Run one engine toolset tool. Read tools answer at once; every other tool asks the user to confirm first (55 s limit) and runs as one step, undoable where the engine records it. Check the tool's arguments with describe_toolset first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "toolset": {
+            "type": "string",
+            "description": "Toolset name exactly as list_toolsets gives it."
+          },
+          "tool": {
+            "type": "string",
+            "description": "Tool name as describe_toolset gives it."
+          },
+          "arguments": {
+            "type": "object",
+            "description": "The tool's arguments as its schema in describe_toolset describes them; leave out when it takes none."
+          }
+        },
+        "required": [
+          "toolset",
+          "tool"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    }
+  ]
+}

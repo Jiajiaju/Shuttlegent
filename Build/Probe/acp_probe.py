@@ -14,7 +14,7 @@ scenario keys:
   log: path of jsonl log
   mcp: [{name, url, token}]        optional HTTP MCP servers
   resume: sessionId                optional; uses session/resume instead of session/new
-  prompts: [text]                  prompts sent in order
+  prompts: [text | {text, image}]  prompts sent in order; image is the path of a PNG sent as an ACP image block
   permission: allow|reject         answer for session/request_permission
   cancel_after: seconds            optional; send session/cancel this long after the first prompt
   set_config: [{configId, value}]  optional session/set_config_option calls before prompting
@@ -22,6 +22,7 @@ scenario keys:
                                    connection, then every answer collected (logs parallel_done per session)
   timeout: seconds per request
 """
+import base64
 import json
 import os
 import subprocess
@@ -92,6 +93,15 @@ def send(msg):
     log("send", msg)
     proc.stdin.write((json.dumps(msg) + "\n").encode("utf-8"))
     proc.stdin.flush()
+
+
+def prompt_blocks(item):
+    """ACP content blocks of one prompt: plain text, or text with a PNG image."""
+    if isinstance(item, str):
+        return [{"type": "text", "text": item}]
+    with open(item["image"], "rb") as image:
+        data = base64.b64encode(image.read()).decode("ascii")
+    return [{"type": "image", "mimeType": "image/png", "data": data}, {"type": "text", "text": item["text"]}]
 
 
 def handle_agent_request(msg):
@@ -202,6 +212,8 @@ try:
         request("session/set_config_option", {"sessionId": session_id, "configId": item["configId"], "value": item["value"]})
 
     for index, text in enumerate(SCENARIO.get("prompts", [])):
+        if not isinstance(text, str):
+            log("prompt_image", {"index": index, "image": os.path.basename(text["image"])})
         started = time.time()
         cancel_sent = [False]
 
@@ -211,7 +223,7 @@ try:
                 cancel_sent[0] = True
                 send({"jsonrpc": "2.0", "method": "session/cancel", "params": {"sessionId": session_id}})
 
-        result = request("session/prompt", {"sessionId": session_id, "prompt": [{"type": "text", "text": text}]}, on_wait=maybe_cancel)
+        result = request("session/prompt", {"sessionId": session_id, "prompt": prompt_blocks(text)}, on_wait=maybe_cancel)
         log("prompt_done", {"index": index, "elapsed": round(time.time() - started, 3), "result": result.get("result"), "error": result.get("error")})
 
     mem = subprocess.run(["tasklist", "/FI", f"PID eq {proc.pid}", "/FO", "CSV", "/NH"], capture_output=True, text=True)

@@ -125,6 +125,33 @@ def check_parallel(ev):
     return True, f"parallel={parallel} elapsed={elapsed} windows={[(w['first'], w['last'], w['chunks']) for w in windows]}"
 
 
+def check_image(ev):
+    # Either finding is a pass: the route accepts images and the model reads them, or the adapter declines images up front
+    init = next((e["data"] for e in ev if e["kind"] == "recv" and isinstance(e["data"].get("result"), dict)
+                 and "agentCapabilities" in e["data"]["result"]), {})
+    advertised = init.get("result", {}).get("agentCapabilities", {}).get("promptCapabilities", {}).get("image", False)
+    results = prompt_results(ev)
+    answered = bool(results) and (results[0].get("result") or {}).get("stopReason") == "end_turn"
+    text = message_text(ev).lower()
+    read = "red" in text and "blue" in text
+    ok = (advertised and answered and read) or (not advertised and not answered)
+    detail = f"image_advertised={advertised} answered={answered} colours_read={read}"
+    return ok, detail + (f" answer={text[:80]!r}" if answered else f" error={error_text(results[0])[:120] if results else ''}")
+
+
+def check_plugin(ev):
+    path = os.path.join(OUT, "s12_plugin.events.jsonl")
+    records = []
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            records = [json.loads(line) for line in f]
+    loaded = any(r["kind"] == "loaded" for r in records)
+    events = [r for r in records if r["kind"] == "session/event"]
+    types = sorted({str(r.get("type")) for r in events})
+    answered = any((r.get("result") or {}).get("stopReason") == "end_turn" for r in prompt_results(ev))
+    return loaded and bool(events) and answered, f"loaded={loaded} session_events={len(events)} types={types} answered={answered}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -138,6 +165,9 @@ CHECKS = [
     ("s08_cancel", "session/cancel then continue", check_cancel),
     ("s09_gateway", "llm-pi-ai openai-completions route", check_gateway),
     ("s10_parallel", "M3.7 two sessions prompted at once both finish (parallel= tells whether they overlapped)", check_parallel),
+    ("s11_image", "H6 image input: read by the model, or declined up front", check_image),
+    ("s13_image_flash", "H6 image input on deepseek-flash: read by the model, or declined up front", check_image),
+    ("s12_plugin", "H1 plugin from an absolute path loads and receives session events", check_plugin),
 ]
 
 failed = 0

@@ -77,6 +77,8 @@ public:
 
 	TFunction<void()> OnOpenPluginFolder;
 
+	TFunction<void(const FString&, const FString&, bool)> OnRevealObject;
+
 public:
 	/** 页面已完成初始化并请求完整状态；每次文档加载调用一次。 */
 	UFUNCTION()
@@ -199,4 +201,8 @@ public:
 	/** 启动引导卡片上的“打开插件目录”，Runtime/ 位于该目录下。 */
 	UFUNCTION()
 	void OpenPluginFolder();
+
+	/** 回答中的对象链接：Kind 为 "asset" 或 "actor"；单击定位，双击（bOpen）打开资产编辑器或让视口移到 Actor。 */
+	UFUNCTION()
+	void RevealObject(const FString& Kind, const FString& Path, bool bOpen);
 };

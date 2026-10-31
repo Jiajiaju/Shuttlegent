@@ -36,6 +36,7 @@ Output goes to `Saved/Eval/<timestamp>/` (git-ignored): one ACP log per task, th
 | `args` | Per tool, substrings one of its calls' arguments must contain (case-insensitive) |
 | `argsAbsent` | Per tool, substrings none of its calls' arguments may contain |
 | `maxWrites` | Most calls to write tools allowed |
+| `reply` | Regular expressions the agent's reply text must each match (for example editor object links) |
 
 Every task must also finish its turn (`end_turn`).
 

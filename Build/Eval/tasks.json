@@ -1,5 +1,5 @@
 {
-  "$comment": "Designer and artist tasks for the tool-choice evaluation. Checks: calls = tools that must be called; forbid = tools that must not be called; args = per tool, substrings that one of its calls' arguments must contain (case-insensitive); maxWrites = most write calls allowed (writes are the tools whose snapshot entry has readOnly false). The mock editor answers from world.json.",
+  "$comment": "Designer and artist tasks for the tool-choice evaluation. Checks: calls = tools that must be called; forbid = tools that must not be called; args = per tool, substrings that one of its calls' arguments must contain (case-insensitive); maxWrites = most write calls allowed (writes are the tools whose snapshot entry has readOnly false); reply = regular expressions the reply text must each match. The mock editor answers from world.json.",
   "tasks": [
     {
       "id": "t01_light_intensity",
@@ -213,6 +213,19 @@
         ]
       },
       "maxWrites": 2
+    },
+    {
+      "id": "t17_object_links",
+      "prompt": "关卡里有哪些点光源？另外哪些资源引用了 SK_Hero？只列出来，不要改动",
+      "calls": [
+        "list_actors",
+        "get_asset_references"
+      ],
+      "reply": [
+        "\\]\\(ue-actor:/Game/Maps/Hall[^)]*PointLight_Hall\\)",
+        "\\]\\(ue-asset:/Game/Characters/Hero/BP_Hero[^)]*\\)|`/Game/Characters/Hero/BP_Hero[^`]*`"
+      ],
+      "maxWrites": 0
     }
   ]
 }

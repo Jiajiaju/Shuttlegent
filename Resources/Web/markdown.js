@@ -1,7 +1,7 @@
 /*
  * Markdown for assistant replies, rendered to HTML.
- * Blocks: headings, nested lists, quotes, fenced code, rules, paragraphs; tables stay as monospaced source.
- * Inline: code, bold, italic, links (only http(s) become links). Tolerates unclosed structures while a reply streams.
+ * Blocks: headings, nested lists, quotes, fenced code, rules, paragraphs, tables (inline Markdown in cells; monospaced source until the separator row arrives).
+ * Inline: code, bold, italic, links (http(s) open in the system browser; ue-asset:/ue-actor: and `/Game/...` code become editor object links). Tolerates unclosed structures while a reply streams.
  * Rules follow Shuttlegent.md section 14.3.2.
  */
 (function () {
@@ -12,7 +12,16 @@
   const SPACES_PER_LIST_LEVEL = 2;
   const MAX_LIST_LEVEL = 4;
   const TAB_WIDTH = 4;
+  // One cell of a table's separator row: ---, :---, ---:, :---:
+  const TABLE_SEPARATOR_CELL = /^:?-{3,}:?$/;
   const LINK_SCHEMES = ['https://', 'http://'];
+  // Editor object links (feature plan C6): [label](ue-asset:<object path>) and [label](ue-actor:<object path>)
+  const OBJECT_SCHEMES = { 'ue-asset:': 'asset', 'ue-actor:': 'actor' };
+  // Inline code holding a whole content path, e.g. `/Game/Maps/BP_Door`, also becomes an asset link
+  const CONTENT_PATH = /^\/Game\/[^\s'"`<>()|]+$/;
+  const OBJECT_ICON = { asset: 'file', actor: 'locate' };
+  const OBJECT_ICON_SIZE = 12;
+  const OBJECT_HINT = { asset: '资产 · 单击在内容浏览器中定位，双击打开', actor: 'Actor · 单击在关卡中选中，双击让视口移到它' };
 
   function escapeHtml(text) {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -84,6 +93,30 @@
     return LINK_SCHEMES.some((scheme) => url.startsWith(scheme));
   }
 
+  /** A package path (/Game/Dir/Name) gets its object name appended, so every link to one asset carries the same path. */
+  function assetObjectPath(path) {
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    return name.includes('.') ? path : path + '.' + name;
+  }
+
+  /** { kind, path } for an editor object link target, or null. */
+  function parseObjectLink(url) {
+    for (const scheme in OBJECT_SCHEMES) {
+      if (!url.startsWith(scheme)) continue;
+      const kind = OBJECT_SCHEMES[scheme];
+      const path = url.slice(scheme.length).trim();
+      if (!path.startsWith('/')) return null;
+      return { kind: kind, path: kind === 'asset' ? assetObjectPath(path) : path };
+    }
+    return null;
+  }
+
+  /** labelHtml is already escaped. The page resolves clicks and greys out objects that no longer exist. */
+  function objectLink(target, labelHtml) {
+    const title = OBJECT_HINT[target.kind] + '\n' + target.path;
+    return '<a class="obj-link" href="#" data-obj-kind="' + target.kind + '" data-obj-path="' + escapeHtml(target.path) + '" title="' + escapeHtml(title) + '">' + window.ShuttlegentIcons.svg(OBJECT_ICON[target.kind], OBJECT_ICON_SIZE) + labelHtml + '</a>';
+  }
+
   function inline(text) {
     let out = '';
     let index = 0;
@@ -94,7 +127,9 @@
       if (char === '`') {
         const end = text.indexOf('`', index + 1);
         if (end > index) {
-          out += '<code>' + escapeHtml(text.slice(index + 1, end)) + '</code>';
+          const source = text.slice(index + 1, end);
+          const code = '<code>' + escapeHtml(source) + '</code>';
+          out += CONTENT_PATH.test(source) ? objectLink({ kind: 'asset', path: assetObjectPath(source) }, code) : code;
           index = end + 1;
           continue;
         }
@@ -130,7 +165,9 @@
         if (end >= 0) {
           const label = text.slice(index + 1, middle);
           const url = text.slice(middle + 2, end).trim();
-          out += isOpenableLink(url) ? '<a href="' + escapeHtml(url) + '" title="' + escapeHtml(url) + '">' + escapeHtml(label) + '</a>' : escapeHtml(label);
+          const target = parseObjectLink(url);
+          if (target) out += objectLink(target, escapeHtml(label));
+          else out += isOpenableLink(url) ? '<a href="' + escapeHtml(url) + '" title="' + escapeHtml(url) + '">' + escapeHtml(label) + '</a>' : escapeHtml(label);
           index = end + 1;
           continue;
         }
@@ -147,6 +184,64 @@
   }
 
   /** Code block with a copy button; the button carries the block index so the page can copy its source. The source is coloured by its fence language (highlight.js). */
+  /** Cells of one table row: splits on |, except inside `code` or when escaped as \|; the outer pipes are optional. */
+  function tableCells(row) {
+    const cells = [];
+    let cell = '';
+    let inCode = false;
+    for (let index = 0; index < row.length; ++index) {
+      const char = row[index];
+      if (char === '\\' && row[index + 1] === '|') {
+        cell += '|';
+        ++index;
+        continue;
+      }
+      if (char === '`') inCode = !inCode;
+      if (char === '|' && !inCode) {
+        cells.push(cell.trim());
+        cell = '';
+        continue;
+      }
+      cell += char;
+    }
+    cells.push(cell.trim());
+
+    if (row.startsWith('|')) cells.shift();
+    if (row.endsWith('|') && !row.endsWith('\\|') && cells.length) cells.pop();
+    return cells;
+  }
+
+  /** The column alignments of a separator row (|---|:--:|), or null when the row is not one. */
+  function tableAlignments(row) {
+    const cells = tableCells(row);
+    if (!cells.length || !cells.every((cell) => TABLE_SEPARATOR_CELL.test(cell))) return null;
+    return cells.map((cell) => {
+      const left = cell.startsWith(':');
+      const right = cell.endsWith(':');
+      if (left && right) return 'center';
+      return right ? 'right' : '';
+    });
+  }
+
+  /** A real table with inline Markdown in each cell; without a separator row yet (reply still streaming) the source stays monospaced. */
+  function table(rows) {
+    const alignments = rows.length >= 2 ? tableAlignments(rows[1]) : null;
+    if (!alignments) return '<pre class="md-table">' + escapeHtml(rows.join('\n')) + '</pre>';
+
+    const columns = Math.max(alignments.length, tableCells(rows[0]).length);
+    const renderRow = (row, tag) => {
+      const cells = tableCells(row);
+      let html = '';
+      for (let column = 0; column < columns; ++column) {
+        const align = alignments[column] ? ' style="text-align:' + alignments[column] + '"' : '';
+        html += '<' + tag + align + '>' + inline(cells[column] || '') + '</' + tag + '>';
+      }
+      return '<tr>' + html + '</tr>';
+    };
+    const body = rows.slice(2).map((row) => renderRow(row, 'td')).join('');
+    return '<div class="md-table-wrap"><table class="md-grid"><thead>' + renderRow(rows[0], 'th') + '</thead><tbody>' + body + '</tbody></table></div>';
+  }
+
   function codeBlock(language, source, codeIndex) {
     const label = language ? '<span class="code-language">' + escapeHtml(language) + '</span>' : '<span></span>';
     return '<div class="code-block"><div class="code-head">' + label + '<button class="icon small" data-copy-code="' + codeIndex + '" title="复制代码" aria-label="复制代码">' + window.ShuttlegentIcons.svg('copy', 14) + '</button></div><pre><code>' + window.ShuttlegentHighlight.highlight(language, source) + '</code></pre></div>';
@@ -212,7 +307,7 @@
           ++index;
         }
         --index;
-        parts.push(mark === '>' ? '<blockquote>' + multiline(blockLines.join('\n')) + '</blockquote>' : '<pre class="md-table">' + escapeHtml(blockLines.join('\n')) + '</pre>');
+        parts.push(mark === '>' ? '<blockquote>' + multiline(blockLines.join('\n')) + '</blockquote>' : table(blockLines));
         continue;
       }
 

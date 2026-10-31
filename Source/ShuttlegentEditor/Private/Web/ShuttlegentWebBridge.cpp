@@ -154,3 +154,8 @@ void UShuttlegentWebBridge::OpenPluginFolder()
 {
 	if (OnOpenPluginFolder) OnOpenPluginFolder();
 }
+
+void UShuttlegentWebBridge::RevealObject(const FString& Kind, const FString& Path, bool bOpen)
+{
+	if (OnRevealObject) OnRevealObject(Kind, Path, bOpen);
+}

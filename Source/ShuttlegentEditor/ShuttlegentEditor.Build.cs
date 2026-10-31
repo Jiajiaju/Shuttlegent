@@ -33,6 +33,7 @@ public class ShuttlegentEditor : ModuleRules
 				"WebBrowser",
 				"AssetRegistry",
 				"ContentBrowser",
+				"LevelEditor",
 				"UnrealEd",
 				"RenderCore",
 				"PropertyEditor",

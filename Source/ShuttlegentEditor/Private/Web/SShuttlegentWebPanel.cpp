@@ -32,6 +32,7 @@
 
 #include "Chat/ShuttlegentChatModel.h"
 #include "Reference/FShuttlegentReferenceFinder.h"
+#include "Reference/FShuttlegentReferenceNavigator.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentLog.h"
@@ -158,6 +159,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnRetryResume = nullptr;
 	Bridge->OnAcknowledgeWrite = nullptr;
 	Bridge->OnOpenPluginFolder = nullptr;
+	Bridge->OnRevealObject = nullptr;
 	Bridge.Reset();
 }
 
@@ -393,6 +395,13 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
 		if (Plugin.IsValid()) FPlatformProcess::ExploreFolder(*FPaths::ConvertRelativePathToFull(Plugin->GetBaseDir()));
+	};
+	Bridge->OnRevealObject = [](const FString& Kind, const FString& Path, bool bOpen)
+	{
+		FShuttlegentReference Reference;
+		Reference.Kind = Kind == ShuttlegentEditorWebField::KindActor ? EShuttlegentReferenceKind::Actor : EShuttlegentReferenceKind::Asset;
+		Reference.Path = Path;
+		FShuttlegentReferenceNavigator::Reveal(Reference, bOpen);
 	};
 	Bridge->OnQueryReferences = [WeakThis](const FString& Query)
 	{

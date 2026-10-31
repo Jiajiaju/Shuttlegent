@@ -217,6 +217,16 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .markdown .md-h2{font-size:1.15em;font-weight:600;margin:12px 0 6px}
 .markdown .md-h3{font-size:1em;font-weight:600;margin:10px 0 4px}
 .markdown code{font:.92em Consolas,monospace;color:var(--accent);background:var(--raised);border-radius:4px;padding:1px 4px}
+.markdown .md-table-wrap{overflow-x:auto;margin:0 0 10px}
+.markdown .md-grid{border-collapse:collapse;font-size:.95em}
+.markdown .md-grid th,.markdown .md-grid td{border:1px solid var(--line);padding:4px 10px;text-align:left;vertical-align:top}
+.markdown .md-grid th{background:var(--surface);font-weight:600;white-space:nowrap}
+.markdown .md-grid tbody tr:nth-child(even) td{background:var(--subtle)}
+.markdown .obj-link{display:inline-flex;gap:3px;align-items:baseline;color:var(--info);border-bottom:1px dotted currentColor;cursor:pointer}
+.markdown .obj-link:hover{text-decoration:none;border-bottom-style:solid}
+.markdown .obj-link .sg-icon{align-self:center;flex-shrink:0}
+.markdown .obj-link code{color:inherit}
+.markdown .obj-link.missing{color:var(--muted);text-decoration:line-through;border-bottom-color:transparent;cursor:not-allowed}
 .markdown blockquote{margin:0 0 10px;border-left:2px solid var(--line);padding-left:12px;color:var(--muted)}
 .markdown hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 .markdown .md-item{display:flex;gap:8px;padding-left:calc(var(--depth) * 18px);margin:2px 0}

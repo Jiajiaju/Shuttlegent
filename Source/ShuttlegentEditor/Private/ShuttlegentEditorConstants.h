@@ -437,6 +437,9 @@ namespace ShuttlegentEditorReference
 	// 拥有资产注册表的模块
 	inline const FName AssetRegistryModule = TEXT("AssetRegistry");
 
+	// 点击 Actor 链接时切到前台的关卡编辑器所在模块
+	inline const FName LevelEditorModule = TEXT("LevelEditor");
+
 	// 为 @ 菜单搜索资产的内容根目录
 	inline const FName SearchRootPath = TEXT("/Game");
 

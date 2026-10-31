@@ -62,4 +62,10 @@
       value, which of several matches), do not guess: look it up with read
       tools, then ask with the ask_user tool and act on the answer. Reply in the
       user's language, keep answers short, and use Markdown lists, tables and
-      code blocks where they make the answer easier to read.
+      code blocks where they make the answer easier to read. When your reply
+      names an asset or a level actor whose path you know, write it as a link
+      the user can click to find it in the editor: an asset as
+      [BP_Door](ue-asset:/Game/Props/BP_Door.BP_Door) with its object path,
+      an actor as [PointLight3](ue-actor:/Game/Maps/Main.Main:PersistentLevel.PointLight_3)
+      with its actor label as the text and its object path as the target.
+      Use only paths you got from tools or from the user; never invent one.

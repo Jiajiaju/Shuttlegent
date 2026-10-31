@@ -152,6 +152,9 @@
   const expandedTools = new Set();
   const blockElements = new Map();
   const codeSources = new Map();
+  // Object links in replies (feature plan C6): last known existence by path, and the paths the editor is watching
+  const objectValidity = new Map();
+  let watchedObjectKey = '';
   const view = {
     layout: 'full',
     // Docked panes remember whether they stay open; overlays open fresh each time
@@ -563,6 +566,7 @@
     }
 
     renderEmptyState(state.order.length === 0);
+    syncObjectLinks();
 
     // Streamed output never steals focus and never forces the view back to the end
     if (atEnd) {
@@ -975,9 +979,48 @@
     updateSendButton();
   }
 
-  /** Tells the editor which chips to keep checking; validity comes back through onReferenceValidity. */
+  /** Tells the editor which chips and reply object links to keep checking; validity comes back through onReferenceValidity. */
   function watchReferences() {
-    call('watchreferences', draftReferencesJson());
+    const refs = draftState.refs.map((ref) => ({ kind: ref.kind, path: ref.path, name: ref.name, cls: ref.cls }));
+    call('watchreferences', JSON.stringify(refs.concat(messageObjects())));
+  }
+
+  // ---------- Object links in replies ----------
+
+  /** Distinct { kind, path } of every object link currently in the conversation. */
+  function messageObjects() {
+    const seen = new Map();
+    for (const link of $('messages').querySelectorAll('[data-obj-path]')) {
+      seen.set(link.dataset.objPath, { kind: link.dataset.objKind, path: link.dataset.objPath });
+    }
+    return [...seen.values()];
+  }
+
+  /** After a redraw: re-watch when the set of linked objects changed, and mark links whose object is gone. */
+  function syncObjectLinks() {
+    const key = messageObjects().map((item) => item.kind + ':' + item.path).sort().join('\n');
+    if (key !== watchedObjectKey) {
+      watchedObjectKey = key;
+      watchReferences();
+    }
+    applyObjectValidity();
+  }
+
+  function applyObjectValidity() {
+    for (const link of $('messages').querySelectorAll('[data-obj-path]')) {
+      const missing = objectValidity.get(link.dataset.objPath) === false;
+      if (link.dataset.hint === undefined) link.dataset.hint = link.title;
+      link.classList.toggle('missing', missing);
+      link.title = missing ? '对象已不存在\n' + link.dataset.objPath : link.dataset.hint;
+      if (missing) link.setAttribute('aria-disabled', 'true');
+      else link.removeAttribute('aria-disabled');
+    }
+  }
+
+  /** Single click reveals the object, double click opens it; a missing object does nothing. */
+  function revealObject(link, open) {
+    if (objectValidity.get(link.dataset.objPath) === false) return;
+    call('revealobject', link.dataset.objKind, link.dataset.objPath, open);
   }
 
   /** Adds references, de-duplicated by path (the stable identity), not by name. */
@@ -1005,6 +1048,11 @@
       if (ref.path in validity) ref.valid = validity[ref.path];
     }
     renderReferences();
+
+    for (const path in validity) {
+      objectValidity.set(path, validity[path]);
+    }
+    applyObjectValidity();
   }
 
   // ---------- @ and / menus ----------
@@ -1925,7 +1973,19 @@
       }
     });
 
+    $('messages').addEventListener('dblclick', (event) => {
+      const link = event.target.closest('[data-obj-path]');
+      if (link) revealObject(link, true);
+    });
+
     $('messages').addEventListener('click', (event) => {
+      const objectLink = event.target.closest('[data-obj-path]');
+      if (objectLink) {
+        event.preventDefault();
+        revealObject(objectLink, false);
+        return;
+      }
+
       const thought = event.target.closest('[data-thought]');
       if (thought) {
         const id = Number(thought.dataset.thought);

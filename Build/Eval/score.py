@@ -5,6 +5,7 @@ Prints one line per task, writes report.md and summary.json to out_dir. Exit cod
 """
 import json
 import os
+import re
 import sys
 
 OUT = sys.argv[1]
@@ -60,6 +61,21 @@ def stop_reason(task_id):
     return "no answer"
 
 
+def reply_text(task_id):
+    """The agent's reply text of the task, all message chunks joined."""
+    path = os.path.join(OUT, f"{task_id}.jsonl")
+    chunks = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            event = json.loads(line)
+            if event["kind"] != "recv":
+                continue
+            update = ((event.get("data") or {}).get("params") or {}).get("update") or {}
+            if update.get("sessionUpdate") == "agent_message_chunk":
+                chunks.append((update.get("content") or {}).get("text") or "")
+    return "".join(chunks)
+
+
 def args_text(calls, tool):
     return [json.dumps(c["arguments"], ensure_ascii=False).lower() for c in calls if c["tool"] == tool]
 
@@ -85,6 +101,10 @@ def score(task):
         texts = args_text(calls, tool)
         for needle in needles:
             checks.append((f"{tool} args lacks {needle}", not any(needle.lower() in t for t in texts), ""))
+    if task.get("reply"):
+        text = reply_text(task["id"])
+        for pattern in task["reply"]:
+            checks.append((f"reply matches {pattern}", re.search(pattern, text) is not None, ""))
     if "maxWrites" in task:
         checks.append((f"writes <= {task['maxWrites']}", len(writes) <= task["maxWrites"], str(len(writes))))
     return {"id": task["id"], "prompt": task["prompt"], "called": called, "writes": len(writes),

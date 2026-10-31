@@ -4,7 +4,7 @@
     "name": "shuttlegent-editor",
     "version": "0.1.0"
   },
-  "instructions": "Unreal Editor tools of the open project. Read tools answer at once; write tools ask the user to confirm in the editor (55 s limit) and run as one undoable transaction that is rolled back as a whole if any object fails. Object paths are full paths such as /Game/Maps/Main.Main:PersistentLevel.Cube_1. Unreal Engine toolsets (UMG, Niagara, PCG and more) are reached through list_toolsets, describe_toolset and call_toolset_tool.",
+  "instructions": "Unreal Editor tools of the open project. Read tools answer at once; write tools ask the user to confirm in the editor (55 s limit) and run as one undoable transaction that is rolled back as a whole if any object fails. Object paths are full paths such as /Game/Maps/Main.Main:PersistentLevel.Cube_1. Unreal Engine toolsets (UMG, Niagara, PCG and more) are reached through list_toolsets, describe_toolset and call_toolset_tool. When a request is ambiguous, ask_user lets the user pick from your options in the editor.",
   "tools": [
     {
       "name": "find_assets",
@@ -316,6 +316,40 @@
             "description": "Search results per page, 1-200. Defaults to 50."
           }
         },
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
+      "name": "ask_user",
+      "description": "Ask the user to choose before you act, when a request is ambiguous and the choice decides what changes (which object, which value, which of several matches). The user sees the question with your options as buttons in the editor panel and must answer within about a minute; the result is their answer. Do not use it for questions you can settle with read tools.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question, short and in the user's language."
+          },
+          "options": {
+            "type": "array",
+            "description": "2-6 short answers to choose from, in the user's language, most likely first.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allow_other": {
+            "type": "boolean",
+            "description": "Whether the user may write an answer of their own. Defaults to true."
+          }
+        },
+        "required": [
+          "question",
+          "options"
+        ],
         "additionalProperties": false
       },
       "readOnly": true,

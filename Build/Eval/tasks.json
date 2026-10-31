@@ -158,11 +158,14 @@
       "id": "t13_ambiguous",
       "prompt": "把那个灯调亮一点",
       "forbid": [
-        "set_property",
         "spawn_actor",
-        "delete_actors"
+        "delete_actors",
+        "save_assets"
       ],
-      "maxWrites": 0
+      "maxWrites": 2,
+      "calls": [
+        "ask_user"
+      ]
     },
     {
       "id": "t14_cvar",

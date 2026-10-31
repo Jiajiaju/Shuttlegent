@@ -258,6 +258,11 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .decision:not(.elevation){border-color:#77534d}
 .decision:not(.elevation) .badge{color:var(--success)}
 .decision .badge.warn{color:var(--warning)}
+.question-options{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.question-option{display:flex;align-items:center;gap:8px;text-align:left;white-space:normal}
+.question-option kbd{flex-shrink:0;min-width:18px;text-align:center;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+.question-other{display:flex;gap:6px;margin:4px 0 8px}
+.question-other input{flex:1;min-width:0}
 .decision .destructive-note{color:var(--warning);border-left:2px solid var(--warning);padding:4px 8px;margin:6px 0;background:var(--raised);font-size:12px}
 .decision-table{max-height:220px;overflow:auto;margin:10px 0;border-top:1px solid var(--line)}
 .decision-table table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}

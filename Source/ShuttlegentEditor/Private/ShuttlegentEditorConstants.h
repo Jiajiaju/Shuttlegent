@@ -278,6 +278,12 @@ namespace ShuttlegentEditorWebField
 	// Pending write: when it times out unanswered (Unix milliseconds)
 	inline const TCHAR* ExpiresAt = TEXT("expiresAt");
 
+	// Oldest question the agent asked (ask_user), or null: id, question, options, allowOther, expiresAt
+	inline const TCHAR* PendingQuestion = TEXT("pendingQuestion");
+	inline const TCHAR* Question = TEXT("question");
+	inline const TCHAR* Options = TEXT("options");
+	inline const TCHAR* AllowOther = TEXT("allowOther");
+
 	// Write result entry: whether "undo this change" is available now, why not, and whether it was undone
 	inline const TCHAR* CanUndo = TEXT("canUndo");
 	inline const TCHAR* UndoReason = TEXT("undoReason");

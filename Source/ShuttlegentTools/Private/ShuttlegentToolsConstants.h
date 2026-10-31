@@ -19,6 +19,10 @@ namespace ShuttlegentToolsConstant
 	// Undo and redo steps one call takes at most
 	inline constexpr int32 MaxHistorySteps = 20;
 
+	// Answers ask_user offers at least and at most; the panel maps them to the number keys 1-6
+	inline constexpr int32 MinQuestionOptions = 2;
+	inline constexpr int32 MaxQuestionOptions = 6;
+
 	// First character of an object or package path; a name without it is an actor label
 	inline const TCHAR* PathPrefix = TEXT("/");
 

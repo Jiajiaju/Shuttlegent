@@ -9,6 +9,7 @@
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
 #include "ShuttlegentMcpServerModule.h"
+#include "QuestionGate/FShuttlegentQuestionGate.h"
 #include "WriteGate/FShuttlegentWriteGate.h"
 #include "Reference/FShuttlegentReferenceFinder.h"
 #include "Reference/FShuttlegentReferencePrompt.h"
@@ -174,6 +175,14 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	InService->OnError.AddSP(this, &FShuttlegentChatModel::HandleError);
 	InService->OnConfigOptionsChanged.AddSP(this, &FShuttlegentChatModel::HandleConfigOptionsChanged);
 
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = FShuttlegentMcpServerModule::Get().GetQuestionGate();
+	if (Questions.IsValid())
+	{
+		QuestionGate = Questions;
+		Questions->OnChanged.AddSP(this, &FShuttlegentChatModel::HandleQuestionsChanged);
+		Questions->OnClosed.AddSP(this, &FShuttlegentChatModel::HandleQuestionClosed);
+	}
+
 	const TSharedPtr<FShuttlegentWriteGate> Gate = FShuttlegentMcpServerModule::Get().GetWriteGate();
 	if (!Gate.IsValid()) return;
 
@@ -208,6 +217,14 @@ void FShuttlegentChatModel::Shutdown()
 		Gate->OnFinished.RemoveAll(this);
 	}
 	WriteGate.Reset();
+
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (Questions.IsValid())
+	{
+		Questions->OnChanged.RemoveAll(this);
+		Questions->OnClosed.RemoveAll(this);
+	}
+	QuestionGate.Reset();
 
 	UTransBuffer* TransBuffer = GEditor != nullptr ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
 	if (IsValid(TransBuffer) && UndoBufferHandle.IsValid()) TransBuffer->OnUndoBufferChanged().Remove(UndoBufferHandle);
@@ -482,6 +499,20 @@ void FShuttlegentChatModel::AnswerWrite(int32 RequestId, bool bApprove)
 	if (Gate.IsValid()) Gate->Answer(RequestId, bApprove);
 }
 
+const FShuttlegentQuestion* FShuttlegentChatModel::GetPendingQuestion() const
+{
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (!Questions.IsValid() || Questions->GetPending().IsEmpty()) return nullptr;
+
+	return &Questions->GetPending()[0];
+}
+
+void FShuttlegentChatModel::AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip)
+{
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (Questions.IsValid()) Questions->Answer(QuestionId, Answer, bSkip);
+}
+
 bool FShuttlegentChatModel::CanUndoWrite(const FShuttlegentChatEntry& Entry, FText& OutReason) const
 {
 	const FShuttlegentWriteResult& Result = Entry.WriteResult;
@@ -592,6 +623,10 @@ void FShuttlegentChatModel::SetPermissionHandlerAttached(bool bAttached)
 	// Editor writes are confirmed only while the panel is there to ask; detached, the gate refuses them
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid()) Gate->SetConfirmerAttached(bAttached);
+
+	// Questions too: without the panel the agent asks in its reply instead
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (Questions.IsValid()) Questions->SetAnswererAttached(bAttached);
 
 	if (bAttached)
 	{
@@ -1297,6 +1332,8 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	const bool bAnyPrompting = Conversations.ContainsByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Held) { return IsPrompting(*Held); });
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid() && !bAnyPrompting) Gate->ExpireAll();
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (Questions.IsValid() && !bAnyPrompting) Questions->ExpireAll();
 
 	ApplyTurnEnd(Conversation, StopReason, ErrorMessage);
 	if (IsCurrent(Conversation)) OnTurnFinished.Broadcast(bCompleted);
@@ -1344,6 +1381,8 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid()) Gate->ExpireAll();
+	const TSharedPtr<FShuttlegentQuestionGate> Questions = QuestionGate.Pin();
+	if (Questions.IsValid()) Questions->ExpireAll();
 
 	OnStatusChanged.Broadcast();
 	OnQueueChanged.Broadcast();
@@ -1528,6 +1567,45 @@ void FShuttlegentChatModel::HandleUndoBufferChanged()
 	// Any new transaction or undo can change whether a result is still on top
 	const bool bHasWriteResults = Current->Entries.ContainsByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry.IsValid() && Entry->Kind == EShuttlegentChatEntryKind::WriteResult; });
 	if (bHasWriteResults) OnContentChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::HandleQuestionsChanged()
+{
+	// The panel shows the first waiting question in place of the composer
+	NotifyStatus(*Current);
+}
+
+void FShuttlegentChatModel::HandleQuestionClosed(const FShuttlegentQuestion& Question, EShuttlegentQuestionOutcome Outcome, const FString& Answer)
+{
+	if (Question.Question.IsEmpty()) return;
+
+	// The transcript keeps what was asked and how it ended
+	FText Notice;
+	switch (Outcome)
+	{
+	case EShuttlegentQuestionOutcome::Answered:
+		{
+			Notice = FText::Format(LOCTEXT("QuestionAnswered", "Agent 提问：{0}　你的回答：{1}"), FText::FromString(Question.Question), FText::FromString(Answer));
+			break;
+		}
+	case EShuttlegentQuestionOutcome::Skipped:
+		{
+			Notice = FText::Format(LOCTEXT("QuestionSkipped", "Agent 提问：{0}　已跳过"), FText::FromString(Question.Question));
+			break;
+		}
+	case EShuttlegentQuestionOutcome::TimedOut:
+		{
+			Notice = FText::Format(LOCTEXT("QuestionTimedOut", "Agent 提问：{0}　超过 55 秒未回答，Agent 将改用文字提问"), FText::FromString(Question.Question));
+			break;
+		}
+	default:
+		{
+			Notice = FText::Format(LOCTEXT("QuestionExpired", "Agent 提问：{0}　已失效"), FText::FromString(Question.Question));
+			break;
+		}
+	}
+	AddNotice(*Current, Notice, Outcome != EShuttlegentQuestionOutcome::Answered);
+	NotifyStructure(*Current);
 }
 
 void FShuttlegentChatModel::EnsureUndoListener()

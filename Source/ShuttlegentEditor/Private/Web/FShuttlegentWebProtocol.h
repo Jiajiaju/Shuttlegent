@@ -74,6 +74,7 @@ private:
 
 	/** Oldest editor write waiting for confirmation, with its object table and raw arguments, or null. */
 	void WritePendingWrite(const TSharedRef<FJsonObject>& Root) const;
+	void WritePendingQuestion(const TSharedRef<FJsonObject>& Root) const;
 
 	/** Adds the entries whose fingerprint changed (all of them on reset) and the order when it changed. */
 	void WriteEntries(const TSharedRef<FJsonObject>& Root, bool bAll);

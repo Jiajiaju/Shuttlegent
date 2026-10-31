@@ -348,6 +348,7 @@ void FShuttlegentWebProtocol::Flush()
 	if (bReset || bEntriesDirty) WriteEntries(Root, bReset);
 	if (bReset || bStatusDirty || bEntriesDirty) WritePendingPermission(Root);
 	if (bReset || bStatusDirty) WritePendingWrite(Root);
+	if (bReset || bStatusDirty) WritePendingQuestion(Root);
 
 	// Whether the current session can be archived follows the turn state as well as the session list
 	if (bReset || bSessionsDirty || bStatusDirty) WriteSessions(Root);
@@ -536,6 +537,30 @@ void FShuttlegentWebProtocol::WritePendingWrite(const TSharedRef<FJsonObject>& R
 	Item->SetStringField(ShuttlegentEditorWebField::Raw, Request->RawArguments);
 	Item->SetNumberField(ShuttlegentEditorWebField::ExpiresAt, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Request->ExpiresAtUtc));
 	Root->SetObjectField(ShuttlegentEditorWebField::PendingWrite, Item);
+}
+
+void FShuttlegentWebProtocol::WritePendingQuestion(const TSharedRef<FJsonObject>& Root) const
+{
+	const FShuttlegentQuestion* Question = Model->GetPendingQuestion();
+	if (Question == nullptr)
+	{
+		Root->SetField(ShuttlegentEditorWebField::PendingQuestion, MakeShared<FJsonValueNull>());
+		return;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Options;
+	for (const FString& Option : Question->Options)
+	{
+		Options.Add(MakeShared<FJsonValueString>(Option));
+	}
+
+	const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+	Item->SetNumberField(ShuttlegentEditorWebField::Id, Question->QuestionId);
+	Item->SetStringField(ShuttlegentEditorWebField::Question, Question->Question);
+	Item->SetArrayField(ShuttlegentEditorWebField::Options, Options);
+	Item->SetBoolField(ShuttlegentEditorWebField::AllowOther, Question->bAllowOther);
+	Item->SetNumberField(ShuttlegentEditorWebField::ExpiresAt, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Question->ExpiresAtUtc));
+	Root->SetObjectField(ShuttlegentEditorWebField::PendingQuestion, Item);
 }
 
 void FShuttlegentWebProtocol::WritePendingPermission(const TSharedRef<FJsonObject>& Root) const

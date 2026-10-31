@@ -115,6 +115,11 @@ void UShuttlegentWebBridge::AnswerWrite(int32 RequestId, bool bApprove)
 	if (OnAnswerWrite) OnAnswerWrite(RequestId, bApprove);
 }
 
+void UShuttlegentWebBridge::AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip)
+{
+	if (OnAnswerQuestion) OnAnswerQuestion(QuestionId, Answer, bSkip);
+}
+
 void UShuttlegentWebBridge::UndoWrite(int32 EntryId)
 {
 	if (OnUndoWrite) OnUndoWrite(EntryId);

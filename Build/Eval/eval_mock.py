@@ -128,6 +128,10 @@ class World:
             if mentions(args, "PointLight"):
                 return "PointLight : Light : Actor\nEditable properties (on PointLightComponent):\nIntensity (float)\nLightColor (Color)\nAttenuationRadius (float)"
             return "Class not found."
+        if name == "ask_user":
+            # The simulated user always picks the first option offered
+            options = args.get("options") or []
+            return f'The user answered: "{options[0]}"' if options else "Pass 2-6 different options."
         if name == "get_settings":
             return json.dumps(data["settings"], ensure_ascii=False)
         if name == "read_log":

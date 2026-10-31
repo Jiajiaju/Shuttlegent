@@ -61,6 +61,8 @@ public:
 
 	TFunction<void(int32, bool)> OnAnswerWrite;
 
+	TFunction<void(int32, const FString&, bool)> OnAnswerQuestion;
+
 	TFunction<void(int32)> OnUndoWrite;
 
 	TFunction<void()> OnRetryStart;
@@ -161,6 +163,10 @@ public:
 	/** Confirms or refuses the editor write shown by the confirmation card. */
 	UFUNCTION()
 	void AnswerWrite(int32 RequestId, bool bApprove);
+
+	/** Answers the question the agent asked (ask_user) with the option picked or the user's own text, or skips it. */
+	UFUNCTION()
+	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
 	/** "Undo this change" on a write result. */
 	UFUNCTION()

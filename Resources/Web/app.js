@@ -119,6 +119,7 @@
     runLog: [],
     pendingPermission: null,
     pendingWrite: null,
+    pendingQuestion: null,
     queue: { paused: false, items: [] },
     canRetry: false
   };
@@ -485,7 +486,7 @@
     updateMarkOpacity();
 
     // Working loops while a turn runs and nothing waits for the user; a confirmation, a stop or a lost runtime rests it
-    const working = state.prompting && !state.pendingWrite && !state.pendingPermission;
+    const working = state.prompting && !state.pendingWrite && !state.pendingPermission && !state.pendingQuestion;
     if (working && !wasWorking) markPlayer.play(headerMark, 'working');
     if (!working && wasWorking && headerMark.motion === 'working') markPlayer.rest(headerMark);
     wasWorking = working;
@@ -693,10 +694,23 @@
     return '<header><h3 id="decision-title" tabindex="-1">运行时请求额外权限</h3><span class="badge">不可撤销</span></header><p>操作：' + esc(request.displayName) + '</p>' + target + content + detail + '<p class="fine">本次授权只覆盖这一个请求，不会开放后续请求。拒绝后保留任务记录。</p><div class="actions"><button id="decision-reject">拒绝</button><button id="decision-allow" class="primary">允许本次</button></div>';
   }
 
-  /** The request the card shows: an editor write first, else a runtime permission; null when nothing waits. */
+  /** Question the agent asked (ask_user): the options as numbered buttons, an own answer when allowed, skip. */
+  function questionCardHtml(request) {
+    const options = request.options.map((option, index) => '<button class="question-option" data-question-option="' + index + '"><kbd>' + (index + 1) + '</kbd>' + esc(option) + '</button>').join('');
+    const other = request.allowOther
+      ? '<div class="question-other"><input id="question-other" placeholder="其他：写下你的回答" aria-label="其他回答" autocomplete="off"><button id="question-other-send">回答</button></div>'
+      : '';
+    return '<header><h3 id="decision-title" tabindex="-1">' + esc(request.question) + '</h3><span class="badge">Agent 提问</span></header>'
+      + '<div class="question-options">' + options + '</div>' + other
+      + '<p class="fine">按数字键选择，Esc 跳过。<span id="decision-countdown"></span></p>'
+      + '<div class="actions"><button id="decision-reject">跳过</button></div>';
+  }
+
+  /** The request the card shows: an editor write first, then a runtime permission, then a question; null when nothing waits. */
   function currentDecision() {
     if (state.pendingWrite) return { key: 'w' + state.pendingWrite.id, kind: 'write', request: state.pendingWrite };
     if (state.pendingPermission) return { key: 'p' + state.pendingPermission.id, kind: 'permission', request: state.pendingPermission };
+    if (state.pendingQuestion) return { key: 'q' + state.pendingQuestion.id, kind: 'question', request: state.pendingQuestion };
     return null;
   }
 
@@ -709,7 +723,7 @@
     $('composer-meta').hidden = waiting;
     $('input-hint').hidden = waiting;
     card.hidden = !waiting;
-    if (!waiting || decision.kind !== 'write') stopCountdown();
+    if (!waiting || decision.kind === 'permission') stopCountdown();
     if (!waiting) {
       // Focus that sat on the card goes back to the draft once it is answered
       const hadFocus = card.contains(document.activeElement);
@@ -724,22 +738,39 @@
     // Focus that was on the previous card or in the composer moves to the new title; focus elsewhere (the viewport) is not stolen
     const focusWasOurs = $('composer').contains(document.activeElement) || card.contains(document.activeElement) || document.activeElement === document.body;
     card.classList.toggle('elevation', decision.kind === 'permission');
-    card.innerHTML = decision.kind === 'write' ? writeCardHtml(decision.request) : permissionCardHtml(decision.request);
-    $('decision-reject').addEventListener('click', () => answerDecision(false));
-    $('decision-allow').addEventListener('click', () => answerDecision(true));
+    if (decision.kind === 'question') {
+      card.innerHTML = questionCardHtml(decision.request);
+      for (const button of card.querySelectorAll('[data-question-option]')) {
+        button.addEventListener('click', () => answerQuestion(decision.request.options[Number(button.dataset.questionOption)]));
+      }
+      if (decision.request.allowOther) {
+        const sendOther = () => answerQuestion($('question-other').value.trim());
+        $('question-other-send').addEventListener('click', sendOther);
+        $('question-other').addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          sendOther();
+        });
+      }
+      $('decision-reject').addEventListener('click', () => answerDecision(false));
+    } else {
+      card.innerHTML = decision.kind === 'write' ? writeCardHtml(decision.request) : permissionCardHtml(decision.request);
+      $('decision-reject').addEventListener('click', () => answerDecision(false));
+      $('decision-allow').addEventListener('click', () => answerDecision(true));
+    }
     view.shownDecisionKey = decision.key;
-    if (decision.kind === 'write') startCountdown(decision.request.expiresAt);
+    if (decision.kind !== 'permission') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '，超时后 Agent 改用文字提问。' : '，超时自动取消。');
     if (focusWasOurs && document.hasFocus()) $('decision-title').focus({ preventScroll: true });
   }
 
   /** The write gate times a request out unanswered (the runtime gives up on the call soon after); the card counts down to it. */
-  function startCountdown(expiresAt) {
+  function startCountdown(expiresAt, suffix) {
     stopCountdown();
     const tick = () => {
       const label = $('decision-countdown');
       if (!label) return;
       const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      label.textContent = ' 剩余 ' + seconds + ' 秒，超时自动取消。';
+      label.textContent = ' 剩余 ' + seconds + ' 秒' + suffix;
     };
     tick();
     view.countdownTimer = window.setInterval(tick, COUNTDOWN_INTERVAL_MS);
@@ -760,7 +791,20 @@
       button.disabled = true;
     }
     if (decision.kind === 'write') call('answerwrite', decision.request.id, allow);
+    else if (decision.kind === 'question') call('answerquestion', decision.request.id, '', true);
     else call('answerpermission', decision.request.id, allow);
+  }
+
+  /** Sends the option picked or the own answer to the question on the card; an empty answer does nothing. */
+  function answerQuestion(answer) {
+    const decision = currentDecision();
+    if (!decision || decision.kind !== 'question' || !answer || view.answeringDecisionKey === decision.key) return;
+
+    view.answeringDecisionKey = decision.key;
+    for (const control of $('decision').querySelectorAll('button,input')) {
+      control.disabled = true;
+    }
+    call('answerquestion', decision.request.id, answer, false);
   }
 
   function growDraft() {
@@ -1346,7 +1390,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'queue', 'canRetry'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -1412,7 +1456,7 @@
       // The menu's session may be gone (deleted, archived) or running now
       closeSessionMenu(false);
     }
-    if ('pendingPermission' in message || 'pendingWrite' in message) renderDecision();
+    if ('pendingPermission' in message || 'pendingWrite' in message || 'pendingQuestion' in message) renderDecision();
     renderComposer();
 
     const inspectorVisible = paneMode('inspector') !== 'hidden';
@@ -1782,6 +1826,17 @@
     document.addEventListener('keydown', (event) => {
       // Open dialogs handle their own Esc; the composer handles Enter
       if (event.isComposing || event.keyCode === 229 || document.querySelector('dialog[open]')) return;
+
+      // Number keys pick a question's option, unless the own-answer field is being typed in
+      const question = currentDecision();
+      if (question && question.kind === 'question' && /^[1-9]$/.test(event.key) && !event.ctrlKey && !event.altKey && !event.metaKey && document.activeElement !== $('question-other')) {
+        const option = question.request.options[Number(event.key) - 1];
+        if (option) {
+          event.preventDefault();
+          answerQuestion(option);
+        }
+        return;
+      }
 
       // Esc closes the topmost layer first: an overlay pane, then the decision card (rejects this request only)
       if (event.key === 'Escape') {

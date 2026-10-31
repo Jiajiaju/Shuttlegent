@@ -13,12 +13,15 @@
 #include "ShuttlegentAgentState.h"
 #include "ShuttlegentSessionRecord.h"
 #include "ShuttlegentStartIssue.h"
+#include "QuestionGate/FShuttlegentQuestion.h"
 #include "WriteGate/FShuttlegentWriteRequest.h"
 
 class FJsonObject;
 class FJsonValue;
 class FShuttlegentAgentService;
+class FShuttlegentQuestionGate;
 class FShuttlegentWriteGate;
+enum class EShuttlegentQuestionOutcome : uint8;
 enum class EShuttlegentWriteDecision : uint8;
 
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatStructureChanged);
@@ -99,6 +102,9 @@ private:
 
 	/** Editor write gate (ShuttlegentMcpServer); the panel confirms its requests and shows its results. */
 	TWeakPtr<FShuttlegentWriteGate> WriteGate;
+
+	/** Questions the agent asks through ask_user (ShuttlegentMcpServer); the panel answers them. */
+	TWeakPtr<FShuttlegentQuestionGate> QuestionGate;
 
 	/** Conversation the open write requests and their result belong to: the current one when the first of them arrived. */
 	TWeakPtr<FShuttlegentConversation> WriteOwner;
@@ -209,6 +215,12 @@ public:
 
 	/** Undoes a write result's transaction when it is still on top of the editor's undo buffer. */
 	void UndoWrite(int32 EntryId);
+
+	/** Oldest question the agent asked that waits for an answer, or nullptr. */
+	const FShuttlegentQuestion* GetPendingQuestion() const;
+
+	/** Answers or skips a question; a second answer to the same question does nothing. */
+	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
 	/** Sends one cancellation for the current conversation's running turn; later calls wait for the turn to end. */
 	void Cancel();
@@ -324,4 +336,7 @@ private:
 	void HandleWriteFinished(const FShuttlegentWriteResult& Result);
 	void HandleUndoBufferChanged();
 	void EnsureUndoListener();
+
+	void HandleQuestionsChanged();
+	void HandleQuestionClosed(const FShuttlegentQuestion& Question, EShuttlegentQuestionOutcome Outcome, const FString& Answer);
 };

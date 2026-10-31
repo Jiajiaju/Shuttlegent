@@ -8,6 +8,7 @@
 #include "Endpoint/FShuttlegentToolRegistry.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentCoreModule.h"
+#include "QuestionGate/FShuttlegentQuestionGate.h"
 #include "WriteGate/FShuttlegentWriteGate.h"
 #include "WriteGate/FShuttlegentWriteProbe.h"
 
@@ -25,6 +26,7 @@ void FShuttlegentMcpServerModule::StartupModule()
 	WriteGate = MakeShared<FShuttlegentWriteGate>();
 	WriteGate->Initialize();
 	WriteProbe = MakeShared<FShuttlegentWriteProbe>(WriteGate.ToSharedRef());
+	QuestionGate = MakeShared<FShuttlegentQuestionGate>();
 
 	// Commandlets have no runtime to serve
 	if (IsRunningCommandlet()) return;
@@ -65,6 +67,8 @@ void FShuttlegentMcpServerModule::ShutdownModule()
 	Endpoint.Reset();
 
 	WriteProbe.Reset();
+	if (QuestionGate.IsValid()) QuestionGate->Shutdown();
+	QuestionGate.Reset();
 	if (WriteGate.IsValid()) WriteGate->Shutdown();
 	WriteGate.Reset();
 }

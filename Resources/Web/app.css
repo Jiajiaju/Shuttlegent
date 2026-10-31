@@ -94,7 +94,7 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 .card{border:1px solid var(--line);border-radius:14px;flex-shrink:0;min-width:0}
 .card-head{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:0;border-radius:14px;padding:14px 16px;text-align:left;font-size:13px;font-weight:500;color:var(--text);min-width:0}
 .card-head:hover .card-caret{color:var(--text)}
-.card-caret{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:5px solid currentColor;color:var(--muted);transition:transform .15s}
+.card-caret{display:inline-flex;color:var(--muted);transition:transform .15s}
 .card.open .card-caret{transform:rotate(90deg)}
 .card-summary{margin-left:auto;color:var(--muted);font-size:12px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card-summary.warn{color:var(--warning)}

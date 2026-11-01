@@ -9,6 +9,9 @@ description: 修改数据表（DataTable）：加行、改行、删行、改名�
 
 ## 步骤
 
+用户只要导出（例如“导出成 CSV 我自己用 Excel 改”）、这次不改表时，只调用一次 `export_data_table`，告诉用户文件路径即可，不做备份、不读行；用户改好要导回时再按下面的步骤做。
+
+
 1. 用 `find_assets`（`class` 填 `DataTable`）找到表，表名不明确时用 `ask_user` 确认。
 2. 用 `describe_toolset` 查看 DataTableTools 的工具与参数，再用 `call_toolset_tool` 调用 `get_schema`、`list_rows`、`get_rows` 读出列和现有的行。
 3. **备份**：调用 `export_data_table`，`path` 写 `Saved/Shuttlegent/Exports/<表名>.before.csv`。备份失败就停下来，不要继续改。

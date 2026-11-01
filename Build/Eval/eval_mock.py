@@ -135,6 +135,47 @@ class World:
             if tool == "is_dirty":
                 return '{"returnValue": false}'
             return '{"returnValue": true}'
+        if "Niagara" in str(args.get("toolset", "")):
+            system = next((a for a in self.data["assets"] if a["class"] == "NiagaraSystem" and mentions(inner, a["path"].split("/")[-1])), None)
+            if tool in ("GetAssetDiscoveryInfo", "FindNiagaraScripts"):
+                return json.dumps([a["path"] for a in self.data["assets"] if a["class"] == "NiagaraSystem"])
+            if system is None:
+                return "Error: Parameter error: System was null"
+            if tool == "GetSystemSummary":
+                return json.dumps({"Name": system["path"].split("/")[-1], "UserVariables": [], "Emitters": [{"Name": e, "Enabled": True} for e in system["emitters"]]})
+            if tool == "GetSystemCompileState":
+                return json.dumps(system["compile"])
+            if tool == "GetStackIssues":
+                return json.dumps({"Issues": system["issues"]})
+            if tool == "ApplyStackIssueFix":
+                system["issues"] = [i for i in system["issues"] if i["IssueId"] != str(inner.get("IssueId", inner.get("issue_id", "")))]
+                return json.dumps({"Applied": True, "Issues": system["issues"]})
+            return "Done."
+        if "UMG" in str(args.get("toolset", "")):
+            blueprints = [a for a in self.data["assets"] if a["class"] == "WidgetBlueprint"]
+            if tool == "ListWidgetBlueprints":
+                return json.dumps([a["path"] for a in blueprints])
+            blueprint = next((a for a in blueprints if mentions(inner, a["path"].split("/")[-1])), None)
+            if blueprint is None:
+                return "Error: widget blueprint not found."
+            if tool == "GetWidgets":
+                return json.dumps({"Info": {"ParentClass": "/Script/UMG.UserWidget"}, "Widgets": blueprint["widgets"]})
+            return "Done."
+        if "GameplayTags" in str(args.get("toolset", "")):
+            tags = self.data["gameplayTags"]
+            if tool == "ListTags":
+                parent = next((v for v in inner.values() if isinstance(v, str)), "")
+                return json.dumps(sorted(t for t in tags if not parent or t.lower().startswith(parent.lower() + ".")))
+            values = [v for v in inner.values() if isinstance(v, str)]
+            name = next((v for v in values if v in tags), values[0] if values else "")
+            tag = next((t for t in tags if t == name), None)
+            if tag is None:
+                return f"Error: Gameplay tag '{name}' does not exist."
+            if tool == "FindReferencersByTag":
+                return json.dumps(tags[tag]["referencers"])
+            if tool == "GetTagInfo":
+                return json.dumps({"Comment": "", "Source": tags[tag]["source"], "Children": []})
+            return "Done."
         if str(args.get("toolset", "")).endswith("BlueprintTools"):
             asset = next((a for a in self.data["assets"] if a.get("graphs") and mentions(inner, a["path"].split("/")[-1])), None)
             if asset is None:

@@ -44,8 +44,30 @@
     { "path": "/Game/Props/SM_StreetLamp", "class": "StaticMesh" },
     { "path": "/Game/Props/SM_Tree", "class": "StaticMesh" },
     { "path": "/Game/Props/SM_Rock", "class": "StaticMesh" },
-    { "path": "/Game/Props/SM_Crate", "class": "StaticMesh" }
+    { "path": "/Game/Props/SM_Crate", "class": "StaticMesh" },
+    { "path": "/Game/FX/NS_Fireball", "class": "NiagaraSystem", "emitters": ["Core", "Sparks", "Smoke"],
+      "compile": { "status": "UpToDateWithWarnings", "events": ["Warning: Sparks spawn script: Attribute Particles.Lifetime is read but never written"] },
+      "issues": [
+        { "IssueId": "Smoke.Bounds", "Severity": "Error", "Emitter": "Smoke", "Module": "Emitter Properties", "Text": "GPU simulation needs fixed bounds, but this emitter uses dynamic bounds", "Fixes": [{ "FixId": "SetFixedBounds", "Style": "Fix", "Description": "Enable fixed bounds" }] },
+        { "IssueId": "Sparks.Unused", "Severity": "Warning", "Emitter": "Sparks", "Module": "Curl Noise Force", "Text": "Module is disabled but still in the stack", "Fixes": [] }
+      ] },
+    { "path": "/Game/UI/WBP_MainMenu", "class": "WidgetBlueprint", "widgets": [
+      { "name": "CanvasPanel_0", "type": "CanvasPanel", "parent": "", "isVariable": false },
+      { "name": "VerticalBox_Menu", "type": "VerticalBox", "parent": "CanvasPanel_0", "isVariable": false },
+      { "name": "Btn_Start", "type": "Button", "parent": "VerticalBox_Menu", "isVariable": true },
+      { "name": "TextBlock_0", "type": "TextBlock", "parent": "Btn_Start", "isVariable": false },
+      { "name": "Button_23", "type": "Button", "parent": "VerticalBox_Menu", "isVariable": true },
+      { "name": "Image_7", "type": "Image", "parent": "CanvasPanel_0", "isVariable": false }
+    ] }
   ],
+  "gameplayTags": {
+    "Character.State.Dead": { "referencers": ["/Game/Characters/Hero/BP_Hero", "/Game/AI/BT_Enemy"], "source": "DefaultGameplayTags.ini" },
+    "Character.State.Stunned": { "referencers": ["/Game/Abilities/GA_Stun"], "source": "DefaultGameplayTags.ini" },
+    "Character.State.Knocked_Down": { "referencers": [], "source": "DefaultGameplayTags.ini" },
+    "Character.State.stunned": { "referencers": [], "source": "DefaultGameplayTags.ini" },
+    "Character.State.Frozen": { "referencers": [], "source": "Native" },
+    "Weapon.Sword": { "referencers": ["/Game/Data/DT_Items"], "source": "DefaultGameplayTags.ini" }
+  },
   "settings": { "Engine - Rendering": { "Anti-Aliasing Method": "Temporal Super-Resolution (TSR)" } },
   "cvars": { "r.AntiAliasingMethod": "4", "r.Lumen.DiffuseIndirect.Allow": "1" },
   "log": [
@@ -55,10 +77,11 @@
   ],
   "toolsets": [
     { "name": "editor_toolset.toolsets.data_table.DataTableTools", "description": "Tools for reading and editing DataTable assets.", "tools": ["search_row_structs", "get_schema", "list_rows", "get_rows", "set_rows", "add_rows", "remove_rows", "rename_rows", "create", "import_file"] },
-    { "name": "NiagaraToolsets.NiagaraSystemToolset", "description": "Tools for inspecting and editing Niagara systems and emitters.", "tools": ["GetSystemInfo", "ListEmitters", "SetEmitterEnabled"] },
-    { "name": "NiagaraToolsets.NiagaraParameterToolset", "description": "Tools for reading and setting Niagara user parameters.", "tools": ["GetUserParameters", "SetUserParameter"] },
+    { "name": "NiagaraToolsets.NiagaraToolset_System", "description": "Inspect and edit Niagara systems: summaries, topology, data, compile state, stack issues and fixes.", "tools": ["GetSystemSummary", "GetEmitterSummary", "GetSystemCompileState", "GetStackIssues", "ApplyStackIssueFix", "GetSystemData", "SetSystemData", "SetModuleEnabled"] },
+    { "name": "NiagaraToolsets.NiagaraToolset_Assets", "description": "Find Niagara scripts and discover Niagara assets.", "tools": ["GetAssetDiscoveryInfo", "FindNiagaraScripts"] },
     { "name": "editor_toolset.toolsets.asset.AssetTools", "description": "Provides tools for interacting with assets in the Unreal project.", "tools": ["is_dirty", "load_asset", "delete", "move", "duplicate"] },
-    { "name": "UMGToolSet.WidgetBlueprintToolset", "description": "Tools for editing widget blueprints.", "tools": ["GetWidgetTree", "AddWidget"] },
+    { "name": "UMGToolSet.UMGToolSet", "description": "Inspect and edit widget blueprints: widget trees, renaming, variables, layout.", "tools": ["ListWidgetBlueprints", "GetWidgets", "GetWidgetDescription", "RenameWidget", "ToggleWidgetAsVariable", "ReplaceWidgetWithChild", "CompileWidgetBlueprint"] },
+    { "name": "GameplayTagsToolset.GameplayTagsToolset", "description": "List, inspect, add, rename and remove gameplay tags; find assets referencing a tag.", "tools": ["ListTags", "GetTagInfo", "AddTag", "RenameTag", "RemoveTag", "FindReferencersByTag"] },
     { "name": "editor_toolset.toolsets.blueprint.BlueprintTools", "description": "Tools for creating and editing Blueprints and their graphs.", "tools": ["list_graphs", "find_nodes", "get_node_infos", "read_graph_dsl", "write_graph_dsl", "add_node", "connect_pins", "set_node_pos", "arrange_nodes", "compile_blueprint"] },
     { "name": "editor_toolset.toolsets.material.MaterialTools", "description": "Tools for creating and editing Material graphs.", "tools": ["create_material", "add_expression", "connect_expressions", "connect_to_output", "layout_expressions", "recompile"] },
     { "name": "editor_toolset.toolsets.material_instance.MaterialInstanceTools", "description": "Tools for creating and editing Material Instances.", "tools": ["create", "list_parameters", "get_scalar_parameter", "set_scalar_parameter", "get_vector_parameter", "set_vector_parameter", "get_texture_parameter", "set_texture_parameter", "get_static_switch_parameter", "set_static_switch_parameter", "set_parent"] }

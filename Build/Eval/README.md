@@ -22,6 +22,7 @@ Same as `Build/Probe`: the built runtime (`Runtime/shuttlegent-runtime.exe`), th
 ```powershell
 Build\Eval\RunEval.ps1                                        # all tasks
 Build\Eval\RunEval.ps1 -Only t01_light_intensity,t13_ambiguous   # some tasks
+Build\Eval\RunEval.ps1 -Model deepseek-v4-flash -Port 27997 -OutDir Saved\Eval\v4flash   # another model, alongside a default run
 ```
 
 Output goes to `Saved/Eval/<timestamp>/` (git-ignored): one ACP log per task, the mock's call log, `report.md` and `summary.json`. Inspect one task with `Build/Probe/show_log.py`.

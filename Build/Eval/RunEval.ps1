@@ -15,13 +15,18 @@ Run only the named tasks (e.g. -Only t01_light_intensity,t13_ambiguous).
 
 .PARAMETER OutDir
 Output directory. Defaults to <plugin>/Saved/Eval/<yyyyMMdd-HHmmss>.
+
+.PARAMETER Model
+Run on this DeepSeek model instead of the profile's default (e.g. -Model deepseek-v4-flash), to compare models.
+Two runs can go at once with different -Port and -OutDir.
 #>
 param(
     [string[]]$Only = @(),
     [string]$OutDir = '',
     [string]$ProjectDir = '',
     [string]$Python = '',
-    [int]$Port = 27998
+    [int]$Port = 27998,
+    [string]$Model = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -42,6 +47,12 @@ New-Item -ItemType Directory -Force $OutDir | Out-Null
 # The plugin's built-in skills, as the editor passes them when the project has no skill directories of its own
 $SkillOverlay = Join-Path $OutDir 'skills.patch.yml'
 [IO.File]::WriteAllText($SkillOverlay, "- id: skill-filesystem`n  config:`n    includeDefaultRoots: false`n    customSkillDirs: ['$BuiltinSkills']`n", $Utf8NoBom)
+$Overlays = @('--patch', $SkillOverlay)
+if ($Model) {
+    $ModelOverlay = Join-Path $OutDir 'model.patch.yml'
+    [IO.File]::WriteAllText($ModelOverlay, "- id: acp`n  config:`n    provider: deepseek-official`n    model: $Model`n", $Utf8NoBom)
+    $Overlays += @('--patch', $ModelOverlay)
+}
 if (-not $Python) {
     $SearchDir = $PluginDir
     while ($SearchDir) {
@@ -73,7 +84,8 @@ if (-not $ApiKey) { throw 'No DeepSeek key in Editor Preferences > Shuttlegent >
 
 $Workspace = Join-Path $OutDir 'ws'
 New-Item -ItemType Directory -Force $Workspace | Out-Null
-$HomeRoot = Join-Path $env:LOCALAPPDATA 'Shuttlegent\Eval'
+# One DSH_HOME root per run, so runs with different -OutDir can go at once
+$HomeRoot = Join-Path $env:LOCALAPPDATA ('Shuttlegent\Eval\' + (Split-Path $OutDir -Leaf))
 if (Test-Path $HomeRoot) { Remove-Item -Recurse -Force $HomeRoot }
 
 $Tasks = (Get-Content (Join-Path $EvalDir 'tasks.json') -Raw -Encoding UTF8 | ConvertFrom-Json).tasks
@@ -96,7 +108,7 @@ try {
         New-Item -ItemType Directory -Force $DshHome | Out-Null
         $Scenario = [ordered]@{
             name = $Task.id
-            command = @($RuntimeExe, '--profile', 'acp', '--patch', $PatchFile, '--patch', $SkillOverlay)
+            command = @($RuntimeExe, '--profile', 'acp', '--patch', $PatchFile) + $Overlays
             cwd = $Workspace
             process_cwd = $DshHome
             env = @{ DSH_HOME = $DshHome; DSH_AGENTS_HOME = (Join-Path $DshHome 'agents'); DSH_TELEMETRY_DISABLED = '1'; DSH_PERMISSION_MODE = 'read-only' }

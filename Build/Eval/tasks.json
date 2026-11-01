@@ -133,7 +133,7 @@
           "Potion_Large"
         ]
       },
-      "maxWrites": 2,
+      "maxWrites": 3,
       "forbid": [
         "save_assets"
       ]
@@ -561,6 +561,79 @@
         ]
       },
       "maxWrites": 0
+    },
+    {
+      "id": "t36_niagara_review",
+      "prompt": "检查 Niagara 特效的报错与警告，只汇报不修改。\n要查的特效：NS_Fireball",
+      "skill": "niagara-review",
+      "calls": [
+        "call_toolset_tool"
+      ],
+      "args": {
+        "call_toolset_tool": [
+          "GetStackIssues",
+          "NS_Fireball"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "ApplyStackIssueFix"
+        ]
+      },
+      "maxWrites": 0,
+      "reply": [
+        "(?i)bounds|边界"
+      ]
+    },
+    {
+      "id": "t37_umg_review",
+      "prompt": "检查控件蓝图的命名与层级，只汇报不修改。\n要查的界面：WBP_MainMenu",
+      "skill": "umg-review",
+      "calls": [
+        "call_toolset_tool"
+      ],
+      "args": {
+        "call_toolset_tool": [
+          "GetWidgets",
+          "WBP_MainMenu"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "RenameWidget",
+          "ToggleWidgetAsVariable"
+        ]
+      },
+      "maxWrites": 0,
+      "reply": [
+        "TextBlock_0",
+        "Button_23"
+      ]
+    },
+    {
+      "id": "t38_tag_review",
+      "prompt": "整理 GameplayTag，找出没用到、写法不统一、意思重复的标签，只汇报不修改。\n范围：Character.State 下的标签",
+      "skill": "tag-review",
+      "calls": [
+        "call_toolset_tool"
+      ],
+      "args": {
+        "call_toolset_tool": [
+          "ListTags",
+          "FindReferencersByTag"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "RemoveTag",
+          "RenameTag"
+        ]
+      },
+      "maxWrites": 0,
+      "reply": [
+        "Knocked_Down",
+        "(?i)stunned"
+      ]
     }
   ]
 }

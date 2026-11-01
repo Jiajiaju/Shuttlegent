@@ -58,6 +58,9 @@ description: 按清单检查当前关卡：光源数量、未命名 Actor、隐�
 | `/lighting-preset` | `lighting-preset` | 把室外灯光调成正午、黄昏、阴天或夜晚：太阳角度、强度、色温，天光强度，雾浓度 |
 | `/material-edit` | `material-edit` | 批量改材质实例参数、新建材质实例、给关卡中的物体换材质 |
 | `/find-assets` | `find-assets` | 按描述找资源并查清被哪里用到，只查不改 |
+| `/niagara-review` | `niagara-review` | 检查 Niagara 特效的编译错误、模块堆栈错误与警告、发射器概况；用户同意后逐条应用引擎给出的修复 |
+| `/umg-review` | `umg-review` | 检查控件蓝图中默认名称的控件、过深的层级、误设为变量的控件；用户确认后再改名或调整 |
+| `/tag-review` | `tag-review` | 找出没有资源引用、写法不统一、意思重复的 GameplayTag；删除与改名逐个确认，并说明代码与配置中的引用查不到 |
 
 技能在插件的 `Resources/Skills/<技能名>/SKILL.md`，模板在 `Resources/Templates/<模板名>.md`。不用模板、直接用自然语言描述同样的任务，Agent 也会按需加载对应技能。
 

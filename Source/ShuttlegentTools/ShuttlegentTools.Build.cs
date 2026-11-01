@@ -18,6 +18,7 @@ public class ShuttlegentTools : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
+				"Json",
 				"AssetRegistry",
 				"DeveloperSettings",
 				"LevelEditor",
@@ -25,6 +26,11 @@ public class ShuttlegentTools : ModuleRules
 				"Slate",
 				"SlateCore",
 				"UnrealEd",
+				"AssetTools",
+				"MaterialEditor",
+				"BlueprintGraph",
+				"RigVM",
+				"RigVMDeveloper",
 				"ShuttlegentCore",
 				"ShuttlegentMcpServer",
 			}

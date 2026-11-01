@@ -12,16 +12,29 @@
     { "label": "TempCube_1", "class": "StaticMeshActor", "location": [300, 300, 50] },
     { "label": "TempCube_2", "class": "StaticMeshActor", "location": [350, -200, 50] },
     { "label": "StaticMeshActor_12", "class": "StaticMeshActor", "location": [900, 600, 0] },
-    { "label": "StaticMeshActor_13", "class": "StaticMeshActor", "location": [-900, 600, 0] }
+    { "label": "StaticMeshActor_13", "class": "StaticMeshActor", "location": [-900, 600, 0] },
+    { "label": "Wall_01", "class": "StaticMeshActor", "location": [0, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Grey", "override": false }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] },
+    { "label": "Wall_02", "class": "StaticMeshActor", "location": [400, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Grey", "override": false }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] },
+    { "label": "Wall_03", "class": "StaticMeshActor", "location": [800, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": true }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] }
   ],
   "selection": ["PointLight_Corridor", "PointLight_Stage"],
   "assets": [
     { "path": "/Game/Characters/Hero/SK_Hero", "class": "SkeletalMesh", "referencedBy": ["/Game/Characters/Hero/BP_Hero", "/Game/Characters/Hero/ABP_Hero", "/Game/Maps/Hall"] },
-    { "path": "/Game/Characters/Hero/BP_Hero", "class": "Blueprint", "parentClass": "Character", "properties": { "Health": 100, "MaxWalkSpeed": 600, "JumpZVelocity": 420 } },
+    { "path": "/Game/Characters/Hero/BP_Hero", "class": "Blueprint", "parentClass": "Character", "properties": { "Health": 100, "MaxWalkSpeed": 600, "JumpZVelocity": 420 }, "graphs": { "EventGraph": [{ "name": "K2Node_Event_0", "title": "Event BeginPlay" }, { "name": "K2Node_Event_1", "title": "Event Tick" }, { "name": "K2Node_CallFunction_3", "title": "Set Actor Location" }, { "name": "K2Node_VariableGet_2", "title": "Get Health" }, { "name": "K2Node_IfThenElse_0", "title": "Branch" }, { "name": "K2Node_CallFunction_7", "title": "Print String" }], "UpdateHealth": [{ "name": "K2Node_FunctionEntry_0", "title": "Update Health" }, { "name": "K2Node_VariableSet_0", "title": "Set Health" }] } },
     { "path": "/Game/Characters/Hero/ABP_Hero", "class": "AnimBlueprint" },
     { "path": "/Game/Data/DT_Items", "class": "DataTable", "rowStruct": "ItemRow", "rows": ["Potion_Small", "Sword_Iron"] },
     { "path": "/Game/Data/DT_Broken", "class": "DataTable", "rowStruct": "ItemRow", "rows": ["Potion_Small"], "broken": true },
-    { "path": "/Game/Maps/Hall", "class": "World" }
+    { "path": "/Game/Maps/Hall", "class": "World" },
+    { "path": "/Game/Materials/Walls/M_Wall", "class": "Material", "parameters": [
+      { "name": "BaseColor", "group": "Color", "type": "vector", "value": "(R=0.5,G=0.5,B=0.5,A=1)" },
+      { "name": "Roughness", "group": "Surface", "type": "scalar", "value": "0.6" },
+      { "name": "BrickTexture", "group": "Surface", "type": "texture", "value": "/Game/Materials/Walls/T_Brick_D.T_Brick_D" },
+      { "name": "UseMoss", "group": "Surface", "type": "static switch", "value": "false" }
+    ] },
+    { "path": "/Game/Materials/Walls/MI_Wall_Grey", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.3,G=0.3,B=0.3,A=1)" } },
+    { "path": "/Game/Materials/Walls/MI_Wall_Beige", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.8,G=0.7,B=0.55,A=1)", "Roughness": "0.8" } },
+    { "path": "/Game/Materials/Walls/MI_Wall_Dark", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.08,G=0.08,B=0.1,A=1)", "UseMoss": "true" } },
+    { "path": "/Game/Materials/Walls/T_Brick_D", "class": "Texture2D" }
   ],
   "settings": { "Engine - Rendering": { "Anti-Aliasing Method": "Temporal Super-Resolution (TSR)" } },
   "cvars": { "r.AntiAliasingMethod": "4", "r.Lumen.DiffuseIndirect.Allow": "1" },
@@ -35,6 +48,9 @@
     { "name": "NiagaraToolsets.NiagaraSystemToolset", "description": "Tools for inspecting and editing Niagara systems and emitters.", "tools": ["GetSystemInfo", "ListEmitters", "SetEmitterEnabled"] },
     { "name": "NiagaraToolsets.NiagaraParameterToolset", "description": "Tools for reading and setting Niagara user parameters.", "tools": ["GetUserParameters", "SetUserParameter"] },
     { "name": "editor_toolset.toolsets.asset.AssetTools", "description": "Provides tools for interacting with assets in the Unreal project.", "tools": ["is_dirty", "load_asset", "delete", "move", "duplicate"] },
-    { "name": "UMGToolSet.WidgetBlueprintToolset", "description": "Tools for editing widget blueprints.", "tools": ["GetWidgetTree", "AddWidget"] }
+    { "name": "UMGToolSet.WidgetBlueprintToolset", "description": "Tools for editing widget blueprints.", "tools": ["GetWidgetTree", "AddWidget"] },
+    { "name": "editor_toolset.toolsets.blueprint.BlueprintTools", "description": "Tools for creating and editing Blueprints and their graphs.", "tools": ["list_graphs", "find_nodes", "get_node_infos", "read_graph_dsl", "write_graph_dsl", "add_node", "connect_pins", "set_node_pos", "arrange_nodes", "compile_blueprint"] },
+    { "name": "editor_toolset.toolsets.material.MaterialTools", "description": "Tools for creating and editing Material graphs.", "tools": ["create_material", "add_expression", "connect_expressions", "connect_to_output", "layout_expressions", "recompile"] },
+    { "name": "editor_toolset.toolsets.material_instance.MaterialInstanceTools", "description": "Tools for creating and editing Material Instances.", "tools": ["create", "list_parameters", "get_scalar_parameter", "set_scalar_parameter", "get_vector_parameter", "set_vector_parameter", "get_texture_parameter", "set_texture_parameter", "get_static_switch_parameter", "set_static_switch_parameter", "set_parent"] }
   ]
 }

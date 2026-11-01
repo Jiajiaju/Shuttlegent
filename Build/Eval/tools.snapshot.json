@@ -1,5 +1,5 @@
 {
-  "source": "generated from C++ sources on 2026-10-30 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
+  "source": "generated from C++ sources on 2026-10-30, material tools and tidy_graph added 2026-11-01 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentMaterialTools,FShuttlegentGraphTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
   "serverInfo": {
     "name": "shuttlegent-editor",
     "version": "0.1.0"
@@ -359,6 +359,31 @@
       }
     },
     {
+      "name": "get_material_parameters",
+      "description": "Every parameter of materials or material instances in one call: name, group, type (scalar, vector, texture, static switch), current value and, for instances, whether it is overridden or inherited; plus the parent chain. Pass actors instead to list the materials on each slot of their mesh components. Prefer this over reading parameters one by one.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Material or material instance asset paths, actor labels or paths in the open level, or mesh component paths.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "targets"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": true,
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false
+      }
+    },
+    {
       "name": "set_property",
       "description": "Set one property to the same value on one or more objects (actors, components, assets), as the Details panel would. The value uses editor text format, the same get_properties prints: 1.5, true, (X=0,Y=0,Z=100), /Game/Mat/M_Red.M_Red. When the user names a setting in words, it is the Details panel name of the object they selected (usually the actor itself, not its components); check it with get_properties first. The user confirms first; it runs as one undoable step and is rolled back as a whole if any object fails.",
       "inputSchema": {
@@ -480,6 +505,144 @@
             "description": "Save every asset and level with unsaved changes instead. Defaults to false."
           }
         },
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "set_material_parameters",
+      "description": "Change several parameters on one or more material instances in one step, e.g. the same color on eight instances; the user confirms one card listing every instance and parameter with its current and planned value. Values: scalar as a number; vector as [r, g, b] or [r, g, b, a] (linear 0-1) or \"#RRGGBB\" (sRGB); texture as an asset path, or \"None\"; static switch as true / false (recompiles the material). Base materials cannot be changed this way: create instances with create_material_instances. Runs as one undoable step, rolled back as a whole if any instance fails. Prefer this over changing parameters one at a time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Material instance asset paths.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Parameter name to new value, e.g. {\"BaseColor\": [1, 0, 0], \"Roughness\": 0.4}. Every instance must have every parameter."
+          }
+        },
+        "required": [
+          "targets",
+          "parameters"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "create_material_instances",
+      "description": "Create several material instance assets of one parent material in one step, optionally with parameter values (same value format as set_material_parameters). Fails if an asset of that name already exists. New assets cannot be undone from the editor; they stay unsaved until save_assets. Prefer this over creating instances one at a time.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "parent": {
+            "type": "string",
+            "description": "Parent material or material instance asset path."
+          },
+          "names": {
+            "type": "array",
+            "description": "Asset names of the new instances, e.g. MI_Wall_Red.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "folder": {
+            "type": "string",
+            "description": "Package folder for the new assets, e.g. /Game/Materials/Walls. Defaults to the parent's folder."
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Parameter name to value, set on every new instance."
+          }
+        },
+        "required": [
+          "parent",
+          "names"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "assign_material",
+      "description": "Put a material or material instance on placed actors in the open level, as a per-component override like the Details panel's Materials list. Only those actors change: the mesh asset and every other placement of it keep their materials. Without slots, every slot of every mesh component of the targets is set. Runs as one undoable step, rolled back as a whole if any slot fails.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Actor labels or paths in the open level, or mesh component paths.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "material": {
+            "type": "string",
+            "description": "Material or material instance asset path."
+          },
+          "slots": {
+            "type": "array",
+            "description": "Slots to set, by index (\"0\") or slot name, as get_material_parameters lists them. Defaults to every slot.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "targets",
+          "material"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "tidy_graph",
+      "description": "Tidy the node layout of a node-graph asset: Blueprints (event graphs, functions, macros, Animation and Widget Blueprints), materials and material functions, Control Rigs, and other assets that keep a node graph. Nodes flow left to right in columns, rows follow pin order to reduce crossing wires, separate node groups are stacked, unconnected nodes go to one side, and comment boxes are resized to keep wrapping their nodes. Pass nodes to arrange only those (for example the nodes you just added) and leave the rest where the user put them; nodes takes the titles the editor shows (Branch, Print String) or object names, and a title shared by several nodes arranges all of them; arrange whole graphs only when the user asks for it. Sizes come from the asset's open editor, otherwise they are estimated. A material open in the Material Editor has its working graph arranged; the user applies or saves it there. Runs as one undoable step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "description": "Asset path, e.g. /Game/BP/BP_Door or /Game/Materials/M_Wall."
+          },
+          "graph": {
+            "type": "string",
+            "description": "Only this graph, e.g. EventGraph or a function name. Defaults to every graph of the asset; an error lists the graph names."
+          },
+          "nodes": {
+            "type": "array",
+            "description": "Only these nodes, by object name or by the title the editor shows; the other nodes stay where they are and anchor the arranged ones. Defaults to every node.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "asset"
+        ],
         "additionalProperties": false
       },
       "readOnly": false,

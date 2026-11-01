@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Actor.h"
+#include "Misc/PackageName.h"
 #include "UObject/UnrealType.h"
 
 #include "ShuttlegentToolsConstants.h"
@@ -28,6 +29,13 @@ UObject* FShuttlegentToolObjects::ResolveObject(const FString& PathOrLabel)
 	// 尚未加载的资源；指向未打开关卡的路径保持无法解析
 	UObject* Loaded = LoadObject<UObject>(nullptr, *PathOrLabel, nullptr, LOAD_NoWarn | LOAD_Quiet);
 	return IsValid(Loaded) ? Loaded : nullptr;
+}
+
+UObject* FShuttlegentToolObjects::ResolveAsset(const FString& Path)
+{
+	const FString ShortName = FPackageName::GetShortName(Path);
+	const bool bPackageOnly = Path.StartsWith(ShuttlegentToolsConstant::PathPrefix) && !ShortName.Contains(ShuttlegentToolsConstant::ObjectNameSeparator);
+	return ResolveObject(bPackageOnly ? Path + ShuttlegentToolsConstant::ObjectNameSeparator + ShortName : Path);
 }
 
 AActor* FShuttlegentToolObjects::FindActorByLabel(const FString& Label)

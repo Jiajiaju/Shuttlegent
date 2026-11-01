@@ -62,6 +62,35 @@ class World:
     def data_table(self, args):
         return next((a for a in self.data["assets"] if a["class"] == "DataTable" and mentions(args, a["path"].split("/")[-1])), None)
 
+    def material(self, value):
+        """The material or material instance asset an argument names."""
+        return next((a for a in self.data["assets"] if a["class"] in ("Material", "MaterialInstanceConstant") and mentions([value], a["path"].split("/")[-1])), None)
+
+    def material_parameters(self, asset):
+        """Each parameter of a material or instance as (parameter, value, overridden), following the parent chain."""
+        if asset["class"] == "Material":
+            return [(p, p["value"], False) for p in asset["parameters"]]
+        parent = self.material(asset["parent"])
+        overrides = asset.get("overrides", {})
+        return [(p, overrides.get(p["name"], value), p["name"] in overrides) for p, value, _ in self.material_parameters(parent)]
+
+    def describe_material(self, asset):
+        lines = [f"{asset['path'].split('/')[-1]} | {asset['class']} | {asset['path']}.{asset['path'].split('/')[-1]}"]
+        if asset["class"] != "Material":
+            lines.append(f"Parent chain: {asset['parent']}.{asset['parent'].split('/')[-1]}")
+        rows = self.material_parameters(asset)
+        lines.append(f"Parameters ({len(rows)}), as [group] name (type) = value:")
+        for p, value, overridden in rows:
+            source = "" if asset["class"] == "Material" else (" (overridden)" if overridden else " (inherited)")
+            lines.append(f"- [{p['group']}] {p['name']} ({p['type']}) = {value}{source}")
+        return "\n".join(lines)
+
+    def describe_slots(self, actor):
+        lines = [self.actor_line(actor), "- StaticMeshComponent0 (StaticMeshComponent)"]
+        for index, slot in enumerate(actor.get("materials", [])):
+            lines.append(f"  slot {index} {slot['slot']} = {slot['material']} ({'component override' if slot['override'] else 'mesh default'})")
+        return "\n".join(lines)
+
     def call_toolset_tool(self, args):
         tool = str(args.get("tool", ""))
         inner = args.get("arguments") or {}
@@ -74,6 +103,18 @@ class World:
             if tool == "is_dirty":
                 return '{"returnValue": false}'
             return '{"returnValue": true}'
+        if str(args.get("toolset", "")).endswith("BlueprintTools"):
+            asset = next((a for a in self.data["assets"] if a.get("graphs") and mentions(inner, a["path"].split("/")[-1])), None)
+            if asset is None:
+                return "Error: blueprint not found."
+            if tool == "list_graphs":
+                return json.dumps(list(asset["graphs"]))
+            if tool in ("find_nodes", "get_node_infos", "read_graph_dsl"):
+                query = str(inner.get("query") or inner.get("name") or "").lower()
+                graph = str(inner.get("graph_name") or inner.get("graph") or "").lower()
+                nodes = [n for g, ns in asset["graphs"].items() if not graph or g.lower() == graph for n in ns if not query or query in n["title"].lower()]
+                return json.dumps(nodes)
+            return "Done."
         if not str(args.get("toolset", "")).endswith("DataTableTools"):
             return "Done."
         table = self.data_table(inner)
@@ -174,6 +215,76 @@ class World:
             return f"Deleted {', '.join(a['label'] for a in targets) or 'nothing'}. Undoable."
         if name == "save_assets":
             return f"Saved {data['level']}."
+        if name == "get_material_parameters":
+            sections = []
+            for target in args.get("targets", []):
+                asset = self.material(target)
+                actor = next(iter(self.actors_named([target])), None)
+                if asset is not None:
+                    sections.append(self.describe_material(asset))
+                elif actor is not None:
+                    sections.append(self.describe_slots(actor))
+                else:
+                    sections.append(f"{target}: not a material, material instance, actor or mesh component.")
+            return "\n\n".join(sections) or "Give targets."
+        if name == "set_material_parameters":
+            values = args.get("parameters") or {}
+            instances = [self.material(t) for t in args.get("targets", [])]
+            for target, asset in zip(args.get("targets", []), instances):
+                if asset is None:
+                    return f"Error: No material instance asset found for {target}; nothing was changed."
+                if asset["class"] == "Material":
+                    return f"Error: {target} is a base material: its parameters are defaults in the material graph. Create instances with create_material_instances and change those; nothing was changed."
+                known = [p["name"].lower() for p, _, _ in self.material_parameters(asset)]
+                missing = [k for k in values if k.lower() not in known]
+                if missing:
+                    return f"Error: {asset['path']} has no parameter {missing[0]}; nothing was changed."
+            if not instances or not values:
+                return "Error: Give targets and parameters."
+            for asset in instances:
+                asset.setdefault("overrides", {}).update({k: json.dumps(v) for k, v in values.items()})
+            self.history.append("Set material parameters")
+            return f"Changed {', '.join(values)} on {', '.join(a['path'] for a in instances)}. Undoable."
+        if name == "create_material_instances":
+            parent = self.material(str(args.get("parent", "")))
+            if parent is None:
+                return f"Error: No material or material instance found for {args.get('parent')}; nothing was created."
+            folder = str(args.get("folder") or parent["path"].rsplit("/", 1)[0]).rstrip("/")
+            created = [f"{folder}/{n}" for n in args.get("names", [])]
+            existing = [p for p in created if any(a["path"] == p for a in data["assets"])]
+            if existing:
+                return f"Error: An asset named {existing[0]} already exists or is listed twice; nothing was created."
+            overrides = {k: json.dumps(v) for k, v in (args.get("parameters") or {}).items()}
+            data["assets"] += [{"path": p, "class": "MaterialInstanceConstant", "parent": parent["path"], "overrides": dict(overrides)} for p in created]
+            return f"Created {', '.join(created)} (unsaved). New assets cannot be undone from the editor."
+        if name == "assign_material":
+            material = self.material(str(args.get("material", "")))
+            targets = self.actors_named(args.get("targets", []))
+            if material is None or not targets:
+                return "Error: material or targets not found; nothing was changed."
+            slots = [str(s).lower() for s in args.get("slots", [])]
+            for actor in targets:
+                for index, slot in enumerate(actor.setdefault("materials", [{"slot": "Default", "material": "/Engine/EngineMaterials/WorldGridMaterial", "override": False}])):
+                    if not slots or str(index) in slots or slot["slot"].lower() in slots:
+                        slot.update(material=material["path"], override=True)
+            self.history.append("Assign material")
+            return f"Set {material['path']} on {', '.join(a['label'] for a in targets)}. Undoable."
+        if name == "tidy_graph":
+            asset = next((a for a in data["assets"] if a.get("graphs") and mentions([str(args.get("asset", ""))], a["path"].split("/")[-1])), None)
+            if asset is None:
+                return f"Error: No asset found at {args.get('asset')}; nothing was moved."
+            graphs = asset["graphs"]
+            wanted = str(args.get("graph") or "")
+            if wanted and wanted.lower() not in (g.lower() for g in graphs):
+                return f"Error: {asset['path'].split('/')[-1]} has no graph {wanted}; nothing was moved. Its graphs: {', '.join(graphs)}."
+            selected = {g: n for g, n in graphs.items() if not wanted or g.lower() == wanted.lower()}
+            names = [str(n).lower() for n in args.get("nodes", [])]
+            for n in names:
+                if not any(n in (node["name"].lower(), node["title"].lower()) for nodes in selected.values() for node in nodes):
+                    return f"Error: No node named {n} in the selected graphs of {asset['path'].split('/')[-1]}; nothing was moved. Nodes are matched by title or object name; the nodes are, as title (object name): " + ", ".join(f"{node['title']} ({node['name']})" for nodes in selected.values() for node in nodes) + "."
+            moved = {g: [node for node in nodes if not names or node["name"].lower() in names or node["title"].lower() in names] for g, nodes in selected.items()}
+            self.history.append("Tidy graph")
+            return "Arranged " + "; ".join(f"{g}: moved {len(m)} of {len(selected[g])} nodes" for g, m in moved.items() if m) + " (sizes estimated). Undoable."
         if name in ("undo", "redo"):
             step = self.history[-1] if self.history else "Set Intensity on PointLight_Hall"
             return f"{name.capitalize()}: {step}."

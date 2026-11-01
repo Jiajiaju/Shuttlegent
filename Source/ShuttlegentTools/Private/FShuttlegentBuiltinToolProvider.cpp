@@ -3,9 +3,11 @@
 #include "Tools/FShuttlegentAssetTools.h"
 #include "Tools/FShuttlegentDiagnosticTools.h"
 #include "Tools/FShuttlegentEditTools.h"
+#include "Tools/FShuttlegentGraphTools.h"
 #include "Tools/FShuttlegentHistoryTools.h"
 #include "Tools/FShuttlegentInteractionTools.h"
 #include "Tools/FShuttlegentLevelTools.h"
+#include "Tools/FShuttlegentMaterialTools.h"
 #include "Tools/FShuttlegentReflectionTools.h"
 #include "Tools/FShuttlegentUiGuideTool.h"
 
@@ -17,7 +19,10 @@ FShuttlegentBuiltinToolProvider::FShuttlegentBuiltinToolProvider(const TSharedRe
 	FShuttlegentReflectionTools::Append(Tools);
 	FShuttlegentDiagnosticTools::Append(LogCapture, Tools);
 	FShuttlegentInteractionTools::Append(Tools);
+	FShuttlegentMaterialTools::AppendRead(Tools);
 	FShuttlegentEditTools::Append(Tools);
+	FShuttlegentMaterialTools::AppendWrite(Tools);
+	FShuttlegentGraphTools::Append(Tools);
 	FShuttlegentHistoryTools::Append(Tools);
 }
 

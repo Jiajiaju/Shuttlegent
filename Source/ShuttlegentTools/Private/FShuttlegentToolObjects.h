@@ -21,6 +21,9 @@ struct FShuttlegentToolObjects
 	 */
 	static UObject* ResolveObject(const FString& PathOrLabel);
 
+	/** 资源路径所指的对象，同 ResolveObject；只给包名（/Game/M/MI_Red）时补上同名对象名。 */
+	static UObject* ResolveAsset(const FString& Path);
+
 	/** 正在编辑关卡中具有该标签的 Actor，或 nullptr。 */
 	static AActor* FindActorByLabel(const FString& Label);
 

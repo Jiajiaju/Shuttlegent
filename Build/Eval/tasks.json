@@ -226,6 +226,124 @@
         "\\]\\(ue-asset:/Game/Characters/Hero/BP_Hero[^)]*\\)|`/Game/Characters/Hero/BP_Hero[^`]*`"
       ],
       "maxWrites": 0
+    },
+    {
+      "id": "t18_material_params",
+      "prompt": "MI_Wall_Grey 有哪些可调参数，现在各是多少？只看不改",
+      "calls": [
+        "get_material_parameters"
+      ],
+      "args": {
+        "get_material_parameters": [
+          "MI_Wall_Grey"
+        ]
+      },
+      "maxWrites": 0
+    },
+    {
+      "id": "t19_batch_color",
+      "prompt": "把所有墙面材质实例（MI_Wall_ 开头的）的颜色都改成红色",
+      "calls": [
+        "set_material_parameters"
+      ],
+      "args": {
+        "set_material_parameters": [
+          "BaseColor",
+          "MI_Wall_Grey",
+          "MI_Wall_Beige",
+          "MI_Wall_Dark"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "call_toolset_tool",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t20_create_instances",
+      "prompt": "用 M_Wall 新建三个材质实例 MI_Wall_A、MI_Wall_B、MI_Wall_C，粗糙度都设成 0.8",
+      "calls": [
+        "create_material_instances"
+      ],
+      "args": {
+        "create_material_instances": [
+          "M_Wall",
+          "MI_Wall_C",
+          "Roughness"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "call_toolset_tool",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t21_assign_material",
+      "prompt": "把 Wall_02 和 Wall_03 换成 MI_Wall_Dark 材质，别动网格体资源本身",
+      "calls": [
+        "assign_material"
+      ],
+      "args": {
+        "assign_material": [
+          "Wall_02",
+          "Wall_03",
+          "MI_Wall_Dark"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "set_property",
+        "call_toolset_tool",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t22_tidy_whole_graph",
+      "prompt": "BP_Hero 的事件图连线太乱了，帮我把整张图重新排整齐",
+      "calls": [
+        "tidy_graph"
+      ],
+      "args": {
+        "tidy_graph": [
+          "BP_Hero"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "arrange_nodes",
+          "layout_expressions"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t23_tidy_new_nodes",
+      "prompt": "我刚在 BP_Hero 的事件图里加了 Branch 和 Print String 两个节点，帮我把这两个摆整齐，其他节点是我手摆的，别动",
+      "calls": [
+        "tidy_graph"
+      ],
+      "args": {
+        "tidy_graph": [
+          "BP_Hero",
+          "Branch",
+          "Print"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "arrange_nodes",
+          "layout_expressions"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
     }
   ]
 }

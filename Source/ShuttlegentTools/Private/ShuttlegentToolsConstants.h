@@ -26,6 +26,9 @@ namespace ShuttlegentToolsConstant
 	// 对象路径或包路径的首字符；不以该字符开头的名称视为 Actor 标签
 	inline const TCHAR* PathPrefix = TEXT("/");
 
+	// 资源对象路径中包名与对象名的分隔符（/Game/M/MI_Red.MI_Red）
+	inline const TCHAR* ObjectNameSeparator = TEXT(".");
+
 	// find_assets 默认搜索的包路径
 	inline const TCHAR* DefaultAssetRoot = TEXT("/Game");
 

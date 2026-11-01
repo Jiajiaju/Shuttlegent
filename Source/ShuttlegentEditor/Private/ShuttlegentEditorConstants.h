@@ -31,6 +31,16 @@ namespace ShuttlegentEditorName
 }
 
 /** 网页周围保留的 Slate 部分所用的 Shuttlegent VI 1.1 尺寸，单位为 Slate 单位。 */
+/** Shuttlegent 页签色条（SDockTab::TabColorScale）的颜色，与面板会话列表的提醒圆点一致。 */
+namespace ShuttlegentEditorColor
+{
+	// 有对话完成、用户还没看：#5B9BE6
+	inline const FLinearColor AttentionDone = FLinearColor(FColor(0x5B, 0x9B, 0xE6));
+
+	// 有对话等待用户输入：#D5B57B，即面板的 --warning
+	inline const FLinearColor AttentionInput = FLinearColor(FColor(0xD5, 0xB5, 0x7B));
+}
+
 namespace ShuttlegentEditorMetric
 {
 	// 编辑器要求的标签页图标尺寸
@@ -188,6 +198,9 @@ namespace ShuttlegentEditorRuntime
 
 	// 编辑器完成启动后到预热运行时之间的延迟，使启动工作先完成，单位为秒
 	inline constexpr float PrewarmDelaySeconds = 3.0f;
+
+	// 检查 Shuttlegent 页签是否在前台（据此清除“完成未看”提醒）的间隔，单位为秒
+	inline constexpr float TabForegroundCheckSeconds = 0.25f;
 }
 
 namespace ShuttlegentEditorWebField
@@ -420,6 +433,11 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* WriteModeAcceptEdits = TEXT("acceptEdits");
 	inline const TCHAR* WriteModeAuto = TEXT("auto");
 	inline const TCHAR* AutoApproved = TEXT("autoApproved");
+
+	// 会话列表的提醒圆点：done 为完成未看（蓝），input 为等待用户输入（黄）；没有提醒时不写该字段
+	inline const TCHAR* Attention = TEXT("attention");
+	inline const TCHAR* AttentionDone = TEXT("done");
+	inline const TCHAR* AttentionInput = TEXT("input");
 
 	// 状态取值（EShuttlegentChatStatus）
 	inline const TCHAR* StatusNotConnected = TEXT("notConnected");

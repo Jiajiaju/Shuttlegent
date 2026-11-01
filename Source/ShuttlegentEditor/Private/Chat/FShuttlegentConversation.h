@@ -68,6 +68,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 计划模式之外编辑器写入的确认方式；新对话取偏好设置中的默认值，批准计划时可改为自动接受编辑。 */
 	EShuttlegentWriteMode WriteMode = EShuttlegentWriteMode::Manual;
 
+	/** 一轮结束（用户自己停止的除外）时用户没在看这个对话；用户看到它时清除。页签与会话列表据此显示绿点。 */
+	bool bUnseenFinish = false;
+
 	/** 等待用户审批的计划；ReviewId 为空表示没有。 */
 	FShuttlegentPlanReview PendingPlanReview;
 

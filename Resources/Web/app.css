@@ -82,6 +82,10 @@ kbd{font:11px 'Segoe UI',sans-serif;color:var(--muted)}
 .session-name{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:13px}
 .session small{display:block;font-size:11px;margin-top:3px;color:var(--muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .session small.warning{color:var(--warning)}
+.session.has-dot{position:relative;padding-right:26px}
+.session-dot{position:absolute;top:50%;right:10px;width:8px;height:8px;margin-top:-4px;border-radius:50%}
+.session-dot.done{background:#5B9BE6}
+.session-dot.input{background:var(--warning)}
 .sessions-empty{color:var(--muted);font-size:12px;padding:12px 8px}
 .sidebar-bottom{border-top:1px solid var(--line);padding-top:12px}
 .sidebar-bottom>button{width:100%;background:transparent;border-color:transparent;text-align:left}

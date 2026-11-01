@@ -41,6 +41,7 @@ void FShuttlegentEditorModule::StartupModule()
 
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FShuttlegentEditorModule::RegisterMenus));
 	FCoreDelegates::OnFEngineLoopInitComplete.AddRaw(this, &FShuttlegentEditorModule::HandleEngineInitComplete);
+	TabForegroundHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateRaw(this, &FShuttlegentEditorModule::HandleTabForegroundCheck), ShuttlegentEditorRuntime::TabForegroundCheckSeconds);
 }
 
 void FShuttlegentEditorModule::ShutdownModule()
@@ -51,6 +52,8 @@ void FShuttlegentEditorModule::ShutdownModule()
 	FCoreDelegates::OnFEngineLoopInitComplete.RemoveAll(this);
 	FTSTicker::GetCoreTicker().RemoveTicker(PrewarmHandle);
 	PrewarmHandle.Reset();
+	FTSTicker::GetCoreTicker().RemoveTicker(TabForegroundHandle);
+	TabForegroundHandle.Reset();
 
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
@@ -72,8 +75,9 @@ TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs&
 	Panel->SetHostTabOpen(true);
 
 	const TWeakPtr<SShuttlegentWebPanel> WeakPanel = Panel;
-	return SNew(SDockTab)
+	const TSharedRef<SDockTab> Tab = SNew(SDockTab)
 		.TabRole(ETabRole::NomadTab)
+		.TabColorScale_Raw(this, &FShuttlegentEditorModule::GetChatTabColor)
 		.OnTabClosed_Lambda([WeakPanel](TSharedRef<SDockTab> ClosedTab)
 		{
 			const TSharedPtr<SShuttlegentWebPanel> Pinned = WeakPanel.Pin();
@@ -82,6 +86,26 @@ TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs&
 		[
 			Panel.ToSharedRef()
 		];
+
+	ChatTab = Tab;
+	return Tab;
+}
+
+FLinearColor FShuttlegentEditorModule::GetChatTabColor() const
+{
+	// 透明即不画色条（SDockTab 只在不透明度大于 0 时绘制色条）
+	const TSharedPtr<SDockTab> Tab = ChatTab.Pin();
+	const EShuttlegentAttention Attention = ChatModel.IsValid() && Tab.IsValid() && !Tab->IsForeground() ? ChatModel->GetOverallAttention() : EShuttlegentAttention::None;
+	if (Attention == EShuttlegentAttention::Input) return ShuttlegentEditorColor::AttentionInput;
+	if (Attention == EShuttlegentAttention::Done) return ShuttlegentEditorColor::AttentionDone;
+	return FLinearColor::Transparent;
+}
+
+bool FShuttlegentEditorModule::HandleTabForegroundCheck(float DeltaTime)
+{
+	const TSharedPtr<SDockTab> Tab = ChatTab.Pin();
+	if (ChatModel.IsValid()) ChatModel->SetPanelVisible(Tab.IsValid() && Tab->IsForeground());
+	return true;
 }
 
 void FShuttlegentEditorModule::HandleEngineInitComplete()

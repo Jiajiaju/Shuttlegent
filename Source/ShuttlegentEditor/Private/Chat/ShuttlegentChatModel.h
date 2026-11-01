@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 
+#include "Chat/EShuttlegentAttention.h"
 #include "Chat/EShuttlegentChatStatus.h"
 #include "Chat/EShuttlegentSubmitResult.h"
 #include "Chat/EShuttlegentTurnOutcome.h"
@@ -100,6 +101,9 @@ private:
 	int32 NextQueueId = 1;
 	bool bRuntimeLost = false;
 
+	/** Shuttlegent 页签在前台、用户看得见当前对话；此时当前对话的回合结束不留“完成未看”。 */
+	bool bPanelVisible = false;
+
 	/** 运行时无法启动或无法处理提示的原因；以启动引导卡片显示，直至重试或运行时就绪将其清除。 */
 	EShuttlegentStartIssue StartIssue = EShuttlegentStartIssue::None;
 
@@ -152,6 +156,15 @@ public:
 
 	/** 内存中持有的会话的状态与排队提示数量，供会话列表使用；会话未被持有时返回 false。 */
 	bool GetSessionActivity(const FString& SessionId, EShuttlegentChatStatus& OutStatus, int32& OutQueued) const;
+
+	/** 会话列表上该会话的提醒圆点；会话未被持有时为 None。 */
+	EShuttlegentAttention GetSessionAttention(const FString& SessionId) const;
+
+	/** 页签上的提醒圆点：有对话等待输入时为 Input，否则有完成未看的对话时为 Done。 */
+	EShuttlegentAttention GetOverallAttention() const;
+
+	/** 由面板页签报告是否在前台；转到前台时当前对话的“完成未看”随之清除。 */
+	void SetPanelVisible(bool bVisible);
 
 	/** 当前对话中仍在等待答复的最早一个运行时权限请求，或 nullptr。 */
 	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission() const;
@@ -329,6 +342,16 @@ private:
 	bool IsPrompting(const FShuttlegentConversation& Conversation) const;
 	bool IsBusy(const FShuttlegentConversation& Conversation) const;
 	EShuttlegentChatStatus GetStatus(const FShuttlegentConversation& Conversation) const;
+
+	/**
+	 * 对话在等待用户输入：写入确认、计划审批、运行时权限请求，或 Agent 提问。提问不带会话，
+	 * 归属正在运行回合的对话。
+	 */
+	bool NeedsInput(const FShuttlegentConversation& Conversation) const;
+	EShuttlegentAttention GetAttention(const FShuttlegentConversation& Conversation) const;
+
+	/** 用户看得见当前对话时，清除它的“完成未看”；有变化时返回 true。 */
+	bool MarkCurrentSeen();
 	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission(const FShuttlegentConversation& Conversation) const;
 
 	/** 打开中的写入请求及其结果是否属于该对话（没有打开的请求时视为属于当前对话）。 */

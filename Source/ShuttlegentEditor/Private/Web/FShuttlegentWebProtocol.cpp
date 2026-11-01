@@ -337,6 +337,10 @@ namespace FShuttlegentWebProtocolPrivate
 			Item->SetStringField(ShuttlegentEditorWebField::Status, StatusName(Status));
 			Item->SetNumberField(ShuttlegentEditorWebField::QueuedCount, Queued);
 		}
+
+		const EShuttlegentAttention Attention = Model.GetSessionAttention(Record.SessionId);
+		if (Attention == EShuttlegentAttention::Done) Item->SetStringField(ShuttlegentEditorWebField::Attention, ShuttlegentEditorWebField::AttentionDone);
+		else if (Attention == EShuttlegentAttention::Input) Item->SetStringField(ShuttlegentEditorWebField::Attention, ShuttlegentEditorWebField::AttentionInput);
 		return MakeShared<FJsonValueObject>(Item);
 	}
 }

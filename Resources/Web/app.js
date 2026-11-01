@@ -83,6 +83,9 @@
     { value: 'plan', label: '计划', detail: '先出方案，批准后再修改' }
   ];
   const MODE_CYCLE = ['manual', 'acceptEdits', 'auto', 'plan'];
+
+  // Session list dots: what each attention value means, for the tooltip and screen readers
+  const ATTENTION_TEXT = { done: '已完成，还没查看', input: '等待你的输入' };
   const EFFORT_NOTE = '推理强度越高，回答越周全，但耗时更长、用量消耗更快。';
 
   // Gap between a picker and what opened it, and least distance kept from the panel edge, in CSS pixels
@@ -1916,7 +1919,10 @@
       const detail = current ? STATUS_TEXT[state.status] || '' : activity || (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt);
       const warning = (current && WARNING_STATUSES.has(state.status)) || (!current && CONFIRM_STATUSES.has(session.status)) ? ' class="warning"' : '';
       const title = session.title || '新会话';
-      html += '<button class="session" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(title) + '"><span class="session-name">' + esc(title) + '</span><small' + warning + '>' + esc(detail) + '</small></button>';
+      // A background session that finished unseen gets a green dot, one waiting for input a yellow dot; the open one needs none
+      const attention = current ? '' : ATTENTION_TEXT[session.attention] || '';
+      const dot = attention ? '<span class="session-dot ' + session.attention + '" role="img" aria-label="' + attention + '"></span>' : '';
+      html += '<button class="session' + (dot ? ' has-dot' : '') + '" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(title + (attention ? ' · ' + attention : '')) + '"><span class="session-name">' + esc(title) + '</span><small' + warning + '>' + esc(detail) + '</small>' + dot + '</button>';
     }
     if (!visible.length) html = '<p class="sessions-empty">' + (query ? '没有匹配的会话' : '还没有会话') + '</p>';
 

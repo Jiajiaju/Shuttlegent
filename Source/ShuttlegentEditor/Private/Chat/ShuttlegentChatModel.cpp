@@ -1068,6 +1068,54 @@ bool FShuttlegentChatModel::GetSessionActivity(const FString& SessionId, EShuttl
 	return true;
 }
 
+EShuttlegentAttention FShuttlegentChatModel::GetSessionAttention(const FString& SessionId) const
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
+	return Conversation.IsValid() ? GetAttention(*Conversation) : EShuttlegentAttention::None;
+}
+
+EShuttlegentAttention FShuttlegentChatModel::GetOverallAttention() const
+{
+	EShuttlegentAttention Overall = EShuttlegentAttention::None;
+	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
+	{
+		const EShuttlegentAttention Attention = GetAttention(*Conversation);
+		if (Attention == EShuttlegentAttention::Input) return Attention;
+		if (Attention == EShuttlegentAttention::Done) Overall = Attention;
+	}
+	return Overall;
+}
+
+void FShuttlegentChatModel::SetPanelVisible(bool bVisible)
+{
+	if (bPanelVisible == bVisible) return;
+
+	bPanelVisible = bVisible;
+	if (MarkCurrentSeen()) OnSessionsChanged.Broadcast();
+}
+
+bool FShuttlegentChatModel::NeedsInput(const FShuttlegentConversation& Conversation) const
+{
+	const EShuttlegentChatStatus Status = GetStatus(Conversation);
+	if (Status == EShuttlegentChatStatus::AwaitingWriteConfirmation || Status == EShuttlegentChatStatus::AwaitingPermission || Status == EShuttlegentChatStatus::AwaitingPlanReview) return true;
+
+	return GetPendingQuestion() != nullptr && IsPrompting(Conversation);
+}
+
+EShuttlegentAttention FShuttlegentChatModel::GetAttention(const FShuttlegentConversation& Conversation) const
+{
+	if (NeedsInput(Conversation)) return EShuttlegentAttention::Input;
+	return Conversation.bUnseenFinish ? EShuttlegentAttention::Done : EShuttlegentAttention::None;
+}
+
+bool FShuttlegentChatModel::MarkCurrentSeen()
+{
+	if (!bPanelVisible || !Current->bUnseenFinish) return false;
+
+	Current->bUnseenFinish = false;
+	return true;
+}
+
 TSharedPtr<FShuttlegentChatEntry> FShuttlegentChatModel::GetPendingPermission() const
 {
 	return GetPendingPermission(*Current);
@@ -1627,6 +1675,9 @@ void FShuttlegentChatModel::DropConversation(FShuttlegentConversation& Conversat
 
 void FShuttlegentChatModel::BroadcastAll()
 {
+	// 切换到的对话此刻就在用户眼前
+	MarkCurrentSeen();
+
 	OnStructureChanged.Broadcast();
 	OnStatusChanged.Broadcast();
 	OnSessionsChanged.Broadcast();
@@ -2103,6 +2154,11 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	if (Questions.IsValid() && !bAnyPrompting) Questions->ExpireAll();
 
 	ApplyTurnEnd(Conversation, StopReason, ErrorMessage);
+
+	// 用户没在看这个对话时留下“完成未看”；用户自己停止的回合不提醒
+	const bool bSeen = IsCurrent(Conversation) && bPanelVisible;
+	if (Conversation.LastOutcome != EShuttlegentTurnOutcome::Stopped && !bSeen) Conversation.bUnseenFinish = true;
+
 	if (IsCurrent(Conversation)) OnTurnFinished.Broadcast(bCompleted);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);

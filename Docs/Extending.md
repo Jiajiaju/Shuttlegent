@@ -46,6 +46,21 @@ description: 按清单检查当前关卡：光源数量、未命名 Actor、隐�
 
 在 Skill Dirs 中添加技能所在的上级目录（相对项目目录），如 `Shuttlegent/Skills`。
 
+插件自带的技能在插件的 `Resources/Skills` 下，排在 Skill Dirs 之后加载。项目里有同名技能时以项目的为准，运行时会忽略插件的那个并在日志中记一条警告；要改插件自带技能的做法，在项目技能目录中放一个同名技能即可。不需要插件自带的技能与模板时，关闭 **项目设置 > Shuttlegent > General > Use Built-in Skills and Templates**。
+
+### 2.1 插件自带的技能与模板
+
+| 模板 | 技能 | 做什么 |
+|---|---|---|
+| `/level-review` | `level-review` | 检查当前关卡：默认名称的 Actor、缺材质或用默认材质的网格体、光源数量、重复摆放；只汇报不修改 |
+| `/batch-edit` | `batch-edit` | 把多个对象的同一属性改成同一个值，或按规则逐个改；相同新值合并成一次写入 |
+| `/table-edit` | `table-edit` | 改数据表前先导出 `<表名>.before.csv` 备份；少量改动直接改，大量改动导出给用户用 Excel 改再导回；不对表撤销 |
+| `/lighting-preset` | `lighting-preset` | 把室外灯光调成正午、黄昏、阴天或夜晚：太阳角度、强度、色温，天光强度，雾浓度 |
+| `/material-edit` | `material-edit` | 批量改材质实例参数、新建材质实例、给关卡中的物体换材质 |
+| `/find-assets` | `find-assets` | 按描述找资源并查清被哪里用到，只查不改 |
+
+技能在插件的 `Resources/Skills/<技能名>/SKILL.md`，模板在 `Resources/Templates/<模板名>.md`。不用模板、直接用自然语言描述同样的任务，Agent 也会按需加载对应技能。
+
 ## 3. 斜杠模板
 
 模板是一个 `.md` 文件：
@@ -54,7 +69,7 @@ description: 按清单检查当前关卡：光源数量、未命名 Actor、隐�
 - 第一行是菜单里显示的说明；
 - 整个文件会填入输入框，用户可以修改后再发送。
 
-Shuttlegent 会读取 Template Dirs 中的所有 `.md` 文件，包括子目录。同名文件以先列出的目录为准。
+Shuttlegent 会读取 Template Dirs 中的所有 `.md` 文件，包括子目录。同名文件以先列出的目录为准。插件自带的模板在插件的 `Resources/Templates` 下，排在 Template Dirs 之后，`/` 菜单中标为“内置”；同样可以用项目里的同名模板替换，或随上面的开关一起关闭。
 
 ```markdown
 按关卡自查技能检查当前关卡，汇总成一张表：检查项、结果、建议。

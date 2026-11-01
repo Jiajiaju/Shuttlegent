@@ -30,12 +30,18 @@ $PluginDir = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $EvalDir = $PSScriptRoot
 $ProbeScript = Join-Path $PluginDir 'Build\Probe\acp_probe.py'
 $PatchFile = Join-Path $PluginDir 'Runtime\profile\shuttlegent.patch.yml'
+$BuiltinSkills = Join-Path $PluginDir 'Resources\Skills'
 $RuntimeExe = Join-Path $PluginDir 'Runtime\shuttlegent-runtime.exe'
 $Token = [Guid]::NewGuid().ToString('N')
 $Utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 if (-not (Test-Path $RuntimeExe)) { throw "Runtime not found: $RuntimeExe. Run Build/BuildRuntime.ps1 first." }
 if (-not $OutDir) { $OutDir = Join-Path $PluginDir ('Saved\Eval\' + (Get-Date -Format 'yyyyMMdd-HHmmss')) }
+New-Item -ItemType Directory -Force $OutDir | Out-Null
+
+# The plugin's built-in skills, as the editor passes them when the project has no skill directories of its own
+$SkillOverlay = Join-Path $OutDir 'skills.patch.yml'
+[IO.File]::WriteAllText($SkillOverlay, "- id: skill-filesystem`n  config:`n    includeDefaultRoots: false`n    customSkillDirs: ['$BuiltinSkills']`n", $Utf8NoBom)
 if (-not $Python) {
     $SearchDir = $PluginDir
     while ($SearchDir) {
@@ -90,7 +96,7 @@ try {
         New-Item -ItemType Directory -Force $DshHome | Out-Null
         $Scenario = [ordered]@{
             name = $Task.id
-            command = @($RuntimeExe, '--profile', 'acp', '--patch', $PatchFile)
+            command = @($RuntimeExe, '--profile', 'acp', '--patch', $PatchFile, '--patch', $SkillOverlay)
             cwd = $Workspace
             process_cwd = $DshHome
             env = @{ DSH_HOME = $DshHome; DSH_AGENTS_HOME = (Join-Path $DshHome 'agents'); DSH_TELEMETRY_DISABLED = '1'; DSH_PERMISSION_MODE = 'read-only' }

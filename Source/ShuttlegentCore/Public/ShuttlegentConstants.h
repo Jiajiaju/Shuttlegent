@@ -150,6 +150,10 @@ namespace ShuttlegentPath
 	// Shuttlegent 配置补丁，相对插件目录
 	inline const TCHAR* ProfilePatch = TEXT("Runtime/profile/shuttlegent.patch.yml");
 
+	// 插件自带的技能与斜杠模板目录，相对插件目录；排在项目目录之后，同名时项目的优先
+	inline const TCHAR* BuiltinSkillsDir = TEXT("Resources/Skills");
+	inline const TCHAR* BuiltinTemplatesDir = TEXT("Resources/Templates");
+
 	// 经 ACP 启动的 dsh 配置
 	inline const TCHAR* AcpProfile = TEXT("acp");
 

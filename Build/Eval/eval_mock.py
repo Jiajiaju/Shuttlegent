@@ -148,8 +148,11 @@ class World:
         if table is None:
             return "Error: data_table not found."
         rows = table["rows"]
-        if tool in ("list_rows", "get_rows"):
+        if tool == "list_rows":
             return json.dumps(rows)
+        if tool == "get_rows":
+            wanted = [n for n in inner.get("row_names", []) if isinstance(n, str)] or rows
+            return json.dumps({n: {"Name": n, "Price": 10, "Icon": ""} for n in wanted if n in rows})
         if tool == "get_schema":
             return '{"Name": "string", "Price": "int", "Icon": "SoftObjectPath"}'
         names = [n for n in inner.get("row_names", []) if isinstance(n, str)]

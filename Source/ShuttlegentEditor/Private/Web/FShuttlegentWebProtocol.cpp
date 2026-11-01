@@ -569,6 +569,7 @@ void FShuttlegentWebProtocol::WriteTemplates(const TSharedRef<FJsonObject>& Root
 		Item->SetStringField(ShuttlegentEditorWebField::Name, Template.Name);
 		Item->SetStringField(ShuttlegentEditorWebField::TemplateDescription, Template.Description);
 		Item->SetStringField(ShuttlegentEditorWebField::TemplateBody, Template.Body);
+		Item->SetBoolField(ShuttlegentEditorWebField::TemplateBuiltin, Template.bBuiltin);
 		Items.Add(MakeShared<FJsonValueObject>(Item));
 	}
 	Root->SetArrayField(ShuttlegentEditorWebField::Templates, Items);

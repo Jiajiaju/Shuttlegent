@@ -1,5 +1,6 @@
 #include "FShuttlegentProjectConfig.h"
 
+#include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
 
 #include "ShuttlegentConstants.h"
@@ -19,6 +20,24 @@ namespace FShuttlegentProjectConfigPrivate
 			if (FPaths::DirectoryExists(Absolute)) Result.AddUnique(Absolute);
 		}
 		return Result;
+	}
+
+	/** 插件目录下的自带目录，绝对路径；项目关闭了插件自带技能与模板、找不到插件或目录不存在时为空。 */
+	FString GetBuiltinDir(const TCHAR* RelativeDir)
+	{
+		const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
+		if (!IsValid(Project) || !Project->bUseBuiltinSkills || !Plugin.IsValid()) return FString();
+
+		const FString Dir = FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetBaseDir(), RelativeDir));
+		return FPaths::DirectoryExists(Dir) ? Dir : FString();
+	}
+
+	/** 项目目录在前、插件自带目录在后；运行时与模板库都以先列出的目录为准处理同名项。 */
+	TArray<FString> WithBuiltinDir(TArray<FString> Dirs, const FString& BuiltinDir)
+	{
+		if (!BuiltinDir.IsEmpty()) Dirs.AddUnique(BuiltinDir);
+		return Dirs;
 	}
 }
 
@@ -72,11 +91,18 @@ FString FShuttlegentProjectConfig::GetKeyVariable(const FShuttlegentProviderEntr
 TArray<FString> FShuttlegentProjectConfig::GetSkillDirs()
 {
 	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
-	return IsValid(Project) ? FShuttlegentProjectConfigPrivate::ToExistingAbsoluteDirs(Project->SkillDirs) : TArray<FString>();
+	const TArray<FString> ProjectDirs = IsValid(Project) ? FShuttlegentProjectConfigPrivate::ToExistingAbsoluteDirs(Project->SkillDirs) : TArray<FString>();
+	return FShuttlegentProjectConfigPrivate::WithBuiltinDir(ProjectDirs, FShuttlegentProjectConfigPrivate::GetBuiltinDir(ShuttlegentPath::BuiltinSkillsDir));
 }
 
 TArray<FString> FShuttlegentProjectConfig::GetTemplateDirs()
 {
 	const UShuttlegentProjectSettings* Project = GetDefault<UShuttlegentProjectSettings>();
-	return IsValid(Project) ? FShuttlegentProjectConfigPrivate::ToExistingAbsoluteDirs(Project->TemplateDirs) : TArray<FString>();
+	const TArray<FString> ProjectDirs = IsValid(Project) ? FShuttlegentProjectConfigPrivate::ToExistingAbsoluteDirs(Project->TemplateDirs) : TArray<FString>();
+	return FShuttlegentProjectConfigPrivate::WithBuiltinDir(ProjectDirs, GetBuiltinTemplateDir());
+}
+
+FString FShuttlegentProjectConfig::GetBuiltinTemplateDir()
+{
+	return FShuttlegentProjectConfigPrivate::GetBuiltinDir(ShuttlegentPath::BuiltinTemplatesDir);
 }

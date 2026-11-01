@@ -1,5 +1,5 @@
 {
-  "$comment": "Designer and artist tasks for the tool-choice evaluation. Checks: calls = tools that must be called; forbid = tools that must not be called; args = per tool, substrings that one of its calls' arguments must contain (case-insensitive); maxWrites = most write calls allowed (writes are the tools whose snapshot entry has readOnly false); reply = regular expressions the reply text must each match. The mock editor answers from world.json.",
+  "$comment": "Designer and artist tasks for the tool-choice evaluation. Checks: calls = tools that must be called; forbid = tools that must not be called; args = per tool, substrings that one of its calls' arguments must contain (case-insensitive); skill = a skill the agent must load; maxWrites = most write calls allowed (writes are the tools whose snapshot entry has readOnly false); reply = regular expressions the reply text must each match. The mock editor answers from world.json.",
   "tasks": [
     {
       "id": "t01_light_intensity",
@@ -444,6 +444,122 @@
       "callsAny": [
         "call_toolset_tool"
       ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t30_level_review",
+      "prompt": "检查当前关卡并汇总问题，只汇报不修改。\n按 level-review 技能检查，汇总成表：检查项｜结果｜建议。",
+      "skill": "level-review",
+      "calls": [
+        "list_actors"
+      ],
+      "maxWrites": 0,
+      "reply": [
+        "StaticMeshActor_12",
+        "检查项"
+      ]
+    },
+    {
+      "id": "t31_batch_edit",
+      "prompt": "把多个对象的同一个属性批量改掉。\n对象：选中的 Actor\n属性和新值：强度改成 4000",
+      "skill": "batch-edit",
+      "calls": [
+        "get_selection",
+        "set_property"
+      ],
+      "args": {
+        "set_property": [
+          "4000",
+          "PointLight_Corridor",
+          "PointLight_Stage"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t32_table_edit",
+      "prompt": "修改数据表，先导出备份再改。\n表：DT_Items\n要改的内容：加两行 Shield_Wood、Shield_Iron",
+      "skill": "table-edit",
+      "calls": [
+        "export_data_table",
+        "call_toolset_tool"
+      ],
+      "args": {
+        "export_data_table": [
+          "DT_Items"
+        ],
+        "call_toolset_tool": [
+          "add_rows",
+          "Shield_Wood",
+          "Shield_Iron"
+        ]
+      },
+      "argsAbsent": {
+        "call_toolset_tool": [
+          "remove_rows",
+          "delete",
+          "rename_rows"
+        ]
+      },
+      "maxWrites": 3,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t33_lighting_preset",
+      "prompt": "把当前关卡的室外灯光调成预设氛围。\n预设：黄昏",
+      "skill": "lighting-preset",
+      "calls": [
+        "set_property"
+      ],
+      "args": {
+        "set_property": [
+          "DirectionalLight_Sun"
+        ]
+      },
+      "maxWrites": 8,
+      "forbid": [
+        "save_assets",
+        "ask_user"
+      ]
+    },
+    {
+      "id": "t34_material_edit",
+      "prompt": "批量修改材质参数，或给物体换材质。\n对象：所有 MI_Wall_ 开头的材质实例\n要改的：粗糙度改成 0.3",
+      "skill": "material-edit",
+      "calls": [
+        "set_material_parameters"
+      ],
+      "args": {
+        "set_material_parameters": [
+          "Roughness",
+          "0.3"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "set_property",
+        "call_toolset_tool",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t35_find_assets",
+      "prompt": "帮我找一个资源，并查清它被哪些地方用到，只查不改。\n要找的资源：英雄角色用的骨骼网格体",
+      "skill": "find-assets",
+      "calls": [
+        "find_assets",
+        "get_asset_references"
+      ],
+      "args": {
+        "get_asset_references": [
+          "SK_Hero"
+        ]
+      },
       "maxWrites": 0
     }
   ]

@@ -27,6 +27,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Integration", meta = (RelativeToGameDir))
 	TArray<FDirectoryPath> TemplateDirs;
 
+	/** 同时加载插件自带的技能与斜杠模板；排在上面两项的目录之后，同名时以项目的为准。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Integration", meta = (DisplayName = "Use Built-in Skills and Templates"))
+	bool bUseBuiltinSkills = true;
+
 	/** 每个会话都声明给运行时的知识或工具服务。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Integration")
 	TArray<FShuttlegentExternalMcpServer> ExternalMcpServers;

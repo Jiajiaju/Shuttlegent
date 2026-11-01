@@ -13,4 +13,7 @@ struct FShuttlegentTemplate
 
 	/** 整个文件内容，插入草稿。 */
 	FString Body;
+
+	/** 来自插件自带的模板目录；菜单中标为内置。 */
+	bool bBuiltin = false;
 };

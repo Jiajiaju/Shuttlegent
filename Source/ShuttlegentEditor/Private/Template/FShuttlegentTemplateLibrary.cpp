@@ -11,6 +11,7 @@ TArray<FShuttlegentTemplate> FShuttlegentTemplateLibrary::Load()
 {
 	TArray<FShuttlegentTemplate> Templates;
 	TSet<FString> Names;
+	const FString BuiltinDir = FShuttlegentProjectConfig::GetBuiltinTemplateDir();
 	for (const FString& Dir : FShuttlegentProjectConfig::GetTemplateDirs())
 	{
 		TArray<FString> Files;
@@ -31,6 +32,7 @@ TArray<FShuttlegentTemplate> FShuttlegentTemplateLibrary::Load()
 			Template.Name = Name;
 			Template.Description = FirstLine.TrimStartAndEnd().TrimChar(ShuttlegentEditorTemplate::HeadingMark).TrimStartAndEnd().Left(ShuttlegentEditorTemplate::MaxDescriptionChars);
 			Template.Body = Body.TrimStartAndEnd();
+			Template.bBuiltin = !BuiltinDir.IsEmpty() && Dir == BuiltinDir;
 			Names.Add(Name.ToLower());
 		}
 	}

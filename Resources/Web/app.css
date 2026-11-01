@@ -341,6 +341,7 @@ body.wide-content .message-column,body.wide-content .composer-column{max-width:n
 .suggestions button{display:block;background:transparent;border:0;width:100%;text-align:left;font-size:12px;padding:5px 8px}
 .suggestions button[aria-selected=true]{background:var(--raised);outline:1px solid #8a7064}
 .suggestions button.off{color:var(--muted)}
+.suggestions .tag{font-style:normal;font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:6px}
 .suggestions small{display:block;font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .message.user .user-references{margin-top:6px;color:var(--muted);font-size:.85em;white-space:normal}
 .message.user .user-references div{overflow-wrap:anywhere}

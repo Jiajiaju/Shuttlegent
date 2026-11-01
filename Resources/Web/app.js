@@ -1267,7 +1267,7 @@
       if (!section.items.length) continue;
       html += '<div class="menu-label">' + section.label + '</div>';
       for (const item of section.items) {
-        html += '<button role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '"' + (item.off ? ' class="off"' : '') + ' tabindex="-1">' + esc(item.label) + '<small>' + esc(item.detail) + '</small></button>';
+        html += '<button role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '"' + (item.off ? ' class="off"' : '') + ' tabindex="-1">' + esc(item.label) + (item.tag ? '<em class="tag">' + esc(item.tag) + '</em>' : '') + '<small>' + esc(item.detail) + '</small></button>';
         ++itemIndex;
       }
     }
@@ -1305,7 +1305,7 @@
         const blocker = commandBlocker(item.name);
         return { label: '/' + item.name, detail: blocker || item.detail, body: item.body, command: true, off: !!blocker };
       });
-      const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body }));
+      const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body, tag: item.builtin ? '内置' : '' }));
       menu.sections = [{ label: '命令', items: commands }, { label: '模板', items }];
       menu.items = commands.concat(items);
       renderMenu(menu.sections, state.templates.length ? '没有匹配的命令或模板' : '没有匹配的命令；暂无可用模板（项目设置 → Shuttlegent → Template Dirs）');

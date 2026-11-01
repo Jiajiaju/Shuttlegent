@@ -76,6 +76,22 @@ def reply_text(task_id):
     return "".join(chunks)
 
 
+def skills_loaded(task_id):
+    """Names of the skills the agent loaded with the runtime's skill tool during the task."""
+    path = os.path.join(OUT, f"{task_id}.jsonl")
+    names = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            event = json.loads(line)
+            if event["kind"] != "recv":
+                continue
+            update = ((event.get("data") or {}).get("params") or {}).get("update") or {}
+            name = (update.get("rawInput") or {}).get("name") if update.get("title") == "skill" else None
+            if name and name not in names:
+                names.append(name)
+    return names
+
+
 def args_text(calls, tool):
     return [json.dumps(c["arguments"], ensure_ascii=False).lower() for c in calls if c["tool"] == tool]
 
@@ -101,6 +117,9 @@ def score(task):
         texts = args_text(calls, tool)
         for needle in needles:
             checks.append((f"{tool} args lacks {needle}", not any(needle.lower() in t for t in texts), ""))
+    if task.get("skill"):
+        loaded = skills_loaded(task["id"])
+        checks.append((f"loads skill {task['skill']}", task["skill"] in loaded, ", ".join(loaded)))
     if task.get("reply"):
         text = reply_text(task["id"])
         for pattern in task["reply"]:

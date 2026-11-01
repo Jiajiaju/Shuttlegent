@@ -233,6 +233,14 @@ def check_subagent(ev):
     return ok, f"tools={titles} delegated={delegated} answer={answer.strip()[:80]!r}"
 
 
+def check_skill_dirs(ev):
+    text = message_text(ev)
+    project = "MARKER_PROJECT_DUPLICATE" in text
+    builtin_only = "MARKER_BUILTIN_ONLY" in text
+    shadowed = "MARKER_BUILTIN_DUPLICATE" in text
+    return project and builtin_only and not shadowed, f"project duplicate={project} built-in only={builtin_only} shadowed built-in={shadowed}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -253,6 +261,7 @@ CHECKS = [
     ("s15_fork", "Session control cuts a conversation into a new session that session/resume opens", check_fork),
     ("s17_subagent", "Subagent tools are off: the model cannot delegate and does the editor task itself", check_subagent),
     ("s16_session_tap", "Session tap reports plan mode, todos and compaction; control enters plan mode, approves the plan, runs /compact", check_session_tap),
+    ("s18_skill_dirs", "Project skill directories listed before the built-in one win a duplicate skill name; built-in skills still load", check_skill_dirs),
 ]
 
 failed = 0

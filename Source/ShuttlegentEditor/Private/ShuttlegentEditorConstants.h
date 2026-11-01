@@ -224,6 +224,7 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Templates = TEXT("templates");
 	inline const TCHAR* TemplateDescription = TEXT("description");
 	inline const TCHAR* TemplateBody = TEXT("body");
+	inline const TCHAR* TemplateBuiltin = TEXT("builtin");
 	inline const TCHAR* Entries = TEXT("entries");
 	inline const TCHAR* Order = TEXT("order");
 	inline const TCHAR* Events = TEXT("events");

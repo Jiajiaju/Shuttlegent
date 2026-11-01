@@ -283,6 +283,25 @@ try {
         Invoke-Scenario -Name 's17_subagent' -HomeName 'subagent' -Prompts @($SubagentPrompt) -Key $ApiKey -ExtraPatches @($SessionOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token }
 
         Invoke-Scenario -Name 's16_session_tap' -HomeName 'sessiontap' -Prompts @($PlanPrompt) -Key $ApiKey -ExtraPatches @($SessionOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token } -Control $SessionControl
+
+        # M1 built-in skills: the editor lists the project's skill directories first and the plugin's own after them, so a
+        # project skill wins a duplicate name and a built-in skill without a project twin still loads
+        $SkillRoot = Join-Path $OutDir 'skill-dirs'
+        $SkillFixtures = [ordered]@{
+            'project\sg-duplicate' = 'MARKER_PROJECT_DUPLICATE'
+            'builtin\sg-duplicate' = 'MARKER_BUILTIN_DUPLICATE'
+            'builtin\sg-builtin-only' = 'MARKER_BUILTIN_ONLY'
+        }
+        foreach ($Fixture in $SkillFixtures.GetEnumerator()) {
+            $SkillDir = Join-Path $SkillRoot $Fixture.Key
+            New-Item -ItemType Directory -Force $SkillDir | Out-Null
+            [IO.File]::WriteAllText((Join-Path $SkillDir 'SKILL.md'), "---`nname: $(Split-Path $Fixture.Key -Leaf)`ndescription: $($Fixture.Value) probe skill`n---`nProbe.`n", $Utf8NoBom)
+        }
+        $SkillOverlay = Join-Path $OutDir 'skill-dirs.patch.yml'
+        $SkillDirsYaml = (@('project', 'builtin') | ForEach-Object { "'" + (Join-Path $SkillRoot $_) + "'" }) -join ', '
+        [IO.File]::WriteAllText($SkillOverlay, "- id: skill-filesystem`n  config:`n    includeDefaultRoots: false`n    customSkillDirs: [$SkillDirsYaml]`n", $Utf8NoBom)
+        $SkillPrompt = 'Without calling any tool, list every skill available to you, one per line, as name: exact description.'
+        Invoke-Scenario -Name 's18_skill_dirs' -HomeName 'skilldirs' -Prompts @($SkillPrompt) -Key $ApiKey -ExtraPatches @($SkillOverlay)
     }
 }
 finally {

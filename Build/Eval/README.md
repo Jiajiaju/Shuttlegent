@@ -36,6 +36,7 @@ Output goes to `Saved/Eval/<timestamp>/` (git-ignored): one ACP log per task, th
 | `args` | Per tool, substrings one of its calls' arguments must contain (case-insensitive) |
 | `argsAbsent` | Per tool, substrings none of its calls' arguments may contain |
 | `maxWrites` | Most calls to write tools allowed |
+| `skill` | A skill the agent must load with the runtime's skill tool (the built-in skills come from `Resources/Skills`) |
 | `reply` | Regular expressions the agent's reply text must each match (for example editor object links) |
 
 Every task must also finish its turn (`end_turn`).

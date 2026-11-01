@@ -22,9 +22,12 @@ struct SHUTTLEGENTCORE_API FShuttlegentProjectConfig
 	/** 把供应商密钥传给运行时所用的变量：SHUTTLEGENT_<ROUTE>_API_KEY。 */
 	static FString GetKeyVariable(const FShuttlegentProviderEntry& Entry);
 
-	/** 项目技能目录中实际存在的那些，绝对路径。 */
+	/** 项目技能目录中实际存在的那些，其后是插件自带的技能目录（未关闭时），绝对路径；同名技能以先列出的为准。 */
 	static TArray<FString> GetSkillDirs();
 
-	/** 项目模板目录中实际存在的那些，绝对路径。 */
+	/** 项目模板目录中实际存在的那些，其后是插件自带的模板目录（未关闭时），绝对路径；同名模板以先列出的为准。 */
 	static TArray<FString> GetTemplateDirs();
+
+	/** 插件自带的模板目录，绝对路径；项目关闭了插件自带技能与模板或目录不存在时为空。 */
+	static FString GetBuiltinTemplateDir();
 };

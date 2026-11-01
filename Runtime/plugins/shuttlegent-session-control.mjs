@@ -1,6 +1,7 @@
-// Shuttlegent session control: lets the editor cut a conversation at one of its user messages. ACP has no method for
-// it, so this plugin listens on a localhost port guarded by the editor endpoint token and announces the port to the
-// editor endpoint (notification shuttlegent/runtimeControl). A fork copies the source session's event log up to the
+// Shuttlegent session control: lets the editor do what ACP has no method for. The plugin listens on a localhost port
+// guarded by the editor endpoint token and announces the port to the editor endpoint (notification
+// shuttlegent/runtimeControl). Methods: fork (below), command (run a slash command such as /compact), planMode (enter
+// or leave plan mode) and answerPlanReview (the user's verdict on a plan the model presented in plan mode). A fork copies the source session's event log up to the
 // cut into a new, ordinary session (no parentSession, so session/resume accepts it), writes it to storage and lets go
 // of it; the editor then resumes it over ACP.
 // Loaded by the patch the editor generates before every launch; the endpoint URL and token come from the environment.
@@ -11,6 +12,9 @@ import { randomUUID } from 'node:crypto'
 export const name = 'shuttlegent-session-control'
 
 const ANNOUNCE_METHOD = 'shuttlegent/runtimeControl'
+// A plan waiting for the user's review, and one that stopped waiting (turn cancelled) before an answer
+const REVIEW_METHOD = 'shuttlegent/planReview'
+const REVIEW_CLOSED_METHOD = 'shuttlegent/planReviewClosed'
 const MAX_BODY_BYTES = 65536
 
 // session-log-deepseek's acceptance marker, and the format generation that marks one as not this session's
@@ -23,6 +27,14 @@ export function apply(ctx) {
   const endpoint = process.env.SHUTTLEGENT_EDITOR_ENDPOINT
   const token = process.env.SHUTTLEGENT_EDITOR_TOKEN
   if (!endpoint || !token) return
+
+  const notify = (method, params) => {
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ jsonrpc: '2.0', method, params }),
+    }).catch((error) => console.warn(`[${name}] ${method} not sent: ${error?.message ?? error}`))
+  }
 
   /**
    * Inclusive event index the copy keeps: before = everything ahead of the user message, the inbox splice that
@@ -98,6 +110,72 @@ export function apply(ctx) {
     return { sessionId: id, events: boundary + 1, userMessages }
   }
 
+  const agentOf = (sessionId) => {
+    if (typeof sessionId !== 'string') throw new ControlError('sessionId is required')
+    const agent = ctx.get('agents')?.get(sessionId)
+    if (!agent) throw new ControlError(`session ${sessionId} is not open in the runtime`)
+    return agent
+  }
+
+  /** Runs a slash command line (/compact, /plan ...) as the web client does; ACP would send it to the model as text. */
+  const command = async ({ sessionId, line }) => {
+    if (typeof line !== 'string' || !line.startsWith('/')) throw new ControlError('command needs a line starting with /')
+    const commands = ctx.get('commands')
+    if (!commands) throw new ControlError('the runtime has no command registry')
+
+    const agent = agentOf(sessionId)
+    const execution = await commands.execute(agent, line, [], new AbortController().signal)
+    if (!execution) throw new ControlError(`unknown command ${line.split(/\s/, 1)[0]}`)
+    return { commandId: execution.commandId, kind: execution.result.kind, text: execution.result.text }
+  }
+
+  /** Enters or leaves plan mode; without active it only reports the state (a resumed session keeps its mode). */
+  const planMode = ({ sessionId, active }) => {
+    if (active !== undefined && typeof active !== 'boolean') throw new ControlError('planMode takes active as true or false')
+    const controller = ctx.get('planMode')
+    if (!controller) throw new ControlError('the runtime has no plan mode')
+    const agent = agentOf(sessionId)
+    const outcome = active === undefined ? 'query' : controller.set(agent, active)
+    return { outcome, state: controller.get(agent) }
+  }
+
+  // Plan reviews waiting for the user: plan-mode asks through user-questions, which nothing answers under ACP. The
+  // editor shows the plan (notification shuttlegent/planReview) and answers through answerPlanReview.
+  const reviews = new Map()
+
+  const answerPlanReview = ({ reviewId, approve, feedback }) => {
+    const review = reviews.get(reviewId)
+    if (!review) throw new ControlError(`plan review ${reviewId} is not waiting`)
+    if (typeof approve !== 'boolean') throw new ControlError('answerPlanReview needs approve (true or false)')
+
+    reviews.delete(reviewId)
+    const question = review.question
+    const answer = approve
+      ? { id: question.id, selected: [question.intent.approve] }
+      : { id: question.id, selected: [], ...(typeof feedback === 'string' && feedback.trim() ? { custom: feedback.trim() } : {}) }
+    review.resolve({ answers: [answer] })
+    return { reviewId, approved: approve }
+  }
+
+  ctx.on('user-questions/request', function (request, next) {
+    const question = request?.questions?.length === 1 ? request.questions[0] : undefined
+    const sessionId = request?.agent?.session?.header?.id ?? request?.agent?.id
+    if (question?.intent?.kind !== 'plan-review' || !sessionId) return next()
+
+    const reviewId = randomUUID()
+    return new Promise((resolve, reject) => {
+      reviews.set(reviewId, { question, resolve })
+      request.signal?.addEventListener('abort', () => {
+        if (!reviews.delete(reviewId)) return
+        notify(REVIEW_CLOSED_METHOD, { sessionId, reviewId })
+        reject(request.signal.reason)
+      }, { once: true })
+      notify(REVIEW_METHOD, { sessionId, reviewId, plan: question.detail ?? '' })
+    })
+  })
+
+  const METHODS = { fork, command, planMode, answerPlanReview }
+
   const reply = (response, status, body) => {
     response.writeHead(status, { 'Content-Type': 'application/json' })
     response.end(JSON.stringify(body))
@@ -123,12 +201,13 @@ export function apply(ctx) {
         reply(response, 400, { error: 'body is not JSON' })
         return
       }
-      if (message?.method !== 'fork') {
+      const handler = Object.hasOwn(METHODS, message?.method) ? METHODS[message.method] : undefined
+      if (!handler) {
         reply(response, 400, { error: `unknown method ${message?.method}` })
         return
       }
       try {
-        reply(response, 200, { result: await fork(message.params ?? {}) })
+        reply(response, 200, { result: await handler(message.params ?? {}) })
       } catch (error) {
         reply(response, error instanceof ControlError ? 400 : 500, { error: error?.message ?? String(error) })
       }
@@ -136,14 +215,7 @@ export function apply(ctx) {
   })
 
   ctx.effect(() => {
-    server.listen(0, '127.0.0.1', () => {
-      const body = JSON.stringify({ jsonrpc: '2.0', method: ANNOUNCE_METHOD, params: { url: `http://127.0.0.1:${server.address().port}/` } })
-      fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body,
-      }).catch((error) => console.warn(`[${name}] control port not announced: ${error?.message ?? error}`))
-    })
+    server.listen(0, '127.0.0.1', () => notify(ANNOUNCE_METHOD, { url: `http://127.0.0.1:${server.address().port}/` }))
     return () => server.close()
   }, 'shuttlegent-session-control server')
 }

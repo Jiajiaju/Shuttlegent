@@ -10,6 +10,7 @@
 #include "Editor/TransBuffer.h"
 #include "Modules/ModuleManager.h"
 #include "Endpoint/FShuttlegentContextBreakdown.h"
+#include "Endpoint/FShuttlegentSessionEvent.h"
 #include "ShuttlegentMcpServerModule.h"
 #include "QuestionGate/FShuttlegentQuestionGate.h"
 #include "WriteGate/FShuttlegentWriteGate.h"
@@ -67,6 +68,40 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* TranscriptUpdate = TEXT("update");
 	inline const TCHAR* TranscriptTurnEnd = TEXT("turn_end");
 	inline const TCHAR* TranscriptPermission = TEXT("permission");
+
+	// 一次结束的上下文压缩，回放时重建压缩条目（字段 manual、shadowedTokenCount、error）
+	inline const TCHAR* TranscriptCompaction = TEXT("compaction");
+
+	// session tap 插件推来的事件类型及其字段（见 Runtime/plugins/shuttlegent-session-tap.mjs）
+	inline const TCHAR* EventTodoWrite = TEXT("todo/write");
+	inline const TCHAR* EventCompactionPrefix = TEXT("compaction/");
+	inline const TCHAR* EventCompactionStart = TEXT("compaction/start");
+	inline const TCHAR* EventCompactionSummary = TEXT("compaction/summary");
+	inline const TCHAR* EventCompactionEnd = TEXT("compaction/end");
+	inline const TCHAR* FieldTodos = TEXT("todos");
+	inline const TCHAR* FieldManual = TEXT("manual");
+	inline const TCHAR* FieldShadowedTokenCount = TEXT("shadowedTokenCount");
+	inline const TCHAR* FieldUsedTokens = TEXT("usedTokens");
+
+	// 压缩条目的状态，写在条目的 Status 中；Title 记录手动（ShuttlegentEditorWebField::Manual）或自动
+	inline const TCHAR* CompactionRunning = TEXT("running");
+	inline const TCHAR* CompactionDone = TEXT("done");
+	inline const TCHAR* CompactionFailed = TEXT("failed");
+	inline const TCHAR* CompactionAuto = TEXT("auto");
+
+	// 手动压缩所执行的运行时命令
+	inline const TCHAR* CompactCommand = TEXT("/compact");
+
+	// 计划模式切换事件，及一次结束的计划审批的会话记录（字段 plan、outcome、feedback）
+	inline const TCHAR* EventPlanMode = TEXT("plan/mode");
+	inline const TCHAR* FieldActive = TEXT("active");
+	inline const TCHAR* TranscriptPlan = TEXT("plan");
+	inline const TCHAR* FieldPlan = TEXT("plan");
+	inline const TCHAR* FieldOutcome = TEXT("outcome");
+	inline const TCHAR* FieldFeedback = TEXT("feedback");
+
+	// 交出计划的会话不在面板中时退回给 Agent 的说明
+	inline const TCHAR* PlanReviewNoConversation = TEXT("Nobody can review this plan: the session is not open in the editor panel. Stop and tell the user.");
 
 	// 同一工具结果中各文本片段之间的分隔符
 	inline const TCHAR* ToolContentJoiner = TEXT("\n");
@@ -212,6 +247,9 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	InService->OnError.AddSP(this, &FShuttlegentChatModel::HandleError);
 	InService->OnConfigOptionsChanged.AddSP(this, &FShuttlegentChatModel::HandleConfigOptionsChanged);
 	FShuttlegentMcpServerModule::Get().OnContextBreakdown().AddSP(this, &FShuttlegentChatModel::HandleContextBreakdown);
+	FShuttlegentMcpServerModule::Get().OnSessionEvent().AddSP(this, &FShuttlegentChatModel::HandleSessionEvent);
+	FShuttlegentMcpServerModule::Get().OnPlanReview().AddSP(this, &FShuttlegentChatModel::HandlePlanReview);
+	FShuttlegentMcpServerModule::Get().OnPlanReviewClosed().AddSP(this, &FShuttlegentChatModel::HandlePlanReviewClosed);
 
 	const TSharedPtr<FShuttlegentQuestionGate> Questions = FShuttlegentMcpServerModule::Get().GetQuestionGate();
 	if (Questions.IsValid())
@@ -228,6 +266,14 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	Gate->OnRequested.AddSP(this, &FShuttlegentChatModel::HandleWriteRequested);
 	Gate->OnClosed.AddSP(this, &FShuttlegentChatModel::HandleWriteClosed);
 	Gate->OnFinished.AddSP(this, &FShuttlegentChatModel::HandleWriteFinished);
+
+	// 计划模式下 Harness 不限制工具，由写入门拒绝写入
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	Gate->IsWriteBlocked = [WeakThis]()
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		return This.IsValid() && This->IsPlanTurnRunning();
+	};
 }
 
 void FShuttlegentChatModel::Shutdown()
@@ -248,11 +294,18 @@ void FShuttlegentChatModel::Shutdown()
 	Service.Reset();
 
 	FShuttlegentMcpServerModule* McpServer = FModuleManager::GetModulePtr<FShuttlegentMcpServerModule>(ShuttlegentEditorName::McpServerModule);
-	if (McpServer != nullptr) McpServer->OnContextBreakdown().RemoveAll(this);
+	if (McpServer != nullptr)
+	{
+		McpServer->OnContextBreakdown().RemoveAll(this);
+		McpServer->OnSessionEvent().RemoveAll(this);
+		McpServer->OnPlanReview().RemoveAll(this);
+		McpServer->OnPlanReviewClosed().RemoveAll(this);
+	}
 
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid())
 	{
+		Gate->IsWriteBlocked = nullptr;
 		Gate->OnRequested.RemoveAll(this);
 		Gate->OnClosed.RemoveAll(this);
 		Gate->OnFinished.RemoveAll(this);
@@ -393,7 +446,7 @@ void FShuttlegentChatModel::ParkPendingPrompt(FShuttlegentConversation& Conversa
 	NotifyQueue(Conversation);
 }
 
-EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, TArray<FString>& OutInvalidPaths)
+EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, TArray<FString>& OutInvalidPaths)
 {
 	OutInvalidPaths.Reset();
 	for (const FShuttlegentReference& Reference : References)
@@ -403,11 +456,19 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text,
 	const bool bBlocked = bRuntimeLost || StartIssue != EShuttlegentStartIssue::None || Current->bNeedsVerify;
 	if (Text.TrimStartAndEnd().IsEmpty() || bBlocked || !OutInvalidPaths.IsEmpty()) return EShuttlegentSubmitResult::Rejected;
 
+	FText PlanReason;
+	if (bEnterPlanMode && !CanSetPlanMode(PlanReason)) return EShuttlegentSubmitResult::Rejected;
+
 	if (!IsBusy(*Current))
 	{
-		SubmitPrompt(*Current, FShuttlegentReferencePrompt::Compose(Text, References));
+		const FString Prompt = FShuttlegentReferencePrompt::Compose(Text, References);
+		if (bEnterPlanMode && !Current->bPlanMode) SubmitInPlanMode(Current, Prompt);
+		else SubmitPrompt(*Current, Prompt);
 		return EShuttlegentSubmitResult::Sent;
 	}
+
+	// 回合进行中：计划模式在下一步生效，消息照常排队
+	if (bEnterPlanMode) SetPlanMode(true);
 
 	Current->Queue.Items.Add(MakeQueued(Text, References));
 	AddRunLog(*Current, LOCTEXT("LogQueued", "加入队列"), false);
@@ -1051,6 +1112,326 @@ void FShuttlegentChatModel::HandleContextBreakdown(const FString& SessionId, con
 	if (IsCurrent(*Conversation)) OnStatusChanged.Broadcast();
 }
 
+void FShuttlegentChatModel::HandleSessionEvent(const FShuttlegentSessionEvent& Event)
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(Event.SessionId);
+	if (!Conversation.IsValid()) return;
+
+	if (Event.Type == ShuttlegentChatModelPrivate::EventTodoWrite)
+	{
+		ApplyTodos(*Conversation, Event.Data);
+	}
+	else if (Event.Type.StartsWith(ShuttlegentChatModelPrivate::EventCompactionPrefix))
+	{
+		ApplyCompaction(*Conversation, Event.Type, Event.Data);
+	}
+	else if (Event.Type == ShuttlegentChatModelPrivate::EventPlanMode && Event.Data.IsValid())
+	{
+		bool bActive = false;
+		Event.Data->TryGetBoolField(ShuttlegentChatModelPrivate::FieldActive, bActive);
+		if (Conversation->bPlanMode == bActive) return;
+
+		Conversation->bPlanMode = bActive;
+		AddRunLog(*Conversation, bActive ? LOCTEXT("LogPlanOn", "进入计划模式") : LOCTEXT("LogPlanOff", "退出计划模式"), false);
+		NotifyStatus(*Conversation);
+	}
+}
+
+bool FShuttlegentChatModel::CanSetPlanMode(FText& OutReason) const
+{
+	if (Current->bResuming)
+	{
+		OutReason = LOCTEXT("PlanResuming", "会话正在恢复。");
+		return false;
+	}
+	if (!Current->PendingPlanReview.ReviewId.IsEmpty())
+	{
+		OutReason = LOCTEXT("PlanReviewing", "先审批 Agent 交出的计划。");
+		return false;
+	}
+
+	// 会话未创建时记下选择，就绪后应用；已创建的会话需要运行时的 session control 插件
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	const bool bOpen = Pinned.IsValid() && !Current->SessionId.IsEmpty() && Pinned->IsSessionOpen(Current->SessionId);
+	if (bOpen && !FShuttlegentMcpServerModule::Get().CanForkSessions())
+	{
+		OutReason = LOCTEXT("PlanNoControl", "运行时的会话控制插件不可用。");
+		return false;
+	}
+	if (!Current->SessionId.IsEmpty() && !bOpen)
+	{
+		OutReason = LOCTEXT("PlanNotOpen", "会话尚未在运行时中就绪。");
+		return false;
+	}
+
+	OutReason = FText::GetEmpty();
+	return true;
+}
+
+void FShuttlegentChatModel::SetPlanMode(bool bActive)
+{
+	FText Reason;
+	if (!CanSetPlanMode(Reason) || Current->bPlanMode == bActive) return;
+
+	ApplyPlanMode(Current, bActive, nullptr);
+}
+
+void FShuttlegentChatModel::ApplyPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, bool bActive, TFunction<void(bool)> OnApplied)
+{
+	Conversation->bPlanMode = bActive;
+	NotifyStatus(*Conversation);
+	if (Conversation->SessionId.IsEmpty())
+	{
+		if (OnApplied) OnApplied(true);
+		return;
+	}
+
+	// 先按用户的选择显示；运行时拒绝时退回，回合进行中则以之后的 plan/mode 事件为准
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
+	FShuttlegentMcpServerModule::Get().SetPlanMode(Conversation->SessionId, bActive, [WeakThis, WeakConversation, bActive, OnApplied](bool, const FString& Error)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+		if (!This.IsValid() || !Held.IsValid()) return;
+
+		if (!Error.IsEmpty())
+		{
+			Held->bPlanMode = !bActive;
+			This->AddNotice(*Held, FText::Format(LOCTEXT("PlanSetFailed", "切换计划模式失败：{0}"), FText::FromString(Error)), true);
+			This->NotifyStatus(*Held);
+		}
+		if (OnApplied) OnApplied(Error.IsEmpty());
+	});
+}
+
+void FShuttlegentChatModel::SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text)
+{
+	// 会话未创建：只记下选择，会话就绪后先应用计划模式再发送
+	if (Conversation->SessionId.IsEmpty())
+	{
+		ApplyPlanMode(Conversation, true, nullptr);
+		SubmitPrompt(*Conversation, Text);
+		return;
+	}
+
+	// 计划模式走控制端口、提示走 ACP，两者没有先后保证；提示先挂起（对话随之忙碌，新草稿排队），运行时确认后再发出
+	Conversation->PendingPrompt = Text;
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
+	ApplyPlanMode(Conversation, true, [WeakThis, WeakConversation](bool bApplied)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+		if (!This.IsValid() || !Held.IsValid()) return;
+
+		if (bApplied) This->SendPendingPrompt(*Held);
+		else This->ParkPendingPrompt(*Held);
+	});
+}
+
+void FShuttlegentChatModel::HandlePlanReview(const FShuttlegentPlanReview& Review)
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(Review.SessionId);
+	if (!Conversation.IsValid())
+	{
+		// 不属于面板的会话无人审批，退回让 Agent 不再等待
+		FShuttlegentMcpServerModule::Get().AnswerPlanReview(Review.ReviewId, false, ShuttlegentChatModelPrivate::PlanReviewNoConversation, [](const FString&) {});
+		return;
+	}
+
+	Conversation->PendingPlanReview = Review;
+	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Conversation, EShuttlegentChatEntryKind::Plan, Review.Plan);
+	Entry->Status = ShuttlegentEditorWebField::PlanPending;
+	Conversation->PlanEntryId = Entry->Id;
+	AddRunLog(*Conversation, LOCTEXT("LogPlanReview", "Agent 交出计划，等待审批"), true);
+	NotifyStructure(*Conversation);
+	NotifyStatus(*Conversation);
+}
+
+void FShuttlegentChatModel::HandlePlanReviewClosed(const FString& SessionId, const FString& ReviewId)
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
+	if (!Conversation.IsValid() || Conversation->PendingPlanReview.ReviewId != ReviewId) return;
+
+	SettlePlanReview(*Conversation, ShuttlegentEditorWebField::PlanCancelled, FString());
+}
+
+void FShuttlegentChatModel::AnswerPlanReview(bool bApprove, const FString& Feedback)
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = Current;
+	const FString ReviewId = Conversation->PendingPlanReview.ReviewId;
+	if (ReviewId.IsEmpty()) return;
+
+	const FString Trimmed = Feedback.TrimStartAndEnd();
+	SettlePlanReview(*Conversation, bApprove ? ShuttlegentEditorWebField::PlanApproved : ShuttlegentEditorWebField::PlanRevised, bApprove ? FString() : Trimmed);
+
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
+	FShuttlegentMcpServerModule::Get().AnswerPlanReview(ReviewId, bApprove, bApprove ? FString() : Trimmed, [WeakThis, WeakConversation](const FString& Error)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+		if (!This.IsValid() || !Held.IsValid() || Error.IsEmpty()) return;
+
+		This->AddNotice(*Held, FText::Format(LOCTEXT("PlanAnswerFailed", "审批结果未送达运行时：{0}"), FText::FromString(Error)), true);
+	});
+}
+
+void FShuttlegentChatModel::SettlePlanReview(FShuttlegentConversation& Conversation, const TCHAR* Outcome, const FString& Feedback)
+{
+	TSharedPtr<FShuttlegentChatEntry>* Found = Conversation.Entries.FindByPredicate([&Conversation](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Id == Conversation.PlanEntryId; });
+	if (Found != nullptr)
+	{
+		(*Found)->Status = Outcome;
+		(*Found)->Detail = Feedback;
+
+		const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+		if (Pinned.IsValid())
+		{
+			const TSharedRef<FJsonObject> Record = MakeShared<FJsonObject>();
+			Record->SetStringField(ShuttlegentChatModelPrivate::FieldPlan, (*Found)->Text);
+			Record->SetStringField(ShuttlegentChatModelPrivate::FieldOutcome, Outcome);
+			if (!Feedback.IsEmpty()) Record->SetStringField(ShuttlegentChatModelPrivate::FieldFeedback, Feedback);
+			Pinned->GetSessionStore().AppendTranscript(Conversation.SessionId, ShuttlegentChatModelPrivate::TranscriptPlan, Record);
+		}
+	}
+
+	Conversation.PendingPlanReview = FShuttlegentPlanReview();
+	Conversation.PlanEntryId = 0;
+	AddRunLog(Conversation, FText::Format(LOCTEXT("LogPlanSettled", "计划审批：{0}"), FText::FromString(Outcome)), false);
+	NotifyStructure(Conversation);
+	NotifyStatus(Conversation);
+}
+
+bool FShuttlegentChatModel::IsPlanTurnRunning() const
+{
+	return Conversations.ContainsByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Conversation) { return Conversation->bPlanMode && IsBusy(*Conversation); });
+}
+
+void FShuttlegentChatModel::ApplyTodos(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Data)
+{
+	const TArray<TSharedPtr<FJsonValue>>* Items = nullptr;
+	if (!Data.IsValid() || !Data->TryGetArrayField(ShuttlegentChatModelPrivate::FieldTodos, Items)) return;
+
+	Conversation.Todos.Reset();
+	for (const TSharedPtr<FJsonValue>& Value : *Items)
+	{
+		const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;
+		if (!Item.IsValid()) continue;
+
+		FShuttlegentTodoItem Todo;
+		Item->TryGetStringField(ShuttlegentChatModelPrivate::FieldContent, Todo.Content);
+		Item->TryGetStringField(ShuttlegentChatModelPrivate::FieldStatus, Todo.Status);
+		if (!Todo.Content.IsEmpty()) Conversation.Todos.Add(MoveTemp(Todo));
+	}
+	NotifyStatus(Conversation);
+}
+
+void FShuttlegentChatModel::ApplyCompaction(FShuttlegentConversation& Conversation, const FString& Type, const TSharedPtr<FJsonObject>& Data)
+{
+	if (!Data.IsValid()) return;
+
+	if (Type == ShuttlegentChatModelPrivate::EventCompactionStart)
+	{
+		bool bManual = false;
+		Data->TryGetBoolField(ShuttlegentChatModelPrivate::FieldManual, bManual);
+
+		const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::Compaction, FString());
+		Entry->Status = ShuttlegentChatModelPrivate::CompactionRunning;
+		Entry->Title = bManual ? ShuttlegentEditorWebField::Manual : ShuttlegentChatModelPrivate::CompactionAuto;
+		Conversation.CompactionEntryId = Entry->Id;
+		Conversation.bCompactionStarted = true;
+		AddRunLog(Conversation, bManual ? LOCTEXT("LogCompactManual", "开始手动压缩上下文") : LOCTEXT("LogCompactAuto", "上下文接近上限，开始自动压缩"), false);
+		NotifyStructure(Conversation);
+		return;
+	}
+
+	TSharedPtr<FShuttlegentChatEntry>* Found = Conversation.Entries.FindByPredicate([&Conversation](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Id == Conversation.CompactionEntryId; });
+	const TSharedPtr<FShuttlegentChatEntry> Entry = Found != nullptr ? *Found : nullptr;
+	if (!Entry.IsValid()) return;
+
+	if (Type == ShuttlegentChatModelPrivate::EventCompactionSummary)
+	{
+		int64 Shadowed = 0;
+		if (Data->TryGetNumberField(ShuttlegentChatModelPrivate::FieldShadowedTokenCount, Shadowed)) Entry->Detail = LexToString(Shadowed);
+		NotifyContent(Conversation);
+		return;
+	}
+	if (Type != ShuttlegentChatModelPrivate::EventCompactionEnd) return;
+
+	FString Error;
+	Data->TryGetStringField(ShuttlegentChatModelPrivate::FieldError, Error);
+	Entry->Status = Error.IsEmpty() ? ShuttlegentChatModelPrivate::CompactionDone : ShuttlegentChatModelPrivate::CompactionFailed;
+	Entry->Text = Error;
+	Entry->bError = !Error.IsEmpty();
+	Conversation.CompactionEntryId = 0;
+
+	// 压缩后的用量要等下一条助手消息的 usage_update 才会更新；插件随结束事件报来，先行显示
+	int64 Used = 0;
+	if (Data->TryGetNumberField(ShuttlegentChatModelPrivate::FieldUsedTokens, Used) && Used > 0) Conversation.UsedTokens = Used;
+
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (Pinned.IsValid())
+	{
+		const TSharedRef<FJsonObject> Record = MakeShared<FJsonObject>();
+		Record->SetBoolField(ShuttlegentChatModelPrivate::FieldManual, Entry->Title == ShuttlegentEditorWebField::Manual);
+		Record->SetStringField(ShuttlegentChatModelPrivate::FieldShadowedTokenCount, Entry->Detail);
+		if (!Error.IsEmpty()) Record->SetStringField(ShuttlegentChatModelPrivate::FieldError, Error);
+		Pinned->GetSessionStore().AppendTranscript(Conversation.SessionId, ShuttlegentChatModelPrivate::TranscriptCompaction, Record);
+	}
+
+	AddRunLog(Conversation, Error.IsEmpty() ? LOCTEXT("LogCompactDone", "上下文压缩完成") : FText::Format(LOCTEXT("LogCompactFailed", "上下文压缩失败：{0}"), FText::FromString(Error)), !Error.IsEmpty());
+	NotifyStructure(Conversation);
+	NotifyStatus(Conversation);
+}
+
+bool FShuttlegentChatModel::CanCompact(FText& OutReason) const
+{
+	if (Current->bCompacting)
+	{
+		OutReason = LOCTEXT("CompactRunning", "正在压缩。");
+		return false;
+	}
+	if (!CanEditHistory(OutReason)) return false;
+
+	OutReason = FText::GetEmpty();
+	return true;
+}
+
+void FShuttlegentChatModel::CompactContext()
+{
+	FText Reason;
+	if (!CanCompact(Reason)) return;
+
+	const TSharedPtr<FShuttlegentConversation> Conversation = Current;
+	Conversation->bCompacting = true;
+	Conversation->bCompactionStarted = false;
+	NotifyStatus(*Conversation);
+
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
+	FShuttlegentMcpServerModule::Get().RunCommand(Conversation->SessionId, ShuttlegentChatModelPrivate::CompactCommand, [WeakThis, WeakConversation](bool bSucceeded, const FString& Text)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+		if (!This.IsValid() || !Held.IsValid()) return;
+
+		Held->bCompacting = false;
+
+		// 运行时没有报来压缩开始，说明没有可压缩的内容或命令失败；把命令的说明显示出来
+		if (!bSucceeded)
+		{
+			This->AddNotice(*Held, FText::Format(LOCTEXT("CompactFailed", "压缩失败：{0}"), FText::FromString(Text)), true);
+		}
+		else if (!Held->bCompactionStarted)
+		{
+			This->AddNotice(*Held, Text.IsEmpty() ? LOCTEXT("CompactNothing", "没有可压缩的内容。") : FText::FromString(Text), false);
+		}
+		This->NotifyStatus(*Held);
+	});
+}
+
 TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::FindConversation(const FString& SessionId) const
 {
 	if (SessionId.IsEmpty()) return nullptr;
@@ -1083,6 +1464,7 @@ EShuttlegentChatStatus FShuttlegentChatModel::GetStatus(const FShuttlegentConver
 	if (IsPrompting(Conversation))
 	{
 		if (GetPendingPermission(Conversation).IsValid()) return EShuttlegentChatStatus::AwaitingPermission;
+		if (!Conversation.PendingPlanReview.ReviewId.IsEmpty()) return EShuttlegentChatStatus::AwaitingPlanReview;
 		return Conversation.bStopping ? EShuttlegentChatStatus::Stopping : EShuttlegentChatStatus::Querying;
 	}
 
@@ -1269,6 +1651,9 @@ void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, c
 	Conversation.LastOutcome = EShuttlegentTurnOutcome::None;
 	Conversation.bStopping = false;
 	Conversation.LastSentPrompt = Text;
+
+	// 运行时的待办在新回合开始时清空（todos 投影），面板随之清空，等 Agent 为本轮重新列出
+	Conversation.Todos.Reset();
 	AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
 	AddRunLog(Conversation, LOCTEXT("LogTurnStart", "开始本轮"), false);
 	NotifyStructure(Conversation);
@@ -1453,6 +1838,27 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			const TSharedPtr<FShuttlegentChatEntry> ToolCall = FindToolCall(Conversation, Entry->ToolCallId);
 			if (ToolCall.IsValid()) Entry->Title = ToolCall->Title;
 		}
+		else if (Kind == ShuttlegentChatModelPrivate::TranscriptCompaction)
+		{
+			bool bManual = false;
+			(*Data)->TryGetBoolField(ShuttlegentChatModelPrivate::FieldManual, bManual);
+
+			const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::Compaction, FString());
+			Entry->Title = bManual ? ShuttlegentEditorWebField::Manual : ShuttlegentChatModelPrivate::CompactionAuto;
+			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldShadowedTokenCount, Entry->Detail);
+			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldError, Entry->Text);
+			Entry->bError = !Entry->Text.IsEmpty();
+			Entry->Status = Entry->bError ? ShuttlegentChatModelPrivate::CompactionFailed : ShuttlegentChatModelPrivate::CompactionDone;
+		}
+		else if (Kind == ShuttlegentChatModelPrivate::TranscriptPlan)
+		{
+			FString Plan;
+			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldPlan, Plan);
+
+			const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::Plan, Plan);
+			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldOutcome, Entry->Status);
+			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldFeedback, Entry->Detail);
+		}
 	}
 	NotifyStructure(Conversation);
 }
@@ -1502,14 +1908,38 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 		SetConfigValue(*Conversation, Pair.Key, Pair.Value);
 	}
 
-	if (!Conversation->PendingPrompt.IsEmpty())
+	// 计划模式：新会话先应用用户在会话创建前的选择，再发送提示，第一步就按计划模式运行；恢复的会话以运行时记录为准
+	if (FShuttlegentMcpServerModule::Get().CanForkSessions())
 	{
-		const FString Text = MoveTemp(Conversation->PendingPrompt);
-		Conversation->PendingPrompt.Reset();
-		SendPrompt(*Conversation, Text);
+		const TOptional<bool> Wanted = Conversation->bPlanMode ? TOptional<bool>(true) : TOptional<bool>();
+		const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+		const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
+		FShuttlegentMcpServerModule::Get().SetPlanMode(SessionId, Wanted, [WeakThis, WeakConversation](bool bActiveNow, const FString& Error)
+		{
+			const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+			const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+			if (!This.IsValid() || !Held.IsValid()) return;
+
+			if (Error.IsEmpty()) Held->bPlanMode = bActiveNow;
+			This->SendPendingPrompt(*Held);
+			This->NotifyStatus(*Held);
+		});
+	}
+	else
+	{
+		SendPendingPrompt(*Conversation);
 	}
 	OnStatusChanged.Broadcast();
 	OnSessionsChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::SendPendingPrompt(FShuttlegentConversation& Conversation)
+{
+	if (Conversation.PendingPrompt.IsEmpty()) return;
+
+	const FString Text = MoveTemp(Conversation.PendingPrompt);
+	Conversation.PendingPrompt.Reset();
+	SendPrompt(Conversation, Text);
 }
 
 void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const TSharedPtr<FJsonObject>& Update)
@@ -1606,6 +2036,9 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 	{
 		Conversation->bStopping = false;
 		RejectPendingPermissions(*Conversation);
+
+		// 运行时退出后等待中的计划无人接收审批
+		if (!Conversation->PendingPlanReview.ReviewId.IsEmpty()) SettlePlanReview(*Conversation, ShuttlegentEditorWebField::PlanCancelled, FString());
 		if (bExpected) continue;
 
 		if (!Conversation->Queue.Items.IsEmpty()) Conversation->Queue.bPaused = true;

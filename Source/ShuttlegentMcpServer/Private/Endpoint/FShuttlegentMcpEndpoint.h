@@ -9,6 +9,8 @@ class FShuttlegentWriteGate;
 class IHttpRouter;
 struct FHttpServerRequest;
 struct FShuttlegentContextBreakdown;
+struct FShuttlegentPlanReview;
+struct FShuttlegentSessionEvent;
 
 /**
  * 编辑器的 MCP 端点（Shuttlegent.md 第 10.1 节）：localhost 上的 Streamable HTTP，以纯 JSON 答复，不使用 SSE。
@@ -33,6 +35,15 @@ public:
 
 	/** 收到来自 session control 运行时插件的 shuttlegent/runtimeControl 通知（其控制端口 URL）；游戏线程。 */
 	TFunction<void(const FString& /*Url*/)> OnRuntimeControl;
+
+	/** 收到来自 session tap 运行时插件的 shuttlegent/sessionEvent 通知；游戏线程。 */
+	TFunction<void(const FShuttlegentSessionEvent& /*Event*/)> OnSessionEvent;
+
+	/** 收到来自 session control 运行时插件的 shuttlegent/planReview 通知；游戏线程。 */
+	TFunction<void(const FShuttlegentPlanReview& /*Review*/)> OnPlanReview;
+
+	/** 收到 shuttlegent/planReviewClosed 通知：回合取消，审批不再等待；游戏线程。 */
+	TFunction<void(const FString& /*SessionId*/, const FString& /*ReviewId*/)> OnPlanReviewClosed;
 
 	/** 开始监听；范围内没有可绑定的端口时返回 false。 */
 	bool Start(const TSharedRef<FShuttlegentWriteGate>& InGate);

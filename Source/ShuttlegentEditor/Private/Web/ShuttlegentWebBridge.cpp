@@ -5,9 +5,9 @@ void UShuttlegentWebBridge::Ready()
 	if (OnReady) OnReady();
 }
 
-void UShuttlegentWebBridge::Submit(const FString& Text, const FString& ReferencesJson)
+void UShuttlegentWebBridge::Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
 {
-	if (OnSubmit) OnSubmit(Text, ReferencesJson);
+	if (OnSubmit) OnSubmit(Text, ReferencesJson, bEnterPlanMode);
 }
 
 void UShuttlegentWebBridge::Cancel()
@@ -158,4 +158,19 @@ void UShuttlegentWebBridge::OpenPluginFolder()
 void UShuttlegentWebBridge::RevealObject(const FString& Kind, const FString& Path, bool bOpen)
 {
 	if (OnRevealObject) OnRevealObject(Kind, Path, bOpen);
+}
+
+void UShuttlegentWebBridge::CompactContext()
+{
+	if (OnCompactContext) OnCompactContext();
+}
+
+void UShuttlegentWebBridge::SetPlanMode(bool bActive)
+{
+	if (OnSetPlanMode) OnSetPlanMode(bActive);
+}
+
+void UShuttlegentWebBridge::AnswerPlanReview(bool bApprove, const FString& Feedback)
+{
+	if (OnAnswerPlanReview) OnAnswerPlanReview(bApprove, Feedback);
 }

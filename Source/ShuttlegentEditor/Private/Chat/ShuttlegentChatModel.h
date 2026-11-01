@@ -21,6 +21,7 @@ class FJsonValue;
 class FShuttlegentAgentService;
 class FShuttlegentQuestionGate;
 class FShuttlegentWriteGate;
+struct FShuttlegentSessionEvent;
 enum class EShuttlegentQuestionOutcome : uint8;
 enum class EShuttlegentWriteDecision : uint8;
 
@@ -153,6 +154,28 @@ public:
 	int64 GetUsedTokens() const { return Current->UsedTokens; }
 	int64 GetContextSize() const { return Current->ContextSize; }
 	const FShuttlegentContextBreakdown& GetContextBreakdown() const { return Current->ContextBreakdown; }
+	const TArray<FShuttlegentTodoItem>& GetTodos() const { return Current->Todos; }
+	bool IsCompacting() const { return Current->bCompacting; }
+
+	/** 当前对话现在能否手动压缩上下文；不能时给出原因（未连接、回合进行中、插件不可用、正在压缩）。 */
+	bool CanCompact(FText& OutReason) const;
+
+	/** 手动压缩当前对话的上下文（运行时的 /compact）；进度与结果以压缩条目显示在对话中。 */
+	void CompactContext();
+
+	bool IsPlanMode() const { return Current->bPlanMode; }
+
+	/** 当前对话现在能否切换计划模式；不能时给出原因（运行时未就绪、插件不可用、恢复中）。会话尚未创建时可以，就绪后应用。 */
+	bool CanSetPlanMode(FText& OutReason) const;
+
+	/** 打开或关闭当前对话的计划模式；回合进行中时在下一步生效。 */
+	void SetPlanMode(bool bActive);
+
+	/** 当前对话等待审批的计划；ReviewId 为空表示没有。 */
+	const FShuttlegentPlanReview& GetPendingPlanReview() const { return Current->PendingPlanReview; }
+
+	/** 答复当前对话等待审批的计划：批准后 Agent 退出计划模式并执行；退回时 Feedback 交给 Agent 继续规划。 */
+	void AnswerPlanReview(bool bApprove, const FString& Feedback);
 
 	/** 若运行时未在运行则启动它；失败时记为启动问题。 */
 	void EnsureRuntime();
@@ -180,9 +203,10 @@ public:
 
 	/**
 	 * 在当前对话中发送草稿及其引用，若该对话有回合正在运行则将其入队。每个引用都必须
-	 * 仍然存在；不存在的引用会被返回，且不发送也不入队。
+	 * 仍然存在；不存在的引用会被返回，且不发送也不入队。bEnterPlanMode 时先进入计划模式（/plan <消息>）：
+	 * 会话已打开时等运行时确认计划模式已开再发出，计划模式不可切换时拒绝。
 	 */
-	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, TArray<FString>& OutInvalidPaths);
+	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, TArray<FString>& OutInvalidPaths);
 
 	/** 当前对话中有回合正在运行、停止待完成，或运行时或会话仍在就绪过程中：新草稿将入队。 */
 	bool IsBusy() const;
@@ -315,6 +339,12 @@ private:
 	void ParkPendingPrompts();
 	void ParkPendingPrompt(FShuttlegentConversation& Conversation);
 
+	/** 进入计划模式后发送提示（/plan <消息>）：会话未创建时记下选择，就绪后先应用再发送；会话已打开时提示先挂起，运行时确认后发出，失败则放回队列。 */
+	void SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text);
+
+	/** 打开或关闭对话的计划模式；OnApplied 在运行时答复后以是否生效调用（会话未创建时只记下选择，立即以 true 调用）。 */
+	void ApplyPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, bool bActive, TFunction<void(bool)> OnApplied);
+
 	/** 发送提示，必要时先启动运行时并创建或恢复该对话的会话。 */
 	void SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text);
 	void SendPrompt(FShuttlegentConversation& Conversation, const FString& Text);
@@ -354,6 +384,23 @@ private:
 	void HandleError(const FString& SessionId, const FString& Message);
 	void HandleConfigOptionsChanged(const FString& SessionId);
 	void HandleContextBreakdown(const FString& SessionId, const FShuttlegentContextBreakdown& Breakdown);
+
+	/** session tap 插件推来的会话事件：待办清单、上下文压缩与计划模式切换（目标暂不显示）。 */
+	void HandleSessionEvent(const FShuttlegentSessionEvent& Event);
+	void ApplyTodos(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Data);
+	void ApplyCompaction(FShuttlegentConversation& Conversation, const FString& Type, const TSharedPtr<FJsonObject>& Data);
+
+	/** 发送等待会话就绪的提示（如有）。 */
+	void SendPendingPrompt(FShuttlegentConversation& Conversation);
+
+	void HandlePlanReview(const FShuttlegentPlanReview& Review);
+	void HandlePlanReviewClosed(const FString& SessionId, const FString& ReviewId);
+
+	/** 给计划条目记下审批结果，写入会话记录，并清除等待中的审批。 */
+	void SettlePlanReview(FShuttlegentConversation& Conversation, const TCHAR* Outcome, const FString& Feedback);
+
+	/** 有处于计划模式的对话正在运行回合；写入门据此拒绝写入（写入请求不带会话，无法区分是哪个对话发起的）。 */
+	bool IsPlanTurnRunning() const;
 	void HandlePermissionRequest(const TSharedPtr<FJsonObject>& Params, TFunction<void(bool)> Respond);
 
 	void HandleWriteRequested(const FShuttlegentWriteRequest& Request);

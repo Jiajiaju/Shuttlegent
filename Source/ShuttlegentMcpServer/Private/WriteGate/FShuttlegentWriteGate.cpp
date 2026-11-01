@@ -24,6 +24,10 @@ namespace FShuttlegentWriteGatePrivate
 			{
 				return TEXT("timed out");
 			}
+		case EShuttlegentWriteDecision::Blocked:
+			{
+				return TEXT("blocked");
+			}
 		case EShuttlegentWriteDecision::Expired:
 		default:
 			{
@@ -70,6 +74,12 @@ int32 FShuttlegentWriteGate::Request(FShuttlegentWriteRequest Request, TFunction
 	{
 		UE_LOG(LogShuttlegent, Warning, TEXT("Write request %d (%s) rejected: no confirmation panel is open."), RequestId, *Request.ToolName);
 		if (OnDecision) OnDecision(EShuttlegentWriteDecision::Rejected);
+		return RequestId;
+	}
+	if (IsWriteBlocked && IsWriteBlocked())
+	{
+		UE_LOG(LogShuttlegent, Log, TEXT("Write request %d (%s) blocked: plan mode is on."), RequestId, *Request.ToolName);
+		if (OnDecision) OnDecision(EShuttlegentWriteDecision::Blocked);
 		return RequestId;
 	}
 

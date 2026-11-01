@@ -27,5 +27,11 @@ enum class EShuttlegentChatEntryKind : uint8
 	WriteResult,
 
 	// 一次已批准的编辑器写入因运行时丢失而未收到结果；由用户核对其对象
-	WriteUnknown
+	WriteUnknown,
+
+	// 一次上下文压缩（自动或手动）：进行中、完成（被压缩掉的 token 数）或失败
+	Compaction,
+
+	// 计划模式下 Agent 交出的计划（Markdown）及其审批结果：待审批、已批准、已退回（附意见）或已取消
+	Plan
 };

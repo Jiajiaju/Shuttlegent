@@ -6,7 +6,9 @@
 #include "Chat/FShuttlegentChatEntry.h"
 #include "Chat/FShuttlegentPromptQueue.h"
 #include "Chat/FShuttlegentRunLogEntry.h"
+#include "Chat/FShuttlegentTodoItem.h"
 #include "Endpoint/FShuttlegentContextBreakdown.h"
+#include "Endpoint/FShuttlegentPlanReview.h"
 
 /**
  * 面板持有的一个对话：某会话的条目、运行日志、队列与回合状态。
@@ -39,6 +41,30 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 
 	/** 运行时插件 context tap 上报的最新上下文构成；在本次运行的第一条助手消息之前为空。 */
 	FShuttlegentContextBreakdown ContextBreakdown {};
+
+	/** Agent 最新的待办清单（todo/write 每次给出完整列表）；用户发出新提示时清空。 */
+	TArray<FShuttlegentTodoItem> Todos;
+
+	/** 进行中的上下文压缩所对应的条目 id；没有进行中的压缩时为 0。 */
+	int32 CompactionEntryId = 0;
+
+	/** 用户在面板中要求的手动压缩正在执行（/compact 经 session control 插件）。 */
+	bool bCompacting = false;
+
+	/** 本次手动压缩期间运行时报来了压缩开始；为 false 时说明没有可压缩的内容。 */
+	bool bCompactionStarted = false;
+
+	/**
+	 * 计划模式：会话打开后以运行时报来的状态（plan/mode 事件、恢复时查询）为准；会话打开前是用户的选择，
+	 * 会话就绪后先应用它再发送提示。
+	 */
+	bool bPlanMode = false;
+
+	/** 等待用户审批的计划；ReviewId 为空表示没有。 */
+	FShuttlegentPlanReview PendingPlanReview;
+
+	/** 等待审批的计划在对话中的条目 id；没有时为 0。 */
+	int32 PlanEntryId = 0;
 	EShuttlegentTurnOutcome LastOutcome = EShuttlegentTurnOutcome::None;
 
 	/** 已为正在运行的回合发送停止；回合结束时清除。 */

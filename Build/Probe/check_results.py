@@ -184,6 +184,55 @@ def check_fork(ev):
     return bool(child) and kept_first_turn and resume_ok and remembered, f"fork={forked[-1] if forked else None} kept_first_turn={kept_first_turn} resume_ok={resume_ok} answer={answer.strip()[:80]!r}"
 
 
+def check_session_tap(ev):
+    entries = []
+    if os.path.exists(MCP_LOG):
+        with open(MCP_LOG, encoding="utf-8") as f:
+            entries = [json.loads(line) for line in f]
+    sessions = {e["data"].get("sessionId") for e in ev if e["kind"] == "session"}
+    notes = [e for e in entries if isinstance(e.get("body"), dict) and e["body"].get("method") == "shuttlegent/sessionEvent"
+             and e["body"].get("params", {}).get("sessionId") in sessions]
+    events = [(n["body"]["params"]["type"], n["body"]["params"].get("data") or {}) for n in notes]
+    authorized = bool(notes) and all(n.get("auth_ok") for n in notes)
+
+    controls = [e["data"] for e in ev if e["kind"] == "control"]
+    entered = any(c["method"] == "planMode" and (c.get("result") or {}).get("outcome") == "committed" for c in controls)
+    plan_modes = [d.get("active") for t, d in events if t == "plan/mode"]
+    left_plan = plan_modes[:1] == [True] and False in plan_modes
+    reviews = [e["data"] for e in ev if e["kind"] == "plan_review"]
+    approved = any((r.get("result") or {}).get("approved") for r in reviews)
+    todos = [d.get("todos", []) for t, d in events if t == "todo/write"]
+    todo_ok = any(len(t) == 3 for t in todos) and any(any(i.get("status") == "completed" for i in t) for t in todos)
+
+    compact = next((c for c in controls if c["method"] == "command"), {})
+    compact_ok = (compact.get("result") or {}).get("kind") == "success"
+    summaries = [d for t, d in events if t == "compaction/summary"]
+    ends = [d for t, d in events if t == "compaction/end"]
+    compacted = any(t == "compaction/start" and d.get("manual") for t, d in events) and any((s.get("shadowedTokenCount") or 0) > 0 for s in summaries) \
+        and any(not d.get("error") and (d.get("usedTokens") or 0) > 0 for d in ends)
+
+    ok = authorized and entered and left_plan and approved and todo_ok and compact_ok and compacted
+    types = sorted({t for t, _ in events})
+    return ok, (f"auth_ok={authorized} entered={entered} plan_modes={plan_modes} reviews={len(reviews)} approved={approved} "
+                f"todo_writes={len(todos)} todo_ok={todo_ok} compact={compact.get('result') or compact.get('error')} compacted={compacted} types={types}")
+
+
+def check_subagent(ev):
+    titles = []
+    text = []
+    for d in received(ev, "session/update"):
+        u = d["params"]["update"]
+        if u.get("sessionUpdate") == "tool_call":
+            titles.append(u.get("title", ""))
+        if u.get("sessionUpdate") == "agent_message_chunk":
+            text.append(u["content"].get("text", ""))
+    answer = "".join(text)
+    delegated = any("subagent" in t for t in titles)
+    did_itself = any("ue_read_probe" in t for t in titles)
+    ok = not delegated and did_itself and "NO_SUBAGENT_TOOL" in answer
+    return ok, f"tools={titles} delegated={delegated} answer={answer.strip()[:80]!r}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -202,6 +251,8 @@ CHECKS = [
     ("s12_plugin", "H1 plugin from an absolute path loads and receives session events", check_plugin),
     ("s14_context", "Context tap posts the session's context breakdown to the editor endpoint", check_context),
     ("s15_fork", "Session control cuts a conversation into a new session that session/resume opens", check_fork),
+    ("s17_subagent", "Subagent tools are off: the model cannot delegate and does the editor task itself", check_subagent),
+    ("s16_session_tap", "Session tap reports plan mode, todos and compaction; control enters plan mode, approves the plan, runs /compact", check_session_tap),
 ]
 
 failed = 0

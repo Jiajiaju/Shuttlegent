@@ -160,6 +160,9 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnAcknowledgeWrite = nullptr;
 	Bridge->OnOpenPluginFolder = nullptr;
 	Bridge->OnRevealObject = nullptr;
+	Bridge->OnCompactContext = nullptr;
+	Bridge->OnSetPlanMode = nullptr;
+	Bridge->OnAnswerPlanReview = nullptr;
 	Bridge.Reset();
 }
 
@@ -326,10 +329,10 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandlePageReady();
 	};
-	Bridge->OnSubmit = [WeakThis](const FString& Text, const FString& ReferencesJson)
+	Bridge->OnSubmit = [WeakThis](const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
 	{
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
-		if (This.IsValid()) This->HandleSubmit(Text, ReferencesJson);
+		if (This.IsValid()) This->HandleSubmit(Text, ReferencesJson, bEnterPlanMode);
 	};
 	Bridge->OnRemoveQueued = [WeakModel](int32 ItemId)
 	{
@@ -395,6 +398,21 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
 		if (Plugin.IsValid()) FPlatformProcess::ExploreFolder(*FPaths::ConvertRelativePathToFull(Plugin->GetBaseDir()));
+	};
+	Bridge->OnSetPlanMode = [WeakModel](bool bActive)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->SetPlanMode(bActive);
+	};
+	Bridge->OnAnswerPlanReview = [WeakModel](bool bApprove, const FString& Feedback)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->AnswerPlanReview(bApprove, Feedback);
+	};
+	Bridge->OnCompactContext = [WeakModel]()
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->CompactContext();
 	};
 	Bridge->OnRevealObject = [](const FString& Kind, const FString& Path, bool bOpen)
 	{
@@ -552,13 +570,13 @@ FString SShuttlegentWebPanel::GetDraggedItems(const FDragDropEvent& DragDropEven
 	return Items.IsEmpty() ? FString() : FShuttlegentWebJson::ToJson(Items);
 }
 
-void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& ReferencesJson)
+void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
 {
 	if (!Model.IsValid()) return;
 
 	// 已不存在的引用会阻止发送；页面将其标记出来并保留草稿
 	TArray<FString> InvalidPaths;
-	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), InvalidPaths);
+	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), bEnterPlanMode, InvalidPaths);
 
 	TArray<TSharedPtr<FJsonValue>> Invalid;
 	for (const FString& Path : InvalidPaths)

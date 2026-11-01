@@ -13,6 +13,8 @@
 #include "Serialization/JsonWriter.h"
 
 #include "Endpoint/FShuttlegentContextBreakdown.h"
+#include "Endpoint/FShuttlegentPlanReview.h"
+#include "Endpoint/FShuttlegentSessionEvent.h"
 #include "Endpoint/FShuttlegentToolRegistry.h"
 #include "FShuttlegentProjectConfig.h"
 #include "Endpoint/FShuttlegentToolRunner.h"
@@ -231,6 +233,36 @@ void FShuttlegentMcpEndpoint::HandleNotification(const FString& Method, const TS
 	{
 		FString Url;
 		if (OnRuntimeControl && Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldUrl, Url) && !Url.IsEmpty()) OnRuntimeControl(Url);
+		return;
+	}
+	if (Method == ShuttlegentMcpEndpointConstant::MethodSessionEvent)
+	{
+		FShuttlegentSessionEvent Event;
+		Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, Event.SessionId);
+		Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldType, Event.Type);
+		if (!OnSessionEvent || Event.SessionId.IsEmpty() || Event.Type.IsEmpty()) return;
+
+		const TSharedPtr<FJsonObject>* Data = nullptr;
+		Event.Data = Params->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldData, Data) ? *Data : MakeShared<FJsonObject>();
+		OnSessionEvent(Event);
+		return;
+	}
+	if (Method == ShuttlegentMcpEndpointConstant::MethodPlanReview || Method == ShuttlegentMcpEndpointConstant::MethodPlanReviewClosed)
+	{
+		FShuttlegentPlanReview Review;
+		Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, Review.SessionId);
+		Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldReviewId, Review.ReviewId);
+		Params->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldPlan, Review.Plan);
+		if (Review.SessionId.IsEmpty() || Review.ReviewId.IsEmpty()) return;
+
+		if (Method == ShuttlegentMcpEndpointConstant::MethodPlanReviewClosed)
+		{
+			if (OnPlanReviewClosed) OnPlanReviewClosed(Review.SessionId, Review.ReviewId);
+		}
+		else if (OnPlanReview)
+		{
+			OnPlanReview(Review);
+		}
 		return;
 	}
 	if (Method != ShuttlegentMcpEndpointConstant::MethodContextBreakdown || !OnContextBreakdown) return;

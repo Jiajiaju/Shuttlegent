@@ -14,10 +14,13 @@
 #include "Endpoint/FShuttlegentExternalMcp.h"
 #include "Endpoint/FShuttlegentExternalMcpState.h"
 #include "Endpoint/FShuttlegentMcpEndpoint.h"
+#include "Endpoint/FShuttlegentPlanReview.h"
+#include "Endpoint/FShuttlegentSessionEvent.h"
 #include "Endpoint/FShuttlegentToolRegistry.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentCoreModule.h"
+#include "ShuttlegentLog.h"
 #include "ShuttlegentMcpServerConstants.h"
 #include "QuestionGate/FShuttlegentQuestionGate.h"
 #include "WriteGate/FShuttlegentWriteGate.h"
@@ -55,6 +58,19 @@ void FShuttlegentMcpServerModule::StartupModule()
 	Endpoint->OnRuntimeControl = [this](const FString& Url)
 	{
 		RuntimeControlUrl = Url;
+	};
+	Endpoint->OnSessionEvent = [this](const FShuttlegentSessionEvent& Event)
+	{
+		UE_LOG(LogShuttlegent, Verbose, TEXT("Shuttlegent session event %s in %s"), *Event.Type, *Event.SessionId);
+		SessionEventEvent.Broadcast(Event);
+	};
+	Endpoint->OnPlanReview = [this](const FShuttlegentPlanReview& Review)
+	{
+		HandlePlanReview(Review);
+	};
+	Endpoint->OnPlanReviewClosed = [this](const FString& SessionId, const FString& ReviewId)
+	{
+		PlanReviewClosedEvent.Broadcast(SessionId, ReviewId);
 	};
 
 	const TSharedPtr<FShuttlegentAgentService> Service = FShuttlegentCoreModule::Get().GetAgentService();
@@ -97,6 +113,9 @@ void FShuttlegentMcpServerModule::ShutdownModule()
 	{
 		Endpoint->OnContextBreakdown = nullptr;
 		Endpoint->OnRuntimeControl = nullptr;
+		Endpoint->OnSessionEvent = nullptr;
+		Endpoint->OnPlanReview = nullptr;
+		Endpoint->OnPlanReviewClosed = nullptr;
 		Endpoint->Stop();
 	}
 	Endpoint.Reset();
@@ -133,21 +152,16 @@ TArray<FShuttlegentExternalMcpState> FShuttlegentMcpServerModule::GetExternalSer
 	return FShuttlegentExternalMcp::DescribeServers();
 }
 
-void FShuttlegentMcpServerModule::ForkSession(const FString& SessionId, int32 UserMessage, bool bThroughTurn, TFunction<void(const FString&, const FString&)> OnDone) const
+void FShuttlegentMcpServerModule::CallRuntimeControl(const TCHAR* Method, const TSharedRef<FJsonObject>& Params, float TimeoutSeconds, TFunction<void(const TSharedPtr<FJsonObject>&, const FString&)> OnDone) const
 {
 	if (RuntimeControlUrl.IsEmpty() || !Endpoint.IsValid())
 	{
-		OnDone(FString(), TEXT("The runtime's session control plugin is not available."));
+		OnDone(nullptr, TEXT("The runtime's session control plugin is not available."));
 		return;
 	}
 
-	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
-	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId);
-	Params->SetNumberField(ShuttlegentMcpEndpointConstant::FieldUserMessage, UserMessage);
-	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldCut, bThroughTurn ? ShuttlegentMcpEndpointConstant::CutAfter : ShuttlegentMcpEndpointConstant::CutBefore);
-
 	const TSharedRef<FJsonObject> Message = MakeShared<FJsonObject>();
-	Message->SetStringField(ShuttlegentMcpEndpointConstant::FieldMethod, ShuttlegentMcpEndpointConstant::MethodFork);
+	Message->SetStringField(ShuttlegentMcpEndpointConstant::FieldMethod, Method);
 	Message->SetObjectField(ShuttlegentMcpEndpointConstant::FieldParams, Params);
 
 	FString Body;
@@ -160,12 +174,12 @@ void FShuttlegentMcpServerModule::ForkSession(const FString& SessionId, int32 Us
 	Request->SetHeader(ShuttlegentMcpEndpointConstant::HeaderContentType, ShuttlegentMcpEndpointConstant::ContentTypeJson);
 	Request->SetHeader(ShuttlegentMcpEndpointConstant::HeaderAuthorization, FString(ShuttlegentMcpEndpointConstant::BearerPrefix) + Endpoint->GetToken());
 	Request->SetContentAsString(Body);
-	Request->SetTimeout(ShuttlegentMcpEndpointConstant::ForkTimeoutSeconds);
+	Request->SetTimeout(TimeoutSeconds);
 	Request->OnProcessRequestComplete().BindLambda([OnDone](FHttpRequestPtr, FHttpResponsePtr Response, bool bConnected)
 	{
 		if (!bConnected || !Response.IsValid())
 		{
-			OnDone(FString(), TEXT("The runtime's session control plugin did not answer."));
+			OnDone(nullptr, TEXT("The runtime's session control plugin did not answer."));
 			return;
 		}
 
@@ -173,23 +187,120 @@ void FShuttlegentMcpServerModule::ForkSession(const FString& SessionId, int32 Us
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 		if (!FJsonSerializer::Deserialize(Reader, Answer) || !Answer.IsValid())
 		{
-			OnDone(FString(), FString::Printf(TEXT("Unreadable answer from the session control plugin (HTTP %d)."), Response->GetResponseCode()));
+			OnDone(nullptr, FString::Printf(TEXT("Unreadable answer from the session control plugin (HTTP %d)."), Response->GetResponseCode()));
 			return;
 		}
 
-		FString NewSessionId;
 		const TSharedPtr<FJsonObject>* Result = nullptr;
-		if (Answer->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldResult, Result) && (*Result)->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, NewSessionId) && !NewSessionId.IsEmpty())
+		if (Answer->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldResult, Result))
 		{
-			OnDone(NewSessionId, FString());
+			OnDone(*Result, FString());
 			return;
 		}
 
 		FString Error;
 		Answer->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldError, Error);
-		OnDone(FString(), Error.IsEmpty() ? FString::Printf(TEXT("The fork failed (HTTP %d)."), Response->GetResponseCode()) : Error);
+		OnDone(nullptr, Error.IsEmpty() ? FString::Printf(TEXT("The session control request failed (HTTP %d)."), Response->GetResponseCode()) : Error);
 	});
 	Request->ProcessRequest();
+}
+
+void FShuttlegentMcpServerModule::ForkSession(const FString& SessionId, int32 UserMessage, bool bThroughTurn, TFunction<void(const FString&, const FString&)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId);
+	Params->SetNumberField(ShuttlegentMcpEndpointConstant::FieldUserMessage, UserMessage);
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldCut, bThroughTurn ? ShuttlegentMcpEndpointConstant::CutAfter : ShuttlegentMcpEndpointConstant::CutBefore);
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodFork, Params, ShuttlegentMcpEndpointConstant::ForkTimeoutSeconds, [OnDone](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		FString NewSessionId;
+		if (Result.IsValid() && Result->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, NewSessionId) && !NewSessionId.IsEmpty())
+		{
+			OnDone(NewSessionId, FString());
+			return;
+		}
+
+		OnDone(FString(), Error.IsEmpty() ? FString(ShuttlegentMcpEndpointConstant::ForkNoSession) : Error);
+	});
+}
+
+void FShuttlegentMcpServerModule::RunCommand(const FString& SessionId, const FString& Line, TFunction<void(bool, const FString&)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId);
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldLine, Line);
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodCommand, Params, ShuttlegentMcpEndpointConstant::CommandTimeoutSeconds, [OnDone, Line](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		if (!Result.IsValid())
+		{
+			UE_LOG(LogShuttlegent, Warning, TEXT("Shuttlegent runtime command %s failed: %s"), *Line, *Error);
+			OnDone(false, Error);
+			return;
+		}
+
+		FString Kind;
+		FString Text;
+		Result->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldKind, Kind);
+		Result->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldText, Text);
+
+		const bool bSucceeded = Kind == ShuttlegentMcpEndpointConstant::CommandKindSuccess;
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent runtime command %s: %s %s"), *Line, *Kind, *Text);
+		OnDone(bSucceeded, Text);
+	});
+}
+
+void FShuttlegentMcpServerModule::SetPlanMode(const FString& SessionId, TOptional<bool> bActive, TFunction<void(bool, const FString&)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldSessionId, SessionId);
+	if (bActive.IsSet()) Params->SetBoolField(ShuttlegentMcpEndpointConstant::FieldActive, bActive.GetValue());
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodPlanMode, Params, ShuttlegentMcpEndpointConstant::ControlTimeoutSeconds, [OnDone, SessionId](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		if (!Result.IsValid())
+		{
+			UE_LOG(LogShuttlegent, Warning, TEXT("Shuttlegent plan mode request for %s failed: %s"), *SessionId, *Error);
+			OnDone(false, Error);
+			return;
+		}
+
+		FString Outcome;
+		bool bActiveNow = false;
+		const TSharedPtr<FJsonObject>* State = nullptr;
+		Result->TryGetStringField(ShuttlegentMcpEndpointConstant::FieldOutcome, Outcome);
+		if (Result->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldState, State)) (*State)->TryGetBoolField(ShuttlegentMcpEndpointConstant::FieldActive, bActiveNow);
+
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent plan mode for %s: %s, active %s"), *SessionId, *Outcome, bActiveNow ? TEXT("yes") : TEXT("no"));
+		OnDone(bActiveNow, FString());
+	});
+}
+
+void FShuttlegentMcpServerModule::AnswerPlanReview(const FString& ReviewId, bool bApprove, const FString& Feedback, TFunction<void(const FString&)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldReviewId, ReviewId);
+	Params->SetBoolField(ShuttlegentMcpEndpointConstant::FieldApprove, bApprove);
+	if (!Feedback.IsEmpty()) Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldFeedback, Feedback);
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodAnswerPlanReview, Params, ShuttlegentMcpEndpointConstant::ControlTimeoutSeconds, [OnDone, ReviewId, bApprove](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent plan review %s %s: %s"), *ReviewId, bApprove ? TEXT("approved") : TEXT("sent back"), Result.IsValid() ? TEXT("ok") : *Error);
+		OnDone(Result.IsValid() ? FString() : Error);
+	});
+}
+
+void FShuttlegentMcpServerModule::HandlePlanReview(const FShuttlegentPlanReview& Review)
+{
+	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent plan review %s requested in session %s"), *Review.ReviewId, *Review.SessionId);
+	if (PlanReviewEvent.IsBound())
+	{
+		PlanReviewEvent.Broadcast(Review);
+		return;
+	}
+
+	AnswerPlanReview(Review.ReviewId, false, ShuttlegentMcpEndpointConstant::PlanReviewUnavailable, [](const FString&) {});
 }
 
 FShuttlegentMcpServerModule& FShuttlegentMcpServerModule::Get()

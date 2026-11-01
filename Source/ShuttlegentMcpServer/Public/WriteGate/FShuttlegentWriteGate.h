@@ -25,6 +25,12 @@ public:
 	FOnShuttlegentWriteClosed OnClosed;
 	FOnShuttlegentWriteFinished OnFinished;
 
+	/**
+	 * 返回 true 时新的写入请求不征询用户，直接以 Blocked 拒绝：计划模式下 Harness 不限制工具，只读由此保证。
+	 * 由对话模型设置；为空时不拦截。
+	 */
+	TFunction<bool()> IsWriteBlocked;
+
 private:
 	/** 按到达顺序排列的等待中请求，及工具的回调。 */
 	TArray<FShuttlegentWriteRequest> Pending;

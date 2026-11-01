@@ -60,6 +60,10 @@ namespace FShuttlegentToolRunnerPrivate
 			{
 				return TEXT("The user did not confirm this change in time. Nothing was written. Ask the user before trying again.");
 			}
+		case EShuttlegentWriteDecision::Blocked:
+			{
+				return TEXT("Plan mode is on, so the editor refuses every write. Nothing was written. Do not retry or look for another way to write: finish the plan and present it with exit_plan_mode; the change runs only after the user approves it.");
+			}
 		case EShuttlegentWriteDecision::Expired:
 		default:
 			{

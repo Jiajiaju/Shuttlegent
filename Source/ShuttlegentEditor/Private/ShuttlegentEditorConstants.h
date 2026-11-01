@@ -379,6 +379,30 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* KindNotice = TEXT("notice");
 	inline const TCHAR* KindWriteResult = TEXT("writeResult");
 	inline const TCHAR* KindWriteUnknown = TEXT("writeUnknown");
+	inline const TCHAR* KindCompaction = TEXT("compaction");
+
+	// 压缩条目：手动或自动、被压缩掉的 token 数（未知时为 0）、状态（running、done、failed）
+	inline const TCHAR* Manual = TEXT("manual");
+	inline const TCHAR* ShadowedTokens = TEXT("shadowedTokens");
+	inline const TCHAR* CompactionStatus = TEXT("compactionStatus");
+
+	// 计划条目：审批状态（也是条目的 Status）与退回意见
+	inline const TCHAR* KindPlan = TEXT("plan");
+	inline const TCHAR* PlanStatus = TEXT("planStatus");
+	inline const TCHAR* PlanFeedback = TEXT("feedback");
+	inline const TCHAR* PlanPending = TEXT("pending");
+	inline const TCHAR* PlanApproved = TEXT("approved");
+	inline const TCHAR* PlanRevised = TEXT("revised");
+	inline const TCHAR* PlanCancelled = TEXT("cancelled");
+
+	// 计划模式：是否开启、能否切换及原因；等待审批的计划（reviewId、plan）
+	inline const TCHAR* PlanMode = TEXT("planMode");
+	inline const TCHAR* CanSetPlanMode = TEXT("canSetPlanMode");
+	inline const TCHAR* PlanModeReason = TEXT("planModeReason");
+	inline const TCHAR* PendingPlanReview = TEXT("pendingPlanReview");
+	inline const TCHAR* ReviewId = TEXT("reviewId");
+	inline const TCHAR* Plan = TEXT("plan");
+	inline const TCHAR* StatusAwaitingPlanReview = TEXT("awaitingPlanReview");
 
 	// 状态取值（EShuttlegentChatStatus）
 	inline const TCHAR* StatusNotConnected = TEXT("notConnected");
@@ -422,6 +446,14 @@ namespace ShuttlegentEditorWebField
 	// 当前对话能否回到某条消息或从它分支，以及不能时的原因
 	inline const TCHAR* CanEditHistory = TEXT("canEditHistory");
 	inline const TCHAR* EditHistoryReason = TEXT("editHistoryReason");
+
+	// Agent 的待办清单（每项 content、status），以及手动压缩：是否进行中、能否开始及不能的原因
+	inline const TCHAR* Todos = TEXT("todos");
+	inline const TCHAR* TodoContent = TEXT("content");
+	inline const TCHAR* TodoStatus = TEXT("status");
+	inline const TCHAR* Compacting = TEXT("compacting");
+	inline const TCHAR* CanCompact = TEXT("canCompact");
+	inline const TCHAR* CompactReason = TEXT("compactReason");
 	inline const TCHAR* EventTurnStopped = TEXT("turnStopped");
 
 	// 没有计时推理的助手条目所报告的思考时长

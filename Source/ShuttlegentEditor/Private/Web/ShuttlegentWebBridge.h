@@ -17,7 +17,7 @@ class UShuttlegentWebBridge : public UObject
 public:
 	TFunction<void()> OnReady;
 
-	TFunction<void(const FString&, const FString&)> OnSubmit;
+	TFunction<void(const FString&, const FString&, bool)> OnSubmit;
 
 	TFunction<void()> OnCancel;
 
@@ -79,14 +79,20 @@ public:
 
 	TFunction<void(const FString&, const FString&, bool)> OnRevealObject;
 
+	TFunction<void()> OnCompactContext;
+
+	TFunction<void(bool)> OnSetPlanMode;
+
+	TFunction<void(bool, const FString&)> OnAnswerPlanReview;
+
 public:
 	/** 页面已完成初始化并请求完整状态；每次文档加载调用一次。 */
 	UFUNCTION()
 	void Ready();
 
-	/** 将草稿连同其引用标签（JSON 数组）作为提示发送；结果通过 onSubmitResult 返回。 */
+	/** 将草稿连同其引用标签（JSON 数组）作为提示发送，bEnterPlanMode 时先进入计划模式（/plan <消息>）；结果通过 onSubmitResult 返回。 */
 	UFUNCTION()
-	void Submit(const FString& Text, const FString& ReferencesJson);
+	void Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode);
 
 	/** 停止正在运行的回合。 */
 	UFUNCTION()
@@ -205,4 +211,16 @@ public:
 	/** 回答中的对象链接：Kind 为 "asset" 或 "actor"；单击定位，双击（bOpen）打开资产编辑器或让视口移到 Actor。 */
 	UFUNCTION()
 	void RevealObject(const FString& Kind, const FString& Path, bool bOpen);
+
+	/** 上下文卡片上的“压缩”：手动压缩当前对话的上下文。 */
+	UFUNCTION()
+	void CompactContext();
+
+	/** 输入框旁的“计划模式”开关。 */
+	UFUNCTION()
+	void SetPlanMode(bool bActive);
+
+	/** 计划审批卡片：批准并执行，或附意见退回继续规划。 */
+	UFUNCTION()
+	void AnswerPlanReview(bool bApprove, const FString& Feedback);
 };

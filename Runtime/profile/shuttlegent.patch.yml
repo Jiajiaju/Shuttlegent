@@ -7,6 +7,28 @@
 - id: tool-pwsh
   disabled: true
 
+# Background job tool: only useful with the shell tool, so the generated patch turns it back on with the Shell switch.
+- id: tool-jobs
+  disabled: true
+
+# Changing the working directory would take file tools out of the project.
+- id: tool-working-directory
+  disabled: true
+
+# Subagent tools: a child session does not inherit the editor MCP endpoint, which ACP declares per session, so a
+# delegated editor task can only fail. The subagents service stays for the rows that inject it.
+- id: tool-subagent
+  disabled: true
+
+- id: tool-subagent-fork
+  disabled: true
+
+- id: tool-subagent-control
+  disabled: true
+
+- id: tool-subagent-list-agents
+  disabled: true
+
 # These run model-generated code inside the dsh process.
 - id: tool-workflow
   disabled: true
@@ -36,6 +58,22 @@
   config:
     includeDefaultRoots: false
     customSkillDirs: []
+
+# Plan mode guidance for the editor, replacing the base row's repository wording. The base text names
+# ask_user_question, which the acp profile does not load; questions go through the editor's ask_user tool. The
+# editor also refuses every editor write while plan mode is on, so the model learns it cannot act before approval.
+- id: plan-mode
+  config:
+    section: |
+      You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or turns plan mode off. A request phrased as an instruction ("make the lights brighter") means plan how to do it, not do it. The user agreeing in conversation, including answering a question you asked, approves nothing and does not end plan mode; fold the answer into the plan and submit it through exit_plan_mode.
+
+      Look first. Use the editor's read tools (list and inspect actors, assets, properties, settings, logs) to ground the plan in the open project. Do not change anything: the editor refuses every write while plan mode is on, so do not call write tools, save, or try workarounds. Do not use todo_write for the planning itself; it tracks the work after the plan is approved.
+
+      Find out what you can by looking. Use the ask_user tool only for choices that belong to the user or ambiguity that looking cannot settle, such as which of several matching objects or which value to use.
+
+      Make the plan complete enough to carry out without further decisions: what will change, on which objects (with their paths), to which values, in which order, how to check the result, and anything that cannot be undone (saves, data table rows). Keep it short enough for a designer or artist to review.
+
+      When ready, call exit_plan_mode with the plan in Markdown, starting with a # title, as the only and final tool call of that response. The editor shows it to the user for approval; the work starts only after approval. Do not paste the plan as a plain reply or ask "should I proceed?". If the user sends it back, revise it with their feedback and present it again. If the review fails, stay in plan mode and tell the user.
 
 # Persona: an assistant inside the Unreal Editor, replacing the acp template's
 # "coding agent" (packages/bundle/acp-app/cordis.patch.yml). Project prompts

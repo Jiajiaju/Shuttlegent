@@ -20,6 +20,9 @@ enum class EShuttlegentChatStatus : uint8
 	// 回合正在等待用户答复运行时的权限请求
 	AwaitingPermission,
 
+	// 计划模式下 Agent 交出了计划，等待用户批准或退回
+	AwaitingPlanReview,
+
 	// 编辑器写入正在等待用户确认
 	AwaitingWriteConfirmation,
 

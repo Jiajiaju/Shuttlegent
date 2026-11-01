@@ -15,5 +15,8 @@ enum class EShuttlegentWriteDecision : uint8
 	Expired,
 
 	// 确认时限内无人作答；该时限低于运行时的工具调用超时；未写入任何内容
-	TimedOut
+	TimedOut,
+
+	// 计划模式下的写入，不征询用户即拒绝；未写入任何内容
+	Blocked
 };

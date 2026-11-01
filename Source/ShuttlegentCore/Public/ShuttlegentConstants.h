@@ -108,6 +108,9 @@ namespace ShuttlegentProviderConstant
 	inline const TCHAR* RowAcp = TEXT("acp");
 	inline const TCHAR* RowSkillFilesystem = TEXT("skill-filesystem");
 	inline const TCHAR* RowToolPwsh = TEXT("tool-pwsh");
+
+	// 后台作业工具，随 Shell 开关一同开关
+	inline const TCHAR* RowToolJobs = TEXT("tool-jobs");
 	inline const TCHAR* FieldId = TEXT("id");
 	inline const TCHAR* FieldConfig = TEXT("config");
 	inline const TCHAR* FieldDisabled = TEXT("disabled");
@@ -129,6 +132,9 @@ namespace ShuttlegentProviderConstant
 
 	// 插入 session control 插件的行，按绝对路径加载
 	inline const TCHAR* RowSessionControl = TEXT("shuttlegent-session-control");
+
+	// 插入 session tap 插件的行，按绝对路径加载
+	inline const TCHAR* RowSessionTap = TEXT("shuttlegent-session-tap");
 	inline const TCHAR* FieldInsert = TEXT("insert");
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
@@ -152,6 +158,9 @@ namespace ShuttlegentPath
 
 	// 供编辑器分叉会话（回到这里、分支）的运行时插件，相对插件目录
 	inline const TCHAR* SessionControlPlugin = TEXT("Runtime/plugins/shuttlegent-session-control.mjs");
+
+	// 把 ACP 不转发的会话事件（待办、计划模式、压缩、目标）推给编辑器端点的运行时插件，相对插件目录
+	inline const TCHAR* SessionTapPlugin = TEXT("Runtime/plugins/shuttlegent-session-tap.mjs");
 
 	// DSH_HOME，相对 %LOCALAPPDATA%；同时是运行时的启动目录，必须在系统盘
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");

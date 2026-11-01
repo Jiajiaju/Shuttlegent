@@ -127,6 +127,45 @@ namespace ShuttlegentMcpEndpointConstant
 
 	// fork 请求的超时，单位秒
 	inline constexpr float ForkTimeoutSeconds = 30.0f;
+
+	// fork 答复里没有新会话 id 时给出的原因
+	inline const TCHAR* ForkNoSession = TEXT("The fork returned no session.");
+
+	// 来自 session tap 运行时插件的通知：一个 ACP 不转发的会话事件（字段 sessionId、type、data）
+	inline const TCHAR* MethodSessionEvent = TEXT("shuttlegent/sessionEvent");
+	inline const TCHAR* FieldData = TEXT("data");
+
+	// 来自 session control 插件的通知：计划模式下 Agent 交出了待审批的计划（字段 sessionId、reviewId、plan），以及回合取消后审批不再等待
+	inline const TCHAR* MethodPlanReview = TEXT("shuttlegent/planReview");
+	inline const TCHAR* MethodPlanReviewClosed = TEXT("shuttlegent/planReviewClosed");
+	inline const TCHAR* FieldReviewId = TEXT("reviewId");
+	inline const TCHAR* FieldPlan = TEXT("plan");
+
+	// session control 插件的 command 请求：执行一条斜杠命令（字段 line），答复 kind（success 或 error）与 text
+	inline const TCHAR* MethodCommand = TEXT("command");
+	inline const TCHAR* FieldLine = TEXT("line");
+	inline const TCHAR* FieldKind = TEXT("kind");
+	inline const TCHAR* CommandKindSuccess = TEXT("success");
+
+	// command 请求的超时，单位秒；/compact 要调用模型生成摘要，耗时可达数分钟
+	inline constexpr float CommandTimeoutSeconds = 600.0f;
+
+	// session control 插件的 planMode 请求：进入或退出计划模式（字段 active），答复 outcome
+	inline const TCHAR* MethodPlanMode = TEXT("planMode");
+	inline const TCHAR* FieldActive = TEXT("active");
+	inline const TCHAR* FieldOutcome = TEXT("outcome");
+	inline const TCHAR* FieldState = TEXT("state");
+
+	// session control 插件的 answerPlanReview 请求：批准（approve）或继续规划并附意见（feedback）
+	inline const TCHAR* MethodAnswerPlanReview = TEXT("answerPlanReview");
+	inline const TCHAR* FieldApprove = TEXT("approve");
+	inline const TCHAR* FieldFeedback = TEXT("feedback");
+
+	// 没有界面审批计划时交回的意见，让回合不必无限等待
+	inline const TCHAR* PlanReviewUnavailable = TEXT("Plan review is not available in this editor yet; do not use plan mode. Continue without presenting a plan.");
+
+	// planMode 与 answerPlanReview 请求的超时，单位秒
+	inline constexpr float ControlTimeoutSeconds = 10.0f;
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");
 	inline const TCHAR* FieldSystemTokens = TEXT("systemTokens");
 	inline const TCHAR* FieldToolsTokens = TEXT("toolsTokens");

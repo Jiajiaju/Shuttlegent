@@ -20,6 +20,12 @@ scenario keys:
   set_config: [{configId, value}]  optional session/set_config_option calls before prompting
   parallel_prompts: [text]         optional; one new session per text, all prompts sent at once on the same
                                    connection, then every answer collected (logs parallel_done per session)
+  fork: {mcp_log, token, user_message, cut, prompts}
+                                   optional; cut the session through the session control plugin, resume the copy
+  control: {mcp_log, token, before: [{method, params}], after: [{method, params}], plan_review: approve|reject}
+                                   optional; session control calls made after the session opens (before) and after
+                                   the prompts (after), "$session" in params standing for the session id; plan_review
+                                   answers every plan the model presents for review (logs control / plan_review)
   timeout: seconds per request
 """
 import base64
@@ -44,6 +50,16 @@ def log(kind, payload):
         LOG.write(json.dumps({"t": round(time.time() - T0, 3), "kind": kind, "data": payload}, ensure_ascii=False) + "\n")
         LOG.flush()
 
+
+def mock_log_lines(mcp_log):
+    if not mcp_log or not os.path.exists(mcp_log):
+        return 0
+    with open(mcp_log, encoding="utf-8") as f:
+        return sum(1 for _ in f)
+
+
+# The mock log is shared by every scenario of a run: only lines written after this runtime starts are this scenario's
+MOCK_LOG_START = mock_log_lines((SCENARIO.get("control") or SCENARIO.get("fork") or {}).get("mcp_log"))
 
 env = {}
 for name in SCENARIO.get("inherit_env", []):
@@ -183,6 +199,65 @@ def run_parallel(mcp):
     return sessions
 
 
+def control_url(mcp_log):
+    """The session control plugin of this scenario's runtime announces its port to the editor endpoint (here the mock, which logs it)."""
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        if os.path.exists(mcp_log):
+            with open(mcp_log, encoding="utf-8") as f:
+                for index, line in enumerate(f):
+                    body = json.loads(line).get("body")
+                    if index >= MOCK_LOG_START and isinstance(body, dict) and body.get("method") == "shuttlegent/runtimeControl":
+                        return body["params"]["url"]
+        time.sleep(0.2)
+    return None
+
+
+def control_call(url, token, method, params, timeout=300):
+    payload = json.dumps({"method": method, "params": params}).encode("utf-8")
+    req = urllib.request.Request(url, data=payload, method="POST", headers={"Content-Type": "application/json", "Authorization": "Bearer " + token})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        return json.loads(error.read().decode("utf-8") or "{}")
+
+
+def with_session(value, session_id):
+    if value == "$session":
+        return session_id
+    if isinstance(value, dict):
+        return {k: with_session(v, session_id) for k, v in value.items()}
+    return value
+
+
+def run_controls(spec, url, calls, session_id):
+    for call in calls:
+        answer = control_call(url, spec["token"], call["method"], with_session(call.get("params", {}), session_id))
+        log("control", {"method": call["method"], **answer})
+
+
+def answer_plan_reviews(spec, url, session_id, stop):
+    """Answers each shuttlegent/planReview notification of this session as the editor's review card would."""
+    answered = set()
+    while not stop.is_set():
+        if os.path.exists(spec["mcp_log"]):
+            with open(spec["mcp_log"], encoding="utf-8") as f:
+                for line in f:
+                    body = json.loads(line).get("body")
+                    if not isinstance(body, dict) or body.get("method") != "shuttlegent/planReview":
+                        continue
+                    params = body.get("params", {})
+                    review = params.get("reviewId")
+                    if params.get("sessionId") != session_id or review in answered:
+                        continue
+                    answered.add(review)
+                    approve = spec["plan_review"] == "approve"
+                    answer = control_call(url, spec["token"], "answerPlanReview", {"reviewId": review, "approve": approve, "feedback": None if approve else "Split it into smaller steps."})
+                    log("plan_review", {"reviewId": review, "plan": params.get("plan", "")[:200], **answer})
+        stop.wait(0.3)
+
+
 try:
     init = request("initialize", {
         "protocolVersion": 1,
@@ -213,6 +288,16 @@ try:
     for item in SCENARIO.get("set_config", []):
         request("session/set_config_option", {"sessionId": session_id, "configId": item["configId"], "value": item["value"]})
 
+    control = SCENARIO.get("control")
+    control_at = control_url(control["mcp_log"]) if control else None
+    review_stop = threading.Event()
+    if control:
+        log("control_url", {"url": control_at})
+    if control_at:
+        run_controls(control, control_at, control.get("before", []), session_id)
+        if control.get("plan_review"):
+            threading.Thread(target=answer_plan_reviews, args=(control, control_at, session_id, review_stop), daemon=True).start()
+
     for index, text in enumerate(SCENARIO.get("prompts", [])):
         if not isinstance(text, str):
             log("prompt_image", {"index": index, "image": os.path.basename(text["image"])})
@@ -228,29 +313,16 @@ try:
         result = request("session/prompt", {"sessionId": session_id, "prompt": prompt_blocks(text)}, on_wait=maybe_cancel)
         log("prompt_done", {"index": index, "elapsed": round(time.time() - started, 3), "result": result.get("result"), "error": result.get("error")})
 
+    review_stop.set()
+    if control_at:
+        run_controls(control, control_at, control.get("after", []), session_id)
+
     fork = SCENARIO.get("fork")
     if fork:
-        # The session control plugin announces its port to the editor endpoint (here the mock, which logs it)
-        control = None
-        deadline = time.time() + 15
-        while control is None and time.time() < deadline:
-            if os.path.exists(fork["mcp_log"]):
-                with open(fork["mcp_log"], encoding="utf-8") as f:
-                    for line in f:
-                        body = json.loads(line).get("body")
-                        if isinstance(body, dict) and body.get("method") == "shuttlegent/runtimeControl":
-                            control = body["params"]["url"]
-            if control is None:
-                time.sleep(0.2)
-        log("fork_control", {"url": control})
-        if control:
-            payload = json.dumps({"method": "fork", "params": {"sessionId": session_id, "userMessage": fork["user_message"], "cut": fork["cut"]}}).encode("utf-8")
-            req = urllib.request.Request(control, data=payload, method="POST", headers={"Content-Type": "application/json", "Authorization": "Bearer " + fork["token"]})
-            try:
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    answer = json.loads(resp.read().decode("utf-8"))
-            except urllib.error.HTTPError as error:
-                answer = json.loads(error.read().decode("utf-8") or "{}")
+        fork_at = control_url(fork["mcp_log"])
+        log("fork_control", {"url": fork_at})
+        if fork_at:
+            answer = control_call(fork_at, fork["token"], "fork", {"sessionId": session_id, "userMessage": fork["user_message"], "cut": fork["cut"]}, timeout=30)
             log("fork", answer)
             child = (answer.get("result") or {}).get("sessionId")
             if child:

@@ -82,6 +82,18 @@
   const REFERENCE_TOKEN = /(^|\s)@([^\s@]*)$/;
   const TEMPLATE_TOKEN = /(^|\n)\/([^\s/]*)$/;
 
+  // Built-in commands the editor runs itself instead of sending them to the model; they win over a template of the same name
+  const COMMAND_LINE = /^\/(compact|plan|undo|clear)(?:\s+([\s\S]*))?$/;
+  const COMMANDS = [
+    { name: 'compact', body: '/compact', detail: '把较早的对话总结为摘要，腾出上下文空间' },
+    { name: 'plan', body: '/plan ', detail: '进入计划模式；/plan off 退出，/plan 后接消息则进入并发送' },
+    { name: 'undo', body: '/undo', detail: '回退本轮：撤销最后一条消息之后的修改，原文放回输入框' },
+    { name: 'clear', body: '/clear', detail: '开始新对话，当前对话留在侧栏' }
+  ];
+
+  // How long a command's refusal stays beside the composer, in milliseconds
+  const COMMAND_NOTE_MS = 5000;
+
   const TOOL_COMPLETED = 'completed';
   const TOOL_FAILED = 'failed';
 
@@ -94,6 +106,7 @@
     connected: '已连接',
     querying: '正在查询',
     awaitingPermission: '等待本次授权',
+    awaitingPlanReview: '等待审批计划',
     awaitingWrite: '等待写操作确认',
     writing: '正在修改',
     stopping: '正在停止',
@@ -104,11 +117,14 @@
     startBlocked: '运行时无法启动',
     resumeFailed: '恢复会话失败'
   };
-  const WARNING_STATUSES = new Set(['awaitingPermission', 'awaitingWrite', 'failed', 'lost', 'startBlocked', 'resumeFailed']);
+  const WARNING_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite', 'failed', 'lost', 'startBlocked', 'resumeFailed']);
 
   // Background sessions in the sidebar: running ones, ones waiting for a confirmation (Shuttlegent.md section 14.3.7)
   const RUNNING_STATUSES = new Set(['connecting', 'querying', 'writing', 'stopping', 'resuming']);
-  const CONFIRM_STATUSES = new Set(['awaitingPermission', 'awaitingWrite']);
+  const CONFIRM_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite']);
+
+  // Plan entry review outcomes (feature plan C2), as the badge on the plan in the conversation
+  const PLAN_STATUS_TEXT = { pending: '待审批', approved: '已批准', revised: '已退回', cancelled: '已取消' };
 
   const state = {
     status: 'notConnected',
@@ -144,7 +160,15 @@
     canRetry: false,
     canEditHistory: false,
     editHistoryReason: '',
-    mcp: null
+    mcp: null,
+    todos: [],
+    compacting: false,
+    canCompact: false,
+    compactReason: '',
+    planMode: false,
+    canSetPlanMode: false,
+    planModeReason: '',
+    pendingPlanReview: null
   };
 
   // Page-local view state
@@ -168,6 +192,8 @@
     shownDecisionKey: null,
     // User message the rewind dialog is about
     rewindEntryId: null,
+    // Hides the refusal of a slash command beside the composer
+    commandNoteTimer: 0,
     answeringDecisionKey: null,
     // Elements focus returns to as dialogs close; a dialog can open over another (delete over the archived list)
     dialogOpeners: [],
@@ -184,7 +210,10 @@
     switchingSession: false,
 
     // Countdown of the write confirmation card
-    countdownTimer: 0
+    countdownTimer: 0,
+
+    // The todo list folded or opened by the user; null follows the list (folded once every item is done)
+    todosFolded: null
   };
 
   // Draft input: reference chips, history browsing, the open menu, and a send waiting for the editor's answer
@@ -464,6 +493,26 @@
     return '<article class="message"><div class="result warn"><h3>' + icons.svg('alert', 14) + ' 结果未知 · ' + objects.length + ' 个对象</h3><p>' + esc(entry.action) + '</p><ul class="write-objects">' + rows + '</ul><p class="fine">' + hint + '</p>' + button + '</div></article>';
   }
 
+  /** A plan the agent presented (feature plan C2), kept in the conversation with its review outcome and feedback. */
+  function renderPlan(entry) {
+    const rendered = markdown.render(entry.text || '');
+    codeSources.set(entry.id, rendered.codes);
+    const status = entry.planStatus || 'pending';
+    const feedback = status === 'revised' && entry.feedback ? '<p class="plan-note">退回意见：' + esc(entry.feedback) + '</p>' : '';
+    return '<article class="plan-entry ' + esc(status) + '" data-entry="' + entry.id + '"><header><span>计划</span><span class="plan-badge">' + esc(PLAN_STATUS_TEXT[status] || status) + '</span></header>'
+      + '<div class="markdown">' + rendered.html + '</div>' + feedback + '</article>';
+  }
+
+  /** A divider row in the conversation (feature plan C7): compacting now, how much it took away, or why it failed. */
+  function renderCompaction(entry) {
+    const how = entry.manual ? '手动' : '自动';
+    let text;
+    if (entry.compactionStatus === 'running') text = icons.svg('loader', 13) + '<span>正在' + how + '压缩上下文…</span>';
+    else if (entry.compactionStatus === 'failed') text = '<span>' + how + '压缩失败：' + esc(entry.text) + '</span>';
+    else text = '<span>上下文已' + how + '压缩' + (entry.shadowedTokens > 0 ? ' · 约 ' + entry.shadowedTokens.toLocaleString('en-US') + ' tokens 转为摘要' : '') + '</span>';
+    return '<div class="compaction ' + esc(entry.compactionStatus) + '" title="较早的对话已由模型总结为摘要，摘要之后的内容原样保留">' + text + '</div>';
+  }
+
   function renderNotice(entry) {
     return '<div class="note' + (entry.error ? ' error' : '') + '">' + esc(entry.text) + '</div>';
   }
@@ -485,6 +534,10 @@
         return renderWriteResult(entry);
       case 'writeUnknown':
         return renderWriteUnknown(entry);
+      case 'compaction':
+        return renderCompaction(entry);
+      case 'plan':
+        return renderPlan(entry);
       default:
         return renderNotice(entry);
     }
@@ -599,6 +652,34 @@
   function renderTitle() {
     $('session-title').textContent = state.currentTitle || '新会话';
     $('session-title').title = state.currentTitle || '新会话';
+  }
+
+  // ---------- Todo list (feature plan C1) ----------
+
+  /**
+   * The agent's latest todo list above the composer, as in Claude: a header with progress that folds the list away,
+   * then one row per item. A list whose items are all done folds itself once the turn ends; an empty list hides.
+   */
+  function renderTodos() {
+    const panel = $('todos');
+    const todos = state.todos || [];
+    panel.hidden = todos.length === 0;
+    if (!todos.length) {
+      view.todosFolded = null;
+      return;
+    }
+
+    const done = todos.filter((todo) => todo.status === 'completed').length;
+    const folded = view.todosFolded !== null ? view.todosFolded : done === todos.length && !state.prompting;
+    const current = todos.find((todo) => todo.status === 'in_progress');
+    const summary = current ? esc(current.content) : done === todos.length ? '全部完成' : '';
+    const header = '<button class="todos-head" data-todos-toggle aria-expanded="' + !folded + '"><span class="todos-chevron' + (folded ? '' : ' open') + '">' + icons.svg('chevron', 12) + '</span>'
+      + '<span class="todos-title">任务 ' + done + '/' + todos.length + '</span><span class="todos-summary">' + summary + '</span></button>';
+    const rows = folded ? '' : '<ol class="todos-list">' + todos.map((todo) => {
+      const icon = todo.status === 'completed' ? icons.svg('check', 13) : todo.status === 'in_progress' ? icons.svg('loader', 13) : '<span class="todo-dot"></span>';
+      return '<li class="todo ' + esc(todo.status) + '"><span class="todo-mark">' + icon + '</span><span class="todo-text">' + esc(todo.content) + '</span></li>';
+    }).join('') + '</ol>';
+    panel.innerHTML = header + rows;
   }
 
   function renderQueue() {
@@ -766,6 +847,19 @@
     renderSelect($('model'), 'model');
     renderSelect($('reasoning'), 'reasoning_effort');
     renderUsage();
+    renderPlanToggle();
+  }
+
+  /** Plan mode switch beside the model picker; the composer is outlined while it is on. */
+  function renderPlanToggle() {
+    const toggle = $('plan-toggle');
+    toggle.setAttribute('aria-pressed', String(state.planMode));
+    toggle.classList.toggle('on', state.planMode);
+    toggle.disabled = !state.canSetPlanMode;
+    toggle.title = !state.canSetPlanMode ? state.planModeReason
+      : state.planMode ? '计划模式：Agent 只查看、出方案，你批准后才动手；编辑器写入一律拦截。点击关闭'
+      : '打开计划模式：Agent 先查看并给出方案，你批准后才修改';
+    $('composer').classList.toggle('plan-mode', state.planMode);
   }
 
   function prettyRaw(text) {
@@ -816,7 +910,18 @@
     if (state.pendingWrite) return { key: 'w' + state.pendingWrite.id, kind: 'write', request: state.pendingWrite };
     if (state.pendingPermission) return { key: 'p' + state.pendingPermission.id, kind: 'permission', request: state.pendingPermission };
     if (state.pendingQuestion) return { key: 'q' + state.pendingQuestion.id, kind: 'question', request: state.pendingQuestion };
+    if (state.pendingPlanReview) return { key: 'r' + state.pendingPlanReview.reviewId, kind: 'plan', request: state.pendingPlanReview };
     return null;
+  }
+
+  /** Plan the agent presented in plan mode: the plan itself, optional feedback, send back or approve. It waits without a time limit. */
+  function planCardHtml(request) {
+    const rendered = markdown.render(request.plan || '');
+    return '<header><h3 id="decision-title" tabindex="-1">Agent 交出了计划，请审批</h3><span class="badge">计划模式</span></header>'
+      + '<div class="plan-body markdown">' + rendered.html + '</div>'
+      + '<textarea id="plan-feedback" class="plan-feedback" rows="2" placeholder="退回时的修改意见（可选），如：只改走廊里的灯" aria-label="修改意见"></textarea>'
+      + '<p class="fine">批准后 Agent 退出计划模式并按计划执行，每次编辑器写入仍需确认；退回则继续规划。</p>'
+      + '<div class="actions"><button id="decision-reject">继续规划</button><button id="decision-allow" class="primary">批准并执行</button></div>';
   }
 
   /** The decision card replaces the composer while an editor write or a runtime permission request waits for an answer. */
@@ -827,7 +932,7 @@
     $('composer').hidden = waiting;
     $('composer-meta').hidden = waiting;
     card.hidden = !waiting;
-    if (!waiting || decision.kind === 'permission') stopCountdown();
+    if (!waiting || decision.kind === 'permission' || decision.kind === 'plan') stopCountdown();
     if (!waiting) {
       // Focus that sat on the card goes back to the draft once it is answered
       const hadFocus = card.contains(document.activeElement);
@@ -858,12 +963,13 @@
       }
       $('decision-reject').addEventListener('click', () => answerDecision(false));
     } else {
-      card.innerHTML = decision.kind === 'write' ? writeCardHtml(decision.request) : permissionCardHtml(decision.request);
+      if (decision.kind === 'plan') card.innerHTML = planCardHtml(decision.request);
+      else card.innerHTML = decision.kind === 'write' ? writeCardHtml(decision.request) : permissionCardHtml(decision.request);
       $('decision-reject').addEventListener('click', () => answerDecision(false));
       $('decision-allow').addEventListener('click', () => answerDecision(true));
     }
     view.shownDecisionKey = decision.key;
-    if (decision.kind !== 'permission') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '，超时后 Agent 改用文字提问。' : '，超时自动取消。');
+    if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '，超时后 Agent 改用文字提问。' : '，超时自动取消。');
     if (focusWasOurs && document.hasFocus()) $('decision-title').focus({ preventScroll: true });
   }
 
@@ -895,6 +1001,7 @@
       button.disabled = true;
     }
     if (decision.kind === 'write') call('answerwrite', decision.request.id, allow);
+    else if (decision.kind === 'plan') call('answerplanreview', allow, allow ? '' : (($('plan-feedback') || {}).value || '').trim());
     else if (decision.kind === 'question') call('answerquestion', decision.request.id, '', true);
     else call('answerpermission', decision.request.id, allow);
   }
@@ -929,6 +1036,17 @@
   /** Sends the draft with a frozen copy of its chips; the draft clears only once the editor accepted it. */
   function submitDraft() {
     const text = $('draft').value;
+    if (draftState.submitting) return;
+
+    const command = COMMAND_LINE.exec(text.trim());
+    if (command) {
+      runSlashCommand(command[1], (command[2] || '').trim());
+      return;
+    }
+    sendDraft(text, false);
+  }
+
+  function sendDraft(text, enterPlanMode) {
     if (!text.trim() || state.runtimeLost || draftState.submitting || hasInvalidReference()) return;
 
     // While a turn runs the editor queues the draft instead of sending it; either way it answers through onSubmitResult
@@ -942,7 +1060,84 @@
     closeMenu();
     setDraft('');
     renderReferences();
-    call('submit', text, references);
+    call('submit', text, references, enterPlanMode);
+  }
+
+  // ---------- Slash commands ----------
+
+  /** Why a built-in command cannot run now, or an empty string. */
+  function commandBlocker(name) {
+    if (name === 'compact' && !state.canCompact) return state.compactReason || '现在不能压缩';
+    if (name === 'plan' && !state.canSetPlanMode) return state.planModeReason || '现在不能切换计划模式';
+    if (name === 'undo' && !lastUserEntryId()) return '还没有可回退的消息';
+    if (name === 'undo' && !state.canEditHistory) return state.editHistoryReason || '现在不能回退';
+    return '';
+  }
+
+  function lastUserEntryId() {
+    for (let index = state.order.length - 1; index >= 0; --index) {
+      const entry = state.entries.get(state.order[index]);
+      if (entry && entry.kind === 'user') return entry.id;
+    }
+    return 0;
+  }
+
+  /** Runs /compact, /plan, /undo or /clear in the editor; a refused command keeps the draft and says why beside the composer. */
+  function runSlashCommand(name, args) {
+    const blocker = commandBlocker(name);
+    if (blocker) {
+      showCommandNote(blocker);
+      return;
+    }
+
+    switch (name) {
+      case 'compact':
+        if (args) {
+          showCommandNote('/compact 不带参数');
+          return;
+        }
+        call('compactcontext');
+        break;
+      case 'plan':
+        if (args && args !== 'off') {
+          // The message goes out once the runtime has plan mode on; chips travel with it
+          sendDraft($('draft').value.replace(/^\s*\/plan\s+/, ''), true);
+          return;
+        }
+        if (args === 'off' && !state.planMode) showCommandNote('计划模式未开启');
+        else if (!args && state.planMode) showCommandNote('已在计划模式');
+        else call('setplanmode', !args);
+        break;
+      case 'undo':
+        clearCommandDraft();
+        openRewind(lastUserEntryId(), $('draft'));
+        return;
+      case 'clear':
+        clearCommandDraft();
+        startNewSession();
+        return;
+    }
+    clearCommandDraft();
+  }
+
+  function clearCommandDraft() {
+    draftState.historyIndex = -1;
+    closeMenu();
+    setDraft('');
+    updateSendButton();
+  }
+
+  function showCommandNote(text) {
+    const note = $('command-note');
+    note.textContent = text;
+    note.hidden = false;
+    window.clearTimeout(view.commandNoteTimer);
+    view.commandNoteTimer = window.setTimeout(hideCommandNote, COMMAND_NOTE_MS);
+  }
+
+  function hideCommandNote() {
+    window.clearTimeout(view.commandNoteTimer);
+    $('command-note').hidden = true;
   }
 
   function onSubmitResult(result) {
@@ -1072,7 +1267,7 @@
       if (!section.items.length) continue;
       html += '<div class="menu-label">' + section.label + '</div>';
       for (const item of section.items) {
-        html += '<button role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '" tabindex="-1">' + esc(item.label) + '<small>' + esc(item.detail) + '</small></button>';
+        html += '<button role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '"' + (item.off ? ' class="off"' : '') + ' tabindex="-1">' + esc(item.label) + '<small>' + esc(item.detail) + '</small></button>';
         ++itemIndex;
       }
     }
@@ -1104,12 +1299,16 @@
     menu.tokenStart = before.length - query.length - 1;
     menu.index = 0;
     if (mode === 'template') {
-      // Templates come from the project's template directories with every snapshot
+      // Built-in commands first, greyed with the reason when they cannot run; templates come from the project's template directories with every snapshot
       const wanted = query.toLowerCase();
+      const commands = COMMANDS.filter((item) => item.name.includes(wanted)).map((item) => {
+        const blocker = commandBlocker(item.name);
+        return { label: '/' + item.name, detail: blocker || item.detail, body: item.body, command: true, off: !!blocker };
+      });
       const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body }));
-      menu.sections = [{ label: '模板', items }];
-      menu.items = items;
-      renderMenu(menu.sections, state.templates.length ? '没有匹配的模板' : '暂无可用模板（项目设置 → Shuttlegent → Template Dirs）');
+      menu.sections = [{ label: '命令', items: commands }, { label: '模板', items }];
+      menu.items = commands.concat(items);
+      renderMenu(menu.sections, state.templates.length ? '没有匹配的命令或模板' : '没有匹配的命令；暂无可用模板（项目设置 → Shuttlegent → Template Dirs）');
       return;
     }
 
@@ -1138,10 +1337,16 @@
     renderMenu(menu.sections || [], '');
   }
 
-  /** Inserts the chosen item in place of the token: a template's text, or references as chips; nothing is sent. */
+  /** Inserts the chosen item in place of the token: a template's or command's text, or references as chips; nothing is sent, except that a command typed in full runs. */
   function chooseMenu(index) {
     const item = menu.items[index];
     if (!item) return;
+
+    // A command already typed in full runs instead of being inserted again
+    if (item.command && $('draft').value.trim() === item.body.trim()) {
+      submitDraft();
+      return;
+    }
 
     const draft = $('draft');
     const caret = draft.selectionStart;
@@ -1490,9 +1695,16 @@
     return (share * 100).toFixed(1) + '%';
   }
 
+  /** Manual compaction (runtime /compact): greyed out with the reason while it cannot run. */
+  function compactAction() {
+    const label = state.compacting ? '压缩中…' : '压缩上下文';
+    const title = state.canCompact ? '把较早的对话总结为摘要，腾出上下文空间' : state.compactReason;
+    return '<div class="card-actions"><button class="small" data-compact' + (state.canCompact ? '' : ' disabled') + ' title="' + esc(title) + '">' + label + '</button></div>';
+  }
+
   function renderContextCard() {
     const share = contextShare();
-    if (share === null) return '<div class="context-head"><span>用量未知</span></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>';
+    if (share === null) return '<div class="context-head"><span>用量未知</span></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>' + compactAction();
 
     const free = Math.max(state.contextSize - state.usedTokens, 0);
     const parts = contextParts();
@@ -1510,7 +1722,8 @@
     return '<div class="context-head"><span>已用 ' + Math.round(share * 100) + '%</span><span class="count">' + shortTokens(state.usedTokens) + ' / ' + shortTokens(state.contextSize) + '</span></div>'
       + meter
       + '<ul class="kv-list legend"' + note + '>' + legend + kvRow('剩余', shortTokens(free), { swatch: 'free', extra: percentText(1 - share) }) + '</ul>'
-      + '<ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>';
+      + '<ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>'
+      + compactAction();
   }
 
   /**
@@ -1714,7 +1927,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -1773,6 +1986,7 @@
       renderBanner();
     }
     if ('queue' in message || 'busy' in message || 'runtimeLost' in message) renderQueue();
+    if ('todos' in message || 'prompting' in message) renderTodos();
     if ('sessions' in message || 'status' in message) {
       renderSidebar();
       renderTitle();
@@ -1780,7 +1994,7 @@
       // The menu's session may be gone (deleted, archived) or running now
       closeSessionMenu(false);
     }
-    if ('pendingPermission' in message || 'pendingWrite' in message || 'pendingQuestion' in message) renderDecision();
+    if ('pendingPermission' in message || 'pendingWrite' in message || 'pendingQuestion' in message || 'pendingPlanReview' in message) renderDecision();
     renderComposer();
     refreshHistoryActions();
 
@@ -1793,7 +2007,7 @@
     const inspectorVisible = paneMode('inspector') !== 'hidden';
     if (inspectorVisible) {
       const cards = [];
-      if ('usedTokens' in message || 'contextSize' in message || 'contextBreakdown' in message || 'config' in message) cards.push('context');
+      if ('usedTokens' in message || 'contextSize' in message || 'contextBreakdown' in message || 'config' in message || 'compacting' in message || 'canCompact' in message) cards.push('context');
       if ('mcp' in message) cards.push('mcp');
       if (toolsChanged) cards.push('tools');
       if ('runLog' in message) cards.push('log');
@@ -1868,8 +2082,9 @@
     draft.addEventListener('input', () => {
       growDraft();
 
-      // Typing leaves history browsing; the menu follows the token at the caret once composition ends
+      // Typing leaves history browsing and drops a command's refusal; the menu follows the token at the caret once composition ends
       draftState.historyIndex = -1;
+      hideCommandNote();
       if (!composing) updateMenu();
     });
     draft.addEventListener('compositionstart', () => { composing = true; });
@@ -1930,6 +2145,15 @@
     });
     $('add-reference').addEventListener('click', () => call('togglecontentbrowser'));
 
+    $('todos').addEventListener('click', (event) => {
+      if (!event.target.closest('[data-todos-toggle]')) return;
+      const todos = state.todos || [];
+      const allDone = todos.length > 0 && todos.every((todo) => todo.status === 'completed');
+      const folded = view.todosFolded !== null ? view.todosFolded : allDone && !state.prompting;
+      view.todosFolded = !folded;
+      renderTodos();
+    });
+
     $('queue').addEventListener('click', (event) => {
       if (event.target.closest('#resume-queue')) {
         call('resumequeue');
@@ -1949,6 +2173,21 @@
       if (!state.stopping) call('cancel');
     });
     $('model').addEventListener('change', (event) => call('setconfig', 'model', event.target.value));
+    $('plan-toggle').addEventListener('click', () => {
+      if (state.canSetPlanMode) call('setplanmode', !state.planMode);
+    });
+
+    // Object links inside a plan under review work as in the conversation
+    $('decision').addEventListener('click', (event) => {
+      const link = event.target.closest('[data-obj-path]');
+      if (!link) return;
+      event.preventDefault();
+      revealObject(link, false);
+    });
+    $('decision').addEventListener('dblclick', (event) => {
+      const link = event.target.closest('[data-obj-path]');
+      if (link) revealObject(link, true);
+    });
     $('reasoning').addEventListener('change', (event) => call('setconfig', 'reasoning_effort', event.target.value));
   }
 
@@ -2100,6 +2339,12 @@
     bindResizers();
 
     $('cards').addEventListener('click', (event) => {
+      const compact = event.target.closest('[data-compact]');
+      if (compact) {
+        if (state.canCompact) call('compactcontext');
+        return;
+      }
+
       const head = event.target.closest('[data-card]');
       if (head) {
         toggleCard(head.dataset.card);
@@ -2233,7 +2478,9 @@
           closeOverlay();
           return;
         }
-        if (currentDecision()) {
+        // A plan is only sent back on purpose, with the button: Esc would throw away the review
+        const decision = currentDecision();
+        if (decision && decision.kind !== 'plan') {
           event.preventDefault();
           answerDecision(false);
         }

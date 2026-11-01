@@ -148,7 +148,8 @@ function Invoke-Scenario {
         [string[]]$ExtraPatches = @(),
         [string[]]$ParallelPrompts = @(),
         [hashtable]$ExtraEnv = @{},
-        [hashtable]$Fork = $null
+        [hashtable]$Fork = $null,
+        [hashtable]$Control = $null
     )
 
     if ($Only.Count -gt 0 -and $Only -notcontains $Name) { return }
@@ -180,6 +181,7 @@ function Invoke-Scenario {
     if ($Resume) { $Scenario.resume = $Resume }
     if ($ParallelPrompts.Count -gt 0) { $Scenario.parallel_prompts = $ParallelPrompts }
     if ($Fork) { $Scenario.fork = $Fork }
+    if ($Control) { $Scenario.control = $Control }
     if ($SplitLaunchDir) {
         New-Item -ItemType Directory -Force $DshHome | Out-Null
         $Scenario.process_cwd = $DshHome
@@ -266,6 +268,21 @@ try {
         $ForkPrompts = @('Remember the code word ALPHA for later. Reply with just OK.', 'Remember the code word BRAVO for later. Reply with just OK.')
         $ForkSpec = @{ mcp_log = $MockLog; token = $Token; user_message = 1; cut = 'before'; prompts = @('Without using any tool: list every code word I asked you to remember, separated by spaces, nothing else.') }
         Invoke-Scenario -Name 's15_fork' -HomeName 'fork' -Prompts $ForkPrompts -Key $ApiKey -ExtraPatches @($ControlOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token } -Fork $ForkSpec
+
+        # Session tap and control (H1): enter plan mode over the control port, let the model keep a todo list and
+        # present a plan, approve it as the editor's review card would, then run /compact; the tap must report each
+        # step. compaction-basic keeps a tiny verbatim tail so a short conversation has something to compact.
+        $SessionTap = (Join-Path $PluginDir 'Runtime\plugins\shuttlegent-session-tap.mjs').Replace('\', '/')
+        $SessionOverlay = Join-Path $OutDir 'session-tap.overlay.yml'
+        [IO.File]::WriteAllText($SessionOverlay, "- insert:`n    - id: shuttlegent-session-tap`n      name: '$SessionTap'`n    - id: shuttlegent-session-control`n      name: '$ControlPlugin'`n- id: compaction-basic`n  config:`n    retainTokens: 64`n", $Utf8NoBom)
+        $PlanPrompt = 'Task: rename the actor Cube to Cube2 with the ue_write_probe tool. Do it this way. 1) Call todo_write with exactly three pending items: "Read the level", "Rename Cube", "Report". 2) Call ue_read_probe. 3) Present your plan with exit_plan_mode. 4) Once the plan is approved, call ue_write_probe with actor "Cube" and newName "Cube2", marking each todo item completed with todo_write as you finish it, then report in one sentence.'
+        $SessionControl = @{ mcp_log = $MockLog; token = $Token; plan_review = 'approve'; before = @(@{ method = 'planMode'; params = @{ sessionId = '$session'; active = $true } }); after = @(@{ method = 'command'; params = @{ sessionId = '$session'; line = '/compact' } }) }
+        # Subagent tools are off in the Shuttlegent profile (a child session cannot reach the editor endpoint): asked to
+        # delegate, the model has no subagent tool, starts no child and does the work itself
+        $SubagentPrompt = 'If you have a tool named subagent, use it exactly once to delegate this task: "Call the ue_read_probe tool and report its result in one sentence." If you have no such tool, say NO_SUBAGENT_TOOL and do the task yourself.'
+        Invoke-Scenario -Name 's17_subagent' -HomeName 'subagent' -Prompts @($SubagentPrompt) -Key $ApiKey -ExtraPatches @($SessionOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token }
+
+        Invoke-Scenario -Name 's16_session_tap' -HomeName 'sessiontap' -Prompts @($PlanPrompt) -Key $ApiKey -ExtraPatches @($SessionOverlay) -ExtraEnv @{ SHUTTLEGENT_EDITOR_ENDPOINT = "http://127.0.0.1:$Port/mcp"; SHUTTLEGENT_EDITOR_TOKEN = $Token } -Control $SessionControl
     }
 }
 finally {

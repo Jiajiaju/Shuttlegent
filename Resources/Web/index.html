@@ -39,6 +39,7 @@
     <div class="conversation" id="conversation" tabindex="0" aria-label="对话记录"><div class="message-column" id="messages"></div></div>
     <button class="back-bottom" id="back-bottom" hidden>新内容 · 回到底部 <span data-icon="arrow-down" data-size="14"></span></button>
     <div class="composer-column">
+      <section id="todos" class="todos" aria-label="Agent 的任务清单" hidden></section>
       <div id="queue" class="queue" aria-label="待发送队列" hidden></div>
       <section id="decision" class="decision elevation" aria-labelledby="decision-title" hidden></section>
       <div class="perch" id="perch"></div>
@@ -52,6 +53,8 @@
         <button id="stop" class="stop" hidden></button>
       </section>
       <div class="composer-meta" id="composer-meta">
+        <button id="plan-toggle" class="plan-toggle" aria-pressed="false">计划模式</button>
+        <span id="command-note" class="command-note" role="status" hidden></span>
         <label class="sr-only" for="model">模型</label><select id="model"></select>
         <label class="sr-only" for="reasoning">推理强度</label><select id="reasoning"></select>
         <span class="usage" id="usage" role="img"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle class="usage-track" cx="8" cy="8" r="6"/><circle class="usage-bar" id="usage-bar" cx="8" cy="8" r="6" pathLength="100"/></svg></span>

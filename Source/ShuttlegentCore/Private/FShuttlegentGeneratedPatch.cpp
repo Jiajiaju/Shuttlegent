@@ -111,16 +111,21 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	SkillConfig->SetArrayField(ShuttlegentProviderConstant::FieldCustomSkillDirs, SkillDirs);
 	Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowSkillFilesystem, SkillConfig)));
 
-	// 基础补丁关闭了 PowerShell；用户的 Shell 开关可重新打开
-	const TSharedRef<FJsonObject> Shell = MakeShared<FJsonObject>();
-	Shell->SetStringField(ShuttlegentProviderConstant::FieldId, ShuttlegentProviderConstant::RowToolPwsh);
-	Shell->SetBoolField(ShuttlegentProviderConstant::FieldDisabled, !bShell);
-	Rows.Add(MakeShared<FJsonValueObject>(Shell));
+	// 基础补丁关闭了 PowerShell 与后台作业工具；用户的 Shell 开关同时重新打开二者（后台作业只服务于 Shell）
+	for (const TCHAR* ShellRow : { ShuttlegentProviderConstant::RowToolPwsh, ShuttlegentProviderConstant::RowToolJobs })
+	{
+		const TSharedRef<FJsonObject> Shell = MakeShared<FJsonObject>();
+		Shell->SetStringField(ShuttlegentProviderConstant::FieldId, ShellRow);
+		Shell->SetBoolField(ShuttlegentProviderConstant::FieldDisabled, !bShell);
+		Rows.Add(MakeShared<FJsonValueObject>(Shell));
+	}
 
-	// Shuttlegent 自带的运行时插件：context tap 上报上下文分项，session control 供编辑器分叉会话；运行时按绝对路径加载插件
+	// Shuttlegent 自带的运行时插件：context tap 上报上下文分项，session control 供编辑器分叉会话、执行命令、切换计划模式与审批计划，
+	// session tap 推送 ACP 不转发的会话事件；运行时按绝对路径加载插件
 	const TPair<const TCHAR*, const TCHAR*> RuntimePlugins[] = {
 		{ ShuttlegentProviderConstant::RowContextTap, ShuttlegentPath::ContextTapPlugin },
 		{ ShuttlegentProviderConstant::RowSessionControl, ShuttlegentPath::SessionControlPlugin },
+		{ ShuttlegentProviderConstant::RowSessionTap, ShuttlegentPath::SessionTapPlugin },
 	};
 	TArray<TSharedPtr<FJsonValue>> Plugins;
 	for (const TPair<const TCHAR*, const TCHAR*>& RuntimePlugin : RuntimePlugins)

@@ -59,6 +59,14 @@ namespace FShuttlegentWebProtocolPrivate
 			{
 				return ShuttlegentEditorWebField::KindWriteUnknown;
 			}
+		case EShuttlegentChatEntryKind::Compaction:
+			{
+				return ShuttlegentEditorWebField::KindCompaction;
+			}
+		case EShuttlegentChatEntryKind::Plan:
+			{
+				return ShuttlegentEditorWebField::KindPlan;
+			}
 		case EShuttlegentChatEntryKind::Notice:
 		default:
 			{
@@ -86,6 +94,10 @@ namespace FShuttlegentWebProtocolPrivate
 		case EShuttlegentChatStatus::AwaitingPermission:
 			{
 				return ShuttlegentEditorWebField::StatusAwaitingPermission;
+			}
+		case EShuttlegentChatStatus::AwaitingPlanReview:
+			{
+				return ShuttlegentEditorWebField::StatusAwaitingPlanReview;
 			}
 		case EShuttlegentChatStatus::AwaitingWriteConfirmation:
 			{
@@ -191,6 +203,7 @@ namespace FShuttlegentWebProtocolPrivate
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Result.Len()));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Title));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Status));
+		Hash = HashCombine(Hash, GetTypeHash(Entry.Detail));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.ThoughtEndUtc.GetTicks()));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.bAnswered));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.bAllowed));
@@ -475,6 +488,39 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetBoolField(ShuttlegentEditorWebField::CanEditHistory, Model->CanEditHistory(HistoryReason));
 	Root->SetStringField(ShuttlegentEditorWebField::EditHistoryReason, HistoryReason.ToString());
 	Root->SetBoolField(ShuttlegentEditorWebField::NeedsVerify, Model->NeedsVerify());
+
+	TArray<TSharedPtr<FJsonValue>> Todos;
+	for (const FShuttlegentTodoItem& Todo : Model->GetTodos())
+	{
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(ShuttlegentEditorWebField::TodoContent, Todo.Content);
+		Item->SetStringField(ShuttlegentEditorWebField::TodoStatus, Todo.Status);
+		Todos.Add(MakeShared<FJsonValueObject>(Item));
+	}
+	Root->SetArrayField(ShuttlegentEditorWebField::Todos, Todos);
+
+	FText CompactReason;
+	Root->SetBoolField(ShuttlegentEditorWebField::Compacting, Model->IsCompacting());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanCompact, Model->CanCompact(CompactReason));
+	Root->SetStringField(ShuttlegentEditorWebField::CompactReason, CompactReason.ToString());
+
+	FText PlanModeReason;
+	Root->SetBoolField(ShuttlegentEditorWebField::PlanMode, Model->IsPlanMode());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanSetPlanMode, Model->CanSetPlanMode(PlanModeReason));
+	Root->SetStringField(ShuttlegentEditorWebField::PlanModeReason, PlanModeReason.ToString());
+
+	const FShuttlegentPlanReview& Review = Model->GetPendingPlanReview();
+	if (Review.ReviewId.IsEmpty())
+	{
+		Root->SetField(ShuttlegentEditorWebField::PendingPlanReview, MakeShared<FJsonValueNull>());
+	}
+	else
+	{
+		const TSharedRef<FJsonObject> ReviewObject = MakeShared<FJsonObject>();
+		ReviewObject->SetStringField(ShuttlegentEditorWebField::ReviewId, Review.ReviewId);
+		ReviewObject->SetStringField(ShuttlegentEditorWebField::Plan, Review.Plan);
+		Root->SetObjectField(ShuttlegentEditorWebField::PendingPlanReview, ReviewObject);
+	}
 }
 
 void FShuttlegentWebProtocol::WritePaneWidths(const TSharedRef<FJsonObject>& Root) const
@@ -820,6 +866,21 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		Item->SetStringField(ShuttlegentEditorWebField::Action, Entry.WriteResult.Action);
 		Item->SetArrayField(ShuttlegentEditorWebField::Objects, FShuttlegentWebProtocolPrivate::MakeWriteObjects(Entry.WriteResult.Objects));
 		Item->SetBoolField(ShuttlegentEditorWebField::Answered, Entry.bAnswered);
+	}
+
+	if (Entry.Kind == EShuttlegentChatEntryKind::Compaction)
+	{
+		int64 Shadowed = 0;
+		LexFromString(Shadowed, *Entry.Detail);
+		Item->SetBoolField(ShuttlegentEditorWebField::Manual, Entry.Title == ShuttlegentEditorWebField::Manual);
+		Item->SetNumberField(ShuttlegentEditorWebField::ShadowedTokens, static_cast<double>(Shadowed));
+		Item->SetStringField(ShuttlegentEditorWebField::CompactionStatus, Entry.Status);
+	}
+
+	if (Entry.Kind == EShuttlegentChatEntryKind::Plan)
+	{
+		Item->SetStringField(ShuttlegentEditorWebField::PlanStatus, Entry.Status);
+		Item->SetStringField(ShuttlegentEditorWebField::PlanFeedback, Entry.Detail);
 	}
 
 	if (Entry.Kind == EShuttlegentChatEntryKind::Permission)

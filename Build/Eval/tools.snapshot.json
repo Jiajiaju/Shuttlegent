@@ -1,5 +1,5 @@
 {
-  "source": "generated from C++ sources on 2026-10-30, material tools and tidy_graph added 2026-11-01 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentMaterialTools,FShuttlegentGraphTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
+  "source": "generated from C++ sources on 2026-10-30, material tools, tidy_graph, place_actors and arrange_actors added 2026-11-01 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentMaterialTools,FShuttlegentGraphTools,FShuttlegentLevelBuildTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
   "serverInfo": {
     "name": "shuttlegent-editor",
     "version": "0.1.0"
@@ -642,6 +642,343 @@
         },
         "required": [
           "asset"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "place_actors",
+      "description": "Place many new actors in the open level in one step: copies of a static mesh, Blueprint or actor class, or duplicates of an actor already in the level (keeping its settings). Layouts: grid (rows x columns), line (origin to end, or along a direction), circle (around a center), spline (along a spline actor, optionally to one side), scatter (random within an area, keeping min_distance). Optional random yaw and scale, dropping onto the ground, an Outliner folder and a label. Up to 500 per call; the user confirms one card listing every new actor's transform; it runs as one undoable step. Use this instead of calling spawn_actor many times.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "What to place: asset path (/Game/Props/SM_Rock, a Blueprint), actor class name (PointLight), or the label of an actor in the open level to duplicate."
+          },
+          "label": {
+            "type": "string",
+            "description": "Label for the new actors, numbered _1, _2 ... Defaults to the source name."
+          },
+          "folder": {
+            "type": "string",
+            "description": "Outliner folder for the new actors, e.g. Props/Rocks."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "How to lay the new actors out.",
+            "enum": [
+              "grid",
+              "line",
+              "circle",
+              "spline",
+              "scatter"
+            ]
+          },
+          "origin": {
+            "type": "array",
+            "description": "[x, y, z] cm: grid corner, line start, circle center or scatter center.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "end": {
+            "type": "array",
+            "description": "line: [x, y, z] cm end point; without spacing the first and last actor sit on origin and end.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "direction": {
+            "type": "array",
+            "description": "line without end: [x, y, z] direction from origin. Defaults to [1, 0, 0].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "spacing": {
+            "type": "number",
+            "description": "cm between neighbours: grid along X (and Y unless spacing_y), line, spline."
+          },
+          "spacing_y": {
+            "type": "number",
+            "description": "grid: cm between rows along Y. Defaults to spacing."
+          },
+          "rows": {
+            "type": "integer",
+            "description": "grid: rows along Y."
+          },
+          "columns": {
+            "type": "integer",
+            "description": "grid: columns along X."
+          },
+          "radius": {
+            "type": "number",
+            "description": "circle: radius in cm."
+          },
+          "spline": {
+            "type": "string",
+            "description": "spline: label or path of an actor with a spline component (or the component path)."
+          },
+          "side_offset": {
+            "type": "number",
+            "description": "spline: cm to the right of the spline, negative to the left; call twice for both sides of a road."
+          },
+          "area": {
+            "type": "string",
+            "description": "scatter: label or path of an actor (e.g. a volume) whose bounds are the area."
+          },
+          "extent": {
+            "type": "array",
+            "description": "scatter without area: [x, y] half sizes in cm around origin.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "min_distance": {
+            "type": "number",
+            "description": "scatter: least cm between any two actors. Defaults to 0."
+          },
+          "rotation": {
+            "type": "array",
+            "description": "[pitch, yaw, roll] degrees for every actor. Defaults to [0, 0, 0].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "face_center": {
+            "type": "boolean",
+            "description": "circle: turn each actor's front (+X) to the center."
+          },
+          "follow_path": {
+            "type": "boolean",
+            "description": "line, circle, spline: turn each actor's front (+X) along the path."
+          },
+          "random_yaw": {
+            "type": "number",
+            "description": "Random extra yaw within ± this many degrees."
+          },
+          "random_scale": {
+            "type": "array",
+            "description": "[min, max] random uniform scale factor, e.g. [0.8, 1.2].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "snap_to_ground": {
+            "type": "boolean",
+            "description": "Drop each actor straight down until its bottom rests on what is below. Defaults to false."
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Random seed for scatter and random_*; the same arguments give the same result."
+          },
+          "count": {
+            "type": "integer",
+            "description": "How many: line, circle, spline, scatter. Line and spline may use spacing instead."
+          }
+        },
+        "required": [
+          "source",
+          "pattern"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "arrange_actors",
+      "description": "Move existing actors of the open level in one step. operation: align (same coordinate on one axis: min, max, center or a value), distribute (spread evenly along one axis between the two outermost, keeping their order), snap_to_ground (drop each until its bottom rests on what is below), pattern (move them into a grid, line, circle, spline or scatter layout, in the order given; origin defaults to the first target), randomize (random yaw and scale). The user confirms one card listing each actor's current and planned transform; it runs as one undoable step. Use this instead of setting each actor's location with set_property.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "description": "Actor labels or paths in the open level; for pattern, their order is the layout order.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "operation": {
+            "type": "string",
+            "description": "What to do with the targets.",
+            "enum": [
+              "align",
+              "distribute",
+              "snap_to_ground",
+              "pattern",
+              "randomize"
+            ]
+          },
+          "axis": {
+            "type": "string",
+            "description": "align, distribute: the world axis.",
+            "enum": [
+              "x",
+              "y",
+              "z"
+            ]
+          },
+          "align_to": {
+            "type": "string",
+            "description": "align: line up on the smallest, largest or middle coordinate, or on value. Defaults to center.",
+            "enum": [
+              "min",
+              "max",
+              "center",
+              "value"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "description": "align_to value: the coordinate in cm."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "For operation pattern: the layout to move the targets into, in the order given.",
+            "enum": [
+              "grid",
+              "line",
+              "circle",
+              "spline",
+              "scatter"
+            ]
+          },
+          "origin": {
+            "type": "array",
+            "description": "[x, y, z] cm: grid corner, line start, circle center or scatter center. Defaults to the first target's location.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "end": {
+            "type": "array",
+            "description": "line: [x, y, z] cm end point; without spacing the first and last actor sit on origin and end.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "direction": {
+            "type": "array",
+            "description": "line without end: [x, y, z] direction from origin. Defaults to [1, 0, 0].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "spacing": {
+            "type": "number",
+            "description": "cm between neighbours: grid along X (and Y unless spacing_y), line, spline."
+          },
+          "spacing_y": {
+            "type": "number",
+            "description": "grid: cm between rows along Y. Defaults to spacing."
+          },
+          "rows": {
+            "type": "integer",
+            "description": "Unused by arrange_actors; columns decides the rows."
+          },
+          "columns": {
+            "type": "integer",
+            "description": "grid: columns along X. Defaults to a square-ish grid."
+          },
+          "radius": {
+            "type": "number",
+            "description": "circle: radius in cm."
+          },
+          "spline": {
+            "type": "string",
+            "description": "spline: label or path of an actor with a spline component (or the component path)."
+          },
+          "side_offset": {
+            "type": "number",
+            "description": "spline: cm to the right of the spline, negative to the left; call twice for both sides of a road."
+          },
+          "area": {
+            "type": "string",
+            "description": "scatter: label or path of an actor (e.g. a volume) whose bounds are the area."
+          },
+          "extent": {
+            "type": "array",
+            "description": "scatter without area: [x, y] half sizes in cm around origin.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "min_distance": {
+            "type": "number",
+            "description": "scatter: least cm between any two actors. Defaults to 0."
+          },
+          "rotation": {
+            "type": "array",
+            "description": "[pitch, yaw, roll] degrees for every target; without it targets keep their own rotation unless face_center or follow_path.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "face_center": {
+            "type": "boolean",
+            "description": "circle: turn each actor's front (+X) to the center."
+          },
+          "follow_path": {
+            "type": "boolean",
+            "description": "line, circle, spline: turn each actor's front (+X) along the path."
+          },
+          "random_yaw": {
+            "type": "number",
+            "description": "Random extra yaw within ± this many degrees."
+          },
+          "random_scale": {
+            "type": "array",
+            "description": "[min, max] random uniform scale factor, e.g. [0.8, 1.2].",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "snap_to_ground": {
+            "type": "boolean",
+            "description": "Drop each actor straight down until its bottom rests on what is below. Defaults to false."
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Random seed for scatter and random_*; the same arguments give the same result."
+          }
+        },
+        "required": [
+          "targets",
+          "operation"
         ],
         "additionalProperties": false
       },

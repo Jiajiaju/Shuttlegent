@@ -344,6 +344,83 @@
       "forbid": [
         "save_assets"
       ]
+    },
+    {
+      "id": "t24_grid_lamps",
+      "prompt": "在广场上摆 4 行 6 列路灯（SM_StreetLamp），从 (0, 2000, 0) 开始，间距 5 米",
+      "calls": [
+        "place_actors"
+      ],
+      "args": {
+        "place_actors": [
+          "SM_StreetLamp",
+          "grid",
+          "500"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "spawn_actor",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t25_spline_trees",
+      "prompt": "沿 Road_Spline 这条路两侧每隔 8 米种一棵树（SM_Tree），离路中线 4 米",
+      "calls": [
+        "place_actors"
+      ],
+      "args": {
+        "place_actors": [
+          "Road_Spline",
+          "spline",
+          "SM_Tree",
+          "800"
+        ]
+      },
+      "maxWrites": 2,
+      "forbid": [
+        "spawn_actor",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t26_scatter_rocks",
+      "prompt": "在 Grass_Area 这片草地上随机撒 30 块石头（SM_Rock），要贴地，朝向和大小也随机一点",
+      "calls": [
+        "place_actors"
+      ],
+      "args": {
+        "place_actors": [
+          "scatter",
+          "Grass_Area",
+          "snap_to_ground",
+          "SM_Rock"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "spawn_actor",
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t27_distribute_crates",
+      "prompt": "把 Crate_1 到 Crate_4 这四个箱子沿 X 方向等间距排开，Y 坐标也对齐",
+      "calls": [
+        "arrange_actors"
+      ],
+      "args": {
+        "arrange_actors": [
+          "Crate_1",
+          "Crate_4"
+        ]
+      },
+      "maxWrites": 2,
+      "forbid": [
+        "set_property",
+        "save_assets"
+      ]
     }
   ]
 }

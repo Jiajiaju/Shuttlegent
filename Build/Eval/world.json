@@ -13,6 +13,12 @@
     { "label": "TempCube_2", "class": "StaticMeshActor", "location": [350, -200, 50] },
     { "label": "StaticMeshActor_12", "class": "StaticMeshActor", "location": [900, 600, 0] },
     { "label": "StaticMeshActor_13", "class": "StaticMeshActor", "location": [-900, 600, 0] },
+    { "label": "Road_Spline", "class": "Actor", "location": [-2000, -3000, 0], "spline": { "length": 6000 } },
+    { "label": "Grass_Area", "class": "BlockingVolume", "location": [3000, -3000, 0], "bounds": [1500, 1000, 200] },
+    { "label": "Crate_1", "class": "StaticMeshActor", "location": [1200, 200, 50] },
+    { "label": "Crate_2", "class": "StaticMeshActor", "location": [1450, 260, 50] },
+    { "label": "Crate_3", "class": "StaticMeshActor", "location": [1530, 180, 50] },
+    { "label": "Crate_4", "class": "StaticMeshActor", "location": [2100, 240, 50] },
     { "label": "Wall_01", "class": "StaticMeshActor", "location": [0, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Grey", "override": false }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] },
     { "label": "Wall_02", "class": "StaticMeshActor", "location": [400, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Grey", "override": false }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] },
     { "label": "Wall_03", "class": "StaticMeshActor", "location": [800, 1000, 150], "materials": [{ "slot": "Brick", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": true }, { "slot": "Trim", "material": "/Game/Materials/Walls/MI_Wall_Beige", "override": false }] }
@@ -34,7 +40,11 @@
     { "path": "/Game/Materials/Walls/MI_Wall_Grey", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.3,G=0.3,B=0.3,A=1)" } },
     { "path": "/Game/Materials/Walls/MI_Wall_Beige", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.8,G=0.7,B=0.55,A=1)", "Roughness": "0.8" } },
     { "path": "/Game/Materials/Walls/MI_Wall_Dark", "class": "MaterialInstanceConstant", "parent": "/Game/Materials/Walls/M_Wall", "overrides": { "BaseColor": "(R=0.08,G=0.08,B=0.1,A=1)", "UseMoss": "true" } },
-    { "path": "/Game/Materials/Walls/T_Brick_D", "class": "Texture2D" }
+    { "path": "/Game/Materials/Walls/T_Brick_D", "class": "Texture2D" },
+    { "path": "/Game/Props/SM_StreetLamp", "class": "StaticMesh" },
+    { "path": "/Game/Props/SM_Tree", "class": "StaticMesh" },
+    { "path": "/Game/Props/SM_Rock", "class": "StaticMesh" },
+    { "path": "/Game/Props/SM_Crate", "class": "StaticMesh" }
   ],
   "settings": { "Engine - Rendering": { "Anti-Aliasing Method": "Temporal Super-Resolution (TSR)" } },
   "cvars": { "r.AntiAliasingMethod": "4", "r.Lumen.DiffuseIndirect.Allow": "1" },

@@ -8,7 +8,9 @@ Usage: python -I eval_mock.py <port> <token> <log_path>
 """
 import copy
 import json
+import math
 import os
+import random
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -90,6 +92,31 @@ class World:
         for index, slot in enumerate(actor.get("materials", [])):
             lines.append(f"  slot {index} {slot['slot']} = {slot['material']} ({'component override' if slot['override'] else 'mesh default'})")
         return "\n".join(lines)
+
+    def placement(self, args, pattern, i, count):
+        """Approximate location of the i-th placed actor, so an agent that checks its work sees a plausible layout."""
+        origin = [float(v) for v in (args.get("origin") or [0, 0, 0])]
+        spacing = float(args.get("spacing") or 100)
+        if pattern == "grid":
+            columns = int(args.get("columns") or 1)
+            return [origin[0] + (i % columns) * spacing, origin[1] + (i // columns) * float(args.get("spacing_y") or spacing), origin[2]]
+        if pattern == "line":
+            end = [float(v) for v in (args.get("end") or [origin[0] + spacing * (count - 1), origin[1], origin[2]])]
+            t = i / max(count - 1, 1)
+            return [round(o + (e - o) * t, 1) for o, e in zip(origin, end)]
+        if pattern == "circle":
+            angle = 2 * math.pi * i / count
+            radius = float(args.get("radius") or 100)
+            return [round(origin[0] + math.cos(angle) * radius, 1), round(origin[1] + math.sin(angle) * radius, 1), origin[2]]
+        if pattern == "spline":
+            road = next(iter(self.actors_named([str(args.get("spline", ""))])))
+            step = float(args["spacing"]) if args.get("spacing") and not args.get("count") else road["spline"]["length"] / max(count - 1, 1)
+            return [road["location"][0] + step * i, road["location"][1] + float(args.get("side_offset") or 0), 0]
+        area = next(iter(self.actors_named([str(args.get("area", ""))])), None)
+        center = area["location"] if area else origin
+        half = area["bounds"] if area else [float(v) for v in (args.get("extent") or [500, 500])] + [0]
+        rng = random.Random(i)
+        return [round(center[0] + rng.uniform(-half[0], half[0]), 1), round(center[1] + rng.uniform(-half[1], half[1]), 1), 0 if args.get("snap_to_ground") else center[2]]
 
     def call_toolset_tool(self, args):
         tool = str(args.get("tool", ""))
@@ -285,6 +312,53 @@ class World:
             moved = {g: [node for node in nodes if not names or node["name"].lower() in names or node["title"].lower() in names] for g, nodes in selected.items()}
             self.history.append("Tidy graph")
             return "Arranged " + "; ".join(f"{g}: moved {len(m)} of {len(selected[g])} nodes" for g, m in moved.items() if m) + " (sizes estimated). Undoable."
+        if name == "place_actors":
+            source = str(args.get("source", ""))
+            asset = next((a for a in data["assets"] if a["class"] in ("StaticMesh", "Blueprint") and mentions([source], a["path"].split("/")[-1])), None)
+            actor = next(iter(self.actors_named([source])), None)
+            if asset is None and actor is None:
+                return f"Error: {source} is not a placeable asset (static mesh, Blueprint), actor class or actor of the open level."
+            pattern = str(args.get("pattern", ""))
+            if pattern == "spline" and not any(a.get("spline") for a in self.actors_named([str(args.get("spline", ""))])):
+                return f"Error: {args.get('spline')} is not an actor or component with a spline in the open level."
+            if pattern == "scatter" and args.get("area") and not self.actors_named([str(args.get("area"))]):
+                return f"Error: {args.get('area')} is not an actor of the open level."
+            if pattern == "grid":
+                count = int(args.get("rows") or 0) * int(args.get("columns") or 0)
+            elif pattern == "spline" and not args.get("count") and args.get("spacing"):
+                count = int(6000 // float(args["spacing"])) + 1
+            else:
+                count = int(args.get("count") or 0)
+            if count <= 0 or pattern not in ("grid", "line", "circle", "spline", "scatter"):
+                return "Error: Give pattern: grid, line, circle, spline or scatter, with rows and columns or count."
+            prefix = str(args.get("label") or (asset["path"].split("/")[-1] if asset else actor["label"]))
+            start = sum(a["label"].startswith(prefix + "_") for a in data["actors"])
+            data["actors"] += [{"label": f"{prefix}_{start + i + 1}", "class": "StaticMeshActor", "location": self.placement(args, pattern, i, count)} for i in range(count)]
+            self.history.append(f"Place {count} actors")
+            return f"Placed {count} actors ({prefix}_{start + 1} ... {prefix}_{start + count}) in a {pattern}. Undoable."
+        if name == "arrange_actors":
+            targets = self.actors_named(args.get("targets", []))
+            if not targets:
+                return "Error: Give targets."
+            operation = str(args.get("operation", ""))
+            if operation in ("align", "distribute") and str(args.get("axis", "")) not in ("x", "y", "z"):
+                return "Error: align and distribute need axis: x, y or z."
+            if operation not in ("align", "distribute", "snap_to_ground", "pattern", "randomize"):
+                return "Error: Give operation: align, distribute, snap_to_ground, pattern or randomize."
+            if operation in ("align", "distribute"):
+                axis = "xyz".index(str(args["axis"]))
+                values = [a["location"][axis] for a in targets]
+                if operation == "align":
+                    value = {"min": min(values), "max": max(values)}.get(str(args.get("align_to", "center")), args.get("value", (min(values) + max(values)) / 2))
+                    for a in targets:
+                        a["location"][axis] = value
+                else:
+                    ordered = sorted(targets, key=lambda a: a["location"][axis])
+                    step = (max(values) - min(values)) / max(len(ordered) - 1, 1)
+                    for i, a in enumerate(ordered):
+                        a["location"][axis] = min(values) + step * i
+            self.history.append(f"Arrange actors ({operation})")
+            return f"Moved {', '.join(a['label'] + ' to ' + str(a['location']) for a in targets)}. Undoable."
         if name in ("undo", "redo"):
             step = self.history[-1] if self.history else "Set Intensity on PointLight_Hall"
             return f"{name.capitalize()}: {step}."

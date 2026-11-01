@@ -233,6 +233,13 @@ def check_subagent(ev):
     return ok, f"tools={titles} delegated={delegated} answer={answer.strip()[:80]!r}"
 
 
+def check_tool_image(ev):
+    captured = called("s19_tool_image", "ue_capture_probe")
+    text = message_text(ev).lower()
+    read = "red" in text and "blue" in text
+    return captured and read, f"captured={captured} colours_read={read} answer={text[:80]!r}"
+
+
 def check_skill_dirs(ev):
     text = message_text(ev)
     project = "MARKER_PROJECT_DUPLICATE" in text
@@ -261,6 +268,7 @@ CHECKS = [
     ("s15_fork", "Session control cuts a conversation into a new session that session/resume opens", check_fork),
     ("s17_subagent", "Subagent tools are off: the model cannot delegate and does the editor task itself", check_subagent),
     ("s16_session_tap", "Session tap reports plan mode, todos and compaction; control enters plan mode, approves the plan, runs /compact", check_session_tap),
+    ("s19_tool_image", "An image in an MCP tool result reaches the default model, which reads it", check_tool_image),
     ("s18_skill_dirs", "Project skill directories listed before the built-in one win a duplicate skill name; built-in skills still load", check_skill_dirs),
 ]
 

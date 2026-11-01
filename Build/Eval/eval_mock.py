@@ -6,6 +6,7 @@ that copy, so an agent that checks its own change sees it. Every tool call is lo
 
 Usage: python -I eval_mock.py <port> <token> <log_path>
 """
+import base64
 import copy
 import json
 import math
@@ -26,6 +27,10 @@ with open(os.path.join(HERE, "tools.snapshot.json"), encoding="utf-8") as snapsh
 with open(os.path.join(HERE, "world.json"), encoding="utf-8") as world_file:
     INITIAL_WORLD = json.load(world_file)
 WORLDS = {}
+
+# What the engine's screenshot tools return through the editor endpoint: a text note and the image (Build/Probe/fixtures)
+with open(os.path.join(HERE, "..", "Probe", "fixtures", "split-red-blue.png"), "rb") as capture_file:
+    CAPTURE_PNG = base64.b64encode(capture_file.read()).decode("ascii")
 
 # Appended to a successful write, as FShuttlegentToolRunner does when every object was written and no warning was logged
 WRITE_DONE_HINT = (" These are the values the editor wrote; read back once at most if the user needs it checked, "
@@ -483,6 +488,11 @@ class Handler(BaseHTTPRequestHandler):
             name = params.get("name")
             args = params.get("arguments") or {}
             log({"task": task, "tool": name, "arguments": args})
+            if name == "call_toolset_tool" and str(args.get("tool", "")).startswith("Capture"):
+                note = "{\"Image\": \"[image 1: image/png 64x32, attached below; saved to C:/MoldCasting/Saved/Shuttlegent/Captures/eval.png]\"}"
+                result = {"content": [{"type": "text", "text": note}, {"type": "image", "mimeType": "image/png", "data": CAPTURE_PNG}], "isError": False}
+                self._send(200, {"jsonrpc": "2.0", "id": msg["id"], "result": result}, {"Mcp-Session-Id": "eval-session"})
+                return
             text = world_of(task).answer(name, args)
             if name in WRITE_TOOLS and not text.startswith("Error"):
                 text += WRITE_DONE_HINT

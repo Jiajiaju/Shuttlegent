@@ -198,6 +198,7 @@ namespace FShuttlegentWebProtocolPrivate
 	{
 		uint32 Hash = GetTypeHash(static_cast<uint8>(Entry.Kind));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Text.Len()));
+		Hash = HashCombine(Hash, GetTypeHash(Entry.Images.Num()));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Thought.Len()));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Input.Len()));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.Result.Len()));
@@ -508,6 +509,10 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetBoolField(ShuttlegentEditorWebField::PlanMode, Model->IsPlanMode());
 	Root->SetBoolField(ShuttlegentEditorWebField::CanSetPlanMode, Model->CanSetPlanMode(PlanModeReason));
 	Root->SetStringField(ShuttlegentEditorWebField::PlanModeReason, PlanModeReason.ToString());
+
+	FText AttachImagesReason;
+	Root->SetBoolField(ShuttlegentEditorWebField::CanAttachImages, Model->CanAttachImages(AttachImagesReason));
+	Root->SetStringField(ShuttlegentEditorWebField::AttachImagesReason, AttachImagesReason.ToString());
 
 	const FShuttlegentPlanReview& Review = Model->GetPendingPlanReview();
 	if (Review.ReviewId.IsEmpty())
@@ -823,6 +828,13 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		}
 		Item->SetStringField(ShuttlegentEditorWebField::Text, Text);
 		Item->SetArrayField(ShuttlegentEditorWebField::References, Lines);
+
+		TArray<TSharedPtr<FJsonValue>> Images;
+		for (const FString& Image : Entry.Images)
+		{
+			Images.Add(MakeShared<FJsonValueString>(FShuttlegentWebJson::MakeFileUrl(Image)));
+		}
+		Item->SetArrayField(ShuttlegentEditorWebField::Images, Images);
 		if (Entry.TimeUtc.GetTicks() > 0) Item->SetNumberField(ShuttlegentEditorWebField::Time, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Entry.TimeUtc));
 	}
 	else

@@ -3,6 +3,7 @@
 #include "HAL/FileManager.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/SecureHash.h"
 #include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -13,6 +14,10 @@
 
 namespace ShuttlegentSessionStorePrivate
 {
+	// MIME 类型的主次类型分隔符，以及文件名与扩展名的分隔符
+	inline const TCHAR* MimeSeparator = TEXT("/");
+	inline const TCHAR* ExtensionSeparator = TEXT(".");
+
 	// 索引文件的字段
 	inline const TCHAR* FieldSessions = TEXT("sessions");
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");
@@ -285,6 +290,21 @@ void FShuttlegentSessionStore::SaveIndex() const
 	{
 		UE_LOG(LogShuttlegent, Warning, TEXT("Saving session index failed: %s"), *Path);
 	}
+}
+
+FString FShuttlegentSessionStore::SaveImage(const FString& MimeType, const TArray<uint8>& Bytes) const
+{
+	// 扩展名取 MIME 子类型（png、jpeg、webp、gif），文件名取内容的 MD5
+	FString Extension;
+	MimeType.Split(ShuttlegentSessionStorePrivate::MimeSeparator, nullptr, &Extension);
+	const FString Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(Directory, ShuttlegentPath::SessionImagesDir, FMD5::HashBytes(Bytes.GetData(), Bytes.Num()) + ShuttlegentSessionStorePrivate::ExtensionSeparator + Extension));
+	if (IFileManager::Get().FileExists(*Path)) return Path;
+
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
+	if (FFileHelper::SaveArrayToFile(Bytes, *Path)) return Path;
+
+	UE_LOG(LogShuttlegent, Warning, TEXT("Saving prompt image failed: %s"), *Path);
+	return FString();
 }
 
 FString FShuttlegentSessionStore::GetTranscriptPath(const FString& SessionId) const

@@ -206,7 +206,10 @@ public:
 	 * 仍然存在；不存在的引用会被返回，且不发送也不入队。bEnterPlanMode 时先进入计划模式（/plan <消息>）：
 	 * 会话已打开时等运行时确认计划模式已开再发出，计划模式不可切换时拒绝。
 	 */
-	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, TArray<FString>& OutInvalidPaths);
+	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutInvalidPaths);
+
+	/** 草稿现在能否附带图片：运行时已就绪且其模型接受图片，当前对话也没有进行中的回合；否则 OutReason 说明原因。 */
+	bool CanAttachImages(FText& OutReason) const;
 
 	/** 当前对话中有回合正在运行、停止待完成，或运行时或会话仍在就绪过程中：新草稿将入队。 */
 	bool IsBusy() const;
@@ -340,14 +343,14 @@ private:
 	void ParkPendingPrompt(FShuttlegentConversation& Conversation);
 
 	/** 进入计划模式后发送提示（/plan <消息>）：会话未创建时记下选择，就绪后先应用再发送；会话已打开时提示先挂起，运行时确认后发出，失败则放回队列。 */
-	void SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text);
+	void SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images);
 
 	/** 打开或关闭对话的计划模式；OnApplied 在运行时答复后以是否生效调用（会话未创建时只记下选择，立即以 true 调用）。 */
 	void ApplyPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, bool bActive, TFunction<void(bool)> OnApplied);
 
 	/** 发送提示，必要时先启动运行时并创建或恢复该对话的会话。 */
-	void SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text);
-	void SendPrompt(FShuttlegentConversation& Conversation, const FString& Text);
+	void SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images = TArray<FShuttlegentPromptImage>());
+	void SendPrompt(FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images);
 
 	/** 创建（尚无会话 id 时）或恢复该对话的会话，或将其标记为待运行时就绪后处理。 */
 	void RequestSession(FShuttlegentConversation& Conversation);

@@ -31,6 +31,10 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* FieldMessageId = TEXT("messageId");
 	inline const TCHAR* FieldContent = TEXT("content");
 	inline const TCHAR* FieldText = TEXT("text");
+	inline const TCHAR* FieldImages = TEXT("images");
+
+	// 只附图片、没有文字的消息发给模型时的文字
+	inline const TCHAR* ImageOnlyPrompt = TEXT("（见附图）");
 	inline const TCHAR* FieldToolCallId = TEXT("toolCallId");
 	inline const TCHAR* FieldTitle = TEXT("title");
 	inline const TCHAR* FieldStatus = TEXT("status");
@@ -438,6 +442,13 @@ void FShuttlegentChatModel::ParkPendingPrompt(FShuttlegentConversation& Conversa
 	Conversation.bResuming = false;
 	if (Conversation.PendingPrompt.IsEmpty()) return;
 
+	// 队列不保存图片：随挂起提示的图片丢弃并告知用户
+	if (!Conversation.PendingImages.IsEmpty())
+	{
+		Conversation.PendingImages.Reset();
+		AddNotice(Conversation, LOCTEXT("ImagesDropped", "消息未能发出，已放回队列；所附图片没有保留，请重新添加。"), true);
+	}
+
 	// 文本已带有其引用块，因此该条目没有单独的引用
 	Conversation.Queue.Items.Insert(MakeQueued(Conversation.PendingPrompt, TArray<FShuttlegentReference>()), 0);
 	Conversation.Queue.bPaused = true;
@@ -446,7 +457,7 @@ void FShuttlegentChatModel::ParkPendingPrompt(FShuttlegentConversation& Conversa
 	NotifyQueue(Conversation);
 }
 
-EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, TArray<FString>& OutInvalidPaths)
+EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutInvalidPaths)
 {
 	OutInvalidPaths.Reset();
 	for (const FShuttlegentReference& Reference : References)
@@ -454,16 +465,21 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text,
 		if (!FShuttlegentReferenceFinder::Exists(Reference)) OutInvalidPaths.Add(Reference.Path);
 	}
 	const bool bBlocked = bRuntimeLost || StartIssue != EShuttlegentStartIssue::None || Current->bNeedsVerify;
-	if (Text.TrimStartAndEnd().IsEmpty() || bBlocked || !OutInvalidPaths.IsEmpty()) return EShuttlegentSubmitResult::Rejected;
+	if ((Text.TrimStartAndEnd().IsEmpty() && Images.IsEmpty()) || bBlocked || !OutInvalidPaths.IsEmpty()) return EShuttlegentSubmitResult::Rejected;
+
+	// 带图片的消息只在空闲时发送：队列与挂起提示都不保存图片
+	FText ImageReason;
+	if (!Images.IsEmpty() && !CanAttachImages(ImageReason)) return EShuttlegentSubmitResult::Rejected;
 
 	FText PlanReason;
 	if (bEnterPlanMode && !CanSetPlanMode(PlanReason)) return EShuttlegentSubmitResult::Rejected;
 
 	if (!IsBusy(*Current))
 	{
-		const FString Prompt = FShuttlegentReferencePrompt::Compose(Text, References);
-		if (bEnterPlanMode && !Current->bPlanMode) SubmitInPlanMode(Current, Prompt);
-		else SubmitPrompt(*Current, Prompt);
+		const FString Body = Text.TrimStartAndEnd().IsEmpty() ? FString(ShuttlegentChatModelPrivate::ImageOnlyPrompt) : Text;
+		const FString Prompt = FShuttlegentReferencePrompt::Compose(Body, References);
+		if (bEnterPlanMode && !Current->bPlanMode) SubmitInPlanMode(Current, Prompt, Images);
+		else SubmitPrompt(*Current, Prompt, Images);
 		return EShuttlegentSubmitResult::Sent;
 	}
 
@@ -474,6 +490,27 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text,
 	AddRunLog(*Current, LOCTEXT("LogQueued", "加入队列"), false);
 	NotifyQueue(*Current);
 	return EShuttlegentSubmitResult::Queued;
+}
+
+bool FShuttlegentChatModel::CanAttachImages(FText& OutReason) const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || Pinned->GetState() != EShuttlegentAgentState::Ready)
+	{
+		OutReason = LOCTEXT("ImagesNotReady", "运行时就绪后才能添加图片");
+		return false;
+	}
+	if (!Pinned->SupportsImagePrompts())
+	{
+		OutReason = LOCTEXT("ImagesUnsupported", "当前模型不支持图片；默认模型 deepseek-flash 支持，可在偏好设置中改回");
+		return false;
+	}
+	if (IsBusy(*Current))
+	{
+		OutReason = LOCTEXT("ImagesBusy", "本轮结束后再发送带图片的消息");
+		return false;
+	}
+	return true;
 }
 
 bool FShuttlegentChatModel::IsBusy() const
@@ -527,7 +564,7 @@ void FShuttlegentChatModel::Retry()
 	if (!CanRetry()) return;
 
 	AddRunLog(*Current, LOCTEXT("LogRetry", "重试查询"), false);
-	SubmitPrompt(*Current, Current->LastSentPrompt);
+	SubmitPrompt(*Current, Current->LastSentPrompt, Current->LastSentImages);
 }
 
 FShuttlegentQueuedPrompt FShuttlegentChatModel::MakeQueued(const FString& Text, const TArray<FShuttlegentReference>& References)
@@ -1205,18 +1242,19 @@ void FShuttlegentChatModel::ApplyPlanMode(const TSharedPtr<FShuttlegentConversat
 	});
 }
 
-void FShuttlegentChatModel::SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text)
+void FShuttlegentChatModel::SubmitInPlanMode(const TSharedPtr<FShuttlegentConversation>& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images)
 {
 	// 会话未创建：只记下选择，会话就绪后先应用计划模式再发送
 	if (Conversation->SessionId.IsEmpty())
 	{
 		ApplyPlanMode(Conversation, true, nullptr);
-		SubmitPrompt(*Conversation, Text);
+		SubmitPrompt(*Conversation, Text, Images);
 		return;
 	}
 
 	// 计划模式走控制端口、提示走 ACP，两者没有先后保证；提示先挂起（对话随之忙碌，新草稿排队），运行时确认后再发出
 	Conversation->PendingPrompt = Text;
+	Conversation->PendingImages = Images;
 	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
 	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation;
 	ApplyPlanMode(Conversation, true, [WeakThis, WeakConversation](bool bApplied)
@@ -1620,29 +1658,31 @@ void FShuttlegentChatModel::AddRunLog(FShuttlegentConversation& Conversation, co
 	if (IsCurrent(Conversation)) OnRunLogChanged.Broadcast();
 }
 
-void FShuttlegentChatModel::SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text)
+void FShuttlegentChatModel::SubmitPrompt(FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images)
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid() || Text.TrimStartAndEnd().IsEmpty()) return;
 
 	if (Pinned->GetState() == EShuttlegentAgentState::Ready && Pinned->IsSessionOpen(Conversation.SessionId))
 	{
-		SendPrompt(Conversation, Text);
+		SendPrompt(Conversation, Text, Images);
 		return;
 	}
 
 	Conversation.PendingPrompt = Text;
+	Conversation.PendingImages = Images;
 	RequestSession(Conversation);
 	NotifyStatus(Conversation);
 }
 
-void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, const FString& Text)
+void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentPromptImage>& Images)
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return;
 
 	FString Error;
-	if (!Pinned->Prompt(Conversation.SessionId, Text, Error))
+	TArray<FString> ImageFiles;
+	if (!Pinned->Prompt(Conversation.SessionId, Text, Images, ImageFiles, Error))
 	{
 		AddNotice(Conversation, FText::Format(LOCTEXT("PromptFailed", "发送失败：{0}"), FText::FromString(Error)), true);
 		return;
@@ -1651,10 +1691,12 @@ void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, c
 	Conversation.LastOutcome = EShuttlegentTurnOutcome::None;
 	Conversation.bStopping = false;
 	Conversation.LastSentPrompt = Text;
+	Conversation.LastSentImages = Images;
 
 	// 运行时的待办在新回合开始时清空（todos 投影），面板随之清空，等 Agent 为本轮重新列出
 	Conversation.Todos.Reset();
-	AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
+	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
+	Entry->Images = MoveTemp(ImageFiles);
 	AddRunLog(Conversation, LOCTEXT("LogTurnStart", "开始本轮"), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
@@ -1808,6 +1850,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			FString Text;
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldText, Text);
 			const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
+			(*Data)->TryGetStringArrayField(ShuttlegentChatModelPrivate::FieldImages, Entry->Images);
 
 			FString Time;
 			FDateTime At;
@@ -1938,8 +1981,10 @@ void FShuttlegentChatModel::SendPendingPrompt(FShuttlegentConversation& Conversa
 	if (Conversation.PendingPrompt.IsEmpty()) return;
 
 	const FString Text = MoveTemp(Conversation.PendingPrompt);
+	const TArray<FShuttlegentPromptImage> Images = MoveTemp(Conversation.PendingImages);
 	Conversation.PendingPrompt.Reset();
-	SendPrompt(Conversation, Text);
+	Conversation.PendingImages.Reset();
+	SendPrompt(Conversation, Text, Images);
 }
 
 void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const TSharedPtr<FJsonObject>& Update)

@@ -113,8 +113,14 @@ private:
 	/** 编辑器拖拽所携带的资产或 Actor，以 JS 引用数组表示；其他内容时为空。 */
 	FString GetDraggedItems(const FDragDropEvent& DragDropEvent) const;
 
-	/** 发送提示及其引用（可先进入计划模式），或在某个引用已不存在时拒绝；页面通过 onSubmitResult 获知结果。 */
-	void HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode);
+	/** 从资源管理器等外部拖入的图片文件。 */
+	TArray<FString> GetDraggedImageFiles(const FDragDropEvent& DragDropEvent) const;
+
+	/** 打开文件对话框选择图片，并把选中的图片交给页面。 */
+	void HandlePickImages();
+
+	/** 发送提示及其引用与图片（可先进入计划模式），或在某个引用已不存在、图片暂不能发送时拒绝；页面通过 onSubmitResult 获知结果。 */
+	void HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson);
 	void HandleQueryReferences(const FString& Query);
 
 	/** 将排队的条目取回草稿（当前草稿换入其位置），并交给页面。 */

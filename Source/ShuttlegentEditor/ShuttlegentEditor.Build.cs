@@ -37,6 +37,7 @@ public class ShuttlegentEditor : ModuleRules
 				"UnrealEd",
 				"RenderCore",
 				"PropertyEditor",
+				"DesktopPlatform",
 			}
 			);
 	}

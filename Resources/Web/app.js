@@ -91,6 +91,15 @@
     { name: 'clear', body: '/clear', detail: '开始新对话，当前对话留在侧栏' }
   ];
 
+  // Images in one draft; longest side after the page scales a pasted or picked image down; encoded size above which a PNG is re-encoded as JPEG, in bytes, and its quality
+  const MAX_DRAFT_IMAGES = 6;
+  const MAX_IMAGE_SIDE = 2048;
+  const MAX_PNG_BYTES = 4 * 1024 * 1024;
+  const JPEG_QUALITY = 0.9;
+
+  // Where the editor's result text names a screenshot it saved (FShuttlegentToolsetImages.cpp writes "saved to <path>]")
+  const SAVED_IMAGE_PATTERN = /saved to ([^\]\r\n]+?\.png)\]/g;
+
   // How long a command's refusal stays beside the composer, in milliseconds
   const COMMAND_NOTE_MS = 5000;
 
@@ -167,6 +176,8 @@
     compactReason: '',
     planMode: false,
     canSetPlanMode: false,
+    canAttachImages: false,
+    attachImagesReason: '',
     planModeReason: '',
     pendingPlanReview: null
   };
@@ -225,7 +236,11 @@
 
     // What was handed to the editor; it comes back into the draft only if the editor refuses it
     submittedText: '',
-    submittedRefs: []
+    submittedRefs: [],
+
+    // Images attached to the draft { mimeType, data, url }; the editor sends them only while the conversation is idle
+    images: [],
+    submittedImages: []
   };
   const menu = {
     mode: null,
@@ -342,7 +357,8 @@
       + '<button class="icon user-action history" data-user-rewind="' + entry.id + '" aria-label="回到这里">' + icons.svg('rewind', 15) + '</button>'
       + '<button class="icon user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 15) + '</button>'
       + '</div>';
-    return '<div class="user-turn"><article class="message user">' + esc(entry.text) + references + '</article>' + actions + '</div>';
+    const images = entry.images && entry.images.length ? '<div class="user-images">' + entry.images.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
+    return '<div class="user-turn"><article class="message user">' + esc(entry.text) + images + references + '</article>' + actions + '</div>';
   }
 
   /** Rewind and branch need an idle conversation the runtime has open; otherwise they stay visible but say why they are off. */
@@ -415,10 +431,17 @@
     return '<article class="message assistant" data-entry="' + entry.id + '">' + header + renderThought(entry) + '<div class="markdown">' + rendered.html + '</div></article>';
   }
 
+  /** Screenshots a tool returned, from the saved paths the editor writes into its result text. */
+  function toolImages(entry) {
+    const urls = [];
+    for (const match of String(entry.result || '').matchAll(SAVED_IMAGE_PATTERN)) urls.push('file:///' + match[1].replace(/\\/g, '/'));
+    return urls.length ? '<div class="tool-images">' + urls.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
+  }
+
   function renderTool(entry) {
     const failed = entry.toolStatus === TOOL_FAILED;
     const reason = failed && entry.failureReason ? '<div class="tool-failure">' + esc(entry.failureReason) + '</div>' : '';
-    return '<div class="tool"><button class="tool-row" data-tool="' + entry.id + '" title="在检视窗格查看参数与结果">' + toolIcon(entry.toolStatus) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><small>' + toolTrailer(entry.toolStatus, entry.readOnly, 1, failed ? 1 : 0) + '</small></button>' + reason + '</div>';
+    return '<div class="tool"><button class="tool-row" data-tool="' + entry.id + '" title="在检视窗格查看参数与结果">' + toolIcon(entry.toolStatus) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><small>' + toolTrailer(entry.toolStatus, entry.readOnly, 1, failed ? 1 : 0) + '</small></button>' + reason + toolImages(entry) + '</div>';
   }
 
   function renderToolGroup(ids) {
@@ -813,8 +836,10 @@
   function updateSendButton() {
     const send = $('send');
     const invalid = hasInvalidReference();
-    send.disabled = !$('draft').value.trim() || invalid || draftState.submitting || state.runtimeLost || !!state.startIssue || state.needsVerify;
+    const imagesBlocked = draftState.images.length > 0 && !state.canAttachImages;
+    send.disabled = (!$('draft').value.trim() && !draftState.images.length) || invalid || imagesBlocked || draftState.submitting || state.runtimeLost || !!state.startIssue || state.needsVerify;
     if (invalid) send.title = '有引用已失效：移除或重新添加后再发送';
+    else if (imagesBlocked) send.title = state.attachImagesReason || '现在不能发送图片';
     else if (state.startIssue) send.title = '运行时无法启动：按上方提示处理后重试';
     else if (state.needsVerify) send.title = '有写入结果未知：核对对象并点“已核对”后再发送';
     else if (state.runtimeLost) send.title = '连接已断开：重新连接后再发送';
@@ -848,6 +873,7 @@
     renderSelect($('reasoning'), 'reasoning_effort');
     renderUsage();
     renderPlanToggle();
+    renderImageButton();
   }
 
   /** Plan mode switch beside the model picker; the composer is outlined while it is on. */
@@ -1047,7 +1073,11 @@
   }
 
   function sendDraft(text, enterPlanMode) {
-    if (!text.trim() || state.runtimeLost || draftState.submitting || hasInvalidReference()) return;
+    if ((!text.trim() && !draftState.images.length) || state.runtimeLost || draftState.submitting || hasInvalidReference()) return;
+    if (draftState.images.length && !state.canAttachImages) {
+      showCommandNote(state.attachImagesReason || '现在不能发送图片');
+      return;
+    }
 
     // While a turn runs the editor queues the draft instead of sending it; either way it answers through onSubmitResult
     // The draft clears at once so typing can go on; the editor answers through onSubmitResult
@@ -1056,11 +1086,134 @@
     draftState.submittedText = text;
     draftState.submittedRefs = draftState.refs;
     draftState.refs = [];
+    const images = JSON.stringify(draftState.images.map((image) => ({ mimeType: image.mimeType, data: image.data })));
+    draftState.submittedImages = draftState.images;
+    draftState.images = [];
+    renderAttachments();
     draftState.historyIndex = -1;
     closeMenu();
     setDraft('');
     renderReferences();
-    call('submit', text, references, enterPlanMode);
+    call('submit', text, references, enterPlanMode, images);
+  }
+
+  // ---------- Draft images ----------
+
+  /** Reads a pasted or dropped blob as { mimeType, data }. */
+  function readImageBlob(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ mimeType: blob.type, data: String(reader.result).split(',')[1] || '' });
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /** Scales an image down to MAX_IMAGE_SIDE and keeps it under MAX_PNG_BYTES; GIFs pass unchanged so they keep their frames. */
+  function prepareImage(image) {
+    return new Promise((resolve, reject) => {
+      const source = 'data:' + image.mimeType + ';base64,' + image.data;
+      const element = new Image();
+      element.onerror = () => reject(new Error('unreadable image'));
+      element.onload = () => {
+        const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(element.naturalWidth, element.naturalHeight));
+        const tooLarge = image.data.length * 3 / 4 > MAX_PNG_BYTES;
+        if (image.mimeType === 'image/gif' || (scale === 1 && !tooLarge)) {
+          resolve({ mimeType: image.mimeType, data: image.data, url: source });
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(element.naturalWidth * scale);
+        canvas.height = Math.round(element.naturalHeight * scale);
+        canvas.getContext('2d').drawImage(element, 0, 0, canvas.width, canvas.height);
+        let type = image.mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
+        let url = canvas.toDataURL(type, JPEG_QUALITY);
+        if (type === 'image/png' && url.length * 3 / 4 > MAX_PNG_BYTES) {
+          type = 'image/jpeg';
+          url = canvas.toDataURL(type, JPEG_QUALITY);
+        }
+        resolve({ mimeType: type, data: url.split(',')[1], url: url });
+      };
+      element.src = source;
+    });
+  }
+
+  /** Attaches images from the clipboard, a file pick or a file drop; refuses with the reason when the model or the moment does not allow images. */
+  function addImages(images) {
+    if (!images.length) return;
+    if (!state.canAttachImages) {
+      showCommandNote(state.attachImagesReason || '现在不能添加图片');
+      return;
+    }
+
+    const room = MAX_DRAFT_IMAGES - draftState.images.length;
+    if (images.length > room) showCommandNote('一条消息最多 ' + MAX_DRAFT_IMAGES + ' 张图片');
+    for (const image of images.slice(0, Math.max(room, 0))) {
+      prepareImage(image).then((prepared) => {
+        if (draftState.images.length >= MAX_DRAFT_IMAGES) return;
+        draftState.images.push(prepared);
+        renderAttachments();
+        updateSendButton();
+      }, () => showCommandNote('有一张图片读不出来，已跳过'));
+    }
+  }
+
+  function renderAttachments() {
+    const box = $('attachments');
+    box.hidden = !draftState.images.length;
+    box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="移除" aria-label="移除图片">×</button></div>').join('');
+  }
+
+  function renderImageButton() {
+    const button = $('add-image');
+    button.classList.toggle('off', !state.canAttachImages);
+    button.title = state.canAttachImages ? '添加图片（也可以粘贴截图或把图片文件拖进来）' : (state.attachImagesReason || '现在不能添加图片');
+  }
+
+  function openImageViewer(url) {
+    const viewer = $('image-viewer');
+    viewer.querySelector('img').src = url;
+    viewer.hidden = false;
+  }
+
+  function bindImages() {
+    $('add-image').addEventListener('click', () => {
+      if (!state.canAttachImages) {
+        showCommandNote(state.attachImagesReason || '现在不能添加图片');
+        return;
+      }
+      call('pickimages');
+    });
+    $('draft').addEventListener('paste', (event) => {
+      const files = Array.from((event.clipboardData && event.clipboardData.items) || []).filter((item) => item.kind === 'file' && item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean);
+      if (!files.length) return;
+
+      event.preventDefault();
+      Promise.all(files.map(readImageBlob)).then(addImages, () => showCommandNote('剪贴板里的图片读不出来'));
+    });
+    $('attachments').addEventListener('click', (event) => {
+      const remove = event.target.closest('[data-remove-image]');
+      if (remove) {
+        draftState.images.splice(Number(remove.dataset.removeImage), 1);
+        renderAttachments();
+        updateSendButton();
+        return;
+      }
+      const view = event.target.closest('[data-view-image]');
+      if (view) openImageViewer(draftState.images[Number(view.dataset.viewImage)].url);
+    });
+    $('image-viewer').addEventListener('click', () => { $('image-viewer').hidden = true; });
+    document.addEventListener('click', (event) => {
+      const view = event.target.closest('.tool-detail-body [data-view-image]');
+      if (view) openImageViewer(view.dataset.viewImage);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !$('image-viewer').hidden) {
+        $('image-viewer').hidden = true;
+        event.stopPropagation();
+      }
+    }, true);
   }
 
   // ---------- Slash commands ----------
@@ -1143,6 +1296,7 @@
   function onSubmitResult(result) {
     draftState.submitting = false;
     if (result.accepted) {
+      draftState.submittedImages = [];
       updateSendButton();
       watchReferences();
       return;
@@ -1151,6 +1305,10 @@
     // Refused: the sent draft comes back in front of anything typed since, its chips merged back
     const typed = $('draft').value;
     setDraft(typed ? draftState.submittedText + '\n' + typed : draftState.submittedText);
+    draftState.images = draftState.submittedImages.concat(draftState.images).slice(0, MAX_DRAFT_IMAGES);
+    draftState.submittedImages = [];
+    renderAttachments();
+    if (result.reason) showCommandNote(result.reason);
     const kept = new Set(draftState.refs.map((ref) => ref.path));
     draftState.refs = draftState.submittedRefs.filter((ref) => !kept.has(ref.path)).concat(draftState.refs);
     const invalid = new Set(result.invalid || []);
@@ -1648,7 +1806,7 @@
 
     return tools.map((entry) => {
       const expanded = expandedTools.has(entry.id);
-      const body = expanded ? '<div class="tool-detail-body"><h4>参数</h4><pre>' + esc(prettyJson(entry.input) || '（无参数）') + '</pre><h4>结果</h4><pre>' + esc(entry.result || '（尚无结果）') + '</pre></div>' : '';
+      const body = expanded ? '<div class="tool-detail-body"><h4>参数</h4><pre>' + esc(prettyJson(entry.input) || '（无参数）') + '</pre><h4>结果</h4>' + toolImages(entry) + '<pre>' + esc(entry.result || '（尚无结果）') + '</pre></div>' : '';
       const selected = view.selectedTool === entry.id ? ' selected' : '';
       return '<div class="tool-detail' + selected + '" id="tool-detail-' + entry.id + '"><button data-expand-tool="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起参数与结果">' + toolIcon(entry.toolStatus) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><span class="tool-state">' + toolStateText(entry.toolStatus) + '</span></button>' + body + '</div>';
     }).join('');
@@ -1927,7 +2085,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -2062,6 +2220,9 @@
     onDrop(items) {
       addReferences(items);
     },
+    onImages(images) {
+      addImages(images || []);
+    },
     onReferenceResults: onReferenceResults,
     onReferenceValidity: onReferenceValidity,
     onSubmitResult: onSubmitResult,
@@ -2144,6 +2305,7 @@
       if (remove) removeReference(Number(remove.dataset.removeRef));
     });
     $('add-reference').addEventListener('click', () => call('togglecontentbrowser'));
+    bindImages();
 
     $('todos').addEventListener('click', (event) => {
       if (!event.target.closest('[data-todos-toggle]')) return;
@@ -2218,6 +2380,12 @@
     });
 
     $('messages').addEventListener('click', (event) => {
+      const viewImage = event.target.closest('[data-view-image]');
+      if (viewImage) {
+        openImageViewer(viewImage.dataset.viewImage);
+        return;
+      }
+
       const objectLink = event.target.closest('[data-obj-path]');
       if (objectLink) {
         event.preventDefault();

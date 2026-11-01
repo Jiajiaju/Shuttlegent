@@ -634,6 +634,24 @@
         "Knocked_Down",
         "(?i)stunned"
       ]
+    },
+    {
+      "id": "t39_lighting_screenshot",
+      "prompt": "把当前关卡的室外灯光调成黄昏，调完截个图看看效果怎么样",
+      "skill": "lighting-preset",
+      "calls": [
+        "set_property",
+        "call_toolset_tool"
+      ],
+      "args": {
+        "call_toolset_tool": [
+          "CaptureViewport"
+        ]
+      },
+      "maxWrites": 8,
+      "forbid": [
+        "save_assets"
+      ]
     }
   ]
 }

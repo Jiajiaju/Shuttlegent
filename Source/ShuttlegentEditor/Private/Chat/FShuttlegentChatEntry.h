@@ -13,6 +13,9 @@ struct FShuttlegentChatEntry
 	/** 消息、提示、通知或错误文本。 */
 	FString Text;
 
+	/** 用户消息所附图片在会话目录中的绝对路径。 */
+	TArray<FString> Images;
+
 	/** 助手消息的推理文本；折叠显示。 */
 	FString Thought;
 

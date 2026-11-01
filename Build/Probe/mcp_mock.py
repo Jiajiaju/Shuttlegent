@@ -3,7 +3,9 @@
 Usage: python -I mcp_mock.py <port> <token> <log_path>
 Responds with plain JSON (no SSE). Logs every request to log_path as JSON lines.
 """
+import base64
 import json
+import os
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -12,6 +14,10 @@ PORT = int(sys.argv[1])
 TOKEN = sys.argv[2]
 LOG_PATH = sys.argv[3]
 LOCK = threading.Lock()
+
+# The image ue_capture_probe returns: left half red, right half blue
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "split-red-blue.png"), "rb") as image_file:
+    CAPTURE_PNG = base64.b64encode(image_file.read()).decode("ascii")
 
 TOOLS = [
     {
@@ -30,6 +36,12 @@ TOOLS = [
             "additionalProperties": False,
         },
         "annotations": {"readOnlyHint": False, "destructiveHint": True},
+    },
+    {
+        "name": "ue_capture_probe",
+        "description": "Read-only probe. Returns a screenshot of the editor viewport as an image.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        "annotations": {"readOnlyHint": True},
     },
 ]
 
@@ -96,8 +108,12 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "tools/call":
             name = msg.get("params", {}).get("name")
             args = msg.get("params", {}).get("arguments", {})
-            text = "Level: /Game/Maps/M0_Test" if name == "ue_read_probe" else f"Renamed {args.get('actor')} to {args.get('newName')}"
-            result = {"content": [{"type": "text", "text": text}], "isError": False}
+            if name == "ue_capture_probe":
+                content = [{"type": "text", "text": "Viewport capture"}, {"type": "image", "mimeType": "image/png", "data": CAPTURE_PNG}]
+            else:
+                text = "Level: /Game/Maps/M0_Test" if name == "ue_read_probe" else f"Renamed {args.get('actor')} to {args.get('newName')}"
+                content = [{"type": "text", "text": text}]
+            result = {"content": content, "isError": False}
         elif method == "ping":
             result = {}
         else:

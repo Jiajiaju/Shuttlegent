@@ -175,6 +175,9 @@ namespace ShuttlegentPath
 	// 会话记录与索引，相对项目 Saved 目录
 	inline const TCHAR* SessionsDir = TEXT("Shuttlegent/Sessions");
 	inline const TCHAR* SessionIndexFile = TEXT("index.json");
+
+	// 提问所附图片的保存目录，相对会话目录；按内容命名，多个会话（包括分叉出的会话）可共用同一个文件
+	inline const TCHAR* SessionImagesDir = TEXT("Images");
 	inline const TCHAR* TranscriptExtension = TEXT(".jsonl");
 }
 

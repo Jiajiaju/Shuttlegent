@@ -8,7 +8,7 @@ Scripts that drive the Shuttlegent agent runtime (DeepSeek Harness over ACP) wit
 |---|---|
 | `RunRegression.ps1` | Entry point: prepares a workspace, starts the mock MCP endpoint, runs every scenario, checks the results |
 | `acp_probe.py` | ACP client: spawns the runtime, runs one scenario, logs every protocol message as JSON lines |
-| `mcp_mock.py` | Mock editor MCP endpoint (Streamable HTTP, bearer token, one read tool and one write tool) |
+| `mcp_mock.py` | Mock editor MCP endpoint (Streamable HTTP, bearer token; a read tool, a write tool and an image-returning capture tool) |
 | `check_results.py` | Evaluates the logs and prints PASS / FAIL / SKIP per scenario |
 | `show_log.py` | Prints one scenario log as a timeline, or only the assistant's messages with `--messages` |
 | `gateway.overlay.yml` | Extra patch that routes the model through the OpenAI-compatible protocol |
@@ -60,5 +60,6 @@ python -I Build\Probe\show_log.py Saved\Probe\s05_tools.jsonl
 | `s15_fork` | The shipped `Runtime/plugins/shuttlegent-session-control.mjs` cuts a two-message conversation before its second message into a new session that `session/resume` opens; the new session remembers only the first message |
 | `s14_context` | The shipped `Runtime/plugins/shuttlegent-context-tap.mjs` posts the session's context breakdown (system, tools, messages) to the editor endpoint with the endpoint token |
 | `s17_subagent` | The Shuttlegent profile turns the subagent tools off: asked to delegate, the model has no subagent tool and calls the editor read tool itself |
+| `s19_tool_image` | An MCP tool (`ue_capture_probe`) returns the test image as an `image` content block; the default model reads its colours, so editor screenshots can reach the model through tool results |
 | `s18_skill_dirs` | Skill directories listed as the editor lists them (project first, the plugin's `Resources/Skills` last): the project's skill wins a duplicate name, a built-in skill without a project twin still loads |
 | `s16_session_tap` | The shipped `shuttlegent-session-control.mjs` enters plan mode, answers the model's plan review with an approval and runs `/compact`; the shipped `shuttlegent-session-tap.mjs` reports the plan mode changes, the todo list and the compaction to the editor endpoint. `compaction-basic` keeps a 64-token tail so the short conversation has something to compact |

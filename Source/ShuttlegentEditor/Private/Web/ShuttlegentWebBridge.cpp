@@ -5,9 +5,14 @@ void UShuttlegentWebBridge::Ready()
 	if (OnReady) OnReady();
 }
 
-void UShuttlegentWebBridge::Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
+void UShuttlegentWebBridge::PickImages()
 {
-	if (OnSubmit) OnSubmit(Text, ReferencesJson, bEnterPlanMode);
+	if (OnPickImages) OnPickImages();
+}
+
+void UShuttlegentWebBridge::Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson)
+{
+	if (OnSubmit) OnSubmit(Text, ReferencesJson, bEnterPlanMode, ImagesJson);
 }
 
 void UShuttlegentWebBridge::Cancel()

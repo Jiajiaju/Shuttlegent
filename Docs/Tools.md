@@ -104,7 +104,9 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 | 插件与功能开关 | PluginToolset、GameFeaturesToolset | 改动项目结构，风险高 |
 | 界面模拟 | SlateInspectorToolset | 能模拟点击编辑器界面 |
 | 外部 MCP 客户端 | MCPClientToolset | Shuttlegent 自有外部 MCP 接入 |
-| 截图类工具 | 名字以 `Capture` 开头或为 `Screenshot` 的工具 | 图片结果暂不交给模型 |
+| 截图类工具 | 名字为 `Screenshot`，或以 `Capture` 开头但不是下面三个编辑器截图工具 | 未逐个核实其结果 |
+
+`EditorAppToolset` 的 `CaptureViewport`（关卡视口，可叠加网格坐标与 Actor 标注）、`CaptureEditorImage`（整个编辑器窗口）、`CaptureAssetImage`（资源缩略图）不屏蔽，并登记为只读（`ReadOnlyTools`），直接执行、不弹确认卡。它们返回的 PNG 由插件从结果中取出，最长边超过 1600 像素时先缩小，以 MCP `image` 内容块交给运行时；结果文本中原位置换成一行说明（序号、尺寸、在 `Saved/Shuttlegent/Captures/` 中的保存路径），面板据此在对话与工具详情中显示截图。模型不支持图片时，运行时把图片换成说明文字，截图仍在面板中显示。
 
 个人还可以在 **编辑器偏好设置 > Shuttlegent > General > Engine Toolsets** 中关掉单个 Toolset。
 

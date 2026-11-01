@@ -6,12 +6,14 @@
 #include "DragAndDrop/ActorDragDropOp.h"
 #include "DragAndDrop/AssetDragDropOp.h"
 #include "DragAndDrop/CompositeDragDropOp.h"
+#include "DesktopPlatformModule.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GameFramework/Actor.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "HAL/PlatformProcess.h"
 #include "HAL/PlatformTime.h"
 #include "IContentBrowserSingleton.h"
+#include "IDesktopPlatform.h"
 #include "ISettingsModule.h"
 #include "IWebBrowserWindow.h"
 #include "Interfaces/IPluginManager.h"
@@ -31,12 +33,14 @@
 #include "Widgets/Text/STextBlock.h"
 
 #include "Chat/ShuttlegentChatModel.h"
+#include "FShuttlegentPromptImage.h"
 #include "Reference/FShuttlegentReferenceFinder.h"
 #include "Reference/FShuttlegentReferenceNavigator.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentStyle.h"
+#include "Web/FShuttlegentImageFiles.h"
 #include "Web/FShuttlegentPanelCommands.h"
 #include "Web/FShuttlegentWebJson.h"
 #include "Web/SShuttlegentDrawerFrame.h"
@@ -130,6 +134,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	if (Browser.IsValid()) Browser->UnbindUObject(ShuttlegentEditorWeb::BridgeName, Bridge.Get());
 	Bridge->OnReady = nullptr;
 	Bridge->OnSubmit = nullptr;
+	Bridge->OnPickImages = nullptr;
 	Bridge->OnCancel = nullptr;
 	Bridge->OnNewConversation = nullptr;
 	Bridge->OnReconnect = nullptr;
@@ -227,7 +232,7 @@ FReply SShuttlegentWebPanel::OnPreviewMouseButtonDown(const FGeometry& MyGeometr
 
 void SShuttlegentWebPanel::OnDragEnter(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent)
 {
-	if (!GetDraggedItems(DragDropEvent).IsEmpty()) CallPage(ShuttlegentEditorWeb::JsOnDragState, ShuttlegentEditorWeb::JsTrue);
+	if (!GetDraggedItems(DragDropEvent).IsEmpty() || !GetDraggedImageFiles(DragDropEvent).IsEmpty()) CallPage(ShuttlegentEditorWeb::JsOnDragState, ShuttlegentEditorWeb::JsTrue);
 }
 
 void SShuttlegentWebPanel::OnDragLeave(const FDragDropEvent& DragDropEvent)
@@ -237,11 +242,20 @@ void SShuttlegentWebPanel::OnDragLeave(const FDragDropEvent& DragDropEvent)
 
 FReply SShuttlegentWebPanel::OnDragOver(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent)
 {
-	return GetDraggedItems(DragDropEvent).IsEmpty() ? FReply::Unhandled() : FReply::Handled();
+	return GetDraggedItems(DragDropEvent).IsEmpty() && GetDraggedImageFiles(DragDropEvent).IsEmpty() ? FReply::Unhandled() : FReply::Handled();
 }
 
 FReply SShuttlegentWebPanel::OnDrop(const FGeometry& MyGeometry, const FDragDropEvent& DragDropEvent)
 {
+	// 外部拖入的图片文件附到草稿上；资源与 Actor 仍作为引用
+	const TArray<FString> ImageFiles = GetDraggedImageFiles(DragDropEvent);
+	if (!ImageFiles.IsEmpty())
+	{
+		CallPage(ShuttlegentEditorWeb::JsOnDragState, ShuttlegentEditorWeb::JsFalse);
+		CallPage(ShuttlegentEditorWeb::JsOnImages, FShuttlegentWebJson::ToJson(FShuttlegentImageFiles::Load(ImageFiles)));
+		return FReply::Handled();
+	}
+
 	const FString Items = GetDraggedItems(DragDropEvent);
 	if (Items.IsEmpty()) return FReply::Unhandled();
 
@@ -329,10 +343,15 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandlePageReady();
 	};
-	Bridge->OnSubmit = [WeakThis](const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
+	Bridge->OnSubmit = [WeakThis](const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson)
 	{
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
-		if (This.IsValid()) This->HandleSubmit(Text, ReferencesJson, bEnterPlanMode);
+		if (This.IsValid()) This->HandleSubmit(Text, ReferencesJson, bEnterPlanMode, ImagesJson);
+	};
+	Bridge->OnPickImages = [WeakThis]()
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) This->HandlePickImages();
 	};
 	Bridge->OnRemoveQueued = [WeakModel](int32 ItemId)
 	{
@@ -542,6 +561,32 @@ FString SShuttlegentWebPanel::GetPageUrl() const
 	return ShuttlegentEditorWeb::FileUrlPrefix + PagePath;
 }
 
+TArray<FString> SShuttlegentWebPanel::GetDraggedImageFiles(const FDragDropEvent& DragDropEvent) const
+{
+	TArray<FString> Files;
+	const TSharedPtr<FExternalDragOperation> External = DragDropEvent.GetOperationAs<FExternalDragOperation>();
+	if (!External.IsValid() || !External->HasFiles()) return Files;
+
+	for (const FString& File : External->GetFiles())
+	{
+		if (FShuttlegentImageFiles::IsImageFile(File)) Files.Add(File);
+	}
+	return Files;
+}
+
+void SShuttlegentWebPanel::HandlePickImages()
+{
+	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
+	if (DesktopPlatform == nullptr) return;
+
+	TArray<FString> Files;
+	const void* ParentWindow = FSlateApplication::Get().FindBestParentWindowHandleForDialogs(AsShared());
+	const FString Title = LOCTEXT("PickImagesTitle", "选择要附到消息中的图片").ToString();
+	if (!DesktopPlatform->OpenFileDialog(ParentWindow, Title, FPaths::ProjectDir(), FString(), FShuttlegentImageFiles::GetDialogFilter(), EFileDialogFlags::Multiple, Files) || Files.IsEmpty()) return;
+
+	CallPage(ShuttlegentEditorWeb::JsOnImages, FShuttlegentWebJson::ToJson(FShuttlegentImageFiles::Load(Files)));
+}
+
 FString SShuttlegentWebPanel::GetDraggedItems(const FDragDropEvent& DragDropEvent) const
 {
 	TArray<TSharedPtr<FJsonValue>> Items;
@@ -570,13 +615,18 @@ FString SShuttlegentWebPanel::GetDraggedItems(const FDragDropEvent& DragDropEven
 	return Items.IsEmpty() ? FString() : FShuttlegentWebJson::ToJson(Items);
 }
 
-void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode)
+void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson)
 {
 	if (!Model.IsValid()) return;
 
 	// 已不存在的引用会阻止发送；页面将其标记出来并保留草稿
 	TArray<FString> InvalidPaths;
-	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), bEnterPlanMode, InvalidPaths);
+	const TArray<FShuttlegentPromptImage> Images = FShuttlegentWebJson::ParseImages(ImagesJson);
+	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), bEnterPlanMode, Images, InvalidPaths);
+
+	// 图片暂不能发送时告诉页面原因，草稿与图片保留
+	FText ImageReason;
+	const bool bImagesRefused = Outcome == EShuttlegentSubmitResult::Rejected && !Images.IsEmpty() && !Model->CanAttachImages(ImageReason);
 
 	TArray<TSharedPtr<FJsonValue>> Invalid;
 	for (const FString& Path : InvalidPaths)
@@ -588,6 +638,7 @@ void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& Refe
 	Result->SetBoolField(ShuttlegentEditorWebField::Accepted, Outcome != EShuttlegentSubmitResult::Rejected);
 	Result->SetBoolField(ShuttlegentEditorWebField::Queued, Outcome == EShuttlegentSubmitResult::Queued);
 	Result->SetArrayField(ShuttlegentEditorWebField::Invalid, Invalid);
+	if (bImagesRefused) Result->SetStringField(ShuttlegentEditorWebField::Reason, ImageReason.ToString());
 	CallPage(ShuttlegentEditorWeb::JsOnSubmitResult, FShuttlegentWebJson::ToJson(Result));
 }
 

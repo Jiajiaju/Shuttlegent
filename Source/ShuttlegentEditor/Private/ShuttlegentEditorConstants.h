@@ -103,6 +103,7 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* CommandFocusInput = TEXT("focusInput");
 	inline const TCHAR* JsOnDragState = TEXT("onDragState");
 	inline const TCHAR* JsOnDrop = TEXT("onDrop");
+	inline const TCHAR* JsOnImages = TEXT("onImages");
 	inline const TCHAR* JsOnDrawerState = TEXT("onDrawerState");
 	inline const TCHAR* JsFocusDraft = TEXT("focusDraft");
 
@@ -346,6 +347,14 @@ namespace ShuttlegentEditorWebField
 
 	// 用户条目：从其提示中拆出的引用行；队列条目与取回的条目：固定的引用
 	inline const TCHAR* References = TEXT("references");
+
+	// 用户消息所附图片（file:/// 地址）；页面提交的草稿图片 { mimeType, data }；能否附带图片及原因；提交被拒的原因
+	inline const TCHAR* Images = TEXT("images");
+	inline const TCHAR* MimeType = TEXT("mimeType");
+	inline const TCHAR* Data = TEXT("data");
+	inline const TCHAR* CanAttachImages = TEXT("canAttachImages");
+	inline const TCHAR* AttachImagesReason = TEXT("attachImagesReason");
+	inline const TCHAR* Reason = TEXT("reason");
 
 	// 当前会话的队列：是否已暂停及其条目；失败的回合能否重试
 	inline const TCHAR* Queue = TEXT("queue");

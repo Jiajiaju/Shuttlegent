@@ -2,10 +2,12 @@
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Misc/Paths.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "FShuttlegentPromptImage.h"
 #include "Reference/FShuttlegentReference.h"
 #include "ShuttlegentEditorConstants.h"
 
@@ -49,6 +51,33 @@ TArray<FShuttlegentReference> FShuttlegentWebJson::ParseReferences(const FString
 		if (!Reference.Path.IsEmpty()) References.Add(MoveTemp(Reference));
 	}
 	return References;
+}
+
+TArray<FShuttlegentPromptImage> FShuttlegentWebJson::ParseImages(const FString& Json)
+{
+	TArray<FShuttlegentPromptImage> Images;
+	TArray<TSharedPtr<FJsonValue>> Values;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
+	if (Json.IsEmpty() || !FJsonSerializer::Deserialize(Reader, Values)) return Images;
+
+	for (const TSharedPtr<FJsonValue>& Value : Values)
+	{
+		const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;
+		if (!Item.IsValid()) continue;
+
+		FShuttlegentPromptImage Image;
+		Item->TryGetStringField(ShuttlegentEditorWebField::MimeType, Image.MimeType);
+		Item->TryGetStringField(ShuttlegentEditorWebField::Data, Image.Data);
+		if (!Image.MimeType.IsEmpty() && !Image.Data.IsEmpty()) Images.Add(MoveTemp(Image));
+	}
+	return Images;
+}
+
+FString FShuttlegentWebJson::MakeFileUrl(const FString& Path)
+{
+	FString Normalized = FPaths::ConvertRelativePathToFull(Path);
+	FPaths::NormalizeFilename(Normalized);
+	return ShuttlegentEditorWeb::FileUrlPrefix + Normalized;
 }
 
 FString FShuttlegentWebJson::ToJson(const TSharedRef<FJsonObject>& Object)

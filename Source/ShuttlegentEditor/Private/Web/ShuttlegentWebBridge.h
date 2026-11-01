@@ -17,9 +17,11 @@ class UShuttlegentWebBridge : public UObject
 public:
 	TFunction<void()> OnReady;
 
-	TFunction<void(const FString&, const FString&, bool)> OnSubmit;
+	TFunction<void(const FString&, const FString&, bool, const FString&)> OnSubmit;
 
 	TFunction<void()> OnCancel;
+
+	TFunction<void()> OnPickImages;
 
 	TFunction<void()> OnNewConversation;
 
@@ -90,13 +92,17 @@ public:
 	UFUNCTION()
 	void Ready();
 
-	/** 将草稿连同其引用标签（JSON 数组）作为提示发送，bEnterPlanMode 时先进入计划模式（/plan <消息>）；结果通过 onSubmitResult 返回。 */
+	/** 将草稿连同其引用标签与图片（均为 JSON 数组）作为提示发送，bEnterPlanMode 时先进入计划模式（/plan <消息>）；结果通过 onSubmitResult 返回。 */
 	UFUNCTION()
-	void Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode);
+	void Submit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson);
 
 	/** 停止正在运行的回合。 */
 	UFUNCTION()
 	void Cancel();
+
+	/** 打开文件对话框选择图片；选中的图片通过 onImages 送回页面。 */
+	UFUNCTION()
+	void PickImages();
 
 	UFUNCTION()
 	void NewConversation();

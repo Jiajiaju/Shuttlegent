@@ -1,6 +1,8 @@
 #include "ShuttlegentAgentService.h"
 
+#include "Algo/Find.h"
 #include "Interfaces/IPluginManager.h"
+#include "Misc/Base64.h"
 #include "Misc/Paths.h"
 
 #include "ShuttlegentAcpConnection.h"
@@ -50,6 +52,15 @@ namespace ShuttlegentAgentServicePrivate
 	inline const TCHAR* FieldAllowed = TEXT("allowed");
 
 	inline const TCHAR* ContentTypeText = TEXT("text");
+	inline const TCHAR* ContentTypeImage = TEXT("image");
+	inline const TCHAR* FieldMimeType = TEXT("mimeType");
+	inline const TCHAR* FieldData = TEXT("data");
+	inline const TCHAR* FieldImages = TEXT("images");
+	inline const TCHAR* FieldAgentCapabilities = TEXT("agentCapabilities");
+	inline const TCHAR* FieldPromptCapabilities = TEXT("promptCapabilities");
+
+	// 运行时接受的图片类型（ThirdParty/deepseek-harness/packages/acp/acp/src/content.ts）
+	inline const TCHAR* ImageMimeTypes[] = { TEXT("image/png"), TEXT("image/jpeg"), TEXT("image/webp"), TEXT("image/gif") };
 	inline const TCHAR* OutcomeSelected = TEXT("selected");
 	inline const TCHAR* OutcomeCancelled = TEXT("cancelled");
 	inline const TCHAR* ConfigIdModel = TEXT("model");
@@ -187,7 +198,14 @@ bool FShuttlegentAgentService::Start(FString& OutError)
 			return;
 		}
 
-		UE_LOG(LogShuttlegent, Log, TEXT("Runtime initialized."));
+		// 运行时按启动时的默认模型声明是否接受图片提问
+		const TSharedPtr<FJsonObject>* Capabilities = nullptr;
+		const TSharedPtr<FJsonObject>* PromptCapabilities = nullptr;
+		bool bImages = false;
+		if (Response.Result.IsValid() && Response.Result->TryGetObjectField(ShuttlegentAgentServicePrivate::FieldAgentCapabilities, Capabilities) && (*Capabilities)->TryGetObjectField(ShuttlegentAgentServicePrivate::FieldPromptCapabilities, PromptCapabilities)) (*PromptCapabilities)->TryGetBoolField(ShuttlegentAgentServicePrivate::ContentTypeImage, bImages);
+		This->bImagePrompts = bImages;
+
+		UE_LOG(LogShuttlegent, Log, TEXT("Runtime initialized (image prompts: %s)."), bImages ? TEXT("yes") : TEXT("no"));
 		This->SetState(EShuttlegentAgentState::Ready);
 	});
 	return true;
@@ -283,6 +301,13 @@ TArray<TSharedPtr<FJsonValue>> FShuttlegentAgentService::GetConfigOptions(const 
 
 bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& Text, FString& OutError)
 {
+	TArray<FString> ImageFiles;
+	return Prompt(SessionId, Text, TArray<FShuttlegentPromptImage>(), ImageFiles, OutError);
+}
+
+bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& Text, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutImageFiles, FString& OutError)
+{
+	OutImageFiles.Reset();
 	FShuttlegentOpenSession* Session = OpenSessions.Find(SessionId);
 	if (State != EShuttlegentAgentState::Ready || Session == nullptr)
 	{
@@ -294,7 +319,12 @@ bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& T
 		OutError = TEXT("A prompt is already running in this session.");
 		return false;
 	}
-	if (Text.TrimStartAndEnd().IsEmpty())
+	if (!Images.IsEmpty() && !bImagePrompts)
+	{
+		OutError = TEXT("The runtime's model does not accept images.");
+		return false;
+	}
+	if (Text.TrimStartAndEnd().IsEmpty() && Images.IsEmpty())
 	{
 		OutError = TEXT("Prompt is empty.");
 		return false;
@@ -313,7 +343,32 @@ bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& T
 	Block->SetStringField(ShuttlegentAgentServicePrivate::FieldText, Text);
 
 	TArray<TSharedPtr<FJsonValue>> PromptBlocks;
-	PromptBlocks.Add(MakeShared<FJsonValueObject>(Block));
+	if (!Text.TrimStartAndEnd().IsEmpty()) PromptBlocks.Add(MakeShared<FJsonValueObject>(Block));
+
+	// 图片块放在文字之后；同时存一份到会话目录，供重新打开会话时显示
+	TArray<TSharedPtr<FJsonValue>> ImagePaths;
+	for (const FShuttlegentPromptImage& Image : Images)
+	{
+		TArray<uint8> Bytes;
+		const bool bKnownType = Algo::FindByPredicate(ShuttlegentAgentServicePrivate::ImageMimeTypes, [&Image](const TCHAR* Type) { return Image.MimeType.Equals(Type, ESearchCase::IgnoreCase); }) != nullptr;
+		if (!bKnownType || !FBase64::Decode(Image.Data, Bytes) || Bytes.IsEmpty())
+		{
+			OutError = FString::Printf(TEXT("Image is not PNG, JPEG, WebP or GIF base64 (%s)."), *Image.MimeType);
+			return false;
+		}
+
+		TSharedRef<FJsonObject> ImageBlock = MakeShared<FJsonObject>();
+		ImageBlock->SetStringField(ShuttlegentAgentServicePrivate::FieldType, ShuttlegentAgentServicePrivate::ContentTypeImage);
+		ImageBlock->SetStringField(ShuttlegentAgentServicePrivate::FieldMimeType, Image.MimeType.ToLower());
+		ImageBlock->SetStringField(ShuttlegentAgentServicePrivate::FieldData, Image.Data);
+		PromptBlocks.Add(MakeShared<FJsonValueObject>(ImageBlock));
+
+		const FString SavedPath = SessionStore.SaveImage(Image.MimeType.ToLower(), Bytes);
+		if (SavedPath.IsEmpty()) continue;
+
+		OutImageFiles.Add(SavedPath);
+		ImagePaths.Add(MakeShared<FJsonValueString>(SavedPath));
+	}
 
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
 	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
@@ -321,6 +376,7 @@ bool FShuttlegentAgentService::Prompt(const FString& SessionId, const FString& T
 
 	TSharedRef<FJsonObject> TranscriptEntry = MakeShared<FJsonObject>();
 	TranscriptEntry->SetStringField(ShuttlegentAgentServicePrivate::FieldText, Text);
+	if (!ImagePaths.IsEmpty()) TranscriptEntry->SetArrayField(ShuttlegentAgentServicePrivate::FieldImages, ImagePaths);
 	SessionStore.AppendTranscript(SessionId, ShuttlegentAgentServicePrivate::TranscriptPrompt, TranscriptEntry);
 	SessionStore.TouchRecord(SessionId);
 

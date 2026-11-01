@@ -58,15 +58,25 @@ namespace FShuttlegentMcpEndpointPrivate
 		return Envelope;
 	}
 
-	/** MCP tools/call 结果：一个文本块及错误标志。 */
+	/** MCP tools/call 结果：一个文本块、其后的各图片块，以及错误标志。 */
 	TSharedRef<FJsonObject> MakeToolResult(const FShuttlegentToolResult& Result)
 	{
 		const TSharedRef<FJsonObject> Block = MakeShared<FJsonObject>();
 		Block->SetStringField(ShuttlegentMcpEndpointConstant::FieldType, ShuttlegentMcpEndpointConstant::ContentTypeText);
 		Block->SetStringField(ShuttlegentMcpEndpointConstant::FieldText, Result.Text);
 
+		TArray<TSharedPtr<FJsonValue>> Content = { MakeShared<FJsonValueObject>(Block) };
+		for (const FShuttlegentToolImage& Image : Result.Images)
+		{
+			const TSharedRef<FJsonObject> ImageBlock = MakeShared<FJsonObject>();
+			ImageBlock->SetStringField(ShuttlegentMcpEndpointConstant::FieldType, ShuttlegentMcpEndpointConstant::ContentTypeImage);
+			ImageBlock->SetStringField(ShuttlegentMcpEndpointConstant::FieldMimeType, Image.MimeType);
+			ImageBlock->SetStringField(ShuttlegentMcpEndpointConstant::FieldData, Image.Data);
+			Content.Add(MakeShared<FJsonValueObject>(ImageBlock));
+		}
+
 		const TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
-		Object->SetArrayField(ShuttlegentMcpEndpointConstant::FieldContent, { MakeShared<FJsonValueObject>(Block) });
+		Object->SetArrayField(ShuttlegentMcpEndpointConstant::FieldContent, Content);
 		Object->SetBoolField(ShuttlegentMcpEndpointConstant::FieldIsError, Result.bError);
 		return Object;
 	}

@@ -243,6 +243,10 @@ try {
         $ImagePrompt = @{ text = 'Without using any tool: what colour is the left half of this image, and what colour is the right half? Answer in English in one short sentence.'; image = (Join-Path $ProbeDir 'fixtures\split-red-blue.png') }
         Invoke-Scenario -Name 's11_image' -HomeName 'image' -Prompts @($ImagePrompt) -Key $ApiKey
 
+        # Stage 5 M0: an image returned in an MCP tool result reaches the model (the editor's screenshot path)
+        $ToolImagePrompt = 'Call the ue_capture_probe tool, then tell me what colour the left half and the right half of the captured image are. Answer in English in one short sentence.'
+        Invoke-Scenario -Name 's19_tool_image' -HomeName 'toolimage' -Prompts @($ToolImagePrompt) -Key $ApiKey
+
         # H6: the same image on deepseek-flash, which the llm-deepseek catalog lists with image input
         $FlashOverlay = Join-Path $OutDir 'image-flash.overlay.yml'
         [IO.File]::WriteAllText($FlashOverlay, "- id: acp`n  config:`n    provider: deepseek-official`n    model: deepseek-flash`n", $Utf8NoBom)

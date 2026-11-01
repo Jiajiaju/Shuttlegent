@@ -20,6 +20,7 @@ public class ShuttlegentToolsetBridge : ModuleRules
 				"Engine",
 				"EditorSubsystem",
 				"Json",
+				"ImageWrapper",
 				"UnrealEd",
 				"ToolsetRegistry",
 				"ShuttlegentCore",

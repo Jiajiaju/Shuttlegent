@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "FShuttlegentPromptImage.h"
+
 #include "Chat/EShuttlegentTurnOutcome.h"
 #include "Chat/FShuttlegentChatEntry.h"
 #include "Chat/FShuttlegentPromptQueue.h"
@@ -27,11 +29,13 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	TArray<FShuttlegentRunLogEntry> RunLog;
 	FShuttlegentPromptQueue Queue;
 
-	/** 等待运行时或会话就绪的提示。 */
+	/** 等待运行时或会话就绪的提示，及随它发送的图片。 */
 	FString PendingPrompt;
+	TArray<FShuttlegentPromptImage> PendingImages;
 
-	/** 最近一次发送的提示，保持发送时的原样（含引用块）；失败的回合会重试它。 */
+	/** 最近一次发送的提示，保持发送时的原样（含引用块），及其图片；失败的回合会重试它。 */
 	FString LastSentPrompt;
+	TArray<FShuttlegentPromptImage> LastSentImages;
 
 	/** 会话未打开期间选择的配置值，按配置 id 索引；会话打开后应用。 */
 	TMap<FString, FString> PendingConfig;

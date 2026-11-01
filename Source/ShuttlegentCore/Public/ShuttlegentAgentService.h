@@ -6,6 +6,7 @@
 
 #include "ShuttlegentAgentState.h"
 #include "ShuttlegentStartIssue.h"
+#include "FShuttlegentPromptImage.h"
 #include "ShuttlegentSessionStore.h"
 
 class FShuttlegentAcpConnection;
@@ -67,6 +68,7 @@ private:
 	TUniquePtr<FShuttlegentAcpConnection> Connection;
 	FShuttlegentSessionStore SessionStore;
 	EShuttlegentAgentState State = EShuttlegentAgentState::Stopped;
+	bool bImagePrompts = false;
 	TMap<FString, FShuttlegentOpenSession> OpenSessions;
 	bool bStopRequested = false;
 	EShuttlegentStartIssue StartIssue = EShuttlegentStartIssue::None;
@@ -95,6 +97,15 @@ public:
 
 	/** 向一个已打开且没有进行中提问的会话发送一条文本提问。 */
 	bool Prompt(const FString& SessionId, const FString& Text, FString& OutError);
+
+	/**
+	 * 同上，附带图片；运行时未声明接受图片时拒绝。图片保存到会话目录并记入会话记录，OutImageFiles 为各图片的绝对路径。
+	 * 文本可以为空，此时至少要有一张图片。
+	 */
+	bool Prompt(const FString& SessionId, const FString& Text, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutImageFiles, FString& OutError);
+
+	/** 运行时在 initialize 中声明接受图片提问（promptCapabilities.image）；取决于启动时的默认模型。 */
+	bool SupportsImagePrompts() const { return bImagePrompts; }
 
 	/** 取消该会话进行中的提问（如有）。 */
 	void Cancel(const FString& SessionId);

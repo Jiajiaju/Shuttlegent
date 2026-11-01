@@ -203,6 +203,8 @@ namespace ShuttlegentMcpEndpointConstant
 	inline const TCHAR* FieldText = TEXT("text");
 	inline const TCHAR* FieldIsError = TEXT("isError");
 	inline const TCHAR* ContentTypeText = TEXT("text");
+	inline const TCHAR* ContentTypeImage = TEXT("image");
+	inline const TCHAR* FieldMimeType = TEXT("mimeType");
 
 	// ACP mcpServers 声明字段
 	inline const TCHAR* DeclarationTypeHttp = TEXT("http");

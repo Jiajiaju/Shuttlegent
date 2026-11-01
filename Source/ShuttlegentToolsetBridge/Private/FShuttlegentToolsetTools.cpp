@@ -1,6 +1,8 @@
 #include "FShuttlegentToolsetTools.h"
 
 #include "Async/Async.h"
+#include "FShuttlegentToolsetImages.h"
+#include "Tool/FShuttlegentToolImage.h"
 #include "Editor.h"
 #include "Engine/World.h"
 #include "Serialization/JsonReader.h"
@@ -195,15 +197,24 @@ namespace FShuttlegentToolsetToolsPrivate
 			FShuttlegentToolsets::Execute(Toolset, Tool.Name, GetToolArguments(Arguments)).Then([OnDone](TFuture<TValueOrError<FString, FString>> Future)
 			{
 				const TValueOrError<FString, FString> Result = Future.Get();
-				const FShuttlegentToolResult Answer = Result.HasError() ? FShuttlegentToolResult::Error(Result.GetError()) : FShuttlegentToolResult::Ok(Result.GetValue());
+				const bool bOk = !Result.HasError();
+				const FShuttlegentToolResult Answer = bOk ? FShuttlegentToolResult::Ok(Result.GetValue()) : FShuttlegentToolResult::Error(Result.GetError());
+
+				// 截图类工具的图片改以图片块返回，文本中只留说明，避免 base64 占满结果长度；解码图片需在游戏线程
+				const TFunction<void()> Finish = [OnDone, Answer, bOk]()
+				{
+					FShuttlegentToolResult Final = Answer;
+					if (bOk) FShuttlegentToolsetImages::Extract(Final.Text, Final.Images);
+					OnDone(Final);
+				};
 				if (IsInGameThread())
 				{
-					OnDone(Answer);
+					Finish();
 					return;
 				}
 
 				// 端点在游戏线程上应答
-				AsyncTask(ENamedThreads::GameThread, [OnDone, Answer]() { OnDone(Answer); });
+				AsyncTask(ENamedThreads::GameThread, Finish);
 			});
 		}
 
@@ -271,7 +282,10 @@ namespace FShuttlegentToolsetToolsPrivate
 				}
 
 				Item.Status = EShuttlegentWriteObjectStatus::Completed;
+				// 写入结果只回传文本：其中的图片换成说明，不随结果返回
+				TArray<FShuttlegentToolImage> Images;
 				Item.Output = Result.GetValue();
+				FShuttlegentToolsetImages::Extract(Item.Output, Images);
 			}
 		}
 	};

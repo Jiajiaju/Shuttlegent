@@ -32,4 +32,7 @@ struct FShuttlegentWriteRequest
 
 	/** 由写入门设置：请求无人作答而超时的时刻（UTC）；确认卡据此倒计时。 */
 	FDateTime ExpiresAtUtc {};
+
+	/** 由写入门设置：按当前写入模式未弹确认卡、直接批准执行。 */
+	bool bAutoApproved = false;
 };

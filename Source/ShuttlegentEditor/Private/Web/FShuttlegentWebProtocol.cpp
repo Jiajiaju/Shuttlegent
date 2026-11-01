@@ -27,6 +27,26 @@
 
 namespace FShuttlegentWebProtocolPrivate
 {
+	const TCHAR* WriteModeName(EShuttlegentWriteMode Mode)
+	{
+		switch (Mode)
+		{
+		case EShuttlegentWriteMode::AcceptEdits:
+			{
+				return ShuttlegentEditorWebField::WriteModeAcceptEdits;
+			}
+		case EShuttlegentWriteMode::Auto:
+			{
+				return ShuttlegentEditorWebField::WriteModeAuto;
+			}
+		case EShuttlegentWriteMode::Manual:
+		default:
+			{
+				return ShuttlegentEditorWebField::WriteModeManual;
+			}
+		}
+	}
+
 	const TCHAR* KindName(EShuttlegentChatEntryKind Kind)
 	{
 		switch (Kind)
@@ -509,6 +529,7 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetBoolField(ShuttlegentEditorWebField::PlanMode, Model->IsPlanMode());
 	Root->SetBoolField(ShuttlegentEditorWebField::CanSetPlanMode, Model->CanSetPlanMode(PlanModeReason));
 	Root->SetStringField(ShuttlegentEditorWebField::PlanModeReason, PlanModeReason.ToString());
+	Root->SetStringField(ShuttlegentEditorWebField::WriteMode, FShuttlegentWebProtocolPrivate::WriteModeName(Model->GetWriteMode()));
 
 	FText AttachImagesReason;
 	Root->SetBoolField(ShuttlegentEditorWebField::CanAttachImages, Model->CanAttachImages(AttachImagesReason));
@@ -867,6 +888,7 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		const bool bCanUndo = Model->CanUndoWrite(Entry, Reason);
 		Item->SetStringField(ShuttlegentEditorWebField::Action, Entry.WriteResult.Action);
 		Item->SetBoolField(ShuttlegentEditorWebField::Undoable, Entry.WriteResult.bUndoable);
+		Item->SetBoolField(ShuttlegentEditorWebField::AutoApproved, Entry.bAutoApproved);
 		Item->SetArrayField(ShuttlegentEditorWebField::Objects, FShuttlegentWebProtocolPrivate::MakeWriteObjects(Entry.WriteResult.Objects));
 		Item->SetBoolField(ShuttlegentEditorWebField::CanUndo, bCanUndo);
 		Item->SetStringField(ShuttlegentEditorWebField::UndoReason, Reason.ToString());

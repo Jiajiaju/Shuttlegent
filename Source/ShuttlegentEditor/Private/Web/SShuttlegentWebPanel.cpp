@@ -165,9 +165,11 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnAcknowledgeWrite = nullptr;
 	Bridge->OnOpenPluginFolder = nullptr;
 	Bridge->OnRevealObject = nullptr;
+	Bridge->OnAddObjectReference = nullptr;
 	Bridge->OnCompactContext = nullptr;
 	Bridge->OnSetPlanMode = nullptr;
 	Bridge->OnAnswerPlanReview = nullptr;
+	Bridge->OnSetWriteMode = nullptr;
 	Bridge.Reset();
 }
 
@@ -423,10 +425,20 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
 		if (Pinned.IsValid()) Pinned->SetPlanMode(bActive);
 	};
-	Bridge->OnAnswerPlanReview = [WeakModel](bool bApprove, const FString& Feedback)
+	Bridge->OnAnswerPlanReview = [WeakModel](bool bApprove, const FString& Feedback, bool bAcceptEdits)
 	{
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
-		if (Pinned.IsValid()) Pinned->AnswerPlanReview(bApprove, Feedback);
+		if (Pinned.IsValid()) Pinned->AnswerPlanReview(bApprove, Feedback, bAcceptEdits);
+	};
+	Bridge->OnSetWriteMode = [WeakModel](const FString& Mode)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (!Pinned.IsValid()) return;
+
+		EShuttlegentWriteMode WriteMode = EShuttlegentWriteMode::Manual;
+		if (Mode == ShuttlegentEditorWebField::WriteModeAcceptEdits) WriteMode = EShuttlegentWriteMode::AcceptEdits;
+		else if (Mode == ShuttlegentEditorWebField::WriteModeAuto) WriteMode = EShuttlegentWriteMode::Auto;
+		Pinned->SetWriteMode(WriteMode);
 	};
 	Bridge->OnCompactContext = [WeakModel]()
 	{
@@ -439,6 +451,11 @@ void SShuttlegentWebPanel::BindBridge()
 		Reference.Kind = Kind == ShuttlegentEditorWebField::KindActor ? EShuttlegentReferenceKind::Actor : EShuttlegentReferenceKind::Asset;
 		Reference.Path = Path;
 		FShuttlegentReferenceNavigator::Reveal(Reference, bOpen);
+	};
+	Bridge->OnAddObjectReference = [WeakThis](const FString& Kind, const FString& Path)
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) This->HandleAddObjectReference(Kind, Path);
 	};
 	Bridge->OnQueryReferences = [WeakThis](const FString& Query)
 	{
@@ -676,6 +693,16 @@ void SShuttlegentWebPanel::HandleWatchReferences(const FString& ReferencesJson)
 {
 	WatchedReferences = FShuttlegentWebJson::ParseReferences(ReferencesJson);
 	PushReferenceValidity();
+}
+
+void SShuttlegentWebPanel::HandleAddObjectReference(const FString& Kind, const FString& Path)
+{
+	const EShuttlegentReferenceKind ReferenceKind = Kind == ShuttlegentEditorWebField::KindActor ? EShuttlegentReferenceKind::Actor : EShuttlegentReferenceKind::Asset;
+	FShuttlegentReference Reference;
+	if (!FShuttlegentReferenceFinder::TryResolve(ReferenceKind, Path, Reference)) return;
+
+	const TArray<TSharedPtr<FJsonValue>> Items { FShuttlegentWebJson::MakeReference(Reference) };
+	CallPage(ShuttlegentEditorWeb::JsOnDrop, FShuttlegentWebJson::ToJson(Items));
 }
 
 void SShuttlegentWebPanel::PushReferenceValidity()

@@ -1,7 +1,8 @@
 // Shuttlegent session control: lets the editor do what ACP has no method for. The plugin listens on a localhost port
 // guarded by the editor endpoint token and announces the port to the editor endpoint (notification
 // shuttlegent/runtimeControl). Methods: fork (below), command (run a slash command such as /compact), planMode (enter
-// or leave plan mode) and answerPlanReview (the user's verdict on a plan the model presented in plan mode). A fork copies the source session's event log up to the
+// or leave plan mode), answerPlanReview (the user's verdict on a plan the model presented in plan mode) and imageInput
+// (whether a model route declares image input; ACP decides it once, for the default model). A fork copies the source session's event log up to the
 // cut into a new, ordinary session (no parentSession, so session/resume accepts it), writes it to storage and lets go
 // of it; the editor then resumes it over ACP.
 // Loaded by the patch the editor generates before every launch; the endpoint URL and token come from the environment.
@@ -174,7 +175,30 @@ export function apply(ctx) {
     })
   })
 
-  const METHODS = { fork, command, planMode, answerPlanReview }
+  /**
+   * Whether a model route accepts images, as ACP checks it before a prompt with images. model is the ACP config value of
+   * the session's "model" option (a JSON array [provider, model]); a route the catalog cannot resolve counts as no.
+   */
+  const imageInput = async ({ model }) => {
+    let route
+    try {
+      route = JSON.parse(model)
+    } catch {
+      route = undefined
+    }
+    if (!Array.isArray(route) || typeof route[0] !== 'string' || typeof route[1] !== 'string') throw new ControlError('imageInput needs model as the config value ["provider","model"]')
+    const llm = ctx.get('llm')
+    if (!llm) throw new ControlError('the runtime has no model registry')
+
+    try {
+      const info = await llm.resolveModelInfo(route[0], route[1], new AbortController().signal)
+      return { image: Array.isArray(info?.inputModalities) && info.inputModalities.includes('image') }
+    } catch {
+      return { image: false }
+    }
+  }
+
+  const METHODS = { fork, command, planMode, answerPlanReview, imageInput }
 
   const reply = (response, status, body) => {
     response.writeHead(status, { 'Content-Type': 'application/json' })

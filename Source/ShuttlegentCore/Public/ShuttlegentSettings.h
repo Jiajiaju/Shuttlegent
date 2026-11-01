@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 
+#include "EShuttlegentWriteMode.h"
 #include "FShuttlegentProviderEntry.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentPermissionPolicy.h"
@@ -71,6 +72,10 @@ public:
 	/** 没有编辑器对话框处理时，对运行时权限请求的答复。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	EShuttlegentPermissionPolicy PermissionPolicy = EShuttlegentPermissionPolicy::Reject;
+
+	/** 新对话的编辑器写入确认方式；面板中可按对话切换。删除、移动、改名在任何模式下都要确认。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
+	EShuttlegentWriteMode DefaultWriteMode = EShuttlegentWriteMode::Manual;
 
 	/** 在面板中播放标志动画（开场、工作中、悬停、完成）；关闭时标志始终显示静止帧。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")

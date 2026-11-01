@@ -49,7 +49,7 @@
   // Width change per arrow key on a focused pane grip, in CSS pixels
   const RESIZE_KEY_STEP = 16;
 
-  // Context usage shares where the ring turns to the warning and then the error colour
+  // Context usage shares where the context card turns to the warning and then the error colour
   const USAGE_HIGH_SHARE = 0.8;
   const USAGE_FULL_SHARE = 0.95;
 
@@ -74,6 +74,24 @@
 
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
+
+  // Modes in menu order: how editor writes are confirmed, and plan (read-only until a plan is approved); Shift+Tab cycles in MODE_CYCLE order
+  const MODES = [
+    { value: 'auto', label: '自动', detail: '除删除、移动、改名外，修改直接执行' },
+    { value: 'manual', label: '手动', detail: '每次修改前都先询问' },
+    { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先询问' },
+    { value: 'plan', label: '计划', detail: '先出方案，批准后再修改' }
+  ];
+  const MODE_CYCLE = ['manual', 'acceptEdits', 'auto', 'plan'];
+  const EFFORT_NOTE = '推理强度越高，回答越周全，但耗时更长、用量消耗更快。';
+
+  // Gap between a picker and what opened it, and least distance kept from the panel edge, in CSS pixels
+  const PICKER_GAP = 6;
+  const PICKER_EDGE = 8;
+
+  // Distance an object link must move before it counts as a drag rather than a click; offset of the dragged label from the pointer; in CSS pixels
+  const OBJECT_DRAG_THRESHOLD = 5;
+  const OBJECT_DRAG_OFFSET = 12;
 
   // Pause after typing in the @ menu before the editor is asked for candidates, in milliseconds
   const MENU_QUERY_DELAY_MS = 80;
@@ -175,6 +193,7 @@
     canCompact: false,
     compactReason: '',
     planMode: false,
+    writeMode: 'manual',
     canSetPlanMode: false,
     canAttachImages: false,
     attachImagesReason: '',
@@ -192,6 +211,8 @@
   let watchedObjectKey = '';
   const view = {
     layout: 'full',
+    // The model or mode picker that is open under the composer ('model-menu', 'mode-menu'), or null
+    openPicker: null,
     // Docked panes remember whether they stay open; overlays open fresh each time
     docked: { sidebar: true, inspector: true },
     overlay: null,
@@ -501,7 +522,8 @@
 
     const undoLabel = entry.undone ? '已撤销' : entry.canUndo ? '撤销本次修改' : '撤销不可用';
     const undo = entry.undoable ? '<div class="actions start"><button data-undo-write="' + entry.id + '" ' + (entry.canUndo ? '' : 'disabled') + ' title="' + esc(entry.undoReason) + '">' + undoLabel + '</button></div><p class="fine">' + esc(entry.undoReason) + '</p>' : '<p class="fine">此操作不可撤销。</p>';
-    return '<article class="message"><div class="result' + (warn ? ' warn' : '') + '"><h3>' + title + '</h3><p>' + esc(entry.action) + '</p><ul class="write-objects">' + objects.map(writeObjectRow).join('') + '</ul>' + undo + '</div></article>';
+    const auto = entry.autoApproved ? '<span class="badge auto" title="按当前模式未弹确认卡、直接执行">自动执行</span>' : '';
+    return '<article class="message"><div class="result' + (warn ? ' warn' : '') + '"><h3>' + title + auto + '</h3><p>' + esc(entry.action) + '</p><ul class="write-objects">' + objects.map(writeObjectRow).join('') + '</ul>' + undo + '</div></article>';
   }
 
   /** A confirmed write whose result never arrived (interaction spec section 5.3): what was confirmed, verified by the user before sending again. */
@@ -808,25 +830,21 @@
     banner.innerHTML = '';
   }
 
-  function renderSelect(select, configId) {
+  function configChoices(configId) {
     const option = state.config[configId] || { current: '', choices: [] };
-    const choices = option.choices || [];
-    select.innerHTML = choices.length ? choices.map((choice) => '<option value="' + esc(choice.value) + '">' + esc(choice.name) + '</option>').join('') : '<option value="">—</option>';
-    select.value = choices.length ? option.current : '';
-    select.disabled = choices.length === 0 || state.prompting;
+    return { current: option.current, choices: option.choices || [] };
   }
 
-  /** Context usage as a ring: the arc is the used share, the colour warns as the context fills; the numbers are in the tooltip. */
-  function renderUsage() {
-    const usage = $('usage');
-    const known = state.contextSize > 0;
-    const share = known ? Math.min(state.usedTokens / state.contextSize, 1) : 0;
-    const percent = Math.round(share * 100);
-    $('usage-bar').style.strokeDasharray = percent + ' 100';
-    usage.classList.toggle('high', known && share >= USAGE_HIGH_SHARE && share < USAGE_FULL_SHARE);
-    usage.classList.toggle('full', known && share >= USAGE_FULL_SHARE);
-    usage.title = known ? '上下文已用 ' + percent + '% · ' + state.usedTokens.toLocaleString() + ' / ' + state.contextSize.toLocaleString() + ' tokens' : '上下文用量未知';
-    usage.setAttribute('aria-label', usage.title);
+  /** A model choice reads "Provider / Model"; the trigger and the menu show the model alone. */
+  function shortModelName(name) {
+    const index = name.lastIndexOf(' / ');
+    return index >= 0 ? name.slice(index + 3) : name;
+  }
+
+  function choiceName(configId) {
+    const { current, choices } = configChoices(configId);
+    const choice = choices.find((item) => item.value === current);
+    return choice ? choice.name : '';
   }
 
   function hasInvalidReference() {
@@ -869,23 +887,259 @@
     stop.innerHTML = icons.svg(state.stopping ? 'loader' : 'stop', 14);
     stop.title = state.stopping ? '正在停止，等待当前调用结束' : '停止本轮；已执行的修改不会回滚';
     stop.setAttribute('aria-label', state.stopping ? '停止中' : '停止');
-    renderSelect($('model'), 'model');
-    renderSelect($('reasoning'), 'reasoning_effort');
-    renderUsage();
-    renderPlanToggle();
+    renderMetaTriggers();
+    refreshOpenPicker();
     renderImageButton();
   }
 
-  /** Plan mode switch beside the model picker; the composer is outlined while it is on. */
-  function renderPlanToggle() {
-    const toggle = $('plan-toggle');
-    toggle.setAttribute('aria-pressed', String(state.planMode));
-    toggle.classList.toggle('on', state.planMode);
-    toggle.disabled = !state.canSetPlanMode;
-    toggle.title = !state.canSetPlanMode ? state.planModeReason
-      : state.planMode ? '计划模式：Agent 只查看、出方案，你批准后才动手；编辑器写入一律拦截。点击关闭'
-      : '打开计划模式：Agent 先查看并给出方案，你批准后才修改';
-    $('composer').classList.toggle('plan-mode', state.planMode);
+  function currentMode() {
+    return state.planMode ? 'plan' : state.writeMode;
+  }
+
+  /** Below the composer, right-aligned: model with reasoning effort, then mode; the composer outline shows any mode other than manual. */
+  function renderMetaTriggers() {
+    const models = configChoices('model');
+    $('model-name').textContent = shortModelName(choiceName('model')) || '模型';
+    $('effort-name').textContent = choiceName('reasoning_effort');
+    const modelTrigger = $('model-trigger');
+    modelTrigger.disabled = models.choices.length === 0 || state.prompting;
+    modelTrigger.title = state.prompting ? '本轮结束后再切换模型或推理强度' : '模型与推理强度';
+
+    const mode = currentMode();
+    const info = MODES.find((item) => item.value === mode);
+    const modeTrigger = $('mode-trigger');
+    modeTrigger.textContent = info.label;
+    modeTrigger.title = '模式：' + info.detail + ' · Shift+Tab 切换';
+    for (const item of MODES) {
+      $('composer').classList.toggle('mode-' + item.value, item.value === mode);
+    }
+  }
+
+  function pickerItemHtml(attributes, label, detail, checked, disabled) {
+    return '<button class="picker-item" role="menuitemradio" aria-checked="' + checked + '"' + attributes + (disabled ? ' disabled' : '') + '><span>' + esc(label) + '</span>'
+      + (checked ? '<span class="picker-check">' + icons.svg('check', 16) + '</span>' : '')
+      + (detail ? '<small>' + esc(detail) + '</small>' : '') + '</button>';
+  }
+
+  function modelMenuHtml() {
+    const models = configChoices('model');
+    const efforts = configChoices('reasoning_effort');
+    let html = models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
+    if (efforts.choices.length) {
+      html += '<div class="picker-sep"></div><button class="picker-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span>推理强度</span><span class="picker-value">' + esc(choiceName('reasoning_effort')) + icons.svg('chevron', 14) + '</span></button>';
+    }
+    return html;
+  }
+
+  function effortMenuHtml() {
+    const efforts = configChoices('reasoning_effort');
+    return '<div class="picker-note">' + EFFORT_NOTE + '</div>' + efforts.choices.map((choice) => pickerItemHtml(' data-pick-effort="' + esc(choice.value) + '"', choice.name, '', choice.value === efforts.current, false)).join('');
+  }
+
+  function modeMenuHtml() {
+    const mode = currentMode();
+    return '<div class="picker-title">模式</div>' + MODES.map((item) => {
+      const disabled = item.value === 'plan' && !state.canSetPlanMode && !state.planMode;
+      return pickerItemHtml(' data-pick-mode="' + item.value + '"' + (disabled && state.planModeReason ? ' title="' + esc(state.planModeReason) + '"' : ''), item.label, item.detail, item.value === mode, disabled);
+    }).join('');
+  }
+
+  /** Places a picker above its anchor, right edges aligned, kept inside the panel. */
+  function placePicker(picker, anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.right - picker.offsetWidth, PICKER_EDGE), window.innerWidth - picker.offsetWidth - PICKER_EDGE);
+    const top = Math.max(rect.top - picker.offsetHeight - PICKER_GAP, PICKER_EDGE);
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+  }
+
+  /** The effort submenu opens beside the model menu, its bottom level with the effort row; it flips left when there is no room. */
+  function placeSubmenu(picker, row) {
+    const menu = $('model-menu').getBoundingClientRect();
+    const rect = row.getBoundingClientRect();
+    let left = menu.right + PICKER_GAP;
+    if (left + picker.offsetWidth > window.innerWidth - PICKER_EDGE) left = Math.max(menu.left - picker.offsetWidth - PICKER_GAP, PICKER_EDGE);
+    const top = Math.min(Math.max(rect.bottom - picker.offsetHeight, PICKER_EDGE), window.innerHeight - picker.offsetHeight - PICKER_EDGE);
+    picker.style.left = left + 'px';
+    picker.style.top = top + 'px';
+  }
+
+  function pickerTrigger(id) {
+    return $(id === 'model-menu' ? 'model-trigger' : 'mode-trigger');
+  }
+
+  function fillPicker(id) {
+    $(id).innerHTML = id === 'model-menu' ? modelMenuHtml() : id === 'effort-menu' ? effortMenuHtml() : modeMenuHtml();
+  }
+
+  function openPicker(id, focusFirst) {
+    closePickers();
+    const picker = $(id);
+    fillPicker(id);
+    picker.hidden = false;
+    placePicker(picker, pickerTrigger(id));
+    pickerTrigger(id).setAttribute('aria-expanded', 'true');
+    view.openPicker = id;
+    if (focusFirst) focusPickerItem(picker, 0);
+  }
+
+  function openEffortMenu(focusFirst) {
+    const row = $('effort-row');
+    if (!row) return;
+    const picker = $('effort-menu');
+    fillPicker('effort-menu');
+    picker.hidden = false;
+    placeSubmenu(picker, row);
+    row.classList.add('open');
+    row.setAttribute('aria-expanded', 'true');
+    if (focusFirst) focusPickerItem(picker, 0);
+  }
+
+  function closeEffortMenu() {
+    $('effort-menu').hidden = true;
+    const row = $('effort-row');
+    if (!row) return;
+    row.classList.remove('open');
+    row.setAttribute('aria-expanded', 'false');
+  }
+
+  function closePickers() {
+    for (const id of ['model-menu', 'effort-menu', 'mode-menu']) {
+      $(id).hidden = true;
+    }
+    $('model-trigger').setAttribute('aria-expanded', 'false');
+    $('mode-trigger').setAttribute('aria-expanded', 'false');
+    view.openPicker = null;
+  }
+
+  /** A state push while a picker is open redraws it in place, so the check follows what the editor applied. */
+  function refreshOpenPicker() {
+    if (!view.openPicker) return;
+    if (view.openPicker === 'model-menu' && $('model-trigger').disabled) {
+      closePickers();
+      return;
+    }
+
+    const effortOpen = !$('effort-menu').hidden;
+    fillPicker(view.openPicker);
+    placePicker($(view.openPicker), pickerTrigger(view.openPicker));
+    if (effortOpen) openEffortMenu(false);
+  }
+
+  function focusPickerItem(picker, index) {
+    const items = Array.from(picker.querySelectorAll('.picker-item:not(:disabled)'));
+    if (items.length) items[(index + items.length) % items.length].focus();
+  }
+
+  function bindPickers() {
+    for (const id of ['model-menu', 'mode-menu']) {
+      const trigger = pickerTrigger(id);
+      trigger.addEventListener('click', () => {
+        if (view.openPicker === id) closePickers();
+        else openPicker(id, false);
+      });
+      trigger.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        event.preventDefault();
+        openPicker(id, true);
+      });
+    }
+
+    $('model-menu').addEventListener('click', (event) => {
+      const model = event.target.closest('[data-pick-model]');
+      if (model) {
+        if (model.getAttribute('aria-checked') !== 'true') call('setconfig', 'model', model.dataset.pickModel);
+        closePickers();
+        return;
+      }
+      if (!event.target.closest('#effort-row')) return;
+      if ($('effort-menu').hidden) openEffortMenu(false);
+      else closeEffortMenu();
+    });
+    // Hovering the effort row opens its submenu; hovering a model row closes it
+    $('model-menu').addEventListener('mouseover', (event) => {
+      const item = event.target.closest('.picker-item');
+      if (!item) return;
+      if (item.id === 'effort-row') openEffortMenu(false);
+      else closeEffortMenu();
+    });
+    $('effort-menu').addEventListener('click', (event) => {
+      const effort = event.target.closest('[data-pick-effort]');
+      if (!effort) return;
+      if (effort.getAttribute('aria-checked') !== 'true') call('setconfig', 'reasoning_effort', effort.dataset.pickEffort);
+      closePickers();
+    });
+    $('mode-menu').addEventListener('click', (event) => {
+      const mode = event.target.closest('[data-pick-mode]');
+      if (!mode || mode.disabled) return;
+      closePickers();
+      setMode(mode.dataset.pickMode);
+    });
+
+    // Outside clicks close; the triggers handle their own clicks
+    document.addEventListener('mousedown', (event) => {
+      if (!view.openPicker || event.target.closest('.picker, .meta-trigger')) return;
+      closePickers();
+    });
+    window.addEventListener('resize', closePickers);
+    window.addEventListener('blur', closePickers);
+
+    // Arrows move between items, Right opens the effort submenu and Left leaves it, Esc closes and returns focus to the trigger
+    document.addEventListener('keydown', (event) => {
+      if (!view.openPicker) return;
+      const picker = event.target.closest ? event.target.closest('.picker') : null;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        if (picker && picker.id === 'effort-menu') {
+          closeEffortMenu();
+          $('effort-row').focus();
+          return;
+        }
+        const trigger = pickerTrigger(view.openPicker);
+        closePickers();
+        trigger.focus();
+        return;
+      }
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const target = picker || $(view.openPicker);
+        const items = Array.from(target.querySelectorAll('.picker-item:not(:disabled)'));
+        const index = items.indexOf(document.activeElement);
+        const step = event.key === 'ArrowDown' ? 1 : -1;
+        focusPickerItem(target, index < 0 ? (step > 0 ? 0 : items.length - 1) : index + step);
+        return;
+      }
+      if (event.key === 'ArrowRight' && document.activeElement && document.activeElement.id === 'effort-row') {
+        event.preventDefault();
+        openEffortMenu(true);
+        return;
+      }
+      if (event.key === 'ArrowLeft' && picker && picker.id === 'effort-menu') {
+        event.preventDefault();
+        closeEffortMenu();
+        $('effort-row').focus();
+      }
+    }, true);
+  }
+
+  /** Plan goes through the runtime (it also leaves plan mode); the other modes only change how editor writes are confirmed. */
+  function setMode(mode) {
+    if (mode === currentMode()) return;
+    if (mode === 'plan') {
+      if (state.canSetPlanMode) call('setplanmode', true);
+      else showCommandNote(state.planModeReason || '现在不能切换到计划模式');
+      return;
+    }
+    call('setwritemode', mode);
+  }
+
+  /** Shift+Tab in the draft: manual → accept edits → auto → plan → manual; plan is skipped while it cannot be set. */
+  function cycleMode() {
+    const order = MODE_CYCLE.filter((value) => value !== 'plan' || state.canSetPlanMode || state.planMode);
+    const next = order[(order.indexOf(currentMode()) + 1) % order.length];
+    setMode(next);
+    showCommandNote('模式：' + MODES.find((item) => item.value === next).label);
   }
 
   function prettyRaw(text) {
@@ -946,8 +1200,8 @@
     return '<header><h3 id="decision-title" tabindex="-1">Agent 交出了计划，请审批</h3><span class="badge">计划模式</span></header>'
       + '<div class="plan-body markdown">' + rendered.html + '</div>'
       + '<textarea id="plan-feedback" class="plan-feedback" rows="2" placeholder="退回时的修改意见（可选），如：只改走廊里的灯" aria-label="修改意见"></textarea>'
-      + '<p class="fine">批准后 Agent 退出计划模式并按计划执行，每次编辑器写入仍需确认；退回则继续规划。</p>'
-      + '<div class="actions"><button id="decision-reject">继续规划</button><button id="decision-allow" class="primary">批准并执行</button></div>';
+      + '<p class="fine">批准后 Agent 退出计划模式并按计划执行：自动接受编辑时可撤销的写入直接执行，逐项确认时每次写入都弹确认卡；删除、移动、改名始终要确认。退回则继续规划。</p>'
+      + '<div class="actions"><button id="decision-reject">继续规划</button><button id="decision-allow-manual">批准，逐项确认</button><button id="decision-allow" class="primary">批准，自动接受编辑</button></div>';
   }
 
   /** The decision card replaces the composer while an editor write or a runtime permission request waits for an answer. */
@@ -957,6 +1211,7 @@
     const waiting = decision !== null;
     $('composer').hidden = waiting;
     $('composer-meta').hidden = waiting;
+    if (waiting) closePickers();
     card.hidden = !waiting;
     if (!waiting || decision.kind === 'permission' || decision.kind === 'plan') stopCountdown();
     if (!waiting) {
@@ -993,6 +1248,7 @@
       else card.innerHTML = decision.kind === 'write' ? writeCardHtml(decision.request) : permissionCardHtml(decision.request);
       $('decision-reject').addEventListener('click', () => answerDecision(false));
       $('decision-allow').addEventListener('click', () => answerDecision(true));
+      if (decision.kind === 'plan') $('decision-allow-manual').addEventListener('click', () => answerDecision(true, false));
     }
     view.shownDecisionKey = decision.key;
     if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '，超时后 Agent 改用文字提问。' : '，超时自动取消。');
@@ -1017,7 +1273,8 @@
     view.countdownTimer = 0;
   }
 
-  function answerDecision(allow) {
+  /** acceptEdits applies to a plan only: approving it also picks how the writes that follow are confirmed. */
+  function answerDecision(allow, acceptEdits = true) {
     const decision = currentDecision();
     if (!decision || view.answeringDecisionKey === decision.key) return;
 
@@ -1027,7 +1284,7 @@
       button.disabled = true;
     }
     if (decision.kind === 'write') call('answerwrite', decision.request.id, allow);
-    else if (decision.kind === 'plan') call('answerplanreview', allow, allow ? '' : (($('plan-feedback') || {}).value || '').trim());
+    else if (decision.kind === 'plan') call('answerplanreview', allow, allow ? '' : (($('plan-feedback') || {}).value || '').trim(), allow && acceptEdits);
     else if (decision.kind === 'question') call('answerquestion', decision.request.id, '', true);
     else call('answerpermission', decision.request.id, allow);
   }
@@ -1162,7 +1419,7 @@
   function renderAttachments() {
     const box = $('attachments');
     box.hidden = !draftState.images.length;
-    box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="移除" aria-label="移除图片">×</button></div>').join('');
+    box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="移除" aria-label="移除图片">' + icons.svg('close', 12) + '</button></div>').join('');
   }
 
   function renderImageButton() {
@@ -1374,6 +1631,79 @@
   function revealObject(link, open) {
     if (objectValidity.get(link.dataset.objPath) === false) return;
     call('revealobject', link.dataset.objKind, link.dataset.objPath, open);
+  }
+
+  function isOverComposer(event) {
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    return !!target && !!target.closest('#composer');
+  }
+
+  /**
+   * Dragging an object link onto the composer adds it as a reference chip; the editor fills in its class and name (onDrop).
+   * Pointer events, because the editor's browser does not run native HTML drag and drop. A drag never also counts as a click.
+   */
+  function bindObjectDrag() {
+    let drag = null;
+    let suppressClick = false;
+
+    const endDrag = () => {
+      if (drag && drag.ghost) drag.ghost.remove();
+      $('composer').classList.remove('drop-target');
+      document.body.classList.remove('obj-dragging');
+      drag = null;
+    };
+
+    $('messages').addEventListener('mousedown', (event) => {
+      const link = event.button === 0 ? event.target.closest('[data-obj-path]') : null;
+      if (!link || link.classList.contains('missing')) return;
+
+      event.preventDefault();
+      drag = { kind: link.dataset.objKind, path: link.dataset.objPath, label: link.textContent, x: event.clientX, y: event.clientY, ghost: null };
+    });
+    document.addEventListener('mousemove', (event) => {
+      if (!drag) return;
+      if (!drag.ghost) {
+        if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < OBJECT_DRAG_THRESHOLD) return;
+        drag.ghost = document.createElement('div');
+        drag.ghost.className = 'obj-drag-ghost';
+        drag.ghost.textContent = drag.label;
+        document.body.appendChild(drag.ghost);
+        document.body.classList.add('obj-dragging');
+      }
+
+      drag.ghost.style.left = (event.clientX + OBJECT_DRAG_OFFSET) + 'px';
+      drag.ghost.style.top = (event.clientY + OBJECT_DRAG_OFFSET) + 'px';
+      $('composer').classList.toggle('drop-target', isOverComposer(event));
+    });
+    document.addEventListener('mouseup', (event) => {
+      if (!drag) return;
+      if (!drag.ghost) {
+        drag = null;
+        return;
+      }
+
+      if (isOverComposer(event)) {
+        call('addobjectreference', drag.kind, drag.path);
+        $('draft').focus();
+      }
+      endDrag();
+      suppressClick = true;
+      window.setTimeout(() => { suppressClick = false; }, 0);
+    });
+    document.addEventListener('click', (event) => {
+      if (!suppressClick) return;
+
+      suppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !drag || !drag.ghost) return;
+
+      endDrag();
+      event.stopPropagation();
+    }, true);
+    window.addEventListener('blur', endDrag);
   }
 
   /** Adds references, de-duplicated by path (the stable identity), not by name. */
@@ -2085,7 +2415,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'writeMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -2281,6 +2611,12 @@
         }
       }
 
+      if (event.key === 'Tab' && event.shiftKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        cycleMode();
+        return;
+      }
+
       if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.shiftKey && !event.ctrlKey && !event.altKey) {
         if (browseHistory(event.key === 'ArrowUp' ? -1 : 1)) event.preventDefault();
         return;
@@ -2334,10 +2670,6 @@
     $('stop').addEventListener('click', () => {
       if (!state.stopping) call('cancel');
     });
-    $('model').addEventListener('change', (event) => call('setconfig', 'model', event.target.value));
-    $('plan-toggle').addEventListener('click', () => {
-      if (state.canSetPlanMode) call('setplanmode', !state.planMode);
-    });
 
     // Object links inside a plan under review work as in the conversation
     $('decision').addEventListener('click', (event) => {
@@ -2350,7 +2682,6 @@
       const link = event.target.closest('[data-obj-path]');
       if (link) revealObject(link, true);
     });
-    $('reasoning').addEventListener('change', (event) => call('setconfig', 'reasoning_effort', event.target.value));
   }
 
   /** The composer floats over the conversation's bottom: its height pads the conversation, and the end stays in view as it grows. */
@@ -2698,6 +3029,8 @@
   document.addEventListener('visibilitychange', () => console.log('Shuttlegent page visibility: ' + document.visibilityState));
   bindComposer();
   bindConversation();
+  bindObjectDrag();
+  bindPickers();
   window.setInterval(refreshMessageTimes, TIME_REFRESH_MS);
   bindPanes();
   bindDialogs();

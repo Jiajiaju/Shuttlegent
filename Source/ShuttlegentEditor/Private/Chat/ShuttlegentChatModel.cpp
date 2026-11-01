@@ -204,6 +204,13 @@ namespace ShuttlegentChatModelPrivate
 
 namespace ShuttlegentChatModelPrivate
 {
+	/** 新对话的写入确认方式，取自编辑器偏好设置。 */
+	EShuttlegentWriteMode DefaultWriteMode()
+	{
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		return IsValid(Settings) ? Settings->DefaultWriteMode : EShuttlegentWriteMode::Manual;
+	}
+
 	/** 这条消息之后仍可撤销的写入（同步事务、尚未撤销、确有执行），按发生顺序。 */
 	TArray<TSharedPtr<FShuttlegentChatEntry>> UndoableWritesAfter(const FShuttlegentConversation& Conversation, int32 Index)
 	{
@@ -241,6 +248,7 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 {
 	Service = InService;
 	Current = MakeShared<FShuttlegentConversation>();
+	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
 	Conversations.Add(Current);
 
 	InService->OnStateChanged.AddSP(this, &FShuttlegentChatModel::HandleStateChanged);
@@ -271,12 +279,12 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	Gate->OnClosed.AddSP(this, &FShuttlegentChatModel::HandleWriteClosed);
 	Gate->OnFinished.AddSP(this, &FShuttlegentChatModel::HandleWriteFinished);
 
-	// 计划模式下 Harness 不限制工具，由写入门拒绝写入
+	// 写入模式决定写入门是否弹确认卡；计划模式下 Harness 不限制工具，由写入门拒绝写入
 	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
-	Gate->IsWriteBlocked = [WeakThis]()
+	Gate->GetWritePolicy = [WeakThis](const FShuttlegentWriteRequest& Request)
 	{
 		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
-		return This.IsValid() && This->IsPlanTurnRunning();
+		return This.IsValid() ? This->GetWritePolicy(Request) : EShuttlegentWritePolicy::Ask;
 	};
 }
 
@@ -309,7 +317,7 @@ void FShuttlegentChatModel::Shutdown()
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
 	if (Gate.IsValid())
 	{
-		Gate->IsWriteBlocked = nullptr;
+		Gate->GetWritePolicy = nullptr;
 		Gate->OnRequested.RemoveAll(this);
 		Gate->OnClosed.RemoveAll(this);
 		Gate->OnFinished.RemoveAll(this);
@@ -505,6 +513,20 @@ bool FShuttlegentChatModel::CanAttachImages(FText& OutReason) const
 		OutReason = LOCTEXT("ImagesUnsupported", "当前模型不支持图片；默认模型 deepseek-flash 支持，可在偏好设置中改回");
 		return false;
 	}
+
+	// 运行时只按默认模型声明图片能力；沿用旧模型的对话以运行时确认的结果为准，尚未确认时先放行
+	TArray<FShuttlegentConfigChoice> Models;
+	FString ModelValue;
+	ShuttlegentChatModelPrivate::ParseConfigChoices(Pinned->GetConfigOptions(Current->SessionId), ShuttlegentEditorConfigId::Model, Models, ModelValue);
+	const bool* bModelImage = ModelImageInput.Find(ModelValue);
+	if (bModelImage != nullptr && !*bModelImage)
+	{
+		const FShuttlegentConfigChoice* Model = Models.FindByPredicate([&ModelValue](const FShuttlegentConfigChoice& Choice) { return Choice.Value == ModelValue; });
+		const FString ModelName = Model != nullptr ? Model->Name : ModelValue;
+		OutReason = FText::Format(LOCTEXT("ImagesUnsupportedBySession", "这个对话使用的模型 {0} 不支持图片；在下方切换到支持图片的模型，或新建对话"), FText::FromString(ModelName));
+		return false;
+	}
+
 	if (IsBusy(*Current))
 	{
 		OutReason = LOCTEXT("ImagesBusy", "本轮结束后再发送带图片的消息");
@@ -891,6 +913,7 @@ void FShuttlegentChatModel::NewConversation()
 {
 	LeaveCurrent();
 	Current = MakeShared<FShuttlegentConversation>();
+	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
 	Conversations.Add(Current);
 	BroadcastAll();
 }
@@ -912,6 +935,7 @@ void FShuttlegentChatModel::OpenSession(const FString& SessionId)
 
 	Current = MakeShared<FShuttlegentConversation>();
 	Current->SessionId = SessionId;
+	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
 	Conversations.Add(Current);
 	ReplayTranscript(*Current);
 	AddRunLog(*Current, LOCTEXT("LogOpenSession", "打开会话记录，恢复运行时上下文"), false);
@@ -1295,11 +1319,14 @@ void FShuttlegentChatModel::HandlePlanReviewClosed(const FString& SessionId, con
 	SettlePlanReview(*Conversation, ShuttlegentEditorWebField::PlanCancelled, FString());
 }
 
-void FShuttlegentChatModel::AnswerPlanReview(bool bApprove, const FString& Feedback)
+void FShuttlegentChatModel::AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits)
 {
 	const TSharedPtr<FShuttlegentConversation> Conversation = Current;
 	const FString ReviewId = Conversation->PendingPlanReview.ReviewId;
 	if (ReviewId.IsEmpty()) return;
+
+	// 批准时选定执行阶段的写入确认方式，在 Agent 开始写入之前生效
+	if (bApprove) Conversation->WriteMode = bAcceptEdits ? EShuttlegentWriteMode::AcceptEdits : EShuttlegentWriteMode::Manual;
 
 	const FString Trimmed = Feedback.TrimStartAndEnd();
 	SettlePlanReview(*Conversation, bApprove ? ShuttlegentEditorWebField::PlanApproved : ShuttlegentEditorWebField::PlanRevised, bApprove ? FString() : Trimmed);
@@ -1345,6 +1372,37 @@ void FShuttlegentChatModel::SettlePlanReview(FShuttlegentConversation& Conversat
 bool FShuttlegentChatModel::IsPlanTurnRunning() const
 {
 	return Conversations.ContainsByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Conversation) { return Conversation->bPlanMode && IsBusy(*Conversation); });
+}
+
+EShuttlegentWritePolicy FShuttlegentChatModel::GetWritePolicy(const FShuttlegentWriteRequest& Request) const
+{
+	if (IsPlanTurnRunning()) return EShuttlegentWritePolicy::Block;
+	if (Request.bDestructive) return EShuttlegentWritePolicy::Ask;
+
+	// 写入请求不带会话：取正在运行的对话中最严格的模式（枚举按从严到宽排列）
+	TOptional<EShuttlegentWriteMode> Mode;
+	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
+	{
+		if (!IsBusy(*Conversation)) continue;
+
+		if (!Mode.IsSet() || static_cast<uint8>(Conversation->WriteMode) < static_cast<uint8>(Mode.GetValue())) Mode = Conversation->WriteMode;
+	}
+	if (!Mode.IsSet()) return EShuttlegentWritePolicy::Ask;
+
+	if (Mode.GetValue() == EShuttlegentWriteMode::Auto) return EShuttlegentWritePolicy::Approve;
+	if (Mode.GetValue() == EShuttlegentWriteMode::AcceptEdits && Request.bUndoable) return EShuttlegentWritePolicy::Approve;
+	return EShuttlegentWritePolicy::Ask;
+}
+
+void FShuttlegentChatModel::SetWriteMode(EShuttlegentWriteMode Mode)
+{
+	FText Reason;
+	if (Current->bPlanMode && CanSetPlanMode(Reason)) ApplyPlanMode(Current, false, nullptr);
+
+	if (Current->WriteMode == Mode) return;
+
+	Current->WriteMode = Mode;
+	NotifyStatus(*Current);
 }
 
 void FShuttlegentChatModel::ApplyTodos(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Data)
@@ -2056,6 +2114,7 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 {
 	AwaitingNewSession.Reset();
+	ModelImageInput.Reset();
 	if (!bExpected) bRuntimeLost = true;
 	ParkPendingPrompts();
 
@@ -2142,10 +2201,35 @@ void FShuttlegentChatModel::HandleConfigOptionsChanged(const FString& SessionId)
 	{
 		const TArray<TSharedPtr<FJsonValue>> Options = Pinned->GetConfigOptions(SessionId);
 		if (!Options.IsEmpty()) LastConfigOptions = Options;
+
+		TArray<FShuttlegentConfigChoice> Models;
+		FString ModelValue;
+		ShuttlegentChatModelPrivate::ParseConfigChoices(Options, ShuttlegentEditorConfigId::Model, Models, ModelValue);
+		RequestImageInput(ModelValue);
 	}
 
 	OnStatusChanged.Broadcast();
 	OnSessionsChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::RequestImageInput(const FString& ModelValue)
+{
+	if (ModelValue.IsEmpty() || ModelImageInput.Contains(ModelValue) || PendingImageQueries.Contains(ModelValue)) return;
+
+	PendingImageQueries.Add(ModelValue);
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	FShuttlegentMcpServerModule::Get().QueryImageInput(ModelValue, [WeakThis, ModelValue](TOptional<bool> bImage)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		if (!This.IsValid()) return;
+
+		// 请求失败（如控制端口尚未报来）不记结果，下次配置变化时重新确认
+		This->PendingImageQueries.Remove(ModelValue);
+		if (!bImage.IsSet()) return;
+
+		This->ModelImageInput.Add(ModelValue, bImage.GetValue());
+		This->OnStatusChanged.Broadcast();
+	});
 }
 
 void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject>& Params, TFunction<void(bool)> Respond)
@@ -2216,7 +2300,7 @@ void FShuttlegentChatModel::HandleWriteClosed(int32 RequestId, EShuttlegentWrite
 	{
 		ApprovedWrite = MoveTemp(Closed);
 		bWriting = true;
-		AddRunLog(*Owner, LOCTEXT("LogWriteApproved", "确认执行编辑器写入"), false);
+		AddRunLog(*Owner, ApprovedWrite.bAutoApproved ? LOCTEXT("LogWriteAutoApproved", "按写入模式直接执行编辑器写入") : LOCTEXT("LogWriteApproved", "确认执行编辑器写入"), false);
 	}
 	else
 	{
@@ -2261,6 +2345,7 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 
 	TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Owner, EShuttlegentChatEntryKind::WriteResult, Result.Action);
 	Entry->WriteResult = Result;
+	Entry->bAutoApproved = ApprovedWrite.RequestId == Result.RequestId && ApprovedWrite.bAutoApproved;
 
 	// 未完成全部对象的批次会使队列停止（交互规范第 4.3 节）
 	const bool bAllCompleted = !Result.Objects.ContainsByPredicate([](const FShuttlegentWriteObject& Object) { return Object.Status != EShuttlegentWriteObjectStatus::Completed; });

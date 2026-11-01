@@ -291,6 +291,26 @@ void FShuttlegentMcpServerModule::AnswerPlanReview(const FString& ReviewId, bool
 	});
 }
 
+void FShuttlegentMcpServerModule::QueryImageInput(const FString& ModelValue, TFunction<void(TOptional<bool>)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldModel, ModelValue);
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodImageInput, Params, ShuttlegentMcpEndpointConstant::ControlTimeoutSeconds, [OnDone, ModelValue](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		bool bImage = false;
+		if (!Result.IsValid() || !Result->TryGetBoolField(ShuttlegentMcpEndpointConstant::FieldImage, bImage))
+		{
+			UE_LOG(LogShuttlegent, Warning, TEXT("Shuttlegent image input query for %s failed: %s"), *ModelValue, *Error);
+			OnDone(TOptional<bool>());
+			return;
+		}
+
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent image input for %s: %s"), *ModelValue, bImage ? TEXT("yes") : TEXT("no"));
+		OnDone(bImage);
+	});
+}
+
 void FShuttlegentMcpServerModule::HandlePlanReview(const FShuttlegentPlanReview& Review)
 {
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent plan review %s requested in session %s"), *Review.ReviewId, *Review.SessionId);

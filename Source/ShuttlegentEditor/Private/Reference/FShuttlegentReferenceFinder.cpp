@@ -172,6 +172,27 @@ bool FShuttlegentReferenceFinder::Exists(const FShuttlegentReference& Reference)
 	return AssetRegistry != nullptr && AssetRegistry->GetAssetByObjectPath(FSoftObjectPath(Reference.Path)).IsValid();
 }
 
+bool FShuttlegentReferenceFinder::TryResolve(EShuttlegentReferenceKind Kind, const FString& Path, FShuttlegentReference& OutReference)
+{
+	if (Kind == EShuttlegentReferenceKind::Actor)
+	{
+		const AActor* Actor = Cast<AActor>(FSoftObjectPath(Path).ResolveObject());
+		if (!IsValid(Actor)) return false;
+
+		OutReference = FromActor(*Actor);
+		return true;
+	}
+
+	IAssetRegistry* AssetRegistry = FShuttlegentReferenceFinderPrivate::GetAssetRegistry();
+	if (AssetRegistry == nullptr) return false;
+
+	const FAssetData Asset = AssetRegistry->GetAssetByObjectPath(FSoftObjectPath(Path));
+	if (!Asset.IsValid()) return false;
+
+	OutReference = FromAsset(Asset);
+	return true;
+}
+
 void FShuttlegentReferenceFinder::GatherAssets()
 {
 	IAssetRegistry* AssetRegistry = FShuttlegentReferenceFinderPrivate::GetAssetRegistry();

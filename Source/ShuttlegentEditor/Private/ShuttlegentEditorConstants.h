@@ -414,6 +414,13 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* Plan = TEXT("plan");
 	inline const TCHAR* StatusAwaitingPlanReview = TEXT("awaitingPlanReview");
 
+	// 写入模式：当前对话计划模式之外的写入确认方式；写入结果条目是否按写入模式直接执行
+	inline const TCHAR* WriteMode = TEXT("writeMode");
+	inline const TCHAR* WriteModeManual = TEXT("manual");
+	inline const TCHAR* WriteModeAcceptEdits = TEXT("acceptEdits");
+	inline const TCHAR* WriteModeAuto = TEXT("auto");
+	inline const TCHAR* AutoApproved = TEXT("autoApproved");
+
 	// 状态取值（EShuttlegentChatStatus）
 	inline const TCHAR* StatusNotConnected = TEXT("notConnected");
 	inline const TCHAR* StatusConnecting = TEXT("connecting");

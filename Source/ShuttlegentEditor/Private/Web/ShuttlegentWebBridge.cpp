@@ -165,6 +165,11 @@ void UShuttlegentWebBridge::RevealObject(const FString& Kind, const FString& Pat
 	if (OnRevealObject) OnRevealObject(Kind, Path, bOpen);
 }
 
+void UShuttlegentWebBridge::AddObjectReference(const FString& Kind, const FString& Path)
+{
+	if (OnAddObjectReference) OnAddObjectReference(Kind, Path);
+}
+
 void UShuttlegentWebBridge::CompactContext()
 {
 	if (OnCompactContext) OnCompactContext();
@@ -175,7 +180,12 @@ void UShuttlegentWebBridge::SetPlanMode(bool bActive)
 	if (OnSetPlanMode) OnSetPlanMode(bActive);
 }
 
-void UShuttlegentWebBridge::AnswerPlanReview(bool bApprove, const FString& Feedback)
+void UShuttlegentWebBridge::SetWriteMode(const FString& Mode)
 {
-	if (OnAnswerPlanReview) OnAnswerPlanReview(bApprove, Feedback);
+	if (OnSetWriteMode) OnSetWriteMode(Mode);
+}
+
+void UShuttlegentWebBridge::AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits)
+{
+	if (OnAnswerPlanReview) OnAnswerPlanReview(bApprove, Feedback, bAcceptEdits);
 }

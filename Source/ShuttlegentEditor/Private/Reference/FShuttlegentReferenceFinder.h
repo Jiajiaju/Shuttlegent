@@ -53,6 +53,9 @@ public:
 	/** Actor 是否仍存在于编辑器世界中，或资产是否仍为 AssetRegistry 所知。 */
 	static bool Exists(const FShuttlegentReference& Reference);
 
+	/** 按类型与路径补全引用（回答中的对象链接只带路径）；对象不存在时返回 false。 */
+	static bool TryResolve(EShuttlegentReferenceKind Kind, const FString& Path, FShuttlegentReference& OutReference);
+
 private:
 	void GatherAssets();
 	void MarkChanged();

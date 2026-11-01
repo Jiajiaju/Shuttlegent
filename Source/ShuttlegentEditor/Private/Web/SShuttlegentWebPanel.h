@@ -127,6 +127,9 @@ private:
 	void HandleTakeQueued(int32 ItemId, const FString& DraftText, const FString& DraftReferencesJson);
 	void HandleWatchReferences(const FString& ReferencesJson);
 
+	/** 回答中的对象链接拖进输入框：补全类型与名称后作为引用交给页面；对象已不存在时不加。 */
+	void HandleAddObjectReference(const FString& Kind, const FString& Path);
+
 	/** 告知页面哪些被监视的引用仍然存在。 */
 	void PushReferenceValidity();
 

@@ -168,6 +168,11 @@ namespace ShuttlegentMcpEndpointConstant
 	// 没有界面审批计划时交回的意见，让回合不必无限等待
 	inline const TCHAR* PlanReviewUnavailable = TEXT("Plan review is not available in this editor yet; do not use plan mode. Continue without presenting a plan.");
 
+	// session control 插件的 imageInput 请求：某个模型路由（字段 model，为会话 "model" 配置项的取值）是否接受图片，答复 image
+	inline const TCHAR* MethodImageInput = TEXT("imageInput");
+	inline const TCHAR* FieldModel = TEXT("model");
+	inline const TCHAR* FieldImage = TEXT("image");
+
 	// planMode 与 answerPlanReview 请求的超时，单位秒
 	inline constexpr float ControlTimeoutSeconds = 10.0f;
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");

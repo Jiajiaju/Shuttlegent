@@ -105,6 +105,12 @@ public:
 	 */
 	void SetPlanMode(const FString& SessionId, TOptional<bool> bActive, TFunction<void(bool /*bActiveNow*/, const FString& /*Error*/)> OnDone) const;
 
+	/**
+	 * 查询某个模型路由是否接受图片；ModelValue 为会话 "model" 配置项的取值。运行时只按默认模型声明一次图片能力，
+	 * 沿用旧模型的会话须逐个确认。OnDone 在游戏线程收到结果，请求失败时为未设置。
+	 */
+	void QueryImageInput(const FString& ModelValue, TFunction<void(TOptional<bool> /*bImage*/)> OnDone) const;
+
 	/** 答复计划审批：批准后 Agent 退出计划模式并执行；否则继续规划，Feedback 交给 Agent。OnDone 收到错误原因，成功时为空。 */
 	void AnswerPlanReview(const FString& ReviewId, bool bApprove, const FString& Feedback, TFunction<void(const FString& /*Error*/)> OnDone) const;
 

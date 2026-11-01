@@ -76,10 +76,22 @@ int32 FShuttlegentWriteGate::Request(FShuttlegentWriteRequest Request, TFunction
 		if (OnDecision) OnDecision(EShuttlegentWriteDecision::Rejected);
 		return RequestId;
 	}
-	if (IsWriteBlocked && IsWriteBlocked())
+
+	const EShuttlegentWritePolicy Policy = GetWritePolicy ? GetWritePolicy(Request) : EShuttlegentWritePolicy::Ask;
+	if (Policy == EShuttlegentWritePolicy::Block)
 	{
 		UE_LOG(LogShuttlegent, Log, TEXT("Write request %d (%s) blocked: plan mode is on."), RequestId, *Request.ToolName);
 		if (OnDecision) OnDecision(EShuttlegentWriteDecision::Blocked);
+		return RequestId;
+	}
+	if (Policy == EShuttlegentWritePolicy::Approve)
+	{
+		// 不进入等待队列，因此不弹确认卡；监听者仍先获知请求，再获知批准，结果照常进入对话
+		UE_LOG(LogShuttlegent, Log, TEXT("Write request %d (%s) approved by write mode: %d object(s)."), RequestId, *Request.ToolName, Request.Objects.Num());
+		Request.bAutoApproved = true;
+		Callbacks.Add(RequestId, MoveTemp(OnDecision));
+		OnRequested.Broadcast(Request);
+		Close(RequestId, EShuttlegentWriteDecision::Approved);
 		return RequestId;
 	}
 

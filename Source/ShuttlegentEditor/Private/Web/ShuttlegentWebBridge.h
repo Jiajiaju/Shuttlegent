@@ -81,11 +81,15 @@ public:
 
 	TFunction<void(const FString&, const FString&, bool)> OnRevealObject;
 
+	TFunction<void(const FString&, const FString&)> OnAddObjectReference;
+
 	TFunction<void()> OnCompactContext;
 
 	TFunction<void(bool)> OnSetPlanMode;
 
-	TFunction<void(bool, const FString&)> OnAnswerPlanReview;
+	TFunction<void(bool, const FString&, bool)> OnAnswerPlanReview;
+
+	TFunction<void(const FString&)> OnSetWriteMode;
 
 public:
 	/** 页面已完成初始化并请求完整状态；每次文档加载调用一次。 */
@@ -218,15 +222,23 @@ public:
 	UFUNCTION()
 	void RevealObject(const FString& Kind, const FString& Path, bool bOpen);
 
+	/** 回答中的对象链接拖进输入框：Kind 为 "asset" 或 "actor"；补全后经 onDrop 作为引用加入草稿。 */
+	UFUNCTION()
+	void AddObjectReference(const FString& Kind, const FString& Path);
+
 	/** 上下文卡片上的“压缩”：手动压缩当前对话的上下文。 */
 	UFUNCTION()
 	void CompactContext();
 
-	/** 输入框旁的“计划模式”开关。 */
+	/** 模式菜单中的“计划”，以及 /plan 命令。 */
 	UFUNCTION()
 	void SetPlanMode(bool bActive);
 
-	/** 计划审批卡片：批准并执行，或附意见退回继续规划。 */
+	/** 模式菜单中计划之外的写入确认方式：Mode 为 "manual"、"acceptEdits" 或 "auto"；处于计划模式时同时退出。 */
 	UFUNCTION()
-	void AnswerPlanReview(bool bApprove, const FString& Feedback);
+	void SetWriteMode(const FString& Mode);
+
+	/** 计划审批卡片：批准并执行（bAcceptEdits 时执行阶段自动接受编辑，否则逐项确认），或附意见退回继续规划。 */
+	UFUNCTION()
+	void AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits);
 };

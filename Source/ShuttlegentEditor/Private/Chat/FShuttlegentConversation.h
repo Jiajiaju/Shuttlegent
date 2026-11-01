@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 
+#include "EShuttlegentWriteMode.h"
 #include "FShuttlegentPromptImage.h"
 
 #include "Chat/EShuttlegentTurnOutcome.h"
@@ -63,6 +64,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	 * 会话就绪后先应用它再发送提示。
 	 */
 	bool bPlanMode = false;
+
+	/** 计划模式之外编辑器写入的确认方式；新对话取偏好设置中的默认值，批准计划时可改为自动接受编辑。 */
+	EShuttlegentWriteMode WriteMode = EShuttlegentWriteMode::Manual;
 
 	/** 等待用户审批的计划；ReviewId 为空表示没有。 */
 	FShuttlegentPlanReview PendingPlanReview;

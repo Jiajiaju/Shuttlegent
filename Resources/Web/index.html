@@ -55,11 +55,9 @@
         <button id="stop" class="stop" hidden></button>
       </section>
       <div class="composer-meta" id="composer-meta">
-        <button id="plan-toggle" class="plan-toggle" aria-pressed="false">计划模式</button>
         <span id="command-note" class="command-note" role="status" hidden></span>
-        <label class="sr-only" for="model">模型</label><select id="model"></select>
-        <label class="sr-only" for="reasoning">推理强度</label><select id="reasoning"></select>
-        <span class="usage" id="usage" role="img"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle class="usage-track" cx="8" cy="8" r="6"/><circle class="usage-bar" id="usage-bar" cx="8" cy="8" r="6" pathLength="100"/></svg></span>
+        <button id="model-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="model-menu"><span id="model-name"></span><span id="effort-name" class="meta-sub"></span></button>
+        <button id="mode-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="mode-menu"></button>
       </div>
     </div>
   </main>
@@ -110,6 +108,9 @@
   <p>永久删除“<span id="delete-name"></span>”的本地记录，删除后无法恢复。</p>
   <div class="actions"><button data-close>取消</button><button class="danger" id="delete-confirm">删除</button></div>
 </dialog>
+<div class="picker" id="model-menu" role="menu" aria-label="模型" hidden></div>
+<div class="picker" id="effort-menu" role="menu" aria-label="推理强度" hidden></div>
+<div class="picker" id="mode-menu" role="menu" aria-label="模式" hidden></div>
 <div class="context-menu" id="session-menu" role="menu" aria-label="会话操作" hidden>
   <button role="menuitem" data-menu-action="rename"><span data-icon="edit" data-size="14"></span>重命名</button>
   <button role="menuitem" data-menu-action="archive"><span data-icon="archive" data-size="14"></span>归档</button>

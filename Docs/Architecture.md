@@ -111,6 +111,7 @@ sequenceDiagram
       - `command`：执行一条斜杠命令（`ctx.commands.execute`，与 Harness 网页客户端相同），如 `/compact`、`/plan`。ACP 的 `session/prompt` 不解析斜杠命令，会把它当普通文字发给模型，因此命令只能走这里（`RunCommand`，超时 600 秒，`/compact` 要调用模型生成摘要）。
       - `planMode`：进入或退出计划模式（`ctx.planMode.set`），不带 `active` 时只查询；回合进行中时在下一步生效（`SetPlanMode`）。
       - `answerPlanReview`：答复计划审批（`AnswerPlanReview`）。计划模式下模型调用 `exit_plan_mode` 后，Harness 经“用户提问”通道（`user-questions/request`）请用户批准，ACP 下没有任何应答方，原本直接报 `NO_PROVIDER`。插件接管其中 `intent.kind` 为 `plan-review` 的请求，以通知 `shuttlegent/planReview`（会话 ID、审批 ID、计划正文）交给编辑器，等编辑器答复批准或“继续规划 + 意见”；回合取消时发 `shuttlegent/planReviewClosed`。编辑器没有订阅 `OnPlanReview()` 时，模块直接以“不可用”退回，回合不会卡住；对话模型订阅后，交出计划的会话不在面板中时同样退回。
+      - `imageInput`：某个模型路由（会话 `model` 配置项的取值）是否声明接受图片（`QueryImageInput`）。ACP 只在 `initialize` 时按默认模型声明一次图片能力，沿用旧模型或切换过模型的会话由编辑器逐个确认；解析不了的路由按不接受处理。
     - ⚠️ Harness 的计划模式只在提示词里加一段说明，**不限制工具**（`ThirdParty/deepseek-harness/packages/plan/plan-mode/src/index.ts:1-19`）；“只读”须由编辑器侧保证。
   - `shuttlegent-session-tap.mjs`：把 ACP 不转发的会话事件逐条按顺序以通知 `shuttlegent/sessionEvent`（会话 ID、类型、精简后的数据）发到编辑器端点，交给 `FShuttlegentMcpServerModule::OnSessionEvent()`（`FShuttlegentSessionEvent`）：
 
@@ -216,21 +217,24 @@ flowchart TB
   - **回到这里**（`FShuttlegentChatModel::RewindTo`，页面先弹确认框，列出将撤销与不可撤销的修改数、将移除的消息数）：先确认这条消息之后可撤销写入的事务恰好依次占据撤销栈顶（`FShuttlegentWriteGate::AreOnUndoTop`），中间夹着用户自己的编辑时整体拒绝；再由运行时把会话截在该消息之前另存为新会话，成功后按倒序撤销这些写入，原会话归档，打开新会话并把消息原文放回输入框。不可撤销的写入（数据表加行、存盘等）保留在编辑器中。截断第一条消息时不需要运行时，撤销写入后开始新对话。
   - 两者都要求当前对话空闲、会话已在运行时打开、session control 插件可用（`CanEditHistory`）；不满足时按钮变灰，悬停提示原因。写入结果只保存在内存里，重新打开的旧会话回到某条消息时没有可撤销的写入。
 - 任务清单：Agent 用 `todo_write` 列出的待办（`todo/write`，经 session tap 插件）显示在输入框上方，标题行为“任务 已完成数/总数”与进行中的一项，可折叠；进行中的一项加粗并转圈，已完成的打勾划线。每次 `todo/write` 给出完整列表，替换上一份；用户发出新提示时清空（与运行时在新回合清空 `todos` 投影一致）。回合结束且全部完成时自动折叠。只在内存中，不写入会话记录。
-- 计划模式：输入框下方的“计划模式”开关（打开时输入框描边为蓝色）。打开后 Agent 只查看、出方案；编辑器写入门在计划模式的回合中拒绝一切写入（Harness 的计划模式只改提示词、不限制工具，只读由此保证；见 [Tools.md §1](Tools.md#1-写操作确认与撤销)）。会话创建前打开时先记下选择，会话就绪后先应用再发送第一条提示；恢复会话时查询运行时记录的状态。Agent 调用 `exit_plan_mode` 交出计划后，输入框位置换成审批卡片：显示计划（可点对象链接）、可填修改意见，“继续规划”把意见交回 Agent，“批准并执行”让 Agent 退出计划模式按计划执行（每次写入仍需确认）。审批不限时，Esc 不会退回计划。计划连同审批结果（待审批、已批准、已退回附意见、已取消）留在对话中（`EShuttlegentChatEntryKind::Plan`），并写入会话记录（`plan`）。回合取消或运行时退出时，等待中的审批标为已取消。计划模式提示词由插件补丁覆盖为编辑器场景的说法，提问改用 `ask_user`。
+- 输入框下方：右侧依次为模型按钮（模型名，后接灰色的推理强度）与模式按钮，样式与交互参照 Claude。点开都在按钮上方弹出圆角菜单（`#model-menu`、`#mode-menu`），当前项右侧为朱红色对勾；模型菜单底部的“推理强度”一行悬停或点击时在旁边弹出子菜单（`#effort-menu`，顶部一行说明）。方向键在菜单项间移动，右方向键进入子菜单、左方向键退出，Esc 或点菜单外关闭；回合进行中模型按钮不可用。左侧只在需要时显示一行提示。上下文用量只在检视窗格的上下文卡片中显示。
+- 模式：模式菜单有“自动”“手动”“自动接受编辑”“计划”四项，各带一行说明；输入框中按 Shift+Tab 按“手动 → 自动接受编辑 → 自动 → 计划”依次切换（计划不可用时跳过），切换时输入框下方提示当前模式；手动之外的模式给输入框描边（自动接受编辑为绿色、自动为橙色、计划为蓝色）。前三项只决定编辑器写入是否弹确认卡（`EShuttlegentWriteMode`，按对话记在 `FShuttlegentConversation::WriteMode`，新对话取 **编辑器偏好设置 > Shuttlegent > Permissions > Default Write Mode**；规则见 [Tools.md §1](Tools.md#1-写操作确认与撤销)），在编辑器侧生效，从下一次写入起算；在计划模式中选它们同时退出计划模式。草稿缩略图的移除按钮是压在右上角的圆形按钮，鼠标移到缩略图上才显示。
+- 计划模式：模式菜单中的“计划”（输入框描边为蓝色）。打开后 Agent 只查看、出方案；编辑器写入门在计划模式的回合中拒绝一切写入（Harness 的计划模式只改提示词、不限制工具，只读由此保证；见 [Tools.md §1](Tools.md#1-写操作确认与撤销)）。会话创建前打开时先记下选择，会话就绪后先应用再发送第一条提示；恢复会话时查询运行时记录的状态。Agent 调用 `exit_plan_mode` 交出计划后，输入框位置换成审批卡片：显示计划（可点对象链接）、可填修改意见，“继续规划”把意见交回 Agent；“批准，自动接受编辑”与“批准，逐项确认”都让 Agent 退出计划模式按计划执行，前者把对话的写入模式改为自动接受编辑，后者改为手动确认，在 Agent 开始写入之前生效。审批不限时，Esc 不会退回计划。计划连同审批结果（待审批、已批准、已退回附意见、已取消）留在对话中（`EShuttlegentChatEntryKind::Plan`），并写入会话记录（`plan`）。回合取消或运行时退出时，等待中的审批标为已取消。计划模式提示词由插件补丁覆盖为编辑器场景的说法，提问改用 `ask_user`。
 - 上下文压缩：压缩开始、结束（`compaction/*`）在对话中显示为一条虚线分隔行：“正在自动/手动压缩上下文…”“上下文已压缩 · 约 N tokens 转为摘要”或失败原因（`EShuttlegentChatEntryKind::Compaction`）。结束时用插件报来的压缩后用量更新上下文卡片，并把结果追加到会话记录（`compaction`），重新打开会话时回放。上下文卡片底部有“压缩上下文”按钮（`FShuttlegentChatModel::CompactContext`，经 `RunCommand` 执行 `/compact`），条件与“回到这里”相同（会话已打开、空闲、session control 插件可用），压缩期间显示“压缩中…”；没有可压缩的内容时以通知显示运行时的说明。
 - 斜杠菜单与内置命令：行首输入 `/` 弹出菜单，“命令”分区在“模板”分区之前，均按输入过滤；选中只把文字填进输入框，已完整输入的命令选中即执行。整段输入以下列命令开头时，由页面在编辑器侧执行，不发给模型（`Resources/Web/app.js` 的 `runSlashCommand`）；其他以 `/` 开头的文字照常作为消息发送，同名模板仍可从菜单插入：
 
   | 命令 | 作用 | 复用 | 不可用时 |
   |---|---|---|---|
   | `/compact` | 压缩上下文，不带参数（与 Harness 一致） | 上下文卡片“压缩上下文”按钮 | `compactReason` |
-  | `/plan`、`/plan off`、`/plan <消息>` | 进入、退出计划模式；带消息时进入后发送该消息（与 Harness 一致） | “计划模式”开关；带消息时 `SubmitDraft` 的 `bEnterPlanMode` | `planModeReason` |
+  | `/plan`、`/plan off`、`/plan <消息>` | 进入、退出计划模式；带消息时进入后发送该消息（与 Harness 一致） | 模式菜单的“计划”；带消息时 `SubmitDraft` 的 `bEnterPlanMode` | `planModeReason` |
   | `/undo` | 回退本轮：对最后一条用户消息打开“回到这里”确认框 | “回到这里” | `editHistoryReason`；没有用户消息时说明无可回退 |
   | `/clear` | 开始新对话，当前对话留在侧栏 | 新对话 | 始终可用 |
 
   命令不可用或参数不对时不执行，输入保留，原因显示在输入框下方一行（5 秒后或继续输入时消失）；菜单中不可用的命令置灰并以原因代替说明。`/plan <消息>`：计划模式走控制端口、提示走 ACP，两者没有先后保证，会话已打开时提示先挂起（对话随之忙碌，新草稿排队），运行时确认计划模式已开后再发出，切换失败则放回队列首位并暂停；会话未创建时沿用“就绪后先应用计划模式再发送”；回合进行中时计划模式在下一步生效，消息照常排队。
-- 图片输入：输入框可粘贴截图（页面处理剪贴板）、点回形针按钮选图（编辑器原生文件对话框，`SShuttlegentWebPanel::HandlePickImages`）、从资源管理器拖入图片文件（Slate 的 `FExternalDragOperation`），一条消息最多 6 张；页面把最长边缩到 2048 像素、PNG 超过 4 MB 时转 JPEG。运行时在 `initialize` 中按启动时的默认模型声明是否接受图片（`promptCapabilities.image`），编辑器据此及“当前对话是否空闲”决定能否附图，不能时按钮置灰并说明原因；带图片的消息只在空闲时发送，不进入队列。图片以 ACP `image` 块随提问发出，并按内容哈希保存到 `Saved/Shuttlegent/Sessions/Images/`，会话记录记下路径，重新打开会话时用户消息下显示缩略图，点开看大图
+- 图片输入：输入框可粘贴截图（页面处理剪贴板）、点回形针按钮选图（编辑器原生文件对话框，`SShuttlegentWebPanel::HandlePickImages`）、从资源管理器拖入图片文件（Slate 的 `FExternalDragOperation`），一条消息最多 6 张；页面把最长边缩到 2048 像素、PNG 超过 4 MB 时转 JPEG。运行时在 `initialize` 中按启动时的默认模型声明是否接受图片（`promptCapabilities.image`）；会话的模型配置变化时，编辑器经 session control 的 `imageInput` 确认该会话当前模型是否接受图片（按模型路由缓存，运行时重启后清空），再结合“当前对话是否空闲”决定能否附图，不能时按钮置灰并说明原因（会话模型不支持时提示切换模型或新建对话）。草稿图片在引用标签下方、输入行上方按原比例显示（高 96 像素，最宽 240 像素），× 在鼠标悬停时显示；带图片的消息只在空闲时发送，不进入队列。图片以 ACP `image` 块随提问发出，并按内容哈希保存到 `Saved/Shuttlegent/Sessions/Images/`，会话记录记下路径，重新打开会话时用户消息下显示缩略图，点开看大图
 - 回答中的对象链接：运行时提示词（`Runtime/profile/shuttlegent.patch.yml`）要求 Agent 把已知路径的资产写成 `[名称](ue-asset:<对象路径>)`、Actor 写成 `[Actor 标签](ue-actor:<对象路径>)`；行内代码若是完整的 `/Game/...` 路径，也渲染成资产链接。包路径（无 `.`）补上对象名，同一资产的链接路径一致。
   - 单击：资产在内容浏览器中定位，Actor 在关卡中单独选中并把关卡编辑器页签切到前台、视口获得键盘焦点；双击：打开资产编辑器，或让视口镜头移到 Actor（`FShuttlegentReferenceNavigator`，经 `UShuttlegentWebBridge::RevealObject`）。只改选中与焦点，不产生事务，不影响“回到这里”。
+  - 拖入输入框：按住链接移动超过 5 像素即开始拖动，松开在输入框上时成为草稿引用标签，与 `@` 或从内容浏览器拖入的引用相同。CEF 不运行 HTML 原生拖放，页面用鼠标事件实现；松开后经 `UShuttlegentWebBridge::AddObjectReference` 交编辑器按路径补全类与名称（`FShuttlegentReferenceFinder::TryResolve`），再经 `onDrop` 加入草稿，对象已不存在时不加。拖动不触发单击定位。
   - 存在性：页面把对话中全部对象链接与草稿引用一起交给 `WatchReferences`，对象被删除或经撤销恢复后，链接随 `onReferenceValidity` 变灰（加删除线，悬停提示“对象已不存在”），点击不做任何操作。
   - Actor 只认 Agent 明确写出的链接，页面不按名称猜测，避免重名时选错对象。
   - 表格渲染为 HTML 表格，单元格内同样解析链接、行内代码与加粗（`Resources/Web/markdown.js` 的 `table`）；分隔行到达前（回答仍在流式输出）按等宽源码显示。

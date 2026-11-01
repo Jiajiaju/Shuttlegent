@@ -31,6 +31,7 @@ Shuttlegent 的设置分两处：
 | Permissions > Allow Shell | 关 | 给运行时 PowerShell 工具 |
 | Permissions > Allow Elevation | 开 | 允许运行时请求超出沙箱的权限；关闭时这类请求直接拒绝 |
 | Permissions > Permission Policy | Reject | 没有编辑器对话框处理时，对运行时权限请求的默认回答 |
+| Permissions > Default Write Mode | Manual | 新对话的编辑器写入确认方式：Manual 每次确认，Accept Edits 可撤销的写入直接执行，Auto 除删除、移动、改名外都直接执行；面板的模式菜单可按对话切换，见 [Tools.md §1](Tools.md#1-写操作确认与撤销) |
 
 编辑器写操作（改属性、生成 Actor 等）不受这些开关影响，始终经确认卡，见 [Tools.md §1](Tools.md#1-写操作确认与撤销)。
 

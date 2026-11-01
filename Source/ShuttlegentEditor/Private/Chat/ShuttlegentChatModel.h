@@ -24,6 +24,7 @@ class FShuttlegentWriteGate;
 struct FShuttlegentSessionEvent;
 enum class EShuttlegentQuestionOutcome : uint8;
 enum class EShuttlegentWriteDecision : uint8;
+enum class EShuttlegentWritePolicy : uint8;
 
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatStructureChanged);
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatContentChanged);
@@ -88,6 +89,12 @@ private:
 
 	/** 最近一个上报配置选项的会话所给出的选项；用于显示会话尚未打开的对话。 */
 	TArray<TSharedPtr<FJsonValue>> LastConfigOptions;
+
+	/** 各模型路由（"model" 配置项的取值）是否接受图片；运行时只按默认模型声明，沿用旧模型的会话逐个向运行时确认。 */
+	TMap<FString, bool> ModelImageInput;
+
+	/** 正在向运行时确认的模型路由。 */
+	TSet<FString> PendingImageQueries;
 
 	int32 NextEntryId = 1;
 	int32 NextQueueId = 1;
@@ -174,8 +181,17 @@ public:
 	/** 当前对话等待审批的计划；ReviewId 为空表示没有。 */
 	const FShuttlegentPlanReview& GetPendingPlanReview() const { return Current->PendingPlanReview; }
 
-	/** 答复当前对话等待审批的计划：批准后 Agent 退出计划模式并执行；退回时 Feedback 交给 Agent 继续规划。 */
-	void AnswerPlanReview(bool bApprove, const FString& Feedback);
+	/**
+	 * 答复当前对话等待审批的计划：批准后 Agent 退出计划模式并执行，bAcceptEdits 时写入模式改为自动接受编辑，
+	 * 否则改为手动确认；退回时 Feedback 交给 Agent 继续规划。
+	 */
+	void AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits);
+
+	/** 当前对话计划模式之外的写入确认方式。 */
+	EShuttlegentWriteMode GetWriteMode() const { return Current->WriteMode; }
+
+	/** 切换当前对话的写入确认方式；处于计划模式时同时退出计划模式。回合进行中时从下一次写入起生效。 */
+	void SetWriteMode(EShuttlegentWriteMode Mode);
 
 	/** 若运行时未在运行则启动它；失败时记为启动问题。 */
 	void EnsureRuntime();
@@ -386,6 +402,9 @@ private:
 	void HandleRuntimeExited(int32 ExitCode, bool bExpected);
 	void HandleError(const FString& SessionId, const FString& Message);
 	void HandleConfigOptionsChanged(const FString& SessionId);
+
+	/** 向运行时确认该模型路由是否接受图片（已知或正在确认时跳过）；结果回来后刷新面板状态。 */
+	void RequestImageInput(const FString& ModelValue);
 	void HandleContextBreakdown(const FString& SessionId, const FShuttlegentContextBreakdown& Breakdown);
 
 	/** session tap 插件推来的会话事件：待办清单、上下文压缩与计划模式切换（目标暂不显示）。 */
@@ -404,6 +423,12 @@ private:
 
 	/** 有处于计划模式的对话正在运行回合；写入门据此拒绝写入（写入请求不带会话，无法区分是哪个对话发起的）。 */
 	bool IsPlanTurnRunning() const;
+
+	/**
+	 * 写入门对新请求的处理方式：计划模式的回合在运行时拒绝；否则按正在运行的对话中最严格的写入模式，删除、移动、
+	 * 改名一律确认，没有对话在运行时也确认。
+	 */
+	EShuttlegentWritePolicy GetWritePolicy(const FShuttlegentWriteRequest& Request) const;
 	void HandlePermissionRequest(const TSharedPtr<FJsonObject>& Params, TFunction<void(bool)> Respond);
 
 	void HandleWriteRequested(const FShuttlegentWriteRequest& Request);

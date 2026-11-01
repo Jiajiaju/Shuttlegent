@@ -4,6 +4,7 @@
 #include "Containers/Ticker.h"
 
 #include "WriteGate/EShuttlegentWriteDecision.h"
+#include "WriteGate/EShuttlegentWritePolicy.h"
 #include "WriteGate/FShuttlegentWriteRequest.h"
 #include "WriteGate/FShuttlegentWriteResult.h"
 
@@ -26,10 +27,10 @@ public:
 	FOnShuttlegentWriteFinished OnFinished;
 
 	/**
-	 * 返回 true 时新的写入请求不征询用户，直接以 Blocked 拒绝：计划模式下 Harness 不限制工具，只读由此保证。
-	 * 由对话模型设置；为空时不拦截。
+	 * 新写入请求的处理方式，由对话模型按写入模式设置：Ask 弹确认卡；Approve 不征询直接批准（仍先广播 OnRequested，
+	 * 再以 Approved 关闭）；Block 直接以 Blocked 拒绝（计划模式下 Harness 不限制工具，只读由此保证）。为空时一律 Ask。
 	 */
-	TFunction<bool()> IsWriteBlocked;
+	TFunction<EShuttlegentWritePolicy(const FShuttlegentWriteRequest&)> GetWritePolicy;
 
 private:
 	/** 按到达顺序排列的等待中请求，及工具的回调。 */

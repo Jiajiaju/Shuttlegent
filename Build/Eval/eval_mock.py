@@ -250,6 +250,10 @@ class World:
             if mentions(args, "PointLight"):
                 return "PointLight : Light : Actor\nEditable properties (on PointLightComponent):\nIntensity (float)\nLightColor (Color)\nAttenuationRadius (float)"
             return "Class not found."
+        if name == "remember":
+            return "Remembered." if (args.get("text") or "").strip() else "Pass the fact to remember."
+        if name == "forget":
+            return "Forgotten."
         if name == "ask_user":
             # The simulated user always picks the first option offered
             options = args.get("options") or []

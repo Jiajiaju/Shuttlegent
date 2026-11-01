@@ -10,6 +10,7 @@
 #include "Tools/FShuttlegentLevelBuildTools.h"
 #include "Tools/FShuttlegentLevelTools.h"
 #include "Tools/FShuttlegentMaterialTools.h"
+#include "Tools/FShuttlegentMemoryTools.h"
 #include "Tools/FShuttlegentReflectionTools.h"
 #include "Tools/FShuttlegentUiGuideTool.h"
 
@@ -21,6 +22,7 @@ FShuttlegentBuiltinToolProvider::FShuttlegentBuiltinToolProvider(const TSharedRe
 	FShuttlegentReflectionTools::Append(Tools);
 	FShuttlegentDiagnosticTools::Append(LogCapture, Tools);
 	FShuttlegentInteractionTools::Append(Tools);
+	FShuttlegentMemoryTools::Append(Tools);
 	FShuttlegentMaterialTools::AppendRead(Tools);
 	FShuttlegentEditTools::Append(Tools);
 	FShuttlegentMaterialTools::AppendWrite(Tools);

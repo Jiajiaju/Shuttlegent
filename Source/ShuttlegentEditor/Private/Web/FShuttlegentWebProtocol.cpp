@@ -12,6 +12,7 @@
 #include "Chat/ShuttlegentChatModel.h"
 #include "Reference/FShuttlegentReferencePrompt.h"
 #include "Web/FShuttlegentWebJson.h"
+#include "FShuttlegentMemoryStore.h"
 #include "WriteGate/FShuttlegentWriteRequest.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentEditorConstants.h"
@@ -86,6 +87,10 @@ namespace FShuttlegentWebProtocolPrivate
 		case EShuttlegentChatEntryKind::Plan:
 			{
 				return ShuttlegentEditorWebField::KindPlan;
+			}
+		case EShuttlegentChatEntryKind::Memory:
+			{
+				return ShuttlegentEditorWebField::KindMemory;
 			}
 		case EShuttlegentChatEntryKind::Notice:
 		default:
@@ -229,6 +234,7 @@ namespace FShuttlegentWebProtocolPrivate
 		Hash = HashCombine(Hash, GetTypeHash(Entry.bAnswered));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.bAllowed));
 		Hash = HashCombine(Hash, GetTypeHash(Entry.bError));
+		Hash = HashCombine(Hash, GetTypeHash(Entry.bUndone));
 		return Hash;
 	}
 
@@ -366,6 +372,7 @@ void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatModel>
 	UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
 	if (IsValid(ProjectSettings)) ProjectSettingsChangedHandle = ProjectSettings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleProjectSettingChanged);
 
+	MemoryChangedHandle = FShuttlegentMemoryStore::OnChanged().AddSP(this, &FShuttlegentWebProtocol::HandleMemoryChanged);
 	TickerHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateSP(this, &FShuttlegentWebProtocol::HandleTick));
 }
 
@@ -373,6 +380,8 @@ void FShuttlegentWebProtocol::Shutdown()
 {
 	FTSTicker::GetCoreTicker().RemoveTicker(TickerHandle);
 	TickerHandle.Reset();
+	FShuttlegentMemoryStore::OnChanged().Remove(MemoryChangedHandle);
+	MemoryChangedHandle.Reset();
 
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings) && SettingsChangedHandle.IsValid()) Settings->OnSettingChanged().Remove(SettingsChangedHandle);
@@ -409,7 +418,7 @@ void FShuttlegentWebProtocol::HandlePageReady()
 
 bool FShuttlegentWebProtocol::HandleTick(float DeltaTime)
 {
-	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || bMcpDirty || bDraftPending || PendingEvents.Num() > 0)) Flush();
+	if (bPageReady && (bResetPending || bStatusDirty || bEntriesDirty || bSessionsDirty || bRunLogDirty || bQueueDirty || bMcpDirty || bMemoryDirty || bDraftPending || PendingEvents.Num() > 0)) Flush();
 	return true;
 }
 
@@ -440,6 +449,7 @@ void FShuttlegentWebProtocol::Flush()
 	if (bReset || bSessionsDirty || bStatusDirty) WriteSessions(Root);
 	if (bReset || bRunLogDirty) WriteRunLog(Root);
 	if (bReset || bMcpDirty) WriteMcp(Root);
+	if (bReset || bMemoryDirty) WriteMemory(Root);
 
 	// 队列能否继续、失败的回合能否重试同样取决于回合状态
 	if (bReset || bQueueDirty || bStatusDirty) WriteQueue(Root);
@@ -464,6 +474,7 @@ void FShuttlegentWebProtocol::Flush()
 	bRunLogDirty = false;
 	bQueueDirty = false;
 	bMcpDirty = false;
+	bMemoryDirty = false;
 	bDraftPending = false;
 	PendingDraft.Reset();
 	PendingEvents.Reset();
@@ -916,6 +927,12 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		Item->SetStringField(ShuttlegentEditorWebField::CompactionStatus, Entry.Status);
 	}
 
+	if (Entry.Kind == EShuttlegentChatEntryKind::Memory)
+	{
+		Item->SetStringField(ShuttlegentEditorWebField::MemoryAction, Entry.Status);
+		Item->SetBoolField(ShuttlegentEditorWebField::Undone, Entry.bUndone);
+	}
+
 	if (Entry.Kind == EShuttlegentChatEntryKind::Plan)
 	{
 		Item->SetStringField(ShuttlegentEditorWebField::PlanStatus, Entry.Status);
@@ -954,6 +971,34 @@ void FShuttlegentWebProtocol::HandleRunLogChanged()
 void FShuttlegentWebProtocol::HandleQueueChanged()
 {
 	bQueueDirty = true;
+}
+
+void FShuttlegentWebProtocol::HandleMemoryChanged(const FShuttlegentMemoryChange& Change, bool bByAgent)
+{
+	bMemoryDirty = true;
+}
+
+void FShuttlegentWebProtocol::MarkMemoryDirty()
+{
+	bMemoryDirty = true;
+}
+
+void FShuttlegentWebProtocol::WriteMemory(const TSharedRef<FJsonObject>& Root) const
+{
+	TArray<TSharedPtr<FJsonValue>> Items;
+	for (const FShuttlegentMemoryItem& Memory : FShuttlegentMemoryStore::Load())
+	{
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		Item->SetStringField(ShuttlegentEditorWebField::Text, Memory.Text);
+		Item->SetStringField(ShuttlegentEditorWebField::MemoryDate, Memory.Date);
+		Items.Add(MakeShared<FJsonValueObject>(Item));
+	}
+
+	const TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
+	Object->SetArrayField(ShuttlegentEditorWebField::MemoryItems, Items);
+	Object->SetNumberField(ShuttlegentEditorWebField::MemoryBytes, FShuttlegentMemoryStore::GetFileBytes());
+	Object->SetNumberField(ShuttlegentEditorWebField::MemoryMaxBytes, ShuttlegentMemoryConstant::MaxFileBytes);
+	Root->SetObjectField(ShuttlegentEditorWebField::Memory, Object);
 }
 
 void FShuttlegentWebProtocol::HandleTurnFinished(bool bCompleted)

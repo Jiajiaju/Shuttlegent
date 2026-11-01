@@ -67,6 +67,14 @@ public:
 
 	TFunction<void(int32)> OnUndoWrite;
 
+	TFunction<void(int32)> OnUndoMemory;
+
+	TFunction<void(const FString&)> OnForgetMemory;
+
+	TFunction<void()> OnOpenMemoryFile;
+
+	TFunction<void()> OnRefreshMemory;
+
 	TFunction<void(int32)> OnRewindTo;
 
 	TFunction<void(int32)> OnBranchFrom;
@@ -193,6 +201,22 @@ public:
 	/** 写入结果上的“撤销本次修改”。 */
 	UFUNCTION()
 	void UndoWrite(int32 EntryId);
+
+	/** 对话中记忆提示上的“撤销”。 */
+	UFUNCTION()
+	void UndoMemory(int32 EntryId);
+
+	/** 记忆卡片上删除一条；Text 为该条内容。 */
+	UFUNCTION()
+	void ForgetMemory(const FString& Text);
+
+	/** 记忆卡片上的“打开文件”：用系统默认程序打开记忆文件，不存在时先建一个空文件。 */
+	UFUNCTION()
+	void OpenMemoryFile();
+
+	/** 页面重新获得焦点：记忆文件可能在编辑器之外被改过，重新发送记忆卡片。 */
+	UFUNCTION()
+	void RefreshMemory();
 
 	/** 用户消息上的“回到这里”（页面已让用户确认）。 */
 	UFUNCTION()

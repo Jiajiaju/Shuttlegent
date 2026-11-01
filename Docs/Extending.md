@@ -6,7 +6,8 @@ Shuttlegent 与具体项目无关，项目通过以下扩展点接入自己的�
 
 | 扩展点 | 用途 | 配置位置 |
 |---|---|---|
-| 项目提示词 | 项目规则与约定，每次对话都带上 | 项目根目录 `SHUTTLEGENT.md`、`SHUTTLEGENT.local.md` |
+| 项目提示词 | 项目规则与约定，每次对话都带上 | 项目根目录 `SHUTTLEGENT.md`；个人的 `Saved/Shuttlegent/SHUTTLEGENT.local.md` |
+| 个人记忆 | Agent 记住的个人偏好与约定，每次请求都带上 | `Saved/Shuttlegent/MEMORY.md`，由 Agent 维护，也可手工编辑 |
 | 技能 | 一套固定的做事步骤，Agent 按需加载 | Integration > Skill Dirs |
 | 斜杠模板 | 常用提问，输入 `/` 选择后填入输入框 | Integration > Template Dirs |
 | 界面指路 | Agent 可以帮用户打开的编辑器位置 | Integration > Ui Guides |
@@ -16,7 +17,8 @@ Shuttlegent 与具体项目无关，项目通过以下扩展点接入自己的�
 ## 1. 项目提示词
 
 - `SHUTTLEGENT.md`：团队共享的项目规则，放项目根目录，提交到版本库。
-- `SHUTTLEGENT.local.md`：个人补充，放项目根目录，不要提交。
+- `SHUTTLEGENT.local.md`：个人补充，放项目的本地目录 `Saved/Shuttlegent/`，不进版本库。旧版放在项目根目录的会在编辑器启动时自动移过来。
+- `MEMORY.md`：个人记忆，同在 `Saved/Shuttlegent/`。Agent 用 `remember`、`forget` 工具维护，无需确认：你说“记住……”，或 Agent 判断某个习惯、默认值、命名规则、禁忌以后还用得上时自动记下；对话里只显示一行“已记住：……”并可撤销。每条一行（`- 内容（记录日期）`），可以在检视窗格的“记忆”卡片里删除，也可以直接编辑文件；其余行原样保留。上限 8 KB，满了 Agent 会先合并或删掉旧条目。不记当前任务的细节、编辑器里能查到的东西和密钥。
 
 Shuttlegent 只读这两个文件，不读 `AGENTS.md`、`CLAUDE.md`，以免与写代码用的规则混在一起。示例：
 

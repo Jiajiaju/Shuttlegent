@@ -7,7 +7,7 @@ Shuttlegent 的设置分两处：
 | **编辑器偏好设置 > Shuttlegent > General** | 每个人自己 | 本机 `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`，不进版本库 |
 | **项目设置 > Shuttlegent > General** | 项目负责人，全团队共享 | 项目 `Config/DefaultShuttlegent.ini`，随项目进版本库；插件 `Config/DefaultShuttlegent.ini` 提供默认值 |
 
-另有两个提示词文件放在项目根目录：`SHUTTLEGENT.md`（项目提示词，团队共享）和 `SHUTTLEGENT.local.md`（个人提示词，不要提交）。
+另有项目提示词 `SHUTTLEGENT.md`，放在项目根目录，团队共享。个人文件都放在项目的本地目录 `Saved/Shuttlegent/`（UE 约定不进版本库的 `Saved/` 之下，项目的 `.gitignore` 排除 `Saved/` 即可）：个人提示词 `SHUTTLEGENT.local.md`、个人记忆 `MEMORY.md`（见 [Extending.md §1](Extending.md#1-项目提示词)），以及会话记录 `Sessions/`、截图 `Captures/`、数据表导出 `Exports/`。旧版放在项目根目录的 `SHUTTLEGENT.local.md` 会在编辑器启动时自动移到这里。
 
 ## 1. 模型与密钥（个人）
 

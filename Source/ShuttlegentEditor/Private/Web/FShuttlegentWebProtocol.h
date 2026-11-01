@@ -8,6 +8,7 @@ class FShuttlegentChatModel;
 class UObject;
 struct FPropertyChangedEvent;
 struct FShuttlegentChatEntry;
+struct FShuttlegentMemoryChange;
 
 /**
  * 编辑器推送给面板页面的内容：页面报告就绪时推送完整快照，之后推送增量。
@@ -47,6 +48,9 @@ private:
 	bool bRunLogDirty = false;
 	bool bQueueDirty = false;
 	bool bMcpDirty = false;
+	bool bMemoryDirty = false;
+
+	FDelegateHandle MemoryChangedHandle;
 
 public:
 	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, TFunction<void(const FString&)> InPush);
@@ -54,6 +58,9 @@ public:
 
 	/** 页面已（重新）加载并请求完整状态；在此之前不推送任何内容。 */
 	void HandlePageReady();
+
+	/** 记忆文件可能在编辑器之外被改过（用户回到面板时），下一条消息重新发送记忆卡片。 */
+	void MarkMemoryDirty();
 
 private:
 	bool HandleTick(float DeltaTime);
@@ -78,6 +85,9 @@ private:
 	/** MCP 卡片：编辑器端点及其工具、引擎 Toolset、项目的外部服务器。 */
 	void WriteMcp(const TSharedRef<FJsonObject>& Root) const;
 
+	/** 记忆卡片：全部记忆及文件大小与上限。 */
+	void WriteMemory(const TSharedRef<FJsonObject>& Root) const;
+
 	/** 最早一个未答复的运行时权限请求及其所涉及的内容，或 null。 */
 	void WritePendingPermission(const TSharedRef<FJsonObject>& Root) const;
 
@@ -95,6 +105,7 @@ private:
 	void HandleSessionsChanged();
 	void HandleRunLogChanged();
 	void HandleQueueChanged();
+	void HandleMemoryChanged(const FShuttlegentMemoryChange& Change, bool bByAgent);
 	void HandleDraftRestored(const FString& Text);
 	void HandleTurnFinished(bool bCompleted);
 	void HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);

@@ -2,6 +2,7 @@
 
 #include "Modules/ModuleManager.h"
 
+#include "FShuttlegentMemoryStore.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentConsoleCommands.h"
 
@@ -23,6 +24,9 @@ void FShuttlegentCoreModule::StartupModule()
 {
 	AgentService = MakeShared<FShuttlegentAgentService>();
 	ConsoleCommands = MakeUnique<FShuttlegentConsoleCommands>(AgentService.ToSharedRef());
+
+	// 个人文件统一放在 Saved/Shuttlegent；旧位置的个人提示词运行时已不再读取
+	FShuttlegentMemoryStore::MigrateLocalPrompt();
 }
 
 void FShuttlegentCoreModule::ShutdownModule()

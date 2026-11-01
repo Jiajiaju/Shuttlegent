@@ -113,6 +113,7 @@ sequenceDiagram
       - `answerPlanReview`：答复计划审批（`AnswerPlanReview`）。计划模式下模型调用 `exit_plan_mode` 后，Harness 经“用户提问”通道（`user-questions/request`）请用户批准，ACP 下没有任何应答方，原本直接报 `NO_PROVIDER`。插件接管其中 `intent.kind` 为 `plan-review` 的请求，以通知 `shuttlegent/planReview`（会话 ID、审批 ID、计划正文）交给编辑器，等编辑器答复批准或“继续规划 + 意见”；回合取消时发 `shuttlegent/planReviewClosed`。编辑器没有订阅 `OnPlanReview()` 时，模块直接以“不可用”退回，回合不会卡住；对话模型订阅后，交出计划的会话不在面板中时同样退回。
       - `imageInput`：某个模型路由（会话 `model` 配置项的取值）是否声明接受图片（`QueryImageInput`）。ACP 只在 `initialize` 时按默认模型声明一次图片能力，沿用旧模型或切换过模型的会话由编辑器逐个确认；解析不了的路由按不接受处理。
     - ⚠️ Harness 的计划模式只在提示词里加一段说明，**不限制工具**（`ThirdParty/deepseek-harness/packages/plan/plan-mode/src/index.ts:1-19`）；“只读”须由编辑器侧保证。
+  - `shuttlegent-memory.mjs`：用系统提示词的动态上下文（`ctx.systemPrompt.context`）每次请求读取会话目录下 `Saved/Shuttlegent/` 的个人提示词 `SHUTTLEGENT.local.md` 与个人记忆 `MEMORY.md`（按修改时间缓存，单个文件超过 32 KB 跳过），文件变了从下一次请求起生效，同一会话里也是。`agent-instructions` 不接受带路径分隔符的候选文件名（`packages/context/agent-instructions/src/config.ts:132`），所以个人文件不经它加载；补丁里它只读项目根目录的 `SHUTTLEGENT.md`。不需要编辑器端点。
   - `shuttlegent-session-tap.mjs`：把 ACP 不转发的会话事件逐条按顺序以通知 `shuttlegent/sessionEvent`（会话 ID、类型、精简后的数据）发到编辑器端点，交给 `FShuttlegentMcpServerModule::OnSessionEvent()`（`FShuttlegentSessionEvent`）：
 
     | 事件 | 数据 |
@@ -239,15 +240,17 @@ flowchart TB
   - 存在性：页面把对话中全部对象链接与草稿引用一起交给 `WatchReferences`，对象被删除或经撤销恢复后，链接随 `onReferenceValidity` 变灰（加删除线，悬停提示“对象已不存在”），点击不做任何操作。
   - Actor 只认 Agent 明确写出的链接，页面不按名称猜测，避免重名时选错对象。
   - 表格渲染为 HTML 表格，单元格内同样解析链接、行内代码与加粗（`Resources/Web/markdown.js` 的 `table`）；分隔行到达前（回答仍在流式输出）按等宽源码显示。
-- 右侧检视窗格由四张可单独展开的卡片组成，折叠时标题行右侧显示摘要：
+- 右侧检视窗格由五张可单独展开的卡片组成，折叠时标题行右侧显示摘要；上下文与记忆两张默认展开：
 
   | 卡片 | 摘要 | 展开内容 | 数据 |
   |---|---|---|---|
   | 上下文 | 已用百分比 | 已用与总量 tokens；分段用量条与图例：消息、工具定义、系统提示、剩余（分项按运行时估算的比例分摊实际用量，未收到分项时只显示“已用 / 剩余”）；当前模型与推理强度 | `usedTokens`、`contextSize` 来自 `usage_update`（只有总量）；`contextBreakdown` 来自运行时插件 `shuttlegent-context-tap`（见 §2.2）；`config` |
   | MCP | 下次会话可用的服务数 | 两行汇总：编辑器端点（是否监听、端口）与外部服务（已声明数、跳过数）；三组可展开明细：编辑器工具（读写与开关）、引擎 Toolset（工具数、屏蔽或关闭）、外部服务（已声明，或被跳过及原因） | `mcp`，快照时推送，个人或项目设置变化、每轮结束时重推；运行时不回报外部服务是否连上 |
+  | 记忆 | 条数与已用 / 上限（KB），接近上限时警示 | 每条记忆及记录日期，悬停出现删除按钮；“打开文件”用系统默认程序打开 `MEMORY.md`（不存在时先建一个）；面板重新获得焦点时重新读取文件 | `memory`（`FShuttlegentMemoryStore`） |
   | 工具详情 | 调用次数与失败数 | 每次调用的参数与结果；点对话中的工具行时自动展开到该调用 | 对话条目 |
   | 日志 | 条数与警告数 | 运行日志 | `runLog` |
 
+- 记忆提示：`remember`、`forget` 的调用不显示为工具行（只留在“工具详情”卡片），改为一行灰色提示：“已记住：……”“已更新记忆：……”“已忘记：……”，带“撤销”（`FShuttlegentMemoryStore::Revert`，记忆已被别处改动时说明原因）。每个对话第一次发送时，若有记忆，在用户消息下显示“已读取记忆 · N 条”，点击展开记忆卡片。输入 `/memory` 同样打开记忆卡片。这些提示不写入会话记录，重新打开会话后不再显示。
 - `SShuttlegentWebPanel` 负责 CEF 管不了的部分：编辑器拖放、面板快捷键、面板自带的内容浏览器抽屉，以及用系统浏览器打开外部链接（只有 `http(s)` 链接交给系统浏览器，对象链接由页面拦截后经桥接处理）。
 
 ## 5. 类清单

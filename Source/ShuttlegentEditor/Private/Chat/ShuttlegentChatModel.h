@@ -275,6 +275,9 @@ public:
 	/** 当写入结果的事务仍位于编辑器撤销缓冲区顶部时将其撤销。 */
 	void UndoWrite(int32 EntryId);
 
+	/** 撤销当前对话中一条记忆提示所记录的修改；记忆已被别处改动时在对话中说明。 */
+	void UndoMemory(int32 EntryId);
+
 	/** 当前对话能否回到某条消息或从它分支：会话已在运行时打开、空闲，且运行时的 session control 插件可用；不能时给出原因。 */
 	bool CanEditHistory(FText& OutReason) const;
 
@@ -462,4 +465,7 @@ private:
 
 	void HandleQuestionsChanged();
 	void HandleQuestionClosed(const FShuttlegentQuestion& Question, EShuttlegentQuestionOutcome Outcome, const FString& Answer);
+
+	/** Agent 修改了记忆：在正在运行的对话中加一行提示（面板自己删除的不提示）。 */
+	void HandleMemoryChanged(const FShuttlegentMemoryChange& Change, bool bByAgent);
 };

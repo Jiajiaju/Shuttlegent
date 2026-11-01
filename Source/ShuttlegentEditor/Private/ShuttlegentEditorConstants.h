@@ -409,6 +409,21 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* ShadowedTokens = TEXT("shadowedTokens");
 	inline const TCHAR* CompactionStatus = TEXT("compactionStatus");
 
+	// 记忆条目：动作（也是条目的 Status）、是否已撤销；读取提示的条数在 Text 中
+	inline const TCHAR* KindMemory = TEXT("memory");
+	inline const TCHAR* MemoryAction = TEXT("memoryAction");
+	inline const TCHAR* MemoryRead = TEXT("read");
+	inline const TCHAR* MemoryAdded = TEXT("added");
+	inline const TCHAR* MemoryUpdated = TEXT("updated");
+	inline const TCHAR* MemoryRemoved = TEXT("removed");
+
+	// 记忆卡片：全部记忆（text、date）、文件大小与上限（字节）
+	inline const TCHAR* Memory = TEXT("memory");
+	inline const TCHAR* MemoryItems = TEXT("items");
+	inline const TCHAR* MemoryDate = TEXT("date");
+	inline const TCHAR* MemoryBytes = TEXT("bytes");
+	inline const TCHAR* MemoryMaxBytes = TEXT("maxBytes");
+
 	// 计划条目：审批状态（也是条目的 Status）与退回意见
 	inline const TCHAR* KindPlan = TEXT("plan");
 	inline const TCHAR* PlanStatus = TEXT("planStatus");

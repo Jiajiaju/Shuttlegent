@@ -652,6 +652,93 @@
       "forbid": [
         "save_assets"
       ]
+    },
+    {
+      "id": "t40_memory_explicit",
+      "prompt": "记住：我们的关卡命名都用 L_ 开头。",
+      "calls": [
+        "remember"
+      ],
+      "args": {
+        "remember": [
+          "L_"
+        ]
+      },
+      "maxWrites": 0
+    },
+    {
+      "id": "t41_memory_correction",
+      "prompt": "PointLight_Corridor 太亮了，室内的点光源我一般都用 5000，把它改成 5000。",
+      "calls": [
+        "remember",
+        "set_property"
+      ],
+      "args": {
+        "remember": [
+          "5000"
+        ],
+        "set_property": [
+          "5000"
+        ]
+      },
+      "maxWrites": 1
+    },
+    {
+      "id": "t42_memory_task_detail",
+      "prompt": "把 PointLight_Corridor 的强度改成 3000。",
+      "calls": [
+        "set_property"
+      ],
+      "forbid": [
+        "remember"
+      ],
+      "args": {
+        "set_property": [
+          "3000"
+        ]
+      },
+      "maxWrites": 1
+    },
+    {
+      "id": "t43_memory_replace",
+      "prompt": "以后室内点光源默认改用 3000 了。",
+      "memory": [
+        "室内点光源强度默认用 5000（2026-11-01）"
+      ],
+      "calls": [
+        "remember"
+      ],
+      "args": {
+        "remember": [
+          "3000",
+          "5000"
+        ]
+      },
+      "forbid": [
+        "set_property"
+      ],
+      "maxWrites": 0
+    },
+    {
+      "id": "t44_memory_follow",
+      "prompt": "在玩家出生点附近放一个点光源",
+      "memory": [
+        "室内点光源强度默认用 5000（2026-11-01）"
+      ],
+      "calls": [
+        "spawn_actor",
+        "set_property"
+      ],
+      "args": {
+        "set_property": [
+          "5000"
+        ]
+      },
+      "forbid": [
+        "remember",
+        "save_assets"
+      ],
+      "maxWrites": 3
     }
   ]
 }

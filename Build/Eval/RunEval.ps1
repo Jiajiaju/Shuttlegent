@@ -47,7 +47,10 @@ New-Item -ItemType Directory -Force $OutDir | Out-Null
 # The plugin's built-in skills, as the editor passes them when the project has no skill directories of its own
 $SkillOverlay = Join-Path $OutDir 'skills.patch.yml'
 [IO.File]::WriteAllText($SkillOverlay, "- id: skill-filesystem`n  config:`n    includeDefaultRoots: false`n    customSkillDirs: ['$BuiltinSkills']`n", $Utf8NoBom)
-$Overlays = @('--patch', $SkillOverlay)
+# The memory plugin, as the editor's generated patch inserts it; a task's memory goes to the workspace's Saved/Shuttlegent/MEMORY.md
+$MemoryOverlay = Join-Path $OutDir 'memory.patch.yml'
+[IO.File]::WriteAllText($MemoryOverlay, "- insert:`n    - id: shuttlegent-memory`n      name: '$(Join-Path $PluginDir 'Runtime\plugins\shuttlegent-memory.mjs')'`n", $Utf8NoBom)
+$Overlays = @('--patch', $SkillOverlay, '--patch', $MemoryOverlay)
 if ($Model) {
     $ModelOverlay = Join-Path $OutDir 'model.patch.yml'
     [IO.File]::WriteAllText($ModelOverlay, "- id: acp`n  config:`n    provider: deepseek-official`n    model: $Model`n", $Utf8NoBom)
@@ -84,6 +87,9 @@ if (-not $ApiKey) { throw 'No DeepSeek key in Editor Preferences > Shuttlegent >
 
 $Workspace = Join-Path $OutDir 'ws'
 New-Item -ItemType Directory -Force $Workspace | Out-Null
+$MemoryDir = Join-Path $Workspace 'Saved\Shuttlegent'
+New-Item -ItemType Directory -Force $MemoryDir | Out-Null
+$MemoryFile = Join-Path $MemoryDir 'MEMORY.md'
 # One DSH_HOME root per run, so runs with different -OutDir can go at once
 $HomeRoot = Join-Path $env:LOCALAPPDATA ('Shuttlegent\Eval\' + (Split-Path $OutDir -Leaf))
 if (Test-Path $HomeRoot) { Remove-Item -Recurse -Force $HomeRoot }
@@ -106,6 +112,10 @@ try {
         # A fresh DSH_HOME per task, launched from it as the editor launches the runtime
         $DshHome = Join-Path $HomeRoot $Task.id
         New-Item -ItemType Directory -Force $DshHome | Out-Null
+
+        # Each task starts from its own memory: the lines it lists, or none
+        if (Test-Path $MemoryFile) { Remove-Item -Force $MemoryFile }
+        if ($Task.memory) { [IO.File]::WriteAllText($MemoryFile, "# Shuttlegent 记忆`n`n" + (($Task.memory | ForEach-Object { "- $_" }) -join "`n") + "`n", $Utf8NoBom) }
         $Scenario = [ordered]@{
             name = $Task.id
             command = @($RuntimeExe, '--profile', 'acp', '--patch', $PatchFile) + $Overlays

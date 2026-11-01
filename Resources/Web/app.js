@@ -70,7 +70,7 @@
   const COPIED_MS = 1500;
 
   // Inspector cards, top to bottom
-  const INSPECTOR_CARDS = ['context', 'mcp', 'tools', 'log'];
+  const INSPECTOR_CARDS = ['context', 'memory', 'mcp', 'tools', 'log'];
 
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
@@ -82,6 +82,9 @@
     { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先询问' },
     { value: 'plan', label: '计划', detail: '先出方案，批准后再修改' }
   ];
+  // Share of the memory file limit at which the memory card summary warns
+  const MEMORY_WARN_SHARE = 0.9;
+
   const MODE_CYCLE = ['manual', 'acceptEdits', 'auto', 'plan'];
 
   // Session list dots: what each attention value means, for the tooltip and screen readers
@@ -104,13 +107,20 @@
   const TEMPLATE_TOKEN = /(^|\n)\/([^\s/]*)$/;
 
   // Built-in commands the editor runs itself instead of sending them to the model; they win over a template of the same name
-  const COMMAND_LINE = /^\/(compact|plan|undo|clear)(?:\s+([\s\S]*))?$/;
+  const COMMAND_LINE = /^\/(compact|plan|undo|clear|memory)(?:\s+([\s\S]*))?$/;
   const COMMANDS = [
     { name: 'compact', body: '/compact', detail: '把较早的对话总结为摘要，腾出上下文空间' },
     { name: 'plan', body: '/plan ', detail: '进入计划模式；/plan off 退出，/plan 后接消息则进入并发送' },
     { name: 'undo', body: '/undo', detail: '回退本轮：撤销最后一条消息之后的修改，原文放回输入框' },
-    { name: 'clear', body: '/clear', detail: '开始新对话，当前对话留在侧栏' }
+    { name: 'clear', body: '/clear', detail: '开始新对话，当前对话留在侧栏' },
+    { name: 'memory', body: '/memory', detail: '打开记忆卡片，查看或删除 Agent 记住的偏好' }
   ];
+
+  // Memory notes in the conversation: what each action says before the remembered line
+  const MEMORY_ACTION_TEXT = { added: '已记住：', updated: '已更新记忆：', removed: '已忘记：' };
+
+  // Editor tools that change memory; the conversation shows their memory note instead of a tool row
+  const MEMORY_TOOL = /(^|__)(remember|forget)$/;
 
   // Images in one draft; longest side after the page scales a pasted or picked image down; encoded size above which a PNG is re-encoded as JPEG, in bytes, and its quality
   const MAX_DRAFT_IMAGES = 6;
@@ -220,7 +230,7 @@
     docked: { sidebar: true, inspector: true },
     overlay: null,
     // Inspector cards that are expanded; the context card starts open
-    cards: { context: true, mcp: false, tools: false, log: false },
+    cards: { context: true, memory: true, mcp: false, tools: false, log: false },
     // Collapsible groups inside cards that are open (MCP tools, toolsets, external servers)
     cardGroups: new Set(),
     selectedTool: null,
@@ -325,19 +335,25 @@
   }
 
   /** Splits the entry order into blocks: one entry, or a group of consecutive read-only tool calls. */
+  function isMemoryTool(entry) {
+    return !!entry && entry.kind === 'toolCall' && MEMORY_TOOL.test(entry.tool || '');
+  }
+
   function buildBlocks() {
     const blocks = [];
-    for (let index = 0; index < state.order.length; ++index) {
+    // Memory tool calls show as memory notes; their rows stay only in the tool details card
+    const order = state.order.filter((id) => !isMemoryTool(state.entries.get(id)));
+    for (let index = 0; index < order.length; ++index) {
       const group = [];
-      while (index + group.length < state.order.length && isReadOnlyTool(state.entries.get(state.order[index + group.length]))) {
-        group.push(state.order[index + group.length]);
+      while (index + group.length < order.length && isReadOnlyTool(state.entries.get(order[index + group.length]))) {
+        group.push(order[index + group.length]);
       }
       if (group.length >= MIN_GROUP_SIZE) {
         blocks.push({ key: 'g' + group[0], ids: group });
         index += group.length - 1;
         continue;
       }
-      blocks.push({ key: 'e' + state.order[index], ids: [state.order[index]] });
+      blocks.push({ key: 'e' + order[index], ids: [order[index]] });
     }
     return blocks;
   }
@@ -561,6 +577,15 @@
     return '<div class="compaction ' + esc(entry.compactionStatus) + '" title="较早的对话已由模型总结为摘要，摘要之后的内容原样保留">' + text + '</div>';
   }
 
+  /** One grey line: how many memories this conversation started with, or a memory the agent saved, changed or dropped (undoable). */
+  function renderMemoryNote(entry) {
+    if (entry.memoryAction === 'read') {
+      return '<div class="memory-note"><button class="link" data-show-memory title="在检视窗格查看全部记忆">已读取记忆 · ' + esc(entry.text) + ' 条</button></div>';
+    }
+    const undo = entry.undone ? '<span class="memory-undone">已撤销</span>' : '<button class="link" data-undo-memory="' + entry.id + '">撤销</button>';
+    return '<div class="memory-note' + (entry.undone ? ' undone' : '') + '"><span class="memory-note-text">' + (MEMORY_ACTION_TEXT[entry.memoryAction] || '') + esc(entry.text) + '</span>' + undo + '</div>';
+  }
+
   function renderNotice(entry) {
     return '<div class="note' + (entry.error ? ' error' : '') + '">' + esc(entry.text) + '</div>';
   }
@@ -582,6 +607,8 @@
         return renderWriteResult(entry);
       case 'writeUnknown':
         return renderWriteUnknown(entry);
+      case 'memory':
+        return renderMemoryNote(entry);
       case 'compaction':
         return renderCompaction(entry);
       case 'plan':
@@ -1032,6 +1059,21 @@
   function focusPickerItem(picker, index) {
     const items = Array.from(picker.querySelectorAll('.picker-item:not(:disabled)'));
     if (items.length) items[(index + items.length) % items.length].focus();
+  }
+
+  /** Memory card buttons, and a fresh copy of the file whenever the panel regains focus (it may have been edited outside). */
+  function bindMemory() {
+    $('card-body-memory').addEventListener('click', (event) => {
+      const forget = event.target.closest('[data-forget-memory]');
+      if (forget) {
+        const item = state.memory && state.memory.items[Number(forget.dataset.forgetMemory)];
+        forget.disabled = true;
+        if (item) call('forgetmemory', item.text);
+        return;
+      }
+      if (event.target.closest('#memory-open')) call('openmemoryfile');
+    });
+    window.addEventListener('focus', () => call('refreshmemory'));
   }
 
   function bindPickers() {
@@ -1528,6 +1570,10 @@
       case 'clear':
         clearCommandDraft();
         startNewSession();
+        return;
+      case 'memory':
+        clearCommandDraft();
+        showMemoryCard();
         return;
     }
     clearCommandDraft();
@@ -2304,6 +2350,7 @@
       const share = contextShare();
       return share === null ? '—' : Math.round(share * 100) + '%';
     }
+    if (card === 'memory') return state.memory ? state.memory.items.length + ' 条 · ' + memoryKb(state.memory.bytes) + '/' + memoryKb(state.memory.maxBytes) + ' KB' : '—';
     if (card === 'mcp') return state.mcp ? mcpServiceCount() + ' 个服务' : '—';
     if (card === 'tools') {
       const tools = state.order.map((id) => state.entries.get(id)).filter((entry) => entry && entry.kind === 'toolCall');
@@ -2319,6 +2366,7 @@
       const share = contextShare();
       return share !== null && share >= USAGE_HIGH_SHARE;
     }
+    if (card === 'memory') return !!state.memory && state.memory.bytes >= state.memory.maxBytes * MEMORY_WARN_SHARE;
     if (card === 'mcp') return mcpHasProblem();
     if (card === 'tools') return state.order.some((id) => { const entry = state.entries.get(id); return entry && entry.kind === 'toolCall' && entry.toolStatus === TOOL_FAILED; });
     return state.runLog.some((item) => item.warning);
@@ -2326,9 +2374,31 @@
 
   function renderCardBody(card) {
     if (card === 'context') return renderContextCard();
+    if (card === 'memory') return renderMemoryCard();
     if (card === 'mcp') return renderMcpCard();
     if (card === 'tools') return renderToolDetails();
     return renderRunLog();
+  }
+
+  function memoryKb(bytes) {
+    return (bytes / 1024).toFixed(1).replace(/\.0$/, '');
+  }
+
+  /** Memory card: every remembered line with its date and a delete button, then the file. Changes reach the model at its next request. */
+  function renderMemoryCard() {
+    const items = state.memory ? state.memory.items : [];
+    const list = items.length
+      ? '<ul class="memory-list">' + items.map((item, index) => '<li><span class="memory-text">' + esc(item.text) + (item.date ? '<small>' + esc(item.date) + '</small>' : '') + '</span><button class="icon memory-forget" data-forget-memory="' + index + '" title="删除这条记忆" aria-label="删除这条记忆">' + icons.svg('close', 12) + '</button></li>').join('') + '</ul>'
+      : '<p class="memory-empty">还没有记忆。你说“记住……”，或 Agent 判断以后用得上时，会自动记在这里。</p>';
+    return list + '<div class="memory-foot"><span>删除或修改从下一次请求起生效</span><button id="memory-open">打开文件</button></div>';
+  }
+
+  /** Opens the inspector on the memory card. */
+  function showMemoryCard() {
+    view.cards.memory = true;
+    openPane('inspector');
+    renderInspector(['memory']);
+    $('card-head-memory').scrollIntoView({ block: 'nearest' });
   }
 
   /** Updates the given cards (all by default): header state and summary always, the body only while expanded. */
@@ -2421,7 +2491,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'writeMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'writeMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason', 'memory'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -2502,6 +2572,7 @@
     if (inspectorVisible) {
       const cards = [];
       if ('usedTokens' in message || 'contextSize' in message || 'contextBreakdown' in message || 'config' in message || 'compacting' in message || 'canCompact' in message) cards.push('context');
+      if ('memory' in message) cards.push('memory');
       if ('mcp' in message) cards.push('mcp');
       if (toolsChanged) cards.push('tools');
       if ('runLog' in message) cards.push('log');
@@ -2758,6 +2829,18 @@
       if (undo) {
         undo.disabled = true;
         call('undowrite', Number(undo.dataset.undoWrite));
+        return;
+      }
+
+      const undoMemory = event.target.closest('[data-undo-memory]');
+      if (undoMemory) {
+        undoMemory.disabled = true;
+        call('undomemory', Number(undoMemory.dataset.undoMemory));
+        return;
+      }
+
+      if (event.target.closest('[data-show-memory]')) {
+        showMemoryCard();
         return;
       }
 
@@ -3037,6 +3120,7 @@
   bindConversation();
   bindObjectDrag();
   bindPickers();
+  bindMemory();
   window.setInterval(refreshMessageTimes, TIME_REFRESH_MS);
   bindPanes();
   bindDialogs();

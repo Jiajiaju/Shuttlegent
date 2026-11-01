@@ -17,7 +17,9 @@
 #include "ISettingsModule.h"
 #include "IWebBrowserWindow.h"
 #include "Interfaces/IPluginManager.h"
+#include "HAL/FileManager.h"
 #include "Misc/ConfigCacheIni.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "RenderingThread.h"
@@ -33,6 +35,7 @@
 #include "Widgets/Text/STextBlock.h"
 
 #include "Chat/ShuttlegentChatModel.h"
+#include "FShuttlegentMemoryStore.h"
 #include "FShuttlegentPromptImage.h"
 #include "Reference/FShuttlegentReferenceFinder.h"
 #include "Reference/FShuttlegentReferenceNavigator.h"
@@ -158,6 +161,10 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnAnswerWrite = nullptr;
 	Bridge->OnAnswerQuestion = nullptr;
 	Bridge->OnUndoWrite = nullptr;
+	Bridge->OnUndoMemory = nullptr;
+	Bridge->OnForgetMemory = nullptr;
+	Bridge->OnOpenMemoryFile = nullptr;
+	Bridge->OnRefreshMemory = nullptr;
 	Bridge->OnRewindTo = nullptr;
 	Bridge->OnBranchFrom = nullptr;
 	Bridge->OnRetryStart = nullptr;
@@ -389,6 +396,32 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
 		if (Pinned.IsValid()) Pinned->UndoWrite(EntryId);
+	};
+	Bridge->OnUndoMemory = [WeakModel](int32 EntryId)
+	{
+		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		if (Pinned.IsValid()) Pinned->UndoMemory(EntryId);
+	};
+	Bridge->OnForgetMemory = [](const FString& Text)
+	{
+		FString Error;
+		if (!FShuttlegentMemoryStore::Forget(Text, false, Error)) UE_LOG(LogShuttlegent, Warning, TEXT("Shuttlegent panel: memory not removed: %s"), *Error);
+	};
+	Bridge->OnOpenMemoryFile = []()
+	{
+		// 还没有记忆时先建一个只有标题的文件，供用户直接编辑
+		const FString File = FShuttlegentMemoryStore::GetMemoryFile();
+		if (!FPaths::FileExists(File))
+		{
+			IFileManager::Get().MakeDirectory(*FShuttlegentMemoryStore::GetLocalDir(), true);
+			FFileHelper::SaveStringToFile(FString(ShuttlegentMemoryConstant::FileHeading) + TEXT("\n"), *File, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+		}
+		FPlatformProcess::LaunchFileInDefaultExternalApplication(*File);
+	};
+	Bridge->OnRefreshMemory = [WeakThis]()
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid() && This->Protocol.IsValid()) This->Protocol->MarkMemoryDirty();
 	};
 	Bridge->OnRewindTo = [WeakModel](int32 EntryId)
 	{

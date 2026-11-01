@@ -33,5 +33,8 @@ enum class EShuttlegentChatEntryKind : uint8
 	Compaction,
 
 	// 计划模式下 Agent 交出的计划（Markdown）及其审批结果：待审批、已批准、已退回（附意见）或已取消
-	Plan
+	Plan,
+
+	// 个人记忆的一行提示：本对话读取了几条记忆，或 Agent 记住、更新、忘记了一条（可撤销）
+	Memory
 };

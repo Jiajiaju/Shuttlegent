@@ -268,6 +268,20 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .state-icon.running .sg-icon,.stop.is-stopping .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
 @keyframes sg-rotate{to{transform:rotate(360deg)}}
 
+.memory-note{display:flex;align-items:center;gap:8px;margin:6px 0;color:var(--muted);font-size:12px}
+.memory-note-text{min-width:0;overflow-wrap:anywhere}
+.memory-note.undone .memory-note-text{text-decoration:line-through}
+.memory-note .link,.memory-foot button{background:transparent;border:0;padding:0;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.memory-note .link:hover,.memory-foot button:hover{color:var(--text)}
+.memory-undone{font-size:11px}
+.memory-list{list-style:none;margin:0;padding:0}
+.memory-list li{display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid var(--subtle);font-size:12px}
+.memory-text{flex:1;min-width:0;overflow-wrap:anywhere}
+.memory-text small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+.memory-forget{opacity:0;flex-shrink:0;width:18px;height:18px;padding:0}
+.memory-list li:hover .memory-forget,.memory-forget:focus-visible{opacity:1}
+.memory-empty{margin:4px 0;color:var(--muted);font-size:12px;line-height:1.5}
+.memory-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;color:var(--muted);font-size:11px}
 .compaction{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:12px}
 .compaction::before,.compaction::after{content:'';flex:1;border-top:1px dashed var(--line)}
 .compaction span{display:inline-flex;align-items:center;gap:5px}

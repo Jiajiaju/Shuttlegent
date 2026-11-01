@@ -17,6 +17,7 @@
 #include "Reference/FShuttlegentReferenceFinder.h"
 #include "Reference/FShuttlegentReferencePrompt.h"
 #include "ShuttlegentEditorConstants.h"
+#include "FShuttlegentMemoryStore.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSessionStore.h"
@@ -270,6 +271,7 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 		Questions->OnChanged.AddSP(this, &FShuttlegentChatModel::HandleQuestionsChanged);
 		Questions->OnClosed.AddSP(this, &FShuttlegentChatModel::HandleQuestionClosed);
 	}
+	FShuttlegentMemoryStore::OnChanged().AddSP(this, &FShuttlegentChatModel::HandleMemoryChanged);
 
 	const TSharedPtr<FShuttlegentWriteGate> Gate = FShuttlegentMcpServerModule::Get().GetWriteGate();
 	if (!Gate.IsValid()) return;
@@ -331,6 +333,7 @@ void FShuttlegentChatModel::Shutdown()
 		Questions->OnClosed.RemoveAll(this);
 	}
 	QuestionGate.Reset();
+	FShuttlegentMemoryStore::OnChanged().RemoveAll(this);
 
 	UTransBuffer* TransBuffer = GEditor != nullptr ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
 	if (IsValid(TransBuffer) && UndoBufferHandle.IsValid()) TransBuffer->OnUndoBufferChanged().Remove(UndoBufferHandle);
@@ -717,6 +720,41 @@ void FShuttlegentChatModel::UndoWrite(int32 EntryId)
 	Entry->bUndone = true;
 	AddRunLog(*Current, LOCTEXT("LogUndoWrite", "撤销本次修改"), false);
 	NotifyContent(*Current);
+}
+
+void FShuttlegentChatModel::UndoMemory(int32 EntryId)
+{
+	const TSharedPtr<FShuttlegentChatEntry>* Found = Current->Entries.FindByPredicate([EntryId](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry.IsValid() && Entry->Id == EntryId; });
+	if (Found == nullptr || (*Found)->Kind != EShuttlegentChatEntryKind::Memory || (*Found)->bUndone || (*Found)->Status == ShuttlegentEditorWebField::MemoryRead) return;
+
+	const TSharedPtr<FShuttlegentChatEntry> Entry = *Found;
+	FString Error;
+	if (!FShuttlegentMemoryStore::Revert(Entry->MemoryChange, Error))
+	{
+		AddNotice(*Current, FText::Format(LOCTEXT("UndoMemoryFailed", "撤销失败：{0}"), FText::FromString(Error)), true);
+		return;
+	}
+
+	Entry->bUndone = true;
+	AddRunLog(*Current, LOCTEXT("LogUndoMemory", "撤销记忆修改"), false);
+	NotifyContent(*Current);
+}
+
+void FShuttlegentChatModel::HandleMemoryChanged(const FShuttlegentMemoryChange& Change, bool bByAgent)
+{
+	if (!bByAgent) return;
+
+	// 记忆工具的调用不带会话：归属正在运行回合的对话，没有时归属当前对话
+	const TSharedPtr<FShuttlegentConversation>* Running = Conversations.FindByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Conversation) { return IsPrompting(*Conversation); });
+	const TSharedPtr<FShuttlegentConversation> Owner = Running != nullptr ? *Running : Current;
+
+	const bool bRemoved = Change.Kind == EShuttlegentMemoryChangeKind::Removed;
+	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Owner, EShuttlegentChatEntryKind::Memory, bRemoved ? Change.Before.Text : Change.After.Text);
+	Entry->MemoryChange = Change;
+	if (Change.Kind == EShuttlegentMemoryChangeKind::Added) Entry->Status = ShuttlegentEditorWebField::MemoryAdded;
+	else if (Change.Kind == EShuttlegentMemoryChangeKind::Updated) Entry->Status = ShuttlegentEditorWebField::MemoryUpdated;
+	else Entry->Status = ShuttlegentEditorWebField::MemoryRemoved;
+	NotifyStructure(*Owner);
 }
 
 bool FShuttlegentChatModel::CanEditHistory(FText& OutReason) const
@@ -1806,6 +1844,16 @@ void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, c
 	Conversation.Todos.Reset();
 	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
 	Entry->Images = MoveTemp(ImageFiles);
+
+	// 运行时每次请求都带上记忆；每个对话第一次发送时提示一次带上了几条
+	const int32 MemoryCount = Conversation.bMemoryNoticeShown ? 0 : FShuttlegentMemoryStore::Load().Num();
+	Conversation.bMemoryNoticeShown = true;
+	if (MemoryCount > 0)
+	{
+		const TSharedPtr<FShuttlegentChatEntry> Notice = AddEntry(Conversation, EShuttlegentChatEntryKind::Memory, FString::FromInt(MemoryCount));
+		Notice->Status = ShuttlegentEditorWebField::MemoryRead;
+	}
+
 	AddRunLog(Conversation, LOCTEXT("LogTurnStart", "开始本轮"), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);

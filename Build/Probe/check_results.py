@@ -248,6 +248,14 @@ def check_skill_dirs(ev):
     return project and builtin_only and not shadowed, f"project duplicate={project} built-in only={builtin_only} shadowed built-in={shadowed}"
 
 
+def check_memory(ev):
+    text = message_text(ev)
+    memory = "KIWI-7" in text
+    local = "PLUM" in text
+    old = "GRAPE" in text
+    return memory and local and not old, f"memory={memory} local prompt={local} old root-level local prompt={old} answer={text[:80]!r}"
+
+
 CHECKS = [
     ("s01_init", "Q1/Q7 initialize, session/new, MCP handshake", check_init),
     ("s02_nokey", "Q4 no key -> explicit missing-key error", check_error_contains("no API key")),
@@ -270,6 +278,7 @@ CHECKS = [
     ("s16_session_tap", "Session tap reports plan mode, todos and compaction; control enters plan mode, approves the plan, runs /compact", check_session_tap),
     ("s19_tool_image", "An image in an MCP tool result reaches the default model, which reads it", check_tool_image),
     ("s18_skill_dirs", "Project skill directories listed before the built-in one win a duplicate skill name; built-in skills still load", check_skill_dirs),
+    ("s20_memory", "Personal prompt and memory load from Saved/Shuttlegent/; a root-level SHUTTLEGENT.local.md does not", check_memory),
 ]
 
 failed = 0

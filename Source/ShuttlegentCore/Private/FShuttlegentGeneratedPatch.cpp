@@ -126,6 +126,7 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 		{ ShuttlegentProviderConstant::RowContextTap, ShuttlegentPath::ContextTapPlugin },
 		{ ShuttlegentProviderConstant::RowSessionControl, ShuttlegentPath::SessionControlPlugin },
 		{ ShuttlegentProviderConstant::RowSessionTap, ShuttlegentPath::SessionTapPlugin },
+		{ ShuttlegentProviderConstant::RowMemory, ShuttlegentPath::MemoryPlugin },
 	};
 	TArray<TSharedPtr<FJsonValue>> Plugins;
 	for (const TPair<const TCHAR*, const TCHAR*>& RuntimePlugin : RuntimePlugins)

@@ -71,6 +71,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 一轮结束（用户自己停止的除外）时用户没在看这个对话；用户看到它时清除。页签与会话列表据此显示绿点。 */
 	bool bUnseenFinish = false;
 
+	/** 本对话已显示过“已读取记忆”的提示；每个对话只在第一次发送时显示一次。 */
+	bool bMemoryNoticeShown = false;
+
 	/** 等待用户审批的计划；ReviewId 为空表示没有。 */
 	FShuttlegentPlanReview PendingPlanReview;
 

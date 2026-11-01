@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "FShuttlegentMemoryChange.h"
+
 #include "Chat/EShuttlegentChatEntryKind.h"
 #include "WriteGate/FShuttlegentWriteResult.h"
 
@@ -60,6 +62,9 @@ struct FShuttlegentChatEntry
 
 	/** 写入结果条目：按写入模式未弹确认卡、直接执行。 */
 	bool bAutoApproved = false;
+
+	/** 记忆条目：Agent 所做的修改，撤销时据此还原（bUndone 记录已撤销）；读取提示的 Text 为条数。 */
+	FShuttlegentMemoryChange MemoryChange {};
 
 	/** 用于答复待处理权限请求的稳定 id。 */
 	int32 Id = 0;

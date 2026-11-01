@@ -54,12 +54,14 @@
 - id: session-telemetry-otel
   disabled: true
 
-# Project prompt comes from SHUTTLEGENT.md only; AGENTS.md / CLAUDE.md are ignored.
+# Project prompt comes from SHUTTLEGENT.md only; AGENTS.md / CLAUDE.md are ignored. Personal files live in the
+# project's local directory Saved/Shuttlegent/ (never versioned) and reach the model through the
+# shuttlegent-memory plugin: agent-instructions ignores candidate names that contain a path separator.
 - id: agent-instructions
   config:
     maxBytes: 65536
     instructionFileCandidates: ['SHUTTLEGENT.md']
-    localInstructionFileCandidates: ['SHUTTLEGENT.local.md']
+    localInstructionFileCandidates: []
 
 # Skills come only from directories Shuttlegent configures.
 - id: skill-filesystem
@@ -115,3 +117,11 @@
       an actor as [PointLight3](ue-actor:/Game/Maps/Main.Main:PersistentLevel.PointLight_3)
       with its actor label as the text and its object path as the target.
       Use only paths you got from tools or from the user; never invent one.
+      You remember this user across conversations with the remember and
+      forget tools. Whenever the user says how something is usually or always
+      done (a habit, a default value, a naming rule, something to avoid, such
+      as "I usually use 5000 for indoor point lights" or "from now on ..."),
+      call remember in the same turn, alongside the task itself and without
+      asking; the user is only shown a one-line note. Follow what you
+      remember unless the user says otherwise; when they change a lasting
+      preference, update the remembered line with replaces.

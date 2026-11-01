@@ -130,6 +130,26 @@ void UShuttlegentWebBridge::UndoWrite(int32 EntryId)
 	if (OnUndoWrite) OnUndoWrite(EntryId);
 }
 
+void UShuttlegentWebBridge::UndoMemory(int32 EntryId)
+{
+	if (OnUndoMemory) OnUndoMemory(EntryId);
+}
+
+void UShuttlegentWebBridge::ForgetMemory(const FString& Text)
+{
+	if (OnForgetMemory) OnForgetMemory(Text);
+}
+
+void UShuttlegentWebBridge::OpenMemoryFile()
+{
+	if (OnOpenMemoryFile) OnOpenMemoryFile();
+}
+
+void UShuttlegentWebBridge::RefreshMemory()
+{
+	if (OnRefreshMemory) OnRefreshMemory();
+}
+
 void UShuttlegentWebBridge::RewindTo(int32 EntryId)
 {
 	if (OnRewindTo) OnRewindTo(EntryId);

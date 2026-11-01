@@ -306,6 +306,18 @@ try {
         [IO.File]::WriteAllText($SkillOverlay, "- id: skill-filesystem`n  config:`n    includeDefaultRoots: false`n    customSkillDirs: [$SkillDirsYaml]`n", $Utf8NoBom)
         $SkillPrompt = 'Without calling any tool, list every skill available to you, one per line, as name: exact description.'
         Invoke-Scenario -Name 's18_skill_dirs' -HomeName 'skilldirs' -Prompts @($SkillPrompt) -Key $ApiKey -ExtraPatches @($SkillOverlay)
+
+        # Personal prompt and memory load from the workspace's Saved/Shuttlegent/; the old root-level personal prompt does not
+        $LocalDir = Join-Path $Workspace 'Saved\Shuttlegent'
+        New-Item -ItemType Directory -Force $LocalDir | Out-Null
+        [IO.File]::WriteAllText((Join-Path $LocalDir 'SHUTTLEGENT.local.md'), "# Personal prompt`nMARKER_LOCAL_PROMPT: if you can read this line, say the word PLUM.`n", $Utf8NoBom)
+        [IO.File]::WriteAllText((Join-Path $LocalDir 'MEMORY.md'), "# Memory`n- MARKER_MEMORY: the user's project code name is KIWI-7.`n", $Utf8NoBom)
+        [IO.File]::WriteAllText((Join-Path $Workspace 'SHUTTLEGENT.local.md'), "# Old personal prompt`nMARKER_OLD_LOCAL: if you can read this line, say the word GRAPE.`n", $Utf8NoBom)
+        $MemoryPrompt = 'Without calling any tool: what is my project code name, and which special words do your instructions ask you to say? Answer in one line.'
+        $MemoryPlugin = Join-Path $PluginDir 'Runtime\plugins\shuttlegent-memory.mjs'
+        $MemoryOverlay = Join-Path $OutDir 'memory.overlay.yml'
+        [IO.File]::WriteAllText($MemoryOverlay, "- insert:`n    - id: shuttlegent-memory`n      name: '$MemoryPlugin'`n", $Utf8NoBom)
+        Invoke-Scenario -Name 's20_memory' -HomeName 'memory' -Prompts @($MemoryPrompt) -Key $ApiKey -ExtraPatches @($MemoryOverlay)
     }
 }
 finally {

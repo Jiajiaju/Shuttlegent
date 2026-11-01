@@ -135,6 +135,9 @@ namespace ShuttlegentProviderConstant
 
 	// 插入 session tap 插件的行，按绝对路径加载
 	inline const TCHAR* RowSessionTap = TEXT("shuttlegent-session-tap");
+
+	// 插入记忆插件的行，按绝对路径加载
+	inline const TCHAR* RowMemory = TEXT("shuttlegent-memory");
 	inline const TCHAR* FieldInsert = TEXT("insert");
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
@@ -165,6 +168,9 @@ namespace ShuttlegentPath
 
 	// 把 ACP 不转发的会话事件（待办、计划模式、压缩、目标）推给编辑器端点的运行时插件，相对插件目录
 	inline const TCHAR* SessionTapPlugin = TEXT("Runtime/plugins/shuttlegent-session-tap.mjs");
+
+	// 每次请求带上 Saved/Shuttlegent 下个人提示词与记忆的运行时插件，相对插件目录
+	inline const TCHAR* MemoryPlugin = TEXT("Runtime/plugins/shuttlegent-memory.mjs");
 
 	// DSH_HOME，相对 %LOCALAPPDATA%；同时是运行时的启动目录，必须在系统盘
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");
@@ -202,6 +208,30 @@ namespace ShuttlegentSessionConstant
 
 	// 用户重命名时标题的最大长度，单位字符（Shuttlegent 界面交互规范第 6 节）
 	inline constexpr int32 RenameMaxChars = 60;
+}
+
+/** 个人记忆与本地目录（<Project>/Saved/Shuttlegent，不进版本库）。 */
+namespace ShuttlegentMemoryConstant
+{
+	// 本地目录，相对项目的 Saved 目录；记忆文件与个人提示词都在这里
+	inline const TCHAR* LocalDir = TEXT("Shuttlegent");
+	inline const TCHAR* MemoryFile = TEXT("MEMORY.md");
+	inline const TCHAR* LocalPromptFile = TEXT("SHUTTLEGENT.local.md");
+
+	// 记忆文件新建时的标题行
+	inline const TCHAR* FileHeading = TEXT("# Shuttlegent 记忆");
+
+	// 每条记忆一行：以此开头，末尾为全角括号中的记录日期
+	inline const TCHAR* ItemPrefix = TEXT("- ");
+	inline const TCHAR* DateOpen = TEXT("（");
+	inline const TCHAR* DateClose = TEXT("）");
+	inline const TCHAR* DateFormat = TEXT("%Y-%m-%d");
+
+	// 记忆文件的上限，单位字节（UTF-8）；运行时插件每次请求都带上全文
+	inline constexpr int32 MaxFileBytes = 8192;
+
+	// 一条记忆的上限，单位字符
+	inline constexpr int32 MaxItemChars = 300;
 }
 
 namespace ShuttlegentAppearanceConstant

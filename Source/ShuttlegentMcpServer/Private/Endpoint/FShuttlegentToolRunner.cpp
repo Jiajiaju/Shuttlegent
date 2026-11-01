@@ -6,6 +6,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "Endpoint/FShuttlegentLogScope.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentMcpServerConstants.h"
 #include "Tool/IShuttlegentTool.h"
@@ -72,8 +73,8 @@ namespace FShuttlegentToolRunnerPrivate
 		}
 	}
 
-	/** 每个对象一行，另加一行总体结果，供模型阅读。 */
-	FString ResultText(const FShuttlegentWriteResult& Result, bool bRolledBack)
+	/** 每个对象一行，另加一行总体结果，供模型阅读；其后附写入期间 Output Log 的警告与错误。 */
+	FString ResultText(const FShuttlegentWriteResult& Result, bool bRolledBack, const TArray<FString>& LogLines, int32 DroppedLogLines)
 	{
 		TArray<FString> Lines;
 		int32 Completed = 0;
@@ -92,7 +93,18 @@ namespace FShuttlegentToolRunnerPrivate
 		else if (Completed == Result.Objects.Num()) Outcome = FString::Printf(TEXT("Done: %d object(s) written."), Completed);
 		else Outcome = FString::Printf(TEXT("Partly done: %d of %d object(s) written."), Completed, Result.Objects.Num());
 		if (!Result.bUndoable && Completed > 0) Outcome += TEXT(" This change cannot be undone from the editor.");
-		return Outcome + TEXT("\n") + FString::Join(Lines, TEXT("\n"));
+
+		// 全部写入且没有警告时告诉模型这就是编辑器的实际写入，避免为确认而反复读取或重写
+		if (!bRolledBack && Completed == Result.Objects.Num() && LogLines.IsEmpty()) Outcome += TEXT(" These are the values the editor wrote; read back once at most if the user needs it checked, and do not write again unless the readback differs.");
+
+		FString Text = Outcome + TEXT("\n") + FString::Join(Lines, TEXT("\n"));
+		if (LogLines.IsEmpty()) return Text;
+
+		// 失败或回滚时多半能从这里看出原因；全部写入但有错误时，写入的内容可能不完整
+		Text += TEXT("\nOutput Log warnings and errors while this ran:\n- ") + FString::Join(LogLines, TEXT("\n- "));
+		if (DroppedLogLines > 0) Text += FString::Printf(TEXT("\n(%d more not shown; read_log has them.)"), DroppedLogLines);
+		if (Completed == Result.Objects.Num()) Text += TEXT("\nThe write reported success, but check these messages against the result before telling the user it worked.");
+		return Text;
 	}
 
 	/** 写入已确认的对象；事务性写入在任一处失败时整体撤销。 */
@@ -202,12 +214,15 @@ void FShuttlegentToolRunner::Call(const TSharedRef<FShuttlegentWriteGate>& Gate,
 		}
 
 		bool bRolledBack = false;
+		int32 DroppedLogLines = 0;
+		FShuttlegentLogScope LogScope;
 		const FShuttlegentWriteResult Result = FShuttlegentToolRunnerPrivate::Write(*Confirmed, Tool, Arguments, bRolledBack);
+		const TArray<FString> LogLines = LogScope.TakeLines(DroppedLogLines);
 		const TSharedPtr<FShuttlegentWriteGate> PinnedGate = WeakGate.Pin();
 		if (PinnedGate.IsValid()) PinnedGate->ReportResult(Result);
 
 		const bool bAllDone = !Result.Objects.ContainsByPredicate([](const FShuttlegentWriteObject& Object) { return Object.Status != EShuttlegentWriteObjectStatus::Completed; });
-		OnDone(FShuttlegentToolResult { LimitOutput(FShuttlegentToolRunnerPrivate::ResultText(Result, bRolledBack)), !bAllDone });
+		OnDone(FShuttlegentToolResult { LimitOutput(FShuttlegentToolRunnerPrivate::ResultText(Result, bRolledBack, LogLines, DroppedLogLines)), !bAllDone });
 	});
 	Confirmed->RequestId = RequestId;
 }

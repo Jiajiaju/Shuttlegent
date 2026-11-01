@@ -27,6 +27,11 @@ with open(os.path.join(HERE, "world.json"), encoding="utf-8") as world_file:
     INITIAL_WORLD = json.load(world_file)
 WORLDS = {}
 
+# Appended to a successful write, as FShuttlegentToolRunner does when every object was written and no warning was logged
+WRITE_DONE_HINT = (" These are the values the editor wrote; read back once at most if the user needs it checked, "
+                   "and do not write again unless the readback differs.")
+WRITE_TOOLS = {t["name"] for t in SNAPSHOT["tools"] if not t["readOnly"]} - {"call_toolset_tool"}
+
 TOOLS = [{"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"],
           "annotations": {"readOnlyHint": t["readOnly"], "destructiveHint": not t["readOnly"]}} for t in SNAPSHOT["tools"]]
 
@@ -437,7 +442,10 @@ class Handler(BaseHTTPRequestHandler):
             name = params.get("name")
             args = params.get("arguments") or {}
             log({"task": task, "tool": name, "arguments": args})
-            result = {"content": [{"type": "text", "text": world_of(task).answer(name, args)}], "isError": False}
+            text = world_of(task).answer(name, args)
+            if name in WRITE_TOOLS and not text.startswith("Error"):
+                text += WRITE_DONE_HINT
+            result = {"content": [{"type": "text", "text": text}], "isError": False}
         elif method == "ping":
             result = {}
         else:

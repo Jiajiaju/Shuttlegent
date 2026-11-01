@@ -52,6 +52,10 @@ namespace ShuttlegentMcpTool
 	// 单次调用返回文本的最大长度，单位为字符；低于运行时 12500 token 的溢出阈值
 	inline constexpr int32 MaxOutputChars = 24000;
 
+	// 写入结果附带的 Output Log 警告与错误：最多条数与每条的最大长度（字符）
+	inline constexpr int32 MaxWriteLogLines = 20;
+	inline constexpr int32 MaxWriteLogLineChars = 300;
+
 	// JSON Schema 关键字与类型
 	inline const TCHAR* SchemaType = TEXT("type");
 	inline const TCHAR* SchemaProperties = TEXT("properties");

@@ -24,7 +24,7 @@ flowchart TB
     Ext["外部 MCP 服务"]
     Endpoint["工具层 · MCP 端点<br/>FShuttlegentMcpEndpoint"]
     Gate["写入门<br/>FShuttlegentWriteGate"]
-    Builtin["内置工具 ×25<br/>ShuttlegentTools"]
+    Builtin["内置工具 ×26<br/>ShuttlegentTools"]
     Bridge["ToolsetBridge<br/>引擎 Toolset Registry"]
 
     User -- "① 输入、确认" --> UI
@@ -264,7 +264,7 @@ flowchart TB
 | McpServer | `FShuttlegentWriteGate` | 写操作确认门：排队、超时、结果上报、撤销 |
 | McpServer | `FShuttlegentExternalMcp` | 把项目的外部 MCP 服务声明给运行时；同时给出每个服务的状态（`FShuttlegentExternalMcpState`，跳过原因为 `EShuttlegentExternalMcpIssue`），供面板 MCP 卡片显示 |
 | McpServer | `IShuttlegentTool` / `IShuttlegentToolProvider` | 工具接口 / 工具提供者接口（扩展点） |
-| Tools | `FShuttlegentBuiltinToolProvider` | 提供 25 个内置工具 |
+| Tools | `FShuttlegentBuiltinToolProvider` | 提供 26 个内置工具 |
 | ToolsetBridge | `FShuttlegentToolsets` | 读取 Toolset Registry：可见性、工具列表、读写判断、执行 |
 | Editor | `FShuttlegentChatModel` / `FShuttlegentConversation` | 对话状态 / 单个会话 |
 | Editor | `SShuttlegentWebPanel` / `UShuttlegentWebBridge` / `FShuttlegentWebProtocol` | 面板宿主 / JS 绑定 / 推送协议 |

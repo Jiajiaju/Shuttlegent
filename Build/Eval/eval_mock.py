@@ -359,6 +359,13 @@ class World:
                         a["location"][axis] = min(values) + step * i
             self.history.append(f"Arrange actors ({operation})")
             return f"Moved {', '.join(a['label'] + ' to ' + str(a['location']) for a in targets)}. Undoable."
+        if name == "export_data_table":
+            table = self.data_table(args)
+            if table is None:
+                return f"Error: No DataTable found at {args.get('asset')}; nothing was exported."
+            ext = str(args.get("format") or "csv")
+            target = str(args.get("path") or f"C:/Projects/MoldCasting/Saved/Shuttlegent/Exports/{table['path'].split('/')[-1]}.{ext}")
+            return f"Exported {len(table['rows'])} rows to {target}. Writing the file cannot be undone."
         if name in ("undo", "redo"):
             step = self.history[-1] if self.history else "Set Intensity on PointLight_Hall"
             return f"{name.capitalize()}: {step}."

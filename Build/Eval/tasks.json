@@ -421,6 +421,30 @@
         "set_property",
         "save_assets"
       ]
+    },
+    {
+      "id": "t28_export_table",
+      "prompt": "把 DT_Items 导出成 CSV 给我，我要用 Excel 改",
+      "calls": [
+        "export_data_table"
+      ],
+      "args": {
+        "export_data_table": [
+          "DT_Items"
+        ]
+      },
+      "maxWrites": 1,
+      "forbid": [
+        "save_assets"
+      ]
+    },
+    {
+      "id": "t29_read_blueprint_graph",
+      "prompt": "看看 BP_Hero 的事件图里都有哪些节点、怎么连的，只看不改",
+      "callsAny": [
+        "call_toolset_tool"
+      ],
+      "maxWrites": 0
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "source": "generated from C++ sources on 2026-10-30, material tools, tidy_graph, place_actors and arrange_actors added 2026-11-01 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentMaterialTools,FShuttlegentGraphTools,FShuttlegentLevelBuildTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
+  "source": "generated from C++ sources on 2026-10-30, material tools, tidy_graph, place_actors, arrange_actors and export_data_table added 2026-11-01 (tools in tools/list order; each also carries the annotations object the endpoint sends; show_editor_ui built from the sample UiGuides in Docs/Extending.md since MoldCasting configures none), files read: Shuttlegent.uplugin, Config/DefaultShuttlegent.ini, Docs/Extending.md, Source/ShuttlegentMcpServer/Private/ShuttlegentMcpServerConstants.h, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentMcpEndpoint.cpp, Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRegistry.cpp, Source/ShuttlegentMcpServer/Private/Tool/FShuttlegentToolSchema.cpp, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolSchema.h, Source/ShuttlegentMcpServer/Public/Tool/FShuttlegentToolDefinition.h, Source/ShuttlegentMcpServer/Private/Tool/IShuttlegentTool.cpp, Source/ShuttlegentCore/Public/FShuttlegentUiGuide.h, Source/ShuttlegentCore/Public/ShuttlegentProjectSettings.h, Source/ShuttlegentCore/Private/FShuttlegentProjectConfig.cpp, Source/ShuttlegentTools/Private/FShuttlegentBuiltinToolProvider.cpp, Source/ShuttlegentTools/Private/FShuttlegentToolBase.h, Source/ShuttlegentTools/Private/Tools/{FShuttlegentAssetTools,FShuttlegentLevelTools,FShuttlegentReflectionTools,FShuttlegentDiagnosticTools,FShuttlegentEditTools,FShuttlegentMaterialTools,FShuttlegentGraphTools,FShuttlegentLevelBuildTools,FShuttlegentDataTableTools,FShuttlegentHistoryTools,FShuttlegentUiGuideTool}.cpp, Source/ShuttlegentToolsetBridge/Private/{FShuttlegentToolsetTools.cpp,ShuttlegentToolsetBridgeConstants.h,FShuttlegentToolsetToolProvider.cpp}",
   "serverInfo": {
     "name": "shuttlegent-editor",
     "version": "0.1.0"
@@ -979,6 +979,40 @@
         "required": [
           "targets",
           "operation"
+        ],
+        "additionalProperties": false
+      },
+      "readOnly": false,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "export_data_table",
+      "description": "Export a DataTable to a CSV or JSON file, in the format the editor's DataTable import reads back. CSV is written as UTF-8 with a BOM so Excel shows non-English text correctly. Defaults to Saved/Shuttlegent/Exports/<table name>.csv; files go only inside the project folder. The user confirms first (and is warned before an existing file is overwritten); writing the file cannot be undone. The result gives the file's full path.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "asset": {
+            "type": "string",
+            "description": "DataTable asset path, e.g. /Game/Data/DT_Items."
+          },
+          "format": {
+            "type": "string",
+            "description": "File format. Defaults to csv.",
+            "enum": [
+              "csv",
+              "json"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "File to write, absolute or relative to the project folder. Defaults to Saved/Shuttlegent/Exports/<table name>.<format>."
+          }
+        },
+        "required": [
+          "asset"
         ],
         "additionalProperties": false
       },

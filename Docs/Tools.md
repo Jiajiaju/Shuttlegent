@@ -40,6 +40,7 @@ Agent 通过编辑器内的 MCP 端点使用编辑器工具。工具分三类：
 | 节点图 | `tidy_graph` | 写 | 整理节点图排版：蓝图（含动画蓝图、控件蓝图的事件图、函数与宏）、材质与材质函数、Control Rig，以及其他以 UEdGraph 保存节点的资源。可只排指定节点，其余节点原地不动；注释框随所框节点调整；可撤销 |
 | 关卡搭建 | `place_actors` | 写 | 批量新建 Actor：静态网格体、蓝图、类，或复制关卡中已有的 Actor；按网格、直线、圆周、样条、散布摆放，可随机朝向与缩放、贴地、放进大纲文件夹；单次最多 500 个，一张确认卡逐个列出变换 |
 | 关卡搭建 | `arrange_actors` | 写 | 整理已有 Actor：沿轴对齐、等距分布、贴地、按网格/直线/圆周/样条/散布重新排列、随机朝向与缩放；确认卡逐个列出当前与计划变换 |
+| 数据表 | `export_data_table` | 写 | 把数据表导出为 CSV 或 JSON 文件，格式与编辑器的数据表导入一致；CSV 为带 BOM 的 UTF-8，Excel 打开中文不乱码；默认存到 `Saved/Shuttlegent/Exports/`，只能写在项目目录内；覆盖已有文件前确认卡会警告；写文件不能撤销 |
 | 历史 | `undo` / `redo` | 写 | 撤销或重做编辑器操作，确认卡列出具体步骤 |
 
 每个工具都可以在 **编辑器偏好设置 > Shuttlegent > General > Editor Tools** 中单独关闭。
@@ -74,7 +75,7 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 
 1. 在 Write Tools 中的，按写操作处理；
 2. 在 Read Only Tools 中的，按只读处理；
-3. 名字以 Read Only Tool Prefixes 中某个词开头的，按只读处理。词后面必须是名字结尾、大写字母或下划线，如 `GetActors`、`get_actors`。默认词为 `Get`、`List`、`Find`、`Search`、`Describe`、`Is`、`Has`、`Query`、`Discover`；
+3. 名字以 Read Only Tool Prefixes 中某个词开头的，按只读处理。词后面必须是名字结尾、大写字母或下划线，如 `GetActors`、`get_actors`。默认词为 `Get`、`List`、`Find`、`Search`、`Describe`、`Is`、`Has`、`Query`、`Discover`、`Read`（引擎以 Read 开头的 `read_graph_dsl`、`read_file`、`ReadLogLines` 均只读）；
 4. 其余一律按写操作处理，先确认。
 
 ### 3.3 撤销

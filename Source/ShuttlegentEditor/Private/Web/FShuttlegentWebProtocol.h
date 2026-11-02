@@ -75,6 +75,9 @@ private:
 	/** 用户拖拽调整的窗格宽度，取自按用户保存的配置；仅随快照发送。 */
 	void WritePaneWidths(const TSharedRef<FJsonObject>& Root) const;
 
+	/** 回答里可显示的本机图片目录（Saved/Shuttlegent/）的 file:/// 地址；仅随快照发送。 */
+	void WriteLocalImageRoot(const TSharedRef<FJsonObject>& Root) const;
+
 	/** 活动与已归档的会话、当前会话及其标题、重命名长度上限与权限预设。 */
 	void WriteSessions(const TSharedRef<FJsonObject>& Root) const;
 	void WriteRunLog(const TSharedRef<FJsonObject>& Root) const;

@@ -53,6 +53,8 @@ public:
 
 	TFunction<void(const FString&)> OnWatchReferences;
 
+	TFunction<void(const FString&)> OnRequestThumbnails;
+
 	TFunction<void(int32)> OnRemoveQueued;
 
 	TFunction<void(int32, const FString&, const FString&)> OnTakeQueued;
@@ -173,6 +175,10 @@ public:
 	/** 草稿的引用标签（JSON 数组）已变化；其存在状态立即并在每次变化时通过 onReferenceValidity 返回。 */
 	UFUNCTION()
 	void WatchReferences(const FString& ReferencesJson);
+
+	/** 回答中的资产图片：请求这些资产（对象路径的 JSON 数组）的缩略图；每取到一张通过 onThumbnails 返回。 */
+	UFUNCTION()
+	void RequestThumbnails(const FString& PathsJson);
 
 	/** 移除一条排队的提示；不影响正在运行的回合。 */
 	UFUNCTION()

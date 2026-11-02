@@ -38,6 +38,7 @@ public class ShuttlegentEditor : ModuleRules
 				"RenderCore",
 				"PropertyEditor",
 				"DesktopPlatform",
+				"ImageCore",
 			}
 			);
 	}

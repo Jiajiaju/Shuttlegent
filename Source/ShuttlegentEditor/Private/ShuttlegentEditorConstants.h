@@ -104,6 +104,7 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* JsOnReferenceValidity = TEXT("onReferenceValidity");
 	inline const TCHAR* JsOnSubmitResult = TEXT("onSubmitResult");
 	inline const TCHAR* JsOnQueueItemTaken = TEXT("onQueueItemTaken");
+	inline const TCHAR* JsOnThumbnails = TEXT("onThumbnails");
 
 	// 传给 runCommand 的面板快捷键名称，与 FShuttlegentPanelCommands 的条目一一对应
 	inline const TCHAR* CommandToggleSidebar = TEXT("toggleSidebar");
@@ -240,6 +241,9 @@ namespace ShuttlegentEditorWebField
 	// 记录的窗格宽度，随快照发送；用户从未调整过窗格时为 0
 	inline const TCHAR* SidebarWidth = TEXT("sidebarWidth");
 	inline const TCHAR* InspectorWidth = TEXT("inspectorWidth");
+
+	// 回答里可显示的本机图片所在目录（Saved/Shuttlegent/）的 file:/// 地址，以 / 结尾，随快照发送
+	inline const TCHAR* LocalImageRoot = TEXT("localImageRoot");
 	inline const TCHAR* UsedTokens = TEXT("usedTokens");
 	inline const TCHAR* ContextSize = TEXT("contextSize");
 
@@ -552,6 +556,31 @@ namespace ShuttlegentEditorReference
 	inline const TCHAR* LineFormat = TEXT("- {0} {1}（{2}）：{3}");
 	inline const TCHAR* KindLabelAsset = TEXT("资产");
 	inline const TCHAR* KindLabelActor = TEXT("Actor");
+}
+
+/** 回答中图片引用的资产缩略图与本机图片（FShuttlegentAssetThumbnails、FShuttlegentWebProtocol）。 */
+namespace ShuttlegentEditorThumbnail
+{
+	// 需要现渲染时的边长，单位为像素；与 ThumbnailTools::DefaultThumbnailSize 及包内保存的缩略图一致
+	inline constexpr uint32 RenderSize = 256;
+
+	// 一次请求最多接收的资产数，与页面每页的缩略图数一致（markdown.js THUMBNAIL_PAGE；“显示下 N 张”再请求下一页）
+	inline constexpr int32 MaxPerRequest = 24;
+
+	// 每次 Core Ticker tick 处理的资产数；逐张取，避免一次请求叠成一次长卡顿
+	inline constexpr int32 PerTick = 1;
+
+	// 编码格式（FImageUtils::CompressImage 按扩展名选格式）与交给页面的 data URL 前缀
+	inline const TCHAR* PngExtension = TEXT("png");
+	inline const TCHAR* DataUrlPrefix = TEXT("data:image/png;base64,");
+
+	// 回答里可显示的本机图片目录，相对于项目 Saved/；截图在 Captures/，导出在 Exports/
+	inline const TCHAR* LocalImageDir = TEXT("Shuttlegent/");
+
+	// 日志中的取图来源
+	inline const TCHAR* SourceMemory = TEXT("memory cache");
+	inline const TCHAR* SourcePackage = TEXT("package");
+	inline const TCHAR* SourceRender = TEXT("render");
 }
 
 /** 页面以选择器形式提供的会话配置选项 id。 */

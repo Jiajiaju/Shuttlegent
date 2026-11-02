@@ -100,6 +100,14 @@
     return blockLines(doc.content || [], false).join('\n').replace(/^\n+|\s+$/g, '');
   }
 
+  /**
+   * The input has no link or image node, so pasted [label](url) and ![caption](src) would keep only their label. Escaping the
+   * opening bracket keeps them as plain text, and toMarkdown sends them on exactly as pasted.
+   */
+  function keepLinkSyntax(text) {
+    return text.replace(/(!?)\[([^\]\n]*)\]\(/g, '$1\\[$2](');
+  }
+
   // ---------- Editor ----------
 
   /**
@@ -157,7 +165,7 @@
           if (hooks.paste(event)) return true;
           const text = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
           if (!text || editor.isActive('codeBlock')) return false;
-          editor.commands.insertContent(text, { contentType: 'markdown' });
+          editor.commands.insertContent(keepLinkSyntax(text), { contentType: 'markdown' });
           return true;
         }
       },
@@ -192,7 +200,7 @@
     refreshEmpty();
 
     function setMarkdown(markdown) {
-      editor.commands.setContent(markdown || '', { contentType: 'markdown', emitUpdate: false });
+      editor.commands.setContent(keepLinkSyntax(markdown || ''), { contentType: 'markdown', emitUpdate: false });
       refreshEmpty();
 
       // The caret goes to the end; focus moves only if the input had it
@@ -212,7 +220,7 @@
       const to = editor.state.selection.from;
       const chain = editor.chain().focus().deleteRange({ from: to - count, to: to });
       if (!markdown) chain.run();
-      else if (/[\n*`#>[\]_~-]|^\d+\./.test(markdown)) chain.insertContent(markdown, { contentType: 'markdown' }).run();
+      else if (/[\n*`#>[\]_~-]|^\d+\./.test(markdown)) chain.insertContent(keepLinkSyntax(markdown), { contentType: 'markdown' }).run();
       else chain.insertContent(markdown).run();
     }
 

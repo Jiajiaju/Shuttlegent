@@ -140,6 +140,9 @@
   // Where the editor's result text names a screenshot it saved (FShuttlegentToolsetImages.cpp writes "saved to <path>]")
   const SAVED_IMAGE_PATTERN = /saved to ([^\]\r\n]+?\.png)\]/g;
 
+  // Asset thumbnails asked for in one requestthumbnails call, the most the editor takes at once (ShuttlegentEditorThumbnail::MaxPerRequest)
+  const THUMBNAIL_REQUEST_BATCH = 24;
+
   // How long a command's refusal stays beside the composer, in milliseconds
   const COMMAND_NOTE_MS = 5000;
 
@@ -248,6 +251,12 @@
   // Object links in replies (feature plan C6): last known existence by path, and the paths the editor is watching
   const objectValidity = new Map();
   let watchedObjectKey = '';
+  // Images in replies (markdown.js figures): what is known of each, by kind and key — a src, or false when it has none or failed to
+  // load — and the asset paths whose thumbnails the editor is still fetching
+  const imageStates = new Map();
+  const requestedThumbnails = new Set();
+  // Replies whose "show more" was used: how many asset thumbnails each now shows (markdown.thumbnailPage when absent)
+  const thumbnailLimits = new Map();
   const view = {
     layout: 'full',
     // The model or mode picker that is open under the composer ('model-menu', 'mode-menu'), or null
@@ -528,9 +537,9 @@
 
   /** A reply: its thought as an event row, then the text; replies carry no name or mark of their own. */
   function renderAssistant(entry, hideThought) {
-    const rendered = markdown.render(entry.text);
+    const rendered = markdown.render(entry.text, thumbnailLimits.get(entry.id));
     codeSources.set(entry.id, rendered.codes);
-    const text = entry.text ? '<div class="markdown">' + rendered.html + '</div>' : '';
+    const text = entry.text ? '<div class="markdown">' + rendered.html + moreThumbnailsHtml(entry.id, rendered.hiddenThumbnails) + '</div>' : '';
     return '<article class="message assistant" data-entry="' + entry.id + '">' + (hideThought ? '' : renderThought(entry)) + text + '</article>';
   }
 
@@ -1731,6 +1740,10 @@
       if (view) openImageViewer(draftState.images[Number(view.dataset.viewImage)].url);
     });
     $('image-viewer').addEventListener('click', () => { $('image-viewer').hidden = true; });
+
+    // Load errors do not bubble, so the page listens while they travel down
+    markdown.setImageLookup((kind, key) => imageStates.get(imageKey(kind, key)));
+    document.addEventListener('error', onImageError, true);
     document.addEventListener('click', (event) => {
       const view = event.target.closest('.tool-detail-body [data-view-image]');
       if (view) openImageViewer(view.dataset.viewImage);
@@ -1906,6 +1919,69 @@
   function revealObject(link, open) {
     if (objectValidity.get(link.dataset.objPath) === false) return;
     call('revealobject', link.dataset.objKind, link.dataset.objPath, open);
+  }
+
+  // ---------- Images in replies ----------
+
+  function imageKey(kind, key) {
+    return kind + '|' + key;
+  }
+
+  /** Figures of one image anywhere on the page (the conversation, a plan under review). */
+  function imageFrames(kind, key) {
+    return [...document.querySelectorAll('[data-img-kind="' + kind + '"]')].filter((frame) => frame.dataset.imgKey === key);
+  }
+
+  /** Redraws the figures of an image with what is now known of it, keeping the view at the end when it was there. */
+  function setImageState(kind, key, known) {
+    imageStates.set(imageKey(kind, key), known);
+    const atEnd = isAtEnd();
+    for (const frame of imageFrames(kind, key)) frame.innerHTML = markdown.imageFrame(kind, key, known);
+    if (atEnd) scrollToEnd();
+  }
+
+  /** Asks the editor for the asset thumbnails on the page it has not been asked for yet, in batches it takes. */
+  function requestThumbnails() {
+    const paths = [];
+    for (const frame of document.querySelectorAll('[data-img-kind="asset"]')) {
+      const path = frame.dataset.imgKey;
+      if (imageStates.has(imageKey('asset', path)) || requestedThumbnails.has(path)) continue;
+      requestedThumbnails.add(path);
+      paths.push(path);
+    }
+    for (let start = 0; start < paths.length; start += THUMBNAIL_REQUEST_BATCH) {
+      call('requestthumbnails', JSON.stringify(paths.slice(start, start + THUMBNAIL_REQUEST_BATCH)));
+    }
+  }
+
+  /** Under a reply that holds more asset images than it shows: how many are left as links, and a button that shows the next page. */
+  function moreThumbnailsHtml(entryId, hidden) {
+    if (!hidden) return '';
+    const next = Math.min(hidden, markdown.thumbnailPage);
+    return '<div class="md-figure-more"><span>另有 ' + hidden + ' 个资产未显示缩略图</span><button class="btn btn-sm" data-more-thumbnails="' + entryId + '">显示下 ' + next + ' 张</button></div>';
+  }
+
+  /** "Show more" under a reply: the next page of its asset images turns from links into thumbnails. */
+  function showMoreThumbnails(entryId) {
+    thumbnailLimits.set(entryId, (thumbnailLimits.get(entryId) || markdown.thumbnailPage) + markdown.thumbnailPage);
+    changedIds.add(entryId);
+    renderConversation(false);
+    changedIds = new Set();
+    requestThumbnails();
+  }
+
+  /** Thumbnails from the editor, one or more per call: { path: data URL, or null when the asset has none }. */
+  function onThumbnails(thumbnails) {
+    for (const path in thumbnails || {}) {
+      requestedThumbnails.delete(path);
+      setImageState('asset', path, thumbnails[path] || false);
+    }
+  }
+
+  /** A local or web image that fails to load turns into its placeholder, and stays one when the reply redraws. */
+  function onImageError(event) {
+    const frame = event.target.tagName === 'IMG' ? event.target.closest('[data-img-kind]') : null;
+    if (frame) setImageState(frame.dataset.imgKind, frame.dataset.imgKey, false);
   }
 
   function isOverComposer(event) {
@@ -2733,6 +2809,14 @@
       document.documentElement.classList.toggle('motion-off', !state.animateMark);
     }
     if ('fonts' in message) applyFonts(message.fonts || {});
+    if ('localImageRoot' in message) markdown.setLocalImageRoot(message.localImageRoot);
+
+    // A reopened conversation fetches its thumbnails again, so changed assets show their current look
+    if (reset) {
+      imageStates.clear();
+      requestedThumbnails.clear();
+      thumbnailLimits.clear();
+    }
     if ('fontSize' in message) {
       document.documentElement.style.setProperty('--chat-font-size', message.fontSize + 'px');
       growDraft();
@@ -2803,6 +2887,7 @@
       if (cards.length) renderInspector(cards);
     }
 
+    requestThumbnails();
   }
 
   /** A font stack from Editor Preferences: the names that pass FONT_NAME, quoted, in front of the fallback stack. */
@@ -2867,6 +2952,7 @@
     },
     onReferenceResults: onReferenceResults,
     onReferenceValidity: onReferenceValidity,
+    onThumbnails: onThumbnails,
     onSubmitResult: onSubmitResult,
     onQueueItemTaken: onQueueItemTaken,
     onDrawerState(open) {
@@ -3034,6 +3120,12 @@
     });
 
     $('messages').addEventListener('click', (event) => {
+      const moreThumbnails = event.target.closest('[data-more-thumbnails]');
+      if (moreThumbnails) {
+        showMoreThumbnails(Number(moreThumbnails.dataset.moreThumbnails));
+        return;
+      }
+
       const viewImage = event.target.closest('[data-view-image]');
       if (viewImage) {
         openImageViewer(viewImage.dataset.viewImage);

@@ -472,6 +472,7 @@ void FShuttlegentWebProtocol::Flush()
 	{
 		WriteTemplates(Root);
 		WritePaneWidths(Root);
+		WriteLocalImageRoot(Root);
 	}
 	if (bReset || bEntriesDirty) WriteEntries(Root, bReset);
 	if (bReset || bStatusDirty || bEntriesDirty) WritePendingPermission(Root);
@@ -612,6 +613,12 @@ void FShuttlegentWebProtocol::WritePaneWidths(const TSharedRef<FJsonObject>& Roo
 
 	Root->SetNumberField(ShuttlegentEditorWebField::SidebarWidth, SidebarWidth);
 	Root->SetNumberField(ShuttlegentEditorWebField::InspectorWidth, InspectorWidth);
+}
+
+void FShuttlegentWebProtocol::WriteLocalImageRoot(const TSharedRef<FJsonObject>& Root) const
+{
+	const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), ShuttlegentEditorThumbnail::LocalImageDir);
+	Root->SetStringField(ShuttlegentEditorWebField::LocalImageRoot, FShuttlegentWebJson::MakeFileUrl(Directory));
 }
 
 void FShuttlegentWebProtocol::WriteConfig(const TSharedRef<FJsonObject>& Root) const

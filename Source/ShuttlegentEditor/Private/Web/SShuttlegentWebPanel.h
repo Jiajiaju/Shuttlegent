@@ -10,6 +10,7 @@
 #include "Widgets/SCompoundWidget.h"
 
 class FActiveTimerHandle;
+class FShuttlegentAssetThumbnails;
 class FShuttlegentChatModel;
 class FShuttlegentReferenceFinder;
 class FShuttlegentWebProtocol;
@@ -45,6 +46,9 @@ private:
 	/** 草稿引用：@ 菜单的候选项，以及需要向页面告知其存在状态的引用标签。 */
 	TSharedPtr<FShuttlegentReferenceFinder> ReferenceFinder;
 	TArray<FShuttlegentReference> WatchedReferences;
+
+	/** 回答中资产图片的缩略图，按页面请求逐张取。 */
+	TSharedPtr<FShuttlegentAssetThumbnails> Thumbnails;
 
 	/** 页面至少调用过一次 ready；在此之前由占位内容覆盖。 */
 	bool bPageReady = false;
@@ -132,6 +136,12 @@ private:
 
 	/** 告知页面哪些被监视的引用仍然存在。 */
 	void PushReferenceValidity();
+
+	/** 页面请求的资产缩略图（对象路径的 JSON 数组）加入队列。 */
+	void HandleRequestThumbnails(const FString& PathsJson);
+
+	/** 一张缩略图交给页面：{ 路径: data URL }，取不到时值为 null。 */
+	void PushThumbnail(const FString& Path, const FString& DataUrl) const;
 
 	void ExecuteJavascript(const FString& Script) const;
 

@@ -241,6 +241,13 @@ flowchart TB
   - 存在性：页面把对话中全部对象链接与草稿引用一起交给 `WatchReferences`，对象被删除或经撤销恢复后，链接随 `onReferenceValidity` 变灰（加删除线，悬停提示“对象已不存在”），点击不做任何操作。
   - Actor 只认 Agent 明确写出的链接，页面不按名称猜测，避免重名时选错对象。
   - 表格渲染为 HTML 表格，单元格内同样解析链接、行内代码与加粗（`Resources/Web/markdown.js` 的 `table`）；分隔行到达前（回答仍在流式输出）按等宽源码显示。
+- 回答中的图片：`![说明](src)` 只认三种来源，其他 src 按原文显示（`markdown.js` 的 `parseImage`）。
+  - `ue-asset:<对象路径>`：资产缩略图，可加 `?size=64|128|256`（默认 128）。每条回答先显示 24 张，超出的以灰色小字对象链接排在图片之后，下方一行“另有 N 个资产未显示缩略图 · 显示下 N 张”，每按一次再多显示 24 张（`app.js` 的 `thumbnailLimits`，打开会话时清空）。说明文字就是对象链接，单击定位、双击打开，资产被删除后照样变灰。
+  - 本机图片：`Saved/Shuttlegent/` 下的 png/jpg/jpeg/webp/gif，可写相对项目的 `Saved/Shuttlegent/...`，也可写工具返回的绝对路径。含 `..`、`.`、`%`、`?`、`#` 或不在该目录下的路径一律不显示。目录的 `file:///` 地址随快照下发（`localImageRoot`）。
+  - 网络图片：`http(s)://`，带 `referrerpolicy="no-referrer"` 与 `loading="lazy"` 直接加载（面板没有 CSP，`SShuttlegentWebPanel` 只拦截整页跳转）。加载失败显示“图片加载失败”与原链接，点击链接用系统浏览器打开。
+  - 显示：圆角加 1px 边框，最大 320×240，保持比例，下方一行灰色说明；只由图片组成的段落横排并换行；单击图片用现有图片查看器放大。
+  - 缩略图按需抓取：页面渲染后把还没有取过的资产路径经 `UShuttlegentWebBridge::RequestThumbnails`（JSON 数组，每次最多 24 个）交给编辑器。`FShuttlegentAssetThumbnails` 排队，每个 Core Ticker tick 取一张，按顺序尝试 `ThumbnailTools::FindCachedThumbnail`（内存）→ `LoadThumbnailFromPackage`（读 .uasset，不加载资产）→ `RenderThumbnail`（同步加载后以 256 像素现渲染，`NeverFlush`，不等待流送与着色器编译）。现渲染前先经 `UThumbnailManager::GetRenderingInfo` 问渲染器 `CanVisualizeAsset`，画不出的资产（没有可见组件的蓝图、没捕获缩略图的 Niagara 系统）按取不到处理，否则只会得到清屏的纯黑图。取到的图补成不透明，编成 PNG data URL，经 `onThumbnails({ 路径: dataUrl | null })` 逐张回传。Output Log 的 `Shuttlegent thumbnail:` 行写明每张的来源。
+  - 页面按路径缓存缩略图，回答流式重绘时直接用缓存，不会闪烁；打开会话（完整快照）时清空，重新抓取。取不到时显示“无缩略图”。
 - 右侧检视窗格由五张可单独展开的卡片组成，折叠时标题行右侧显示摘要；上下文与记忆两张默认展开：
 
   | 卡片 | 摘要 | 展开内容 | 数据 |

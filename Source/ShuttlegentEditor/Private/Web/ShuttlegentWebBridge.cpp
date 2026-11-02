@@ -95,6 +95,11 @@ void UShuttlegentWebBridge::WatchReferences(const FString& ReferencesJson)
 	if (OnWatchReferences) OnWatchReferences(ReferencesJson);
 }
 
+void UShuttlegentWebBridge::RequestThumbnails(const FString& PathsJson)
+{
+	if (OnRequestThumbnails) OnRequestThumbnails(PathsJson);
+}
+
 void UShuttlegentWebBridge::RemoveQueued(int32 ItemId)
 {
 	if (OnRemoveQueued) OnRemoveQueued(ItemId);

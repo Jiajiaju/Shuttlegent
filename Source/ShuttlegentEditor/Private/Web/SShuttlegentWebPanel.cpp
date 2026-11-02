@@ -24,6 +24,7 @@
 #include "Modules/ModuleManager.h"
 #include "RenderingThread.h"
 #include "SWebBrowser.h"
+#include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
@@ -43,6 +44,7 @@
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentStyle.h"
+#include "Web/FShuttlegentAssetThumbnails.h"
 #include "Web/FShuttlegentImageFiles.h"
 #include "Web/FShuttlegentPanelCommands.h"
 #include "Web/FShuttlegentWebJson.h"
@@ -113,6 +115,13 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 	ReferenceFinder->Initialize();
 	ReferenceFinder->OnReferencesChanged.AddSP(this, &SShuttlegentWebPanel::PushReferenceValidity);
 
+	Thumbnails = MakeShared<FShuttlegentAssetThumbnails>();
+	Thumbnails->Initialize([WeakThis](const FString& Path, const FString& DataUrl)
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) This->PushThumbnail(Path, DataUrl);
+	});
+
 	// 活动计时器仅在控件被绘制后才运行，因此恢复在其他标签页之后的面板不会创建浏览器
 	RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &SShuttlegentWebPanel::HandleCreateBrowser));
 	Model->EnsureRuntime();
@@ -130,6 +139,8 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 		ReferenceFinder->Shutdown();
 	}
 	ReferenceFinder.Reset();
+	if (Thumbnails.IsValid()) Thumbnails->Shutdown();
+	Thumbnails.Reset();
 	if (Protocol.IsValid()) Protocol->Shutdown();
 	Protocol.Reset();
 	if (!Bridge.IsValid()) return;
@@ -154,6 +165,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnOpenSettings = nullptr;
 	Bridge->OnQueryReferences = nullptr;
 	Bridge->OnWatchReferences = nullptr;
+	Bridge->OnRequestThumbnails = nullptr;
 	Bridge->OnRemoveQueued = nullptr;
 	Bridge->OnTakeQueued = nullptr;
 	Bridge->OnResumeQueue = nullptr;
@@ -500,6 +512,11 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandleWatchReferences(ReferencesJson);
 	};
+	Bridge->OnRequestThumbnails = [WeakThis](const FString& PathsJson)
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) This->HandleRequestThumbnails(PathsJson);
+	};
 	Bridge->OnCancel = [WeakModel]()
 	{
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
@@ -746,6 +763,31 @@ void SShuttlegentWebPanel::PushReferenceValidity()
 		Validity->SetBoolField(Reference.Path, FShuttlegentReferenceFinder::Exists(Reference));
 	}
 	CallPage(ShuttlegentEditorWeb::JsOnReferenceValidity, FShuttlegentWebJson::ToJson(Validity));
+}
+
+void SShuttlegentWebPanel::HandleRequestThumbnails(const FString& PathsJson)
+{
+	if (!Thumbnails.IsValid()) return;
+
+	TArray<TSharedPtr<FJsonValue>> Values;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(PathsJson);
+	if (!FJsonSerializer::Deserialize(Reader, Values)) return;
+
+	TArray<FString> Paths;
+	for (const TSharedPtr<FJsonValue>& Value : Values)
+	{
+		FString Path;
+		if (Value.IsValid() && Value->TryGetString(Path)) Paths.Add(MoveTemp(Path));
+	}
+	Thumbnails->Request(Paths);
+}
+
+void SShuttlegentWebPanel::PushThumbnail(const FString& Path, const FString& DataUrl) const
+{
+	const TSharedRef<FJsonObject> Result = MakeShared<FJsonObject>();
+	if (DataUrl.IsEmpty()) Result->SetField(Path, MakeShared<FJsonValueNull>());
+	else Result->SetStringField(Path, DataUrl);
+	CallPage(ShuttlegentEditorWeb::JsOnThumbnails, FShuttlegentWebJson::ToJson(Result));
 }
 
 void SShuttlegentWebPanel::ExecuteJavascript(const FString& Script) const

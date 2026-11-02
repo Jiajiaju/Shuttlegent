@@ -285,7 +285,10 @@ body.wide-content .message-column,body.wide-content .composer-column>*{max-width
 #messages>.event-divider{margin:var(--s-3) 0}
 
 .user-turn{display:flex;flex-direction:column;align-items:flex-end}
-.message.user{max-width:85%;padding:10px 14px;border-radius:var(--r-lg);background:var(--surface);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;user-select:text}
+.message.user{max-width:85%;min-width:0;padding:10px 14px;border-radius:var(--r-lg);background:var(--surface);overflow-wrap:anywhere;line-height:1.6;user-select:text}
+/* Markdown in the user bubble: blocks that sit on --surface in replies take the canvas colour so they stand out from the bubble */
+.message.user .code-block,.message.user .md-table,.message.user .md-grid th{background:var(--bg)}
+.message.user .md-table-wrap,.message.user .code-block{max-width:100%}
 .user-references{margin-top:var(--s-1-5);font-size:.85em;line-height:1.5;color:var(--muted);white-space:normal}
 .user-references div{overflow-wrap:anywhere}
 .user-images{display:flex;flex-wrap:wrap;gap:var(--s-1-5);margin-top:var(--s-2)}
@@ -381,10 +384,29 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .attachment:hover button,.attachment button:focus-visible{opacity:1}
 .composer-row{display:flex;align-items:center;gap:var(--s-1);min-width:0}
 .composer.is-multiline .composer-row{align-items:flex-end}
-.composer textarea{display:block;flex:1;min-width:0;min-height:var(--h-md);padding:var(--s-1);border:0;background:transparent;resize:none;outline:none;
-  font-family:var(--font-chat);font-size:var(--chat-font-size);line-height:1.6;color:var(--text);height:var(--h-md);overflow-y:hidden}
-.composer textarea::placeholder{color:var(--faint)}
-.composer textarea:focus-visible{outline:none}
+/* The message input (composer-editor.js): Markdown shown as it is typed, sized like the bubble text; one line is 30 high like the buttons */
+.composer-editor{position:relative;flex:1;min-width:0;max-height:200px;overflow-y:auto;font-family:var(--font-chat);font-size:var(--chat-font-size);line-height:1.6;color:var(--text);cursor:text}
+.composer-editor.is-empty::before{content:attr(data-placeholder);position:absolute;left:var(--s-1);top:var(--s-1);right:var(--s-1);color:var(--faint);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.composer-editor .ProseMirror{min-height:var(--h-md);padding:var(--s-1);outline:none;white-space:pre-wrap;overflow-wrap:anywhere}
+.composer-editor .ProseMirror p{margin:0}
+.composer-editor .ProseMirror h1,.composer-editor .ProseMirror h2,.composer-editor .ProseMirror h3,.composer-editor .ProseMirror h4,.composer-editor .ProseMirror h5,.composer-editor .ProseMirror h6{margin:.2em 0;font-weight:var(--fw-strong);line-height:1.4;font-size:1em}
+.composer-editor .ProseMirror h1{font-size:1.3em}.composer-editor .ProseMirror h2{font-size:1.15em}
+.composer-editor .ProseMirror ul,.composer-editor .ProseMirror ol{margin:0;padding-left:1.5em}
+.composer-editor .ProseMirror ul{list-style:disc}
+.composer-editor .ProseMirror ul ul{list-style:circle}
+.composer-editor .ProseMirror ol,.composer-editor .ProseMirror ol ol{list-style:decimal}
+.composer-editor .ProseMirror li::marker{color:var(--muted)}
+.composer-editor .ProseMirror ul[data-type=taskList]{list-style:none;padding-left:0}
+.composer-editor .ProseMirror ul[data-type=taskList] ul[data-type=taskList]{padding-left:1.5em}
+.composer-editor .ProseMirror ul[data-type=taskList]>li{display:flex;align-items:flex-start;gap:var(--s-2)}
+.composer-editor .ProseMirror ul[data-type=taskList]>li>label{flex-shrink:0;display:flex;align-items:center;height:1.6em}
+.composer-editor .ProseMirror ul[data-type=taskList]>li>label input{margin:0;accent-color:var(--muted)}
+.composer-editor .ProseMirror ul[data-type=taskList]>li>div{flex:1;min-width:0}
+.composer-editor .ProseMirror blockquote{margin:0;border-left:2px solid var(--line);padding-left:var(--s-3);color:var(--muted)}
+.composer-editor .ProseMirror code{font:.9em var(--font-mono);color:var(--accent);background:var(--raised);border-radius:var(--r-xs);padding:1px 4px}
+.composer-editor .ProseMirror pre{margin:var(--s-1) 0;padding:var(--s-2) var(--s-3);border:1px solid var(--subtle);border-radius:var(--r-md);background:var(--bg);white-space:pre-wrap}
+.composer-editor .ProseMirror pre code{font:.9em/1.6 var(--font-mono);color:var(--text);background:none;padding:0}
+.composer-editor .ProseMirror hr{border:0;border-top:1px solid var(--line);margin:var(--s-2) 0}
 .composer-meta{display:flex;align-items:center;justify-content:flex-end;gap:var(--s-0-5);min-height:26px;margin-top:calc(var(--s-1) - var(--s-2));min-width:0}
 .composer-note{margin-right:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-small);color:var(--warning);padding:0 var(--s-1)}
 #add-image.off{opacity:.45}
@@ -523,3 +545,4 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 body.dragover:after{content:'松开以添加引用';position:fixed;inset:var(--s-2);z-index:20;display:grid;place-items:center;border:2px dashed var(--accent);border-radius:var(--r-lg);background:var(--drop);font-size:var(--fs-title);color:var(--text);pointer-events:none}
 
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+

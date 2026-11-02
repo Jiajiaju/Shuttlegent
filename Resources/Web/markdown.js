@@ -9,8 +9,10 @@
 
   const MAX_HEADING_LEVEL = 6;
   const MIN_RULE_MARKS = 3;
-  const SPACES_PER_LIST_LEVEL = 2;
+  // Deepest list nesting shown; deeper items stay at this level
   const MAX_LIST_LEVEL = 4;
+  // "[ ] " or "[x] " after a bullet makes a task item
+  const TASK_BOX = /^\[([ xX])\]\s+/;
   const TAB_WIDTH = 4;
   // One cell of a table's separator row: ---, :---, ---:, :---:
   const TABLE_SEPARATOR_CELL = /^:?-{3,}:?$/;
@@ -74,13 +76,20 @@
     if ((first === '-' || first === '*' || first === '+') && /\s/.test(rest[1])) {
       marker = '•';
       text = rest.slice(2).trim();
+
+      // A task item shows its box instead of the bullet
+      const task = TASK_BOX.exec(text);
+      if (task) {
+        marker = task[1] === ' ' ? '☐' : '☑';
+        text = text.slice(task[0].length);
+      }
     } else {
       const ordered = /^(\d+)[.)]\s/.exec(rest);
       if (!ordered) return null;
       marker = ordered[1] + '.';
       text = rest.slice(ordered[0].length).trim();
     }
-    return { depth: Math.min(Math.floor(leadingSpaces(line) / SPACES_PER_LIST_LEVEL), MAX_LIST_LEVEL), marker: marker, text: text };
+    return { indent: leadingSpaces(line), marker: marker, text: text };
   }
 
   function startsBlock(line) {
@@ -253,6 +262,8 @@
     const parts = [];
     const codes = [];
     let paragraph = [];
+    // Indents of the list items the current item may nest under; any other block ends the list
+    let listIndents = [];
 
     function closeParagraph() {
       if (!paragraph.length) return;
@@ -266,6 +277,7 @@
 
       const paragraphLine = trimmed !== '' && !startsBlock(line);
       if (!paragraphLine) closeParagraph();
+      if (trimmed && !parseListItem(line)) listIndents = [];
       if (paragraphLine) {
         paragraph.push(line.trimEnd());
         continue;
@@ -313,13 +325,18 @@
 
       const item = parseListItem(line);
       if (item) {
+        // Nesting follows the parents' indents, so 2-space and 3-space (after "1. ") sub-lists both read as one level deeper
+        while (listIndents.length && listIndents[listIndents.length - 1] >= item.indent) listIndents.pop();
+        const depth = Math.min(listIndents.length, MAX_LIST_LEVEL);
+        listIndents.push(item.indent);
+
         // Indented lines that start no block of their own continue the item
         let text = item.text;
         while (index + 1 < lines.length && leadingSpaces(lines[index + 1]) > 0 && lines[index + 1].trim() && !startsBlock(lines[index + 1])) {
           ++index;
           text += '\n' + lines[index].trim();
         }
-        parts.push('<div class="md-item" style="--depth:' + item.depth + '"><span class="md-marker">' + escapeHtml(item.marker) + '</span><span>' + multiline(text) + '</span></div>');
+        parts.push('<div class="md-item" style="--depth:' + depth + '"><span class="md-marker">' + escapeHtml(item.marker) + '</span><span>' + multiline(text) + '</span></div>');
       }
     }
     closeParagraph();

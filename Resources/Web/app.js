@@ -22,9 +22,6 @@
   // Consecutive read-only tool calls fold into one group from this many on
   const MIN_GROUP_SIZE = 2;
 
-  // Tallest the draft grows before it scrolls inside the input, in CSS pixels
-  const DRAFT_MAX_HEIGHT = 200;
-
   // How often the page looks for the editor binding before calling ready, in milliseconds
   const BRIDGE_POLL_MS = 50;
 
@@ -75,7 +72,7 @@
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
 
-  // Modes in menu order, which is also the Shift+Tab order: how editor writes are confirmed, and plan (read-only until a plan is approved)
+  // Modes in menu order: how editor writes are confirmed, and plan (read-only until a plan is approved)
   const MODES = [
     { value: 'manual', label: '手动', detail: '每次修改前都先问你' },
     { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先问你' },
@@ -84,8 +81,6 @@
   ];
   // Share of the memory file limit at which the memory card summary warns
   const MEMORY_WARN_SHARE = 0.9;
-
-  const MODE_CYCLE = MODES.map((item) => item.value);
 
   // Session list dots: what each attention value means, for the tooltip and screen readers
   const ATTENTION_TEXT = { done: '已完成，还没查看', input: '等待你的输入' };
@@ -305,7 +300,7 @@
   const menu = {
     mode: null,
     query: '',
-    tokenStart: 0,
+    tokenLength: 0,
     sections: [],
     items: [],
     index: 0,
@@ -314,6 +309,8 @@
   let changedIds = new Set();
   let wasWorking = false;
   let emptyMark = null;
+  // The message input (composer-editor.js), created by bindComposer; its value is Markdown
+  let draftInput = null;
   let headerMark = null;
   let workingMark = null;
   let hasUnseenContent = false;
@@ -429,7 +426,12 @@
       + '<button class="btn btn-icon btn-sm user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 14) + '</button>'
       + '</div>';
     const images = entry.images && entry.images.length ? '<div class="user-images">' + entry.images.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
-    return '<div class="user-turn"><article class="message user">' + esc(entry.text) + images + references + '</article>' + actions + '</div>';
+
+    // The text is Markdown, shown as replies are; single line breaks stay as typed
+    const rendered = markdown.render(entry.text || '');
+    codeSources.set(entry.id, rendered.codes);
+    const text = entry.text ? '<div class="markdown">' + rendered.html + '</div>' : '';
+    return '<div class="user-turn"><article class="message user" data-entry="' + entry.id + '">' + text + images + references + '</article>' + actions + '</div>';
   }
 
   /** Rewind and branch need an idle conversation the runtime has open; otherwise they stay visible but say why they are off. */
@@ -850,7 +852,7 @@
     setDraft(item.text || '');
     renderReferences();
     watchReferences();
-    $('draft').focus();
+    draftInput.focus();
   }
 
   /** Each session keeps its own draft; a session the page did not switch to (a new one just created) keeps the current draft. */
@@ -858,7 +860,7 @@
     if (!view.switchingSession) return;
     view.switchingSession = false;
 
-    view.drafts.set(previousId, { text: $('draft').value, refs: draftState.refs });
+    view.drafts.set(previousId, { text: draftInput.value, refs: draftState.refs });
     const saved = view.drafts.get(nextId) || { text: '', refs: [] };
     view.drafts.delete(nextId);
     draftState.refs = saved.refs;
@@ -952,7 +954,7 @@
     const send = $('send');
     const invalid = hasInvalidReference();
     const imagesBlocked = draftState.images.length > 0 && !state.canAttachImages;
-    const empty = !$('draft').value.trim() && !draftState.images.length;
+    const empty = !draftInput.value.trim() && !draftState.images.length;
 
     // As in Claude the send button shows only while there is something to send; it greys out when sending has to wait
     send.hidden = empty;
@@ -979,7 +981,7 @@
     if (state.runtimeLost) placeholder = '重新连接后再发送';
     if (state.needsVerify) placeholder = '核对写入结果后再发送';
     if (state.startIssue) placeholder = '运行时启动后再发送';
-    $('draft').placeholder = placeholder;
+    draftInput.placeholder = placeholder;
     stop.hidden = !state.prompting;
     stop.disabled = state.stopping;
     stop.classList.toggle('is-stopping', state.stopping);
@@ -1008,7 +1010,7 @@
     const info = MODES.find((item) => item.value === mode);
     const modeTrigger = $('mode-trigger');
     modeTrigger.innerHTML = '<span>' + info.label + '</span>';
-    modeTrigger.title = '模式：' + info.detail + ' · Shift+Tab 切换';
+    modeTrigger.title = '模式：' + info.detail;
     for (const item of MODES) {
       $('composer').classList.toggle('mode-' + item.value, item.value === mode);
       modeTrigger.classList.toggle('mode-' + item.value, item.value === mode);
@@ -1038,7 +1040,7 @@
 
   function modeMenuHtml() {
     const mode = currentMode();
-    return '<div class="menu-label">模式 · Shift+Tab 切换</div>' + MODES.map((item) => {
+    return '<div class="menu-label">模式</div>' + MODES.map((item) => {
       const disabled = item.value === 'plan' && !state.canSetPlanMode && !state.planMode;
       return pickerItemHtml(' data-pick-mode="' + item.value + '"' + (disabled && state.planModeReason ? ' title="' + esc(state.planModeReason) + '"' : ''), item.label, item.detail, item.value === mode, disabled);
     }).join('');
@@ -1249,14 +1251,6 @@
     call('setwritemode', mode);
   }
 
-  /** Shift+Tab in the draft: manual → accept edits → auto → plan → manual; plan is skipped while it cannot be set. */
-  function cycleMode() {
-    const order = MODE_CYCLE.filter((value) => value !== 'plan' || state.canSetPlanMode || state.planMode);
-    const next = order[(order.indexOf(currentMode()) + 1) % order.length];
-    setMode(next);
-    showCommandNote('模式：' + MODES.find((item) => item.value === next).label);
-  }
-
   function prettyRaw(text) {
     try {
       return JSON.stringify(JSON.parse(text), null, 2);
@@ -1345,7 +1339,7 @@
       card.innerHTML = '';
       view.shownDecisionKey = null;
       view.answeringDecisionKey = null;
-      if (hadFocus) $('draft').focus();
+      if (hadFocus) draftInput.focus();
       return;
     }
     if (view.shownDecisionKey === decision.key) return;
@@ -1433,30 +1427,22 @@
     call('answerquestion', decision.request.id, answer, false);
   }
 
+  /** After the draft changes: one line keeps the buttons centred on it, from the second line on they stay at the bottom (as in Claude). */
   function growDraft() {
-    const draft = $('draft');
-    draft.style.height = 'auto';
-    draft.style.height = Math.min(draft.scrollHeight, DRAFT_MAX_HEIGHT) + 'px';
-    draft.style.overflowY = draft.scrollHeight > DRAFT_MAX_HEIGHT ? 'auto' : 'hidden';
-
-    // One line keeps the buttons centred on it whatever the font's line height; from the second line on they stay at the bottom (as in Claude)
-    const style = getComputedStyle(draft);
-    const lineHeight = parseFloat(style.lineHeight);
-    const oneLine = lineHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    $('composer').classList.toggle('is-multiline', draft.scrollHeight > oneLine + lineHeight / 2);
+    const host = $('draft-host');
+    const lineHeight = parseFloat(getComputedStyle(host).lineHeight);
+    $('composer').classList.toggle('is-multiline', draftInput.element.offsetHeight > lineHeight * 2);
     updateSendButton();
   }
 
   function setDraft(text) {
-    const draft = $('draft');
-    draft.value = text;
+    draftInput.value = text;
     growDraft();
-    draft.setSelectionRange(text.length, text.length);
   }
 
   /** Sends the draft with a frozen copy of its chips; the draft clears only once the editor accepted it. */
   function submitDraft() {
-    const text = $('draft').value;
+    const text = draftInput.value;
     if (draftState.submitting) return;
 
     const command = COMMAND_LINE.exec(text.trim());
@@ -1493,6 +1479,16 @@
   }
 
   // ---------- Draft images ----------
+
+  /** A paste holding images adds them as thumbnails; returns whether it took the paste (text is left to the input). */
+  function pasteImages(event) {
+    const files = Array.from((event.clipboardData && event.clipboardData.items) || []).filter((item) => item.kind === 'file' && item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean);
+    if (!files.length) return false;
+
+    event.preventDefault();
+    Promise.all(files.map(readImageBlob)).then(addImages, () => showCommandNote('剪贴板里的图片读不出来'));
+    return true;
+  }
 
   /** Reads a pasted or dropped blob as { mimeType, data }. */
   function readImageBlob(blob) {
@@ -1580,13 +1576,6 @@
       }
       call('pickimages');
     });
-    $('draft').addEventListener('paste', (event) => {
-      const files = Array.from((event.clipboardData && event.clipboardData.items) || []).filter((item) => item.kind === 'file' && item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean);
-      if (!files.length) return;
-
-      event.preventDefault();
-      Promise.all(files.map(readImageBlob)).then(addImages, () => showCommandNote('剪贴板里的图片读不出来'));
-    });
     $('attachments').addEventListener('click', (event) => {
       const remove = event.target.closest('[data-remove-image]');
       if (remove) {
@@ -1649,7 +1638,7 @@
       case 'plan':
         if (args && args !== 'off') {
           // The message goes out once the runtime has plan mode on; chips travel with it
-          sendDraft($('draft').value.replace(/^\s*\/plan\s+/, ''), true);
+          sendDraft(draftInput.value.replace(/^\s*\/plan\s+/, ''), true);
           return;
         }
         if (args === 'off' && !state.planMode) showCommandNote('计划模式未开启');
@@ -1658,7 +1647,7 @@
         break;
       case 'undo':
         clearCommandDraft();
-        openRewind(lastUserEntryId(), $('draft'));
+        openRewind(lastUserEntryId(), draftInput.element);
         return;
       case 'clear':
         clearCommandDraft();
@@ -1702,7 +1691,7 @@
     }
 
     // Refused: the sent draft comes back in front of anything typed since, its chips merged back
-    const typed = $('draft').value;
+    const typed = draftInput.value;
     setDraft(typed ? draftState.submittedText + '\n' + typed : draftState.submittedText);
     draftState.images = draftState.submittedImages.concat(draftState.images).slice(0, MAX_DRAFT_IMAGES);
     draftState.submittedImages = [];
@@ -1827,7 +1816,7 @@
 
       if (isOverComposer(event)) {
         call('addobjectreference', drag.kind, drag.path);
-        $('draft').focus();
+        draftInput.focus();
       }
       endDrag();
       suppressClick = true;
@@ -1914,12 +1903,11 @@
 
   /** Opens, narrows or closes the menu from the token right before the caret. */
   function updateMenu() {
-    const draft = $('draft');
-    const before = draft.value.slice(0, draft.selectionStart);
+    const before = draftInput.textBeforeCaret();
     const reference = REFERENCE_TOKEN.exec(before);
     const template = reference ? null : TEMPLATE_TOKEN.exec(before);
     const match = reference || template;
-    if (!match || draft.selectionStart !== draft.selectionEnd) {
+    if (!match || !draftInput.selectionCollapsed()) {
       closeMenu();
       return;
     }
@@ -1930,7 +1918,7 @@
 
     menu.mode = mode;
     menu.query = query;
-    menu.tokenStart = before.length - query.length - 1;
+    menu.tokenLength = query.length + 1;
     menu.index = 0;
     if (mode === 'template') {
       // Built-in commands first, greyed with the reason when they cannot run; templates come from the project's template directories with every snapshot
@@ -1977,21 +1965,17 @@
     if (!item) return;
 
     // A command already typed in full runs instead of being inserted again
-    if (item.command && $('draft').value.trim() === item.body.trim()) {
+    if (item.command && draftInput.value.trim() === item.body.trim()) {
       submitDraft();
       return;
     }
 
-    const draft = $('draft');
-    const caret = draft.selectionStart;
-    const start = menu.tokenStart;
-    const inserted = item.body || '';
-    draft.value = draft.value.slice(0, start) + inserted + draft.value.slice(caret);
+    const length = menu.tokenLength;
     closeMenu();
-    draft.setSelectionRange(start + inserted.length, start + inserted.length);
+    draftInput.replaceBeforeCaret(length, item.body || '');
     growDraft();
     if (item.refs) addReferences(item.refs);
-    draft.focus();
+    draftInput.focus();
   }
 
   // ---------- History ----------
@@ -2002,7 +1986,7 @@
 
   /** Up and Down walk this conversation's sent prompts, only from an empty draft or while already walking them. */
   function browseHistory(step) {
-    const draft = $('draft');
+    const draft = draftInput;
     const prompts = sentPrompts();
     if (!prompts.length) return false;
     if (draftState.historyIndex < 0 && draft.value !== '') return false;
@@ -2660,7 +2644,7 @@
     // After a rewind the message's text comes back into the input, once the new session is shown
     if ('restoreDraft' in message) {
       setDraft(message.restoreDraft);
-      $('draft').focus();
+      draftInput.focus();
     }
 
     const inspectorVisible = paneMode('inspector') !== 'hidden';
@@ -2699,7 +2683,7 @@
     if (state.currentSessionId) view.switchingSession = true;
     call('newconversation');
     if (view.overlay) closeOverlay();
-    $('draft').focus();
+    draftInput.focus();
   }
 
   /** Panel shortcuts, matched by the editor against their (rebindable) chords and forwarded here. */
@@ -2723,7 +2707,7 @@
         break;
       case 'focusInput':
         if (view.overlay) closeOverlay();
-        if (!$('composer').hidden) $('draft').focus();
+        if (!$('composer').hidden) draftInput.focus();
         break;
     }
   }
@@ -2748,73 +2732,63 @@
       document.body.classList.toggle('drawer-open', open);
     },
     focusDraft() {
-      if (!$('composer').hidden) $('draft').focus();
+      if (!$('composer').hidden) draftInput.focus();
     }
   };
 
   // ---------- Page events ----------
 
+  /** Keys app.js takes before the input (composer-editor.js handles lists, Tab and Shift+Enter): the menu, history and sending. */
+  function onDraftKey(event) {
+    // An open menu takes the arrows, Enter and Esc first; inserting never sends
+    if (menu.mode) {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        closeMenu();
+        return true;
+      }
+      if (menu.items.length && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        moveMenu(event.key === 'ArrowDown' ? 1 : -1);
+        return true;
+      }
+      if (menu.items.length && event.key === 'Enter') {
+        chooseMenu(menu.index);
+        return true;
+      }
+    }
+
+    if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.shiftKey && !event.ctrlKey && !event.altKey) return browseHistory(event.key === 'ArrowUp' ? -1 : 1);
+
+    if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey) return false;
+    submitDraft();
+    return true;
+  }
+
   function bindComposer() {
-    const draft = $('draft');
-    let composing = false;
-    draft.addEventListener('input', () => {
-      growDraft();
+    draftInput = window.ShuttlegentComposerEditor.create($('draft-host'), {
+      keydown: onDraftKey,
+      change: () => {
+        growDraft();
 
-      // Typing leaves history browsing and drops a command's refusal; the menu follows the token at the caret once composition ends
-      draftState.historyIndex = -1;
-      hideCommandNote();
-      if (!composing) updateMenu();
+        // Typing leaves history browsing and drops a command's refusal; the menu follows the token at the caret
+        draftState.historyIndex = -1;
+        hideCommandNote();
+        updateMenu();
+      },
+      selection: () => {
+        if (!draftInput.composing) updateMenu();
+      },
+      blur: () => window.setTimeout(() => {
+        if (!draftInput.hasFocus()) closeMenu();
+      }, 0),
+      paste: pasteImages
     });
-    draft.addEventListener('compositionstart', () => { composing = true; });
-    draft.addEventListener('compositionend', () => {
-      composing = false;
-      updateMenu();
-    });
-    draft.addEventListener('click', updateMenu);
-    draft.addEventListener('blur', () => window.setTimeout(() => {
-      if (document.activeElement !== draft) closeMenu();
-    }, 0));
-    draft.addEventListener('keydown', (event) => {
-      // Enter during IME composition only picks the candidate
-      if (event.isComposing || composing || event.keyCode === 229) return;
 
-      // An open menu takes the arrows, Enter, Tab and Esc first; inserting never sends
-      if (menu.mode) {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          closeMenu();
-          return;
-        }
-        if (menu.items.length && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-          event.preventDefault();
-          moveMenu(event.key === 'ArrowDown' ? 1 : -1);
-          return;
-        }
-        if (menu.items.length && (event.key === 'Enter' || event.key === 'Tab')) {
-          event.preventDefault();
-          chooseMenu(menu.index);
-          return;
-        }
-      }
-
-      if (event.key === 'Tab' && event.shiftKey && !event.ctrlKey && !event.altKey) {
-        event.preventDefault();
-        cycleMode();
-        return;
-      }
-
-      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !event.shiftKey && !event.ctrlKey && !event.altKey) {
-        if (browseHistory(event.key === 'ArrowUp' ? -1 : 1)) event.preventDefault();
-        return;
-      }
-
-      if (event.key !== 'Enter' || event.shiftKey) return;
+    // A click on the input's padding still puts the caret in it
+    $('draft-host').addEventListener('mousedown', (event) => {
+      if (event.target !== $('draft-host')) return;
       event.preventDefault();
-      submitDraft();
-    });
-    draft.addEventListener('keyup', (event) => {
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Home' || event.key === 'End') updateMenu();
+      draftInput.focus();
     });
 
     // Mouse down keeps focus in the draft, so the menu does not close before the click lands
@@ -2846,7 +2820,7 @@
       }
       const take = event.target.closest('[data-take-queued]');
       if (take) {
-        call('takequeued', Number(take.dataset.takeQueued), $('draft').value, draftReferencesJson());
+        call('takequeued', Number(take.dataset.takeQueued), draftInput.value, draftReferencesJson());
         return;
       }
       const remove = event.target.closest('[data-remove-queued]');

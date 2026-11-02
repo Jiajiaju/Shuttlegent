@@ -393,10 +393,42 @@
    * line. A run without calls shows as it is. The process block's signature names the entry after it, or, while it ends the order,
    * whether the turn runs.
    */
+  /**
+   * The entry order as shown: memory tool calls drop out (they show as memory notes; their rows stay only in the tool details
+   * card), and each choice card moves to the end of its turn, before the next user message, so it follows the turn's last reply
+   * and does not split its process line.
+   */
+  function displayOrder() {
+    const order = [];
+    let held = [];
+    for (const id of state.order) {
+      const entry = state.entries.get(id);
+      if (isMemoryTool(entry)) continue;
+      if (entry && entry.kind === 'choice') {
+        held.push(id);
+        continue;
+      }
+      if (entry && entry.kind === 'user') {
+        order.push(...held);
+        held = [];
+      }
+      order.push(id);
+    }
+    return order.concat(held);
+  }
+
+  function isChoice(id) {
+    const entry = state.entries.get(id);
+    return !!entry && entry.kind === 'choice';
+  }
+
+  function hasPendingChoice() {
+    return state.order.some((id) => isChoice(id) && state.entries.get(id).choice && state.entries.get(id).choice.status === 'pending');
+  }
+
   function buildBlocks() {
     const blocks = [];
-    // Memory tool calls show as memory notes; their rows stay only in the tool details card
-    const order = state.order.filter((id) => !isMemoryTool(state.entries.get(id)));
+    const order = displayOrder();
     for (let index = 0; index < order.length; ++index) {
       let end = index;
       while (end < order.length && isWork(state.entries.get(order[end]))) ++end;
@@ -413,8 +445,8 @@
       const after = lastTool + 1 < end ? state.entries.get(order[lastTool + 1]) : null;
       if (after && after.thought) members.push(after.id);
       const next = lastTool + 1 < order.length ? order[lastTool + 1] : '';
-      // tail: only the replies after the last call follow this block, so while the turn runs it is still the turn's work
-      const tail = end === order.length;
+      // tail: only the replies after the last call (and the turn's choice cards) follow this block, so while the turn runs it is still the turn's work
+      const tail = order.slice(end).every(isChoice);
       blocks.push({ key: 'p' + members[0], ids: members, run: true, tail: tail, endId: next === '' ? null : next, signature: members.join(',') + '>' + next + (tail ? '|' + state.prompting : '') });
       if (after && after.thought) {
         blocks.push({ key: 'e' + after.id, ids: [after.id], hideThought: true, signature: after.id + '~' });
@@ -792,7 +824,7 @@
     else if (draft.overall) overall = '<div class="choice-note-text">整体意见：' + esc(draft.overall) + '</div>';
 
     const error = draft.error ? '<div class="card-desc is-danger">' + esc(draft.error) + '</div>' : '';
-    const hint = (choice.multiSelect ? '可多选' : '选一项') + ' · 双击图片放大';
+    const hint = (choice.multiSelect ? '可多选' : '选一项') + ' · 双击图片放大' + (choice.itemNotes || choice.overallNote ? ' · Ctrl+Enter 提交' : '');
     const foot = live ? '<div class="card-foot"><span class="hint">' + hint + '</span><button class="btn btn-primary" data-choice-submit="' + entry.id + '"' + (draft.submitting ? ' disabled' : '') + '>' + (draft.submitting ? '提交中…' : '提交') + '</button></div>' : '';
     return '<article class="card choice-card ' + esc(status) + '" data-entry="' + entry.id + '" data-choice="' + entry.id + '">' + head + options + overall + error + foot + '</article>';
   }
@@ -1241,6 +1273,7 @@
 
     // The input's placeholder says why sending waits; there is no hint line under the composer
     let placeholder = DRAFT_PLACEHOLDER;
+    if (hasPendingChoice()) placeholder = '在上方卡片中作答，或直接输入（卡片将标为未作答）';
     if (state.busy) placeholder = '回车加入队列，本轮结束后发送';
     if (state.runtimeLost) placeholder = '重新连接后再发送';
     if (state.needsVerify) placeholder = '核对写入结果后再发送';
@@ -3212,6 +3245,14 @@
       else if (event.target.dataset.choiceOverall !== undefined) draft.overall = event.target.value;
     });
     $('messages').addEventListener('keydown', (event) => {
+      // Ctrl+Enter in a choice card's note fields submits the card
+      const field = event.target.closest('[data-choice] textarea');
+      if (field && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        submitChoice(Number(field.closest('[data-choice]').dataset.choice));
+        return;
+      }
+
       const option = event.target.closest('[data-choice-option]');
       if (!option || event.target !== option || (event.key !== ' ' && event.key !== 'Enter')) return;
 

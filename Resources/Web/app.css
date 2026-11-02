@@ -147,7 +147,7 @@ button.event:hover{color:var(--text)}
 .event .ev-label.is-wrap{white-space:normal;overflow-wrap:anywhere}
 .event .ev-detail{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--faint)}
 .event .ev-trail{margin-left:auto;padding-left:var(--s-3);white-space:nowrap;color:var(--faint);font-size:.92em}
-.event .ev-caret{color:var(--faint);transition:transform var(--t-base) var(--ease)}
+.event .ev-caret{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:14px;height:14px;color:var(--muted);transition:transform var(--t-base) var(--ease)}
 .event[aria-expanded=true] .ev-caret{transform:rotate(90deg)}
 .event.is-danger,.event.is-danger .ev-detail{color:var(--danger)}
 .event.is-warning>.sg-icon{color:var(--warning)}
@@ -161,6 +161,33 @@ button.event:hover{color:var(--text)}
 .event-divider>span{display:inline-flex;align-items:center;gap:var(--s-1-5)}
 .event-divider.is-danger{color:var(--danger)}
 .event-divider.running .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
+/* Running step mark (app.js weaveIcon): the logo's shuttle slides in along its own axis from the lower left between the threads, then drives straight down out of the mark, as a weft beaten in on a loom.
+   Units are the mark's view box (344 × 224); every running mark shares one phase through --weave-delay */
+.weave{display:inline-block;flex-shrink:0;width:24px;aspect-ratio:344/224}
+.weave svg{display:block;width:100%;height:100%;overflow:hidden}
+.weave .mark-shuttle{animation:sg-weave-shuttle 1200ms var(--weave-delay,0ms) infinite}
+.weave .mark-left,.weave .mark-right{animation:sg-weave-thread 1200ms var(--weave-delay,0ms) infinite}
+@keyframes sg-weave-shuttle{
+  0%{transform:translate(-381px,177px);animation-timing-function:cubic-bezier(.2,.8,.3,1)}
+  38%,50%{transform:none;animation-timing-function:cubic-bezier(.6,0,1,.5)}
+  62%{transform:translateY(300px)}
+  62.1%,100%{transform:translate(-381px,177px)}
+}
+@keyframes sg-weave-thread{0%,52%{transform:none}57%{transform:scaleY(.94)}64%,100%{transform:none}}
+html.motion-off .weave *{animation:none}
+/* The run's current call reads in the text colour, the rest stays muted; an opened run lists its calls indented under the line */
+.event .ev-current{color:var(--text)}
+.event .ev-failed{color:var(--danger)}
+.run-steps{padding:0 0 var(--s-1) 24px}
+.run-steps .event{min-height:24px;padding:2px 0}
+.run-steps .run-note{margin:2px 0 var(--s-1);font-size:.92em;color:var(--muted)}
+/* Messages sent while a turn runs: the user's bubbles at the end of the conversation, muted, their actions always shown */
+.queue .user-turn.is-queued .message.user{opacity:.7}
+.queue .user-turn.is-queued .user-actions{opacity:1;visibility:visible}
+.queue .queued-mark{color:var(--muted)}
+.queue-note{display:flex;align-items:center;justify-content:flex-end;gap:var(--s-2);font-size:var(--fs-small);color:var(--warning);margin-bottom:var(--s-3)}
+/* The running line at the very end of the conversation (as Claude): weave, time since the turn's message, what goes on */
+.event .ev-sep{color:var(--faint)}
 .tool-images{display:flex;flex-wrap:wrap;gap:var(--s-1-5);margin:var(--s-1) 0 var(--s-1) 24px}
 .tool-images img{display:block;max-width:220px;max-height:140px;border:1px solid var(--line);border-radius:var(--r-md);cursor:zoom-in}
 
@@ -298,7 +325,7 @@ body.wide-content .message-column,body.wide-content .composer-column>*{max-width
 .user-time{margin-right:var(--s-1)}
 .user-action.locked{opacity:.4;cursor:not-allowed}
 .user-action.locked:hover{background:transparent;color:var(--muted)}
-.working{display:flex;align-items:center;height:28px;margin-top:var(--s-1)}
+.working{margin-top:var(--s-1)}
 
 /* Markdown in replies and plans */
 .markdown{user-select:text}
@@ -436,7 +463,7 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .stack-head .s{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
 .stack-head .r{margin-left:auto;color:var(--faint);white-space:nowrap}
 .stack-head.is-paused .t{color:var(--warning)}
-.stack-head>.sg-icon{color:var(--faint);transition:transform var(--t-base) var(--ease)}
+.stack-head>.sg-icon{color:var(--muted);transition:transform var(--t-base) var(--ease)}
 .stack-head[aria-expanded=true]>.sg-icon:first-child{transform:rotate(90deg)}
 .stack-list{list-style:none;margin:0;padding:0 var(--s-3) var(--s-2) 34px;max-height:160px;overflow:auto}
 .todo{display:flex;align-items:flex-start;gap:var(--s-2);padding:2px 0}
@@ -476,10 +503,9 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .cards{flex:1;overflow:auto;padding:var(--s-3);display:flex;flex-direction:column;gap:var(--s-2)}
 .icard{border:1px solid var(--line);border-radius:var(--r-lg);flex-shrink:0;min-width:0}
 .icard-head{display:flex;align-items:center;gap:var(--s-2);width:100%;height:44px;padding:0 14px;text-align:left;border-radius:var(--r-lg);min-width:0;color:var(--text)}
-.icard-head .t{font-weight:var(--fw-strong);flex-shrink:0}
-.icard-head>.sg-icon{color:var(--faint);transition:transform var(--t-base) var(--ease)}
+.icard-head .t{flex-shrink:0}
+.icard-head>.sg-icon{color:var(--muted);transition:transform var(--t-base) var(--ease)}
 .icard-head[aria-expanded=true]>.sg-icon{transform:rotate(90deg)}
-.icard-head:hover>.sg-icon{color:var(--text)}
 .icard-head .s{margin-left:auto;font-size:var(--fs-small);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;font-variant-numeric:tabular-nums}
 .icard-head .s.warn{color:var(--warning)}
 .icard-body{padding:0 14px 14px;font-size:var(--fs-small);line-height:var(--lh-small);display:flex;flex-direction:column;gap:var(--s-2);min-width:0}
@@ -510,9 +536,8 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .divider{height:1px;background:var(--subtle)}
 .card-actions{display:flex;justify-content:flex-end}
 .group-head{display:flex;align-items:center;gap:var(--s-2);width:100%;height:28px;text-align:left;color:var(--text);min-width:0}
-.group-head>.sg-icon{color:var(--faint);transition:transform var(--t-base) var(--ease)}
+.group-head>.sg-icon{color:var(--muted);transition:transform var(--t-base) var(--ease)}
 .group-head[aria-expanded=true]>.sg-icon{transform:rotate(90deg)}
-.group-head:hover>.sg-icon{color:var(--text)}
 .group-head .c{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
 .nested{padding-left:24px}
 .tool-detail{border-radius:var(--r-md)}

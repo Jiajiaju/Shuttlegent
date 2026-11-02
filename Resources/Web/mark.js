@@ -221,5 +221,18 @@
   document.addEventListener('visibilitychange', wake);
   reducedMotion.addEventListener('change', wake);
 
-  window.ShuttlegentMark = { attach: attach, detach: detach, play: play, rest: rest, setEnabled: setEnabled };
+  /**
+   * The mark as SVG markup for rows that are rebuilt often (a running step in the conversation): the parts carry the classes
+   * mark-left, mark-shuttle and mark-right, pivoting like attach's parts, so app.css can move them with CSS animations.
+   */
+  function markup() {
+    const t = GEOMETRY.thread;
+    const origin = (x) => 'transform-box:view-box;transform-origin:' + (x - VIEW_X) + 'px ' + (-VIEW_Y) + 'px';
+    const thread = (side) => '<g class="mark-' + (side < 0 ? 'left' : 'right') + '" style="' + origin(side * t.centerX) + '"><rect x="' + (side * t.centerX - t.width / 2) + '" y="' + t.top + '" width="' + t.width + '" height="' + t.height + '" rx="' + (t.width / 2) + '" fill="' + GEOMETRY.colors.ivory + '"/></g>';
+    return '<svg viewBox="' + GEOMETRY.viewBox.join(' ') + '" aria-hidden="true" focusable="false">' + thread(-1)
+      + '<g class="mark-shuttle" style="' + origin(0) + '"><path d="' + GEOMETRY.shuttle.d + '" fill="' + GEOMETRY.colors.red + '" transform="rotate(' + GEOMETRY.shuttle.axisDeg + ')"/></g>'
+      + thread(1) + '</svg>';
+  }
+
+  window.ShuttlegentMark = { attach: attach, detach: detach, play: play, rest: rest, setEnabled: setEnabled, markup: markup };
 })();

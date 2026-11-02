@@ -19,8 +19,14 @@
   // Distance from the bottom, in CSS pixels, within which new content keeps the view pinned to the end
   const FOLLOW_THRESHOLD = 24;
 
-  // Consecutive read-only tool calls fold into one group from this many on
-  const MIN_GROUP_SIZE = 2;
+  // One weave of the running-step mark (app.css .weave, sg-weave-*), in milliseconds; every running mark shares its phase
+  const WEAVE_PERIOD_MS = 1200;
+
+  // Kinds of call a process line names before it only counts the rest
+  const PROCESS_KINDS_SHOWN = 4;
+
+  // How often the elapsed seconds of a running step refresh, in milliseconds
+  const STEP_TICK_MS = 1000;
 
   // How often the page looks for the editor binding before calling ready, in milliseconds
   const BRIDGE_POLL_MS = 50;
@@ -234,6 +240,8 @@
 
   // Page-local view state
   const expandedThoughts = new Set();
+  // Runs of tool calls opened in the conversation, by the id of their first call
+  const expandedRuns = new Set();
   const expandedTools = new Set();
   const blockElements = new Map();
   const codeSources = new Map();
@@ -311,8 +319,6 @@
   let emptyMark = null;
   // The message input (composer-editor.js), created by bindComposer; its value is Markdown
   let draftInput = null;
-  let headerMark = null;
-  let workingMark = null;
   let hasUnseenContent = false;
 
   function bridge() {
@@ -350,34 +356,57 @@
 
   // ---------- Conversation ----------
 
-  function isReadOnlyTool(entry) {
-    return entry && entry.kind === 'toolCall' && entry.readOnly;
+  function isToolCall(entry) {
+    return entry && entry.kind === 'toolCall';
   }
 
   function isToolFinished(status) {
     return status === TOOL_COMPLETED || status === TOOL_FAILED;
   }
 
-  /** Splits the entry order into blocks: one entry, or a group of consecutive read-only tool calls. */
   function isMemoryTool(entry) {
     return !!entry && entry.kind === 'toolCall' && MEMORY_TOOL.test(entry.tool || '');
   }
 
+  function isWork(entry) {
+    return isToolCall(entry) || (!!entry && entry.kind === 'assistant');
+  }
+
+  /**
+   * Splits the entry order into blocks. In a run of replies and tool calls, everything up to the last call (thoughts, the replies'
+   * interim text and the calls) folds into one process line; the reply text after the last call shows, and its thought joins the
+   * line. A run without calls shows as it is. The process block's signature names the entry after it, or, while it ends the order,
+   * whether the turn runs.
+   */
   function buildBlocks() {
     const blocks = [];
     // Memory tool calls show as memory notes; their rows stay only in the tool details card
     const order = state.order.filter((id) => !isMemoryTool(state.entries.get(id)));
     for (let index = 0; index < order.length; ++index) {
-      const group = [];
-      while (index + group.length < order.length && isReadOnlyTool(state.entries.get(order[index + group.length]))) {
-        group.push(order[index + group.length]);
+      let end = index;
+      while (end < order.length && isWork(state.entries.get(order[end]))) ++end;
+      let lastTool = -1;
+      for (let at = index; at < end; ++at) {
+        if (isToolCall(state.entries.get(order[at]))) lastTool = at;
       }
-      if (group.length >= MIN_GROUP_SIZE) {
-        blocks.push({ key: 'g' + group[0], ids: group });
-        index += group.length - 1;
+      if (lastTool < 0) {
+        blocks.push({ key: 'e' + order[index], ids: [order[index]], signature: String(order[index]) });
         continue;
       }
-      blocks.push({ key: 'e' + order[index], ids: [order[index]] });
+
+      const members = order.slice(index, lastTool + 1);
+      const after = lastTool + 1 < end ? state.entries.get(order[lastTool + 1]) : null;
+      if (after && after.thought) members.push(after.id);
+      const next = lastTool + 1 < order.length ? order[lastTool + 1] : '';
+      // tail: only the replies after the last call follow this block, so while the turn runs it is still the turn's work
+      const tail = end === order.length;
+      blocks.push({ key: 'p' + members[0], ids: members, run: true, tail: tail, endId: next === '' ? null : next, signature: members.join(',') + '>' + next + (tail ? '|' + state.prompting : '') });
+      if (after && after.thought) {
+        blocks.push({ key: 'e' + after.id, ids: [after.id], hideThought: true, signature: after.id + '~' });
+        index = lastTool + 1;
+      } else {
+        index = lastTool;
+      }
     }
     return blocks;
   }
@@ -396,7 +425,7 @@
     const detail = options.detail ? '<span class="ev-detail">' + options.detail + '</span>' : '';
     const trail = options.trail ? '<span class="ev-trail">' + options.trail + '</span>' : '';
     return '<' + tag + ' class="event' + tone + (options.extraClass ? ' ' + options.extraClass : '') + '"' + (options.attributes || '') + '>' + options.icon
-      + '<span class="ev-label' + (options.wrap ? ' is-wrap' : '') + '">' + options.label + '</span>' + (options.caret ? '<span class="ev-caret">' + icons.svg('chevron', 14) + '</span>' : '') + detail + trail + (options.after || '') + '</' + tag + '>';
+      + '<span class="ev-label' + (options.wrap ? ' is-wrap' : '') + '">' + options.label + '</span>' + (options.caret ? '<span class="ev-caret">' + icons.svg('caret', 14) + '</span>' : '') + detail + trail + (options.after || '') + '</' + tag + '>';
   }
 
   /** Time of a message as Claude shows it: just now, minutes or hours ago, then the date. */
@@ -486,22 +515,23 @@
     return state.prompting && !entry.text && state.order.length > 0 && state.order[state.order.length - 1] === entry.id;
   }
 
-  function renderThought(entry) {
+  function renderThought(entry, inProcess) {
     if (!entry.thought) return '';
 
     const expanded = expandedThoughts.has(entry.id);
-    let label = entry.thoughtSeconds >= 0 ? '已思考 ' + entry.thoughtSeconds + ' 秒' : '思考过程';
-    if (isThinking(entry)) label = '思考中…';
+    // A reply thinking right now shows only in the running line at the end of the conversation
+    if (isThinking(entry) && !inProcess) return '';
+    const label = entry.thoughtSeconds >= 0 ? '已思考 ' + entry.thoughtSeconds + ' 秒' : '思考过程';
     const row = eventHtml({ icon: icons.svg('thought', 16), label: label, caret: true, attributes: ' data-thought="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起思考过程"' });
     return row + (expanded ? '<div class="event-body">' + esc(entry.thought) + '</div>' : '');
   }
 
   /** A reply: its thought as an event row, then the text; replies carry no name or mark of their own. */
-  function renderAssistant(entry) {
+  function renderAssistant(entry, hideThought) {
     const rendered = markdown.render(entry.text);
     codeSources.set(entry.id, rendered.codes);
     const text = entry.text ? '<div class="markdown">' + rendered.html + '</div>' : '';
-    return '<article class="message assistant" data-entry="' + entry.id + '">' + renderThought(entry) + text + '</article>';
+    return '<article class="message assistant" data-entry="' + entry.id + '">' + (hideThought ? '' : renderThought(entry)) + text + '</article>';
   }
 
   /** Screenshots a tool returned, from the saved paths the editor writes into its result text. */
@@ -512,29 +542,121 @@
   }
 
   /** A tool call as an event row: state icon, name and summary; a failure adds its reason underneath. Clicking opens its details. */
-  function renderTool(entry) {
-    const failed = entry.toolStatus === TOOL_FAILED;
-    const reason = failed && entry.failureReason ? '<div class="event-body is-danger">' + esc(entry.failureReason) + '</div>' : '';
-    const row = eventHtml({ icon: toolIcon(entry.toolStatus, 16), label: esc(entry.displayName), detail: esc(entry.summary), tone: failed ? 'danger' : '', attributes: ' data-tool="' + entry.id + '" title="在检视窗格查看参数与结果"' });
-    return '<div class="tool">' + row + reason + toolImages(entry) + '</div>';
+  /** The running-step mark: the logo with its shuttle weaving in from the left and beating down, in phase with every other. */
+  function weaveIcon() {
+    return '<span class="weave" style="--weave-delay:-' + (Date.now() % WEAVE_PERIOD_MS) + 'ms">' + markPlayer.markup() + '</span>';
   }
 
-  /** Consecutive read-only calls as one row: how many, the first few names, and any failures. */
-  function renderToolGroup(ids) {
-    let failed = 0;
-    let running = false;
-    const names = [];
-    for (const id of ids) {
-      const entry = state.entries.get(id);
-      if (!isToolFinished(entry.toolStatus)) running = true;
-      if (entry.toolStatus === TOOL_FAILED) ++failed;
-      if (names.length < 3 && !names.includes(entry.displayName)) names.push(entry.displayName);
+  /** " · N 秒" since a time, kept current by refreshElapsed while it shows; empty without a time. */
+  function elapsedText(since) {
+    const seconds = Math.max(0, Math.round((Date.now() - since) / 1000));
+    return seconds < 60 ? seconds + ' 秒' : Math.floor(seconds / 60) + ' 分 ' + (seconds % 60) + ' 秒';
+  }
+
+  /** Time since a moment, kept current by refreshElapsed while it shows. */
+  function elapsedHtml(since) {
+    if (!since) return '';
+    return '<span class="ev-elapsed" data-since="' + since + '">' + elapsedText(since) + '</span>';
+  }
+
+  function refreshElapsed() {
+    for (const element of document.querySelectorAll('#working [data-since]')) element.textContent = elapsedText(Number(element.dataset.since));
+  }
+
+  /** One call inside an opened run: state, name and summary; a click shows its arguments and result in the inspector. */
+  function renderToolStep(entry) {
+    const failed = entry.toolStatus === TOOL_FAILED;
+    const reason = failed && entry.failureReason ? '<div class="event-body is-danger">' + esc(entry.failureReason) + '</div>' : '';
+    return eventHtml({ icon: toolIcon(entry.toolStatus, 14), label: esc(entry.displayName), detail: esc(entry.summary || ''), tone: failed ? 'danger' : '', extraClass: 'run-step', attributes: ' data-tool="' + entry.id + '" title="在检视窗格查看参数与结果"' }) + reason;
+  }
+
+  /**
+   * Consecutive tool calls as one line, as Claude shows them: while running the weave, the call under way and the seconds so far;
+   * done, the one call or how many, the seconds the run took, and any failures. A click opens the calls; screenshots always show.
+   */
+  /**
+   * What a run of calls did, as Claude sums it up: each kind of call once in order of first use, with its count, and the failures;
+   * past four kinds the rest is counted.
+   */
+  function toolSummary(tools) {
+    const kinds = new Map();
+    for (const entry of tools) kinds.set(entry.displayName, (kinds.get(entry.displayName) || 0) + 1);
+    const parts = Array.from(kinds, ([name, count]) => esc(name) + (count > 1 ? ' ' + count + ' 次' : ''));
+    return parts.length > PROCESS_KINDS_SHOWN ? parts.slice(0, PROCESS_KINDS_SHOWN).join('，') + ' 等 ' + parts.length + ' 类' : parts.join('，');
+  }
+
+  /** Whether the turn is writing its reply text now: it runs and its last entry is a reply with text. */
+  function replyUnderWay() {
+    const entry = state.entries.get(state.order[state.order.length - 1]);
+    return state.prompting && !!entry && entry.kind === 'assistant' && !!entry.text;
+  }
+
+  /** The time since this turn's message, for the running line. */
+  function turnStart() {
+    for (let index = state.order.length - 1; index >= 0; --index) {
+      const entry = state.entries.get(state.order[index]);
+      if (entry && entry.kind === 'user') return entry.time || 0;
     }
-    let icon = icons.svg('search', 16);
-    if (running) icon = toolIcon('', 16);
-    else if (failed) icon = toolIcon(TOOL_FAILED, 16);
-    const label = running ? '正在查询 ' + ids.length + ' 项' : '已查询 ' + ids.length + ' 项';
-    return '<div class="tool">' + eventHtml({ icon: icon, label: label, detail: esc(names.join(' · ')), trail: failed ? failed + ' 项失败' : '', attributes: ' data-tool="' + ids[0] + '" title="在检视窗格查看这组查询"' }) + '</div>';
+    return 0;
+  }
+
+  /** One reply inside an opened process line: its thought, then its interim text, muted (the reply shown below keeps its text). */
+  function renderWorkReply(entry, textShownBelow) {
+    const rendered = textShownBelow || !entry.text ? null : markdown.render(entry.text);
+    if (rendered) codeSources.set(entry.id, rendered.codes);
+    return renderThought(entry, true) + (rendered ? '<div class="markdown run-note" data-entry="' + entry.id + '">' + rendered.html + '</div>' : '');
+  }
+
+  /**
+   * A turn's work as one line, opened with the triangle. Running (it is then the last line of the conversation, below queued
+   * messages): the weave, the time since the turn's message and what goes on now. Done: what the calls did and any failures.
+   */
+  function processHtml(ids, endId, live) {
+    const entries = ids.map((id) => state.entries.get(id));
+    const tools = entries.filter(isToolCall);
+    const thoughts = entries.filter((entry) => entry.kind === 'assistant');
+    const runningTool = tools.filter((entry) => !isToolFinished(entry.toolStatus)).pop();
+    const failed = tools.filter((entry) => entry.toolStatus === TOOL_FAILED).length;
+    const first = entries[0];
+    const last = entries[entries.length - 1];
+    const expanded = expandedRuns.has(first.id);
+
+    let icon = icons.svg('tools', 16);
+    let label = '';
+    if (live) {
+      icon = weaveIcon();
+      const start = turnStart();
+      let current = '处理中';
+      if (runningTool) current = '正在执行 <span class="ev-current">' + esc(runningTool.displayName) + '</span>';
+      else if (thoughts.some(isThinking)) current = '思考中';
+      else if (replyUnderWay()) current = '回复中';
+      label = (start ? elapsedHtml(start) + '<span class="ev-sep"> · </span>' : '') + current;
+    } else {
+      if (failed) icon = toolIcon(TOOL_FAILED, 16);
+      label = toolSummary(tools);
+    }
+    if (failed) label += '<span class="ev-failed">（' + failed + ' 次失败）</span>';
+
+    const row = eventHtml({ icon: icon, label: label, caret: true, attributes: ' data-run="' + first.id + '" aria-expanded="' + expanded + '" title="展开或收起处理过程"' });
+    const textBelow = last.kind === 'assistant' && !!last.text;
+    const steps = expanded ? '<div class="run-steps">' + entries.map((entry) => entry.kind === 'assistant' ? renderWorkReply(entry, entry === last && textBelow) : renderToolStep(entry)).join('') + '</div>' : '';
+    return '<div class="tool process">' + row + steps + tools.map(toolImages).join('') + '</div>';
+  }
+
+  /** Whether a process block is the turn's work still going on: a call runs, or the turn runs and only its replies follow it. */
+  function isLiveProcess(block) {
+    if (!block || !block.run) return false;
+    const running = block.ids.some((id) => {
+      const entry = state.entries.get(id);
+      return isToolCall(entry) && !isToolFinished(entry.toolStatus);
+    });
+    return running || (state.prompting && block.tail);
+  }
+
+  /** In the conversation a running process block stays away: the running line at the end shows it. */
+  function renderProcess(block) {
+    if (isLiveProcess(block)) return '<div class="tool process" hidden></div>';
+    return processHtml(block.ids, block.endId, false);
   }
 
   function renderPermission(entry) {
@@ -634,16 +756,14 @@
   }
 
   function renderBlock(block) {
-    if (block.ids.length > 1) return renderToolGroup(block.ids);
+    if (block.run) return renderProcess(block);
 
     const entry = state.entries.get(block.ids[0]);
     switch (entry.kind) {
       case 'user':
         return renderUser(entry);
       case 'assistant':
-        return renderAssistant(entry);
-      case 'toolCall':
-        return renderTool(entry);
+        return renderAssistant(entry, block.hideThought);
       case 'permission':
         return renderPermission(entry);
       case 'writeResult':
@@ -705,7 +825,7 @@
     let previous = null;
     for (const block of blocks) {
       liveKeys.add(block.key);
-      const signature = block.ids.join(',');
+      const signature = block.signature;
       const first = state.entries.get(block.ids[0]);
       const thinking = first.kind === 'assistant' ? String(isThinking(first)) : '';
       let element = blockElements.get(block.key);
@@ -743,8 +863,9 @@
     renderEmptyState(state.order.length === 0);
     syncObjectLinks();
 
-    // Streamed output never steals focus and never forces the view back to the end
-    if (atEnd) {
+    // Streamed output never steals focus and never forces the view back to the end; with nothing left below (an empty or
+    // shorter conversation after a switch) there is nothing to go back to
+    if (atEnd || state.order.length === 0 || isAtEnd()) {
       scrollToEnd();
     } else if (!reset) {
       hasUnseenContent = true;
@@ -770,19 +891,37 @@
     }
     updateMarkOpacity();
 
-    // Working loops while a turn runs and nothing waits for the user; a confirmation, a stop or a lost runtime rests it.
-    // The conversation's end shows a small working mark at the same time.
+    // While a turn runs and nothing waits for the user, the conversation's end weaves; a confirmation, a stop or a lost runtime
+    // clears it (app.css hides it while a step in the conversation weaves)
     const working = state.prompting && !state.pendingWrite && !state.pendingPermission && !state.pendingQuestion && !state.pendingPlanReview;
-    if (working && !wasWorking) {
-      markPlayer.play(headerMark, 'working');
-      markPlayer.play(workingMark, 'working');
-    }
-    if (!working && wasWorking) {
-      if (headerMark.motion === 'working') markPlayer.rest(headerMark);
-      markPlayer.rest(workingMark);
-    }
     $('working').hidden = !working;
     wasWorking = working;
+    renderWorking();
+  }
+
+  /**
+   * The line at the end of the conversation while a turn works (as Claude): the running process line when there is one, opened with
+   * the triangle; otherwise the weave, the time since the turn's message and "thinking" or "working".
+   */
+  function renderWorking() {
+    const line = $('working');
+    if (line.hidden) {
+      line.replaceChildren();
+      return;
+    }
+
+    const live = buildBlocks().filter(isLiveProcess).pop() || null;
+    if (live) {
+      line.innerHTML = processHtml(live.ids, live.endId, true);
+      return;
+    }
+
+    const start = turnStart();
+    const lastEntry = state.entries.get(state.order[state.order.length - 1]);
+    let current = '处理中';
+    if (lastEntry && lastEntry.kind === 'assistant' && isThinking(lastEntry)) current = '思考中';
+    else if (replyUnderWay()) current = '回复中';
+    line.innerHTML = '<div class="event">' + weaveIcon() + '<span class="ev-label">' + (start ? elapsedHtml(start) + '<span class="ev-sep"> · </span>' : '') + current + '</span></div>';
   }
 
   function renderTitle() {
@@ -810,7 +949,7 @@
     const folded = view.todosFolded !== null ? view.todosFolded : (done === todos.length && !state.prompting) || currentDecision() !== null;
     const current = todos.find((todo) => todo.status === 'in_progress');
     const summary = current ? esc(current.content) : done === todos.length ? '全部完成' : '';
-    const header = '<button class="stack-head" data-todos-toggle aria-expanded="' + !folded + '">' + icons.svg('chevron', 14)
+    const header = '<button class="stack-head" data-todos-toggle aria-expanded="' + !folded + '">' + icons.svg('caret', 14)
       + '<span class="t num">任务 ' + done + '/' + todos.length + '</span><span class="s">' + summary + '</span></button>';
     const rows = folded ? '' : '<ol class="stack-list">' + todos.map((todo) => {
       const icon = todo.status === 'completed' ? icons.svg('check', 13) : todo.status === 'in_progress' ? icons.svg('loader', 13) : '<span class="todo-ring"></span>';
@@ -819,6 +958,7 @@
     panel.innerHTML = header + rows;
   }
 
+  /** Messages sent while a turn runs show at the end of the conversation as the user's bubbles, waiting their turn. */
   function renderQueue() {
     const queue = $('queue');
     const items = state.queue.items || [];
@@ -830,15 +970,18 @@
 
     const paused = state.queue.paused;
     const canContinue = !state.busy && !state.runtimeLost;
-    const header = paused
-      ? '<div class="stack-head is-paused"><span class="t num">队列已暂停 · ' + items.length + '</span><button class="btn btn-sm" style="margin-left:auto" id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? '按顺序发送剩余条目' : '当前轮次结束或重新连接后才能继续') + '">继续发送</button></div>'
-      : '<div class="stack-head"><span class="t num">待发送 · ' + items.length + '</span><span class="r">本轮结束后依次发送</span></div>';
-    queue.innerHTML = header + '<div class="queue-list">' + items.map((item, index) => {
-      const refs = item.references && item.references.length ? '<span class="chip">' + item.references.length + ' 个引用</span>' : '';
-      return '<div class="queue-item"><span class="n num">' + (index + 1) + '</span><span class="q" title="' + esc(item.text) + '">' + esc(item.text) + '</span>' + refs
+    const note = paused
+      ? '<div class="queue-note is-paused">队列已暂停<button class="btn btn-sm" id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? '按顺序发送剩余消息' : '当前轮次结束或重新连接后才能继续') + '">继续发送</button></div>'
+      : '';
+    queue.innerHTML = items.map((item) => {
+      const refs = item.references && item.references.length ? '<div class="user-references">' + item.references.length + ' 个引用</div>' : '';
+      const rendered = markdown.render(item.text || '');
+      return '<div class="user-turn is-queued"><article class="message user"><div class="markdown">' + rendered.html + '</div>' + refs + '</article>'
+        + '<div class="user-actions"><span class="queued-mark">' + (paused ? '已暂停' : '本轮结束后发送') + '</span><span class="user-dot">·</span>'
         + '<button class="btn btn-sm btn-ghost" data-take-queued="' + item.id + '" title="取回为草稿；当前草稿会放到这一条的位置">取回</button>'
-        + '<button class="btn btn-icon btn-sm" data-remove-queued="' + item.id + '" title="移除" aria-label="移除第 ' + (index + 1) + ' 条排队消息">' + icons.svg('close', 14) + '</button></div>';
-    }).join('') + '</div>';
+        + '<button class="btn btn-icon btn-sm" data-remove-queued="' + item.id + '" title="移除" aria-label="移除这条待发送的消息">' + icons.svg('close', 14) + '</button></div></div>';
+    }).join('') + note;
+    if (isAtEnd()) scrollToEnd();
   }
 
   function draftReferencesJson() {
@@ -985,7 +1128,7 @@
     stop.hidden = !state.prompting;
     stop.disabled = state.stopping;
     stop.classList.toggle('is-stopping', state.stopping);
-    stop.innerHTML = icons.svg(state.stopping ? 'loader' : 'stop', 14);
+    stop.innerHTML = state.stopping ? icons.svg('loader', 16) : icons.svg('stop', 24);
     stop.title = state.stopping ? '正在停止，等待当前调用结束' : '停止本轮；已执行的修改不会回滚';
     stop.setAttribute('aria-label', state.stopping ? '停止中' : '停止');
     renderMetaTriggers();
@@ -1278,7 +1421,7 @@
       + destructive
       + '<div class="card-desc">' + level + request.objects.length + ' 个对象 · <span class="mono">' + esc(request.tool) + '</span></div>'
       + '<div class="mini-table"><table><thead><tr><th>对象</th><th>字段</th><th>当前</th><th>计划</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '<button class="disclosure" id="decision-raw-toggle" aria-expanded="false">' + icons.svg('chevron', 14) + '原始参数</button><pre class="pre" id="decision-raw" hidden>' + esc(prettyRaw(request.raw)) + '</pre>'
+      + '<button class="disclosure" id="decision-raw-toggle" aria-expanded="false">' + icons.svg('caret', 14) + '原始参数</button><pre class="pre" id="decision-raw" hidden>' + esc(prettyRaw(request.raw)) + '</pre>'
       + '<div class="card-foot"><span class="hint num" title="对象、关卡或参数变化后需要重新确认">仅确认这一次<span id="decision-countdown"></span></span><button class="btn" id="decision-reject">取消</button><button class="btn ' + (request.destructive ? 'btn-danger' : 'btn-primary') + '" id="decision-allow">确认执行</button></div>';
   }
 
@@ -2389,7 +2532,7 @@
   function cardGroup(id, label, count, rows, empty) {
     const open = view.cardGroups.has(id);
     const body = open ? (rows ? '<ul class="kv-list nested">' + rows + '</ul>' : '<p class="empty-note nested">' + empty + '</p>') : '';
-    return '<div class="card-group' + (open ? ' open' : '') + '"><button class="group-head" data-card-group="' + id + '" aria-expanded="' + open + '">' + icons.svg('chevron', 14) + '<span>' + label + '</span><span class="c">' + count + '</span></button>' + body + '</div>';
+    return '<div class="card-group' + (open ? ' open' : '') + '"><button class="group-head" data-card-group="' + id + '" aria-expanded="' + open + '">' + icons.svg('caret', 14) + '<span>' + label + '</span><span class="c">' + count + '</span></button>' + body + '</div>';
   }
 
   function renderMcpCard() {
@@ -2587,6 +2730,7 @@
     if ('animateMark' in message) {
       markPlayer.setEnabled(state.animateMark);
       warpPlayer.setEnabled(state.animateMark);
+      document.documentElement.classList.toggle('motion-off', !state.animateMark);
     }
     if ('fonts' in message) applyFonts(message.fonts || {});
     if ('fontSize' in message) {
@@ -2623,6 +2767,7 @@
     if (message.entries || message.order || reset || 'prompting' in message) {
       renderConversation(reset);
       changedIds = new Set();
+      renderWorking();
     }
     if ('status' in message || 'canRetry' in message || 'startIssue' in message || 'resumeFailed' in message) {
       renderHeader();
@@ -2658,10 +2803,6 @@
       if (cards.length) renderInspector(cards);
     }
 
-    for (const event of message.events || []) {
-      if (event === 'turnCompleted') markPlayer.play(headerMark, 'done');
-      if (event === 'turnStopped') markPlayer.rest(headerMark);
-    }
   }
 
   /** A font stack from Editor Preferences: the names that pass FONT_NAME, quoted, in front of the fallback stack. */
@@ -2871,6 +3012,27 @@
       if (link) revealObject(link, true);
     });
 
+    $('working').addEventListener('click', (event) => {
+      const run = event.target.closest('[data-run]');
+      if (run) {
+        const id = Number(run.dataset.run);
+        if (expandedRuns.has(id)) expandedRuns.delete(id);
+        else expandedRuns.add(id);
+        renderWorking();
+        return;
+      }
+      const thought = event.target.closest('[data-thought]');
+      if (thought) {
+        const id = Number(thought.dataset.thought);
+        if (expandedThoughts.has(id)) expandedThoughts.delete(id);
+        else expandedThoughts.add(id);
+        renderWorking();
+        return;
+      }
+      const tool = event.target.closest('[data-tool]');
+      if (tool) inspectTool(Number(tool.dataset.tool));
+    });
+
     $('messages').addEventListener('click', (event) => {
       const viewImage = event.target.closest('[data-view-image]');
       if (viewImage) {
@@ -2890,6 +3052,17 @@
         const id = Number(thought.dataset.thought);
         if (expandedThoughts.has(id)) expandedThoughts.delete(id);
         else expandedThoughts.add(id);
+        changedIds.add(id);
+        renderConversation(false);
+        changedIds = new Set();
+        return;
+      }
+
+      const run = event.target.closest('[data-run]');
+      if (run) {
+        const id = Number(run.dataset.run);
+        if (expandedRuns.has(id)) expandedRuns.delete(id);
+        else expandedRuns.add(id);
         changedIds.add(id);
         renderConversation(false);
         changedIds = new Set();
@@ -3190,8 +3363,6 @@
   }
 
   decorateIcons();
-  headerMark = markPlayer.attach($('header-mark'), 's');
-  workingMark = markPlayer.attach($('working-mark'), 's');
   warpPlayer.attach($('chat'));
 
   // Whether CEF reports a hidden panel tab decides if the shell must pause the mark itself (Shuttlegent.md section 14.3.8)
@@ -3202,6 +3373,7 @@
   bindPickers();
   bindMemory();
   window.setInterval(refreshMessageTimes, TIME_REFRESH_MS);
+  window.setInterval(refreshElapsed, STEP_TICK_MS);
   bindPanes();
   bindDialogs();
   bindKeyboard();

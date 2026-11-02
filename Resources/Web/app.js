@@ -952,7 +952,11 @@
     const send = $('send');
     const invalid = hasInvalidReference();
     const imagesBlocked = draftState.images.length > 0 && !state.canAttachImages;
-    send.disabled = (!$('draft').value.trim() && !draftState.images.length) || invalid || imagesBlocked || draftState.submitting || state.runtimeLost || !!state.startIssue || state.needsVerify;
+    const empty = !$('draft').value.trim() && !draftState.images.length;
+
+    // As in Claude the send button shows only while there is something to send; it greys out when sending has to wait
+    send.hidden = empty;
+    send.disabled = empty || invalid || imagesBlocked || draftState.submitting || state.runtimeLost || !!state.startIssue || state.needsVerify;
     if (invalid) send.title = '有引用已失效：移除或重新添加后再发送';
     else if (imagesBlocked) send.title = state.attachImagesReason || '现在不能发送图片';
     else if (state.startIssue) send.title = '运行时无法启动：按上方提示处理后重试';
@@ -965,10 +969,7 @@
     const send = $('send');
     const stop = $('stop');
 
-    // While a turn runs the send button queues as a secondary button; stop stays next to it
-    send.classList.toggle('is-queue', state.busy);
-    send.classList.toggle('btn-primary', !state.busy);
-    send.innerHTML = state.busy ? '排队' : icons.svg('send', 16);
+    // While a turn runs the same button queues the message; stop stays next to it
     send.setAttribute('aria-label', state.busy ? '加入队列' : '发送消息');
     updateSendButton();
 
@@ -1006,7 +1007,7 @@
     const mode = currentMode();
     const info = MODES.find((item) => item.value === mode);
     const modeTrigger = $('mode-trigger');
-    modeTrigger.innerHTML = '<span>' + info.label + '</span>' + icons.svg('chevron-down', 12);
+    modeTrigger.innerHTML = '<span>' + info.label + '</span>';
     modeTrigger.title = '模式：' + info.detail + ' · Shift+Tab 切换';
     for (const item of MODES) {
       $('composer').classList.toggle('mode-' + item.value, item.value === mode);
@@ -1333,6 +1334,7 @@
     const card = $('decision');
     const waiting = decision !== null;
     $('composer').hidden = waiting;
+    $('composer-meta').hidden = waiting;
     if (waiting) closePickers();
     card.hidden = !waiting;
     renderTodos();
@@ -1436,6 +1438,12 @@
     draft.style.height = 'auto';
     draft.style.height = Math.min(draft.scrollHeight, DRAFT_MAX_HEIGHT) + 'px';
     draft.style.overflowY = draft.scrollHeight > DRAFT_MAX_HEIGHT ? 'auto' : 'hidden';
+
+    // One line keeps the buttons centred on it whatever the font's line height; from the second line on they stay at the bottom (as in Claude)
+    const style = getComputedStyle(draft);
+    const lineHeight = parseFloat(style.lineHeight);
+    const oneLine = lineHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    $('composer').classList.toggle('is-multiline', draft.scrollHeight > oneLine + lineHeight / 2);
     updateSendButton();
   }
 

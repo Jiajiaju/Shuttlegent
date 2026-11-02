@@ -51,19 +51,20 @@
         <div id="suggestions" class="menu suggestions" role="listbox" aria-label="引用与模板" hidden></div>
         <div id="references" class="composer-refs" aria-label="引用"></div>
         <div id="attachments" class="composer-images" aria-label="图片" hidden></div>
-        <label class="sr-only" for="draft">消息</label>
-        <textarea id="draft" rows="1" placeholder="描述你想在编辑器里完成的事…" aria-autocomplete="list" aria-controls="suggestions"></textarea>
-        <div class="composer-bar">
-          <button class="btn btn-icon btn-sm" id="add-reference" title="添加引用 · Ctrl+Space" aria-label="添加引用"><span data-icon="plus" data-size="14"></span></button>
-          <button class="btn btn-icon btn-sm" id="add-image" title="添加图片（也可以粘贴截图或把图片文件拖进来）" aria-label="添加图片"><span data-icon="attach" data-size="14"></span></button>
-          <span id="command-note" class="composer-note" role="status" hidden></span>
-          <span class="grow"></span>
-          <button id="mode-trigger" class="meta-trigger mode-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="mode-menu"></button>
-          <button id="model-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="model-menu"><span id="model-name"></span><span id="effort-name" class="sub"></span><span data-icon="chevron-down" data-size="12"></span></button>
-          <button id="send" class="btn btn-primary send" title="发送 · Enter" aria-label="发送消息" disabled><span data-icon="send"></span></button>
-          <button id="stop" class="btn send stop" hidden></button>
+        <div class="composer-row">
+          <button class="btn btn-icon" id="add-reference" title="添加引用 · Ctrl+Space" aria-label="添加引用"><span data-icon="plus"></span></button>
+          <button class="btn btn-icon" id="add-image" title="添加图片（也可以粘贴截图或把图片文件拖进来）" aria-label="添加图片"><span data-icon="attach"></span></button>
+          <label class="sr-only" for="draft">消息</label>
+          <textarea id="draft" rows="1" placeholder="描述你想在编辑器里完成的事…" aria-autocomplete="list" aria-controls="suggestions"></textarea>
+          <button id="send" class="btn btn-icon send" title="发送 · Enter" aria-label="发送消息" hidden><span data-icon="enter" data-size="18"></span></button>
+          <button id="stop" class="btn btn-icon send stop" hidden></button>
         </div>
       </section>
+      <div class="composer-meta" id="composer-meta">
+        <span id="command-note" class="composer-note" role="status" hidden></span>
+        <button id="model-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="model-menu"><span id="model-name"></span><span id="effort-name" class="sub"></span></button>
+        <button id="mode-trigger" class="meta-trigger mode-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="mode-menu"></button>
+      </div>
     </div>
   </main>
 

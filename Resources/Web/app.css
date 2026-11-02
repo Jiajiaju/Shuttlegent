@@ -354,13 +354,15 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .chat:not(.is-empty) .composer-column{position:absolute;left:0;right:calc(var(--scrollbar-size) + var(--inspector-space));bottom:0;padding-top:var(--s-4);background:linear-gradient(to bottom,transparent,var(--bg) var(--s-4))}
 .composer-column .composer{z-index:1}
 
-.composer{position:relative;display:flex;flex-direction:column;padding:10px var(--s-2) var(--s-2) var(--s-3);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);transition:border-color var(--t-fast) var(--ease)}
+/* Composer as in Claude: one rounded box with +, attach, the input and send in a row (references and images above them);
+   model and mode sit outside it, below on the right */
+.composer{position:relative;display:flex;flex-direction:column;padding:var(--s-2);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);transition:border-color var(--t-fast) var(--ease)}
 .composer:focus-within{border-color:var(--line-strong)}
 .composer.mode-acceptEdits{border-color:var(--success-line)}
 .composer.mode-auto{border-color:var(--warning-line)}
 .composer.mode-plan{border-color:var(--info-line)}
 .composer.drop-target{border-color:var(--info);box-shadow:0 0 0 1px var(--info)}
-.composer-refs{display:flex;flex-wrap:wrap;gap:var(--s-1-5);padding-bottom:var(--s-2)}
+.composer-refs{display:flex;flex-wrap:wrap;gap:var(--s-1-5);padding:0 var(--s-1) var(--s-2)}
 .composer-refs:empty{display:none}
 .ref{display:inline-flex;align-items:center;gap:var(--s-1);height:var(--h-sm);max-width:100%;min-width:0;padding:0 var(--s-1) 0 var(--s-2);border:1px solid var(--line);border-radius:var(--r-sm);background:var(--raised);font-size:var(--fs-small)}
 .ref>.sg-icon{color:var(--muted)}
@@ -371,34 +373,34 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .ref.invalid{border-color:var(--danger-line);color:var(--danger)}
 .ref.invalid>.sg-icon{color:var(--danger)}
 .ref.invalid .ref-name{text-decoration:line-through}
-.composer-images{display:flex;flex-wrap:wrap;gap:var(--s-3);padding:var(--s-1) 0 10px}
+.composer-images{display:flex;flex-wrap:wrap;gap:var(--s-3);padding:var(--s-1) var(--s-1) 10px}
 .attachment{position:relative}
 .attachment img{display:block;height:72px;width:auto;max-width:180px;object-fit:contain;cursor:zoom-in;border:1px solid var(--line);border-radius:var(--r-md);background:var(--raised)}
 .attachment button{position:absolute;top:-8px;right:-8px;display:grid;place-items:center;width:20px;height:20px;border:1px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);box-shadow:var(--shadow-float);opacity:0;transition:opacity var(--t-fast) var(--ease)}
 .attachment button:hover{color:var(--text);background:var(--raised)}
 .attachment:hover button,.attachment button:focus-visible{opacity:1}
-.composer textarea{display:block;width:100%;min-height:24px;padding:0 var(--s-1) 0 0;border:0;background:transparent;resize:none;outline:none;
-  font-family:var(--font-chat);font-size:var(--chat-font-size);line-height:1.6;color:var(--text);height:calc(var(--chat-font-size) * 1.6);overflow-y:hidden}
+.composer-row{display:flex;align-items:center;gap:var(--s-1);min-width:0}
+.composer.is-multiline .composer-row{align-items:flex-end}
+.composer textarea{display:block;flex:1;min-width:0;min-height:var(--h-md);padding:var(--s-1);border:0;background:transparent;resize:none;outline:none;
+  font-family:var(--font-chat);font-size:var(--chat-font-size);line-height:1.6;color:var(--text);height:var(--h-md);overflow-y:hidden}
 .composer textarea::placeholder{color:var(--faint)}
 .composer textarea:focus-visible{outline:none}
-.composer-bar{display:flex;align-items:center;gap:var(--s-1);margin-top:var(--s-2);min-width:0}
-.composer-bar .grow{flex:1;min-width:0}
-.composer-note{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-small);color:var(--warning);padding:0 var(--s-1)}
+.composer-meta{display:flex;align-items:center;justify-content:flex-end;gap:var(--s-0-5);min-height:26px;margin-top:calc(var(--s-1) - var(--s-2));min-width:0}
+.composer-note{margin-right:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--fs-small);color:var(--warning);padding:0 var(--s-1)}
 #add-image.off{opacity:.45}
 .meta-trigger{display:inline-flex;align-items:center;gap:var(--s-1);height:26px;min-width:0;max-width:220px;padding:0 var(--s-2);border-radius:var(--r-md);font-size:var(--fs-small);color:var(--text);white-space:nowrap;flex-shrink:1;transition:background var(--t-fast) var(--ease)}
 .meta-trigger>span:not(.sg-icon){overflow:hidden;text-overflow:ellipsis}
 .meta-trigger .sub{color:var(--muted)}
-.meta-trigger>.sg-icon{color:var(--faint);flex-shrink:0}
 .meta-trigger:hover:not(:disabled),.meta-trigger[aria-expanded=true]{background:var(--hover)}
 .meta-trigger:disabled{opacity:.4;cursor:not-allowed}
-.mode-trigger{background:var(--raised);color:var(--muted);flex-shrink:0}
-.mode-trigger:hover:not(:disabled),.mode-trigger[aria-expanded=true]{background:var(--raised-hover)}
-.mode-trigger.mode-acceptEdits{background:var(--success-bg);color:var(--success)}
-.mode-trigger.mode-auto{background:var(--warning-bg);color:var(--warning)}
-.mode-trigger.mode-plan{background:var(--info-bg);color:var(--info)}
-.mode-trigger>.sg-icon{color:currentColor;opacity:.7}
-.send{width:28px;height:28px;padding:0;border-radius:var(--r-md)}
-.send.is-queue{width:auto;padding:0 10px;font-size:var(--fs-small)}
+.mode-trigger{flex-shrink:0}
+.mode-trigger.mode-acceptEdits{color:var(--success)}
+.mode-trigger.mode-auto{color:var(--warning)}
+.mode-trigger.mode-plan{color:var(--info)}
+/* Send and stop as in Claude: the bare icon, a raised square under it on hover */
+.send{width:var(--h-md);height:var(--h-md);padding:0;border-radius:var(--r-md);color:var(--text)}
+.send:hover{background:var(--raised);color:var(--text)}
+.send:active{background:var(--raised-hover)}
 .stop.is-stopping .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
 .workbench.narrow #model-trigger{max-width:120px}
 .workbench.narrow #effort-name{display:none}

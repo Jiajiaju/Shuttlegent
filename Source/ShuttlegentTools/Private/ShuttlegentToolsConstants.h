@@ -23,6 +23,15 @@ namespace ShuttlegentToolsConstant
 	inline constexpr int32 MinQuestionOptions = 2;
 	inline constexpr int32 MaxQuestionOptions = 6;
 
+	// ask_choices 选项数的下限与上限；上限与面板每页的缩略图数一致（markdown.js THUMBNAIL_PAGE）
+	inline constexpr int32 MinChoiceOptions = 2;
+	inline constexpr int32 MaxChoiceOptions = 24;
+
+	// ask_choices 选项 id、标题与说明的最大长度（字符数）
+	inline constexpr int32 MaxChoiceIdChars = 64;
+	inline constexpr int32 MaxChoiceTitleChars = 80;
+	inline constexpr int32 MaxChoiceDescriptionChars = 200;
+
 	// 对象路径或包路径的首字符；不以该字符开头的名称视为 Actor 标签
 	inline const TCHAR* PathPrefix = TEXT("/");
 

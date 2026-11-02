@@ -5,6 +5,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "Chat/FShuttlegentChoiceJson.h"
 #include "Chat/FShuttlegentToolPresentation.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
@@ -104,6 +105,39 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* FieldPlan = TEXT("plan");
 	inline const TCHAR* FieldOutcome = TEXT("outcome");
 	inline const TCHAR* FieldFeedback = TEXT("feedback");
+
+	// 选择卡（ask_choices）的会话记录；内容见 FShuttlegentChoiceJson，同一张卡片可有多条，回放时以最后一条为准
+	inline const TCHAR* TranscriptChoice = TEXT("choice");
+
+	// 提交选择卡后发出的用户消息：标题行、选中项（{0} 标题、{1} id）、没有选中、逐项评语、整体意见
+	inline const TCHAR* ChoiceMessageHeader = TEXT("关于“{0}”，我的选择：");
+	inline const TCHAR* ChoiceMessageSelected = TEXT("\n- 选中：");
+	inline const TCHAR* ChoiceMessageItem = TEXT("{0}（id: {1}）");
+	inline const TCHAR* ChoiceMessageItemSeparator = TEXT("、");
+	inline const TCHAR* ChoiceMessageNoneSelected = TEXT("\n- 没有选中任何一项");
+	inline const TCHAR* ChoiceMessageNote = TEXT("\n- {0}（id: {1}）的评语：{2}");
+	inline const TCHAR* ChoiceMessageOverall = TEXT("\n- 整体意见：{0}");
+
+	/** 选择卡提交后作为用户消息发给 Agent 的文字：选中项与评语都带上选项 id。 */
+	FString ComposeChoiceMessage(const FShuttlegentChoiceRequest& Request, const FShuttlegentChoiceAnswer& Answer)
+	{
+		FString Message = FString::Format(ChoiceMessageHeader, { Request.Question });
+
+		TArray<FString> Picked;
+		for (const FShuttlegentChoiceOption& Option : Request.Options)
+		{
+			if (Answer.Selected.Contains(Option.Id)) Picked.Add(FString::Format(ChoiceMessageItem, { Option.Title, Option.Id }));
+		}
+		Message += Picked.IsEmpty() ? FString(ChoiceMessageNoneSelected) : ChoiceMessageSelected + FString::Join(Picked, ChoiceMessageItemSeparator);
+
+		for (const FShuttlegentChoiceOption& Option : Request.Options)
+		{
+			const FString* Note = Answer.ItemNotes.Find(Option.Id);
+			if (Note != nullptr) Message += FString::Format(ChoiceMessageNote, { Option.Title, Option.Id, *Note });
+		}
+		if (!Answer.OverallNote.IsEmpty()) Message += FString::Format(ChoiceMessageOverall, { Answer.OverallNote });
+		return Message;
+	}
 
 	// 交出计划的会话不在面板中时退回给 Agent 的说明
 	inline const TCHAR* PlanReviewNoConversation = TEXT("Nobody can review this plan: the session is not open in the editor panel. Stop and tell the user.");
@@ -270,6 +304,7 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 		QuestionGate = Questions;
 		Questions->OnChanged.AddSP(this, &FShuttlegentChatModel::HandleQuestionsChanged);
 		Questions->OnClosed.AddSP(this, &FShuttlegentChatModel::HandleQuestionClosed);
+		Questions->OnChoicePresented.AddSP(this, &FShuttlegentChatModel::HandleChoicePresented);
 	}
 	FShuttlegentMemoryStore::OnChanged().AddSP(this, &FShuttlegentChatModel::HandleMemoryChanged);
 
@@ -331,6 +366,7 @@ void FShuttlegentChatModel::Shutdown()
 	{
 		Questions->OnChanged.RemoveAll(this);
 		Questions->OnClosed.RemoveAll(this);
+		Questions->OnChoicePresented.RemoveAll(this);
 	}
 	QuestionGate.Reset();
 	FShuttlegentMemoryStore::OnChanged().RemoveAll(this);
@@ -484,6 +520,9 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(const FString& Text,
 
 	FText PlanReason;
 	if (bEnterPlanMode && !CanSetPlanMode(PlanReason)) return EShuttlegentSubmitResult::Rejected;
+
+	// 用户没在卡片上作答而是直接发了消息：卡片不再等待
+	SettleChoice(*Current, ShuttlegentEditorWebField::ChoiceUnanswered, FShuttlegentChoiceAnswer());
 
 	if (!IsBusy(*Current))
 	{
@@ -1137,6 +1176,9 @@ bool FShuttlegentChatModel::NeedsInput(const FShuttlegentConversation& Conversat
 	const EShuttlegentChatStatus Status = GetStatus(Conversation);
 	if (Status == EShuttlegentChatStatus::AwaitingWriteConfirmation || Status == EShuttlegentChatStatus::AwaitingPermission || Status == EShuttlegentChatStatus::AwaitingPlanReview) return true;
 
+	// 回合结束后仍在等待的选择卡同样等用户作答
+	if (Conversation.ChoiceEntryId != 0 && !IsPrompting(Conversation)) return true;
+
 	return GetPendingQuestion() != nullptr && IsPrompting(Conversation);
 }
 
@@ -1453,6 +1495,89 @@ void FShuttlegentChatModel::SettlePlanReview(FShuttlegentConversation& Conversat
 	AddRunLog(Conversation, FText::Format(LOCTEXT("LogPlanSettled", "计划审批：{0}"), FText::FromString(Outcome)), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
+}
+
+void FShuttlegentChatModel::HandleChoicePresented(const FShuttlegentChoiceRequest& Request)
+{
+	// 工具调用不指明会话：归属正在运行回合的对话，当前对话优先
+	TSharedPtr<FShuttlegentConversation> Owner = Current;
+	if (!IsPrompting(*Owner))
+	{
+		const TSharedPtr<FShuttlegentConversation>* Prompting = Conversations.FindByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Held) { return IsPrompting(*Held); });
+		Owner = Prompting != nullptr ? *Prompting : Current;
+	}
+
+	// 同一对话只保留一张等待中的卡片
+	SettleChoice(*Owner, ShuttlegentEditorWebField::ChoiceUnanswered, FShuttlegentChoiceAnswer());
+
+	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Owner, EShuttlegentChatEntryKind::Choice, Request.Question);
+	Entry->Choice = Request;
+	Entry->Status = ShuttlegentEditorWebField::ChoicePending;
+	Owner->ChoiceEntryId = Entry->Id;
+	RecordChoice(*Owner, *Entry);
+
+	AddRunLog(*Owner, FText::Format(LOCTEXT("LogChoicePresented", "Agent 交出选择卡：{0}"), FText::FromString(Request.Question)), false);
+	NotifyStructure(*Owner);
+	NotifyStatus(*Owner);
+	OnSessionsChanged.Broadcast();
+}
+
+bool FShuttlegentChatModel::SubmitChoice(int32 EntryId, const FString& AnswerJson, FText& OutReason)
+{
+	TSharedPtr<FShuttlegentChatEntry>* Found = Current->Entries.FindByPredicate([EntryId](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Id == EntryId; });
+	if (Found == nullptr || Current->ChoiceEntryId != EntryId)
+	{
+		OutReason = LOCTEXT("ChoiceClosed", "这张选择卡已不在等待作答。");
+		return false;
+	}
+
+	FShuttlegentChoiceAnswer Answer;
+	if (!FShuttlegentChoiceJson::ParseAnswer(AnswerJson, (*Found)->Choice, Answer) || (Answer.Selected.IsEmpty() && Answer.ItemNotes.IsEmpty() && Answer.OverallNote.IsEmpty()))
+	{
+		OutReason = LOCTEXT("ChoiceEmpty", "先选择一项或写下意见再提交。");
+		return false;
+	}
+
+	// 与 SubmitDraft 的拒绝条件一致；先查，免得卡片已标为提交而消息没有发出
+	if (bRuntimeLost || StartIssue != EShuttlegentStartIssue::None || Current->bNeedsVerify)
+	{
+		OutReason = LOCTEXT("ChoiceBlocked", "现在不能发送消息：先处理上方的提示。");
+		return false;
+	}
+
+	const FString Message = ShuttlegentChatModelPrivate::ComposeChoiceMessage((*Found)->Choice, Answer);
+	SettleChoice(*Current, ShuttlegentEditorWebField::ChoiceAnswered, Answer);
+
+	TArray<FString> InvalidPaths;
+	SubmitDraft(Message, TArray<FShuttlegentReference>(), false, TArray<FShuttlegentPromptImage>(), InvalidPaths);
+	return true;
+}
+
+void FShuttlegentChatModel::SettleChoice(FShuttlegentConversation& Conversation, const TCHAR* Status, const FShuttlegentChoiceAnswer& Answer)
+{
+	if (Conversation.ChoiceEntryId == 0) return;
+
+	const int32 EntryId = Conversation.ChoiceEntryId;
+	Conversation.ChoiceEntryId = 0;
+	TSharedPtr<FShuttlegentChatEntry>* Found = Conversation.Entries.FindByPredicate([EntryId](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Id == EntryId; });
+	if (Found == nullptr) return;
+
+	(*Found)->Status = Status;
+	(*Found)->ChoiceAnswer = Answer;
+	RecordChoice(Conversation, **Found);
+
+	AddRunLog(Conversation, FText::Format(LOCTEXT("LogChoiceSettled", "选择卡：{0}"), FText::FromString(Status)), false);
+	NotifyStructure(Conversation);
+	NotifyStatus(Conversation);
+	OnSessionsChanged.Broadcast();
+}
+
+void FShuttlegentChatModel::RecordChoice(const FShuttlegentConversation& Conversation, const FShuttlegentChatEntry& Entry) const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || Conversation.SessionId.IsEmpty()) return;
+
+	Pinned->GetSessionStore().AppendTranscript(Conversation.SessionId, ShuttlegentChatModelPrivate::TranscriptChoice, FShuttlegentChoiceJson::ToJson(Entry.Choice, Entry.ChoiceAnswer, Entry.Status));
 }
 
 bool FShuttlegentChatModel::IsPlanTurnRunning() const
@@ -2059,6 +2184,21 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldOutcome, Entry->Status);
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldFeedback, Entry->Detail);
 		}
+		else if (Kind == ShuttlegentChatModelPrivate::TranscriptChoice)
+		{
+			FShuttlegentChoiceRequest Request;
+			FShuttlegentChoiceAnswer Answer;
+			FString Status;
+			if (!FShuttlegentChoiceJson::FromJson(**Data, Request, Answer, Status)) continue;
+
+			// 同一张卡片先记出现、后记结束，后一条更新同一条目
+			TSharedPtr<FShuttlegentChatEntry>* Found = Conversation.Entries.FindByPredicate([&Request](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::Choice && Entry->Choice.ChoiceKey == Request.ChoiceKey; });
+			const TSharedPtr<FShuttlegentChatEntry> Entry = Found != nullptr ? *Found : AddEntry(Conversation, EShuttlegentChatEntryKind::Choice, Request.Question);
+			Entry->Choice = MoveTemp(Request);
+			Entry->ChoiceAnswer = MoveTemp(Answer);
+			Entry->Status = Status;
+			Conversation.ChoiceEntryId = Status == ShuttlegentEditorWebField::ChoicePending ? Entry->Id : 0;
+		}
 	}
 	NotifyStructure(Conversation);
 }
@@ -2187,6 +2327,9 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	// 缺少密钥或密钥被拒绝会导致每个回合都失败，因此以启动引导卡片显示，而不是显示为某一个失败的回合
 	const EShuttlegentStartIssue KeyIssue = ErrorMessage.IsEmpty() ? EShuttlegentStartIssue::None : FShuttlegentAgentService::ClassifyError(ErrorMessage);
 	if (KeyIssue == EShuttlegentStartIssue::MissingKey || KeyIssue == EShuttlegentStartIssue::AuthFailed) RecordStartIssue(KeyIssue, ErrorMessage);
+
+	// 用户停止的回合里交出的选择卡随之取消
+	if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) SettleChoice(Conversation, ShuttlegentEditorWebField::ChoiceCancelled, FShuttlegentChoiceAnswer());
 
 	if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Completed) AddRunLog(Conversation, LOCTEXT("LogTurnCompleted", "本轮结束"), false);
 	else if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) AddRunLog(Conversation, LOCTEXT("LogTurnStopped", "本轮已停止"), true);

@@ -36,5 +36,8 @@ enum class EShuttlegentChatEntryKind : uint8
 	Plan,
 
 	// 个人记忆的一行提示：本对话读取了几条记忆，或 Agent 记住、更新、忘记了一条（可撤销）
-	Memory
+	Memory,
+
+	// Agent 交出的选择卡（ask_choices）及其状态：等待作答、已提交（附选择）、未作答或已取消
+	Choice
 };

@@ -4,10 +4,12 @@
 #include "Containers/Ticker.h"
 
 #include "QuestionGate/EShuttlegentQuestionOutcome.h"
+#include "QuestionGate/FShuttlegentChoiceRequest.h"
 #include "QuestionGate/FShuttlegentQuestion.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentQuestionsChanged);
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnShuttlegentQuestionClosed, const FShuttlegentQuestion& /*Question*/, EShuttlegentQuestionOutcome /*Outcome*/, const FString& /*Answer*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChoicePresented, const FShuttlegentChoiceRequest& /*Request*/);
 
 /**
  * agent 通过 ask_user 向用户提出的问题，等待面板作答。工作方式与写入门相同：问题一直等待，直到面板对其
@@ -22,6 +24,9 @@ public:
 
 	/** 有问题离开提问通道，附带离开方式及答案（如有）。 */
 	FOnShuttlegentQuestionClosed OnClosed;
+
+	/** Agent 交出一张选择卡（ask_choices）；面板把它放进对话，不在此等待作答。 */
+	FOnShuttlegentChoicePresented OnChoicePresented;
 
 private:
 	/** 按到达顺序排列的等待中问题，及工具的回调。 */
@@ -42,6 +47,9 @@ public:
 
 	/** 向用户提问；OnClosed 以结果和答案运行一次。返回问题 id。 */
 	int32 Ask(FShuttlegentQuestion Question, TFunction<void(EShuttlegentQuestionOutcome, const FString&)> OnClosedCallback);
+
+	/** 把选择卡交给面板并立即返回；没有打开的面板时返回 false，Agent 改为在回复中列出选项。 */
+	bool PresentChoice(FShuttlegentChoiceRequest Request);
 
 	/** 用户的答案或跳过；问题已不在等待时返回 false，因此重复点击不产生作用。 */
 	bool Answer(int32 QuestionId, const FString& InAnswer, bool bSkip);

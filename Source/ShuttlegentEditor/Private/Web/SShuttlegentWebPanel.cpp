@@ -172,6 +172,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnRetry = nullptr;
 	Bridge->OnAnswerWrite = nullptr;
 	Bridge->OnAnswerQuestion = nullptr;
+	Bridge->OnSubmitChoice = nullptr;
 	Bridge->OnUndoWrite = nullptr;
 	Bridge->OnUndoMemory = nullptr;
 	Bridge->OnForgetMemory = nullptr;
@@ -403,6 +404,11 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
 		if (Pinned.IsValid()) Pinned->AnswerQuestion(QuestionId, Answer, bSkip);
+	};
+	Bridge->OnSubmitChoice = [WeakThis](int32 EntryId, const FString& AnswerJson)
+	{
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) This->HandleSubmitChoice(EntryId, AnswerJson);
 	};
 	Bridge->OnUndoWrite = [WeakModel](int32 EntryId)
 	{
@@ -763,6 +769,17 @@ void SShuttlegentWebPanel::PushReferenceValidity()
 		Validity->SetBoolField(Reference.Path, FShuttlegentReferenceFinder::Exists(Reference));
 	}
 	CallPage(ShuttlegentEditorWeb::JsOnReferenceValidity, FShuttlegentWebJson::ToJson(Validity));
+}
+
+void SShuttlegentWebPanel::HandleSubmitChoice(int32 EntryId, const FString& AnswerJson)
+{
+	FText Reason;
+	if (!Model.IsValid() || Model->SubmitChoice(EntryId, AnswerJson, Reason)) return;
+
+	const TSharedRef<FJsonObject> Result = MakeShared<FJsonObject>();
+	Result->SetNumberField(ShuttlegentEditorWebField::Id, EntryId);
+	Result->SetStringField(ShuttlegentEditorWebField::Reason, Reason.ToString());
+	CallPage(ShuttlegentEditorWeb::JsOnChoiceRejected, FShuttlegentWebJson::ToJson(Result));
 }
 
 void SShuttlegentWebPanel::HandleRequestThumbnails(const FString& PathsJson)

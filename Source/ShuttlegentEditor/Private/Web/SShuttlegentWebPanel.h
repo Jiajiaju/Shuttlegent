@@ -137,6 +137,9 @@ private:
 	/** 告知页面哪些被监视的引用仍然存在。 */
 	void PushReferenceValidity();
 
+	/** 提交选择卡；被拒绝时经 onChoiceRejected 把原因交给页面。 */
+	void HandleSubmitChoice(int32 EntryId, const FString& AnswerJson);
+
 	/** 页面请求的资产缩略图（对象路径的 JSON 数组）加入队列。 */
 	void HandleRequestThumbnails(const FString& PathsJson);
 

@@ -125,6 +125,11 @@ void UShuttlegentWebBridge::AnswerWrite(int32 RequestId, bool bApprove)
 	if (OnAnswerWrite) OnAnswerWrite(RequestId, bApprove);
 }
 
+void UShuttlegentWebBridge::SubmitChoice(int32 EntryId, const FString& AnswerJson)
+{
+	if (OnSubmitChoice) OnSubmitChoice(EntryId, AnswerJson);
+}
+
 void UShuttlegentWebBridge::AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip)
 {
 	if (OnAnswerQuestion) OnAnswerQuestion(QuestionId, Answer, bSkip);

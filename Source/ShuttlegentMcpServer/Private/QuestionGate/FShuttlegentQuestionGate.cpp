@@ -75,6 +75,20 @@ int32 FShuttlegentQuestionGate::Ask(FShuttlegentQuestion Question, TFunction<voi
 	return QuestionId;
 }
 
+bool FShuttlegentQuestionGate::PresentChoice(FShuttlegentChoiceRequest Request)
+{
+	if (!bAnswererAttached || !OnChoicePresented.IsBound())
+	{
+		UE_LOG(LogShuttlegent, Log, TEXT("Choice card not shown: no Shuttlegent panel is open."));
+		return false;
+	}
+
+	Request.ChoiceKey = FGuid::NewGuid().ToString(EGuidFormats::Digits);
+	UE_LOG(LogShuttlegent, Log, TEXT("Choice card %s shown: %d option(s), multi-select %s."), *Request.ChoiceKey, Request.Options.Num(), Request.bMultiSelect ? TEXT("on") : TEXT("off"));
+	OnChoicePresented.Broadcast(Request);
+	return true;
+}
+
 bool FShuttlegentQuestionGate::Answer(int32 QuestionId, const FString& InAnswer, bool bSkip)
 {
 	if (!Callbacks.Contains(QuestionId)) return false;

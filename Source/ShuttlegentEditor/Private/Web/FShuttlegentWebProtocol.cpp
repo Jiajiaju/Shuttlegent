@@ -8,6 +8,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
+#include "Chat/FShuttlegentChoiceJson.h"
 #include "Chat/FShuttlegentToolPresentation.h"
 #include "Chat/ShuttlegentChatModel.h"
 #include "Reference/FShuttlegentReferencePrompt.h"
@@ -124,6 +125,10 @@ namespace FShuttlegentWebProtocolPrivate
 		case EShuttlegentChatEntryKind::Memory:
 			{
 				return ShuttlegentEditorWebField::KindMemory;
+			}
+		case EShuttlegentChatEntryKind::Choice:
+			{
+				return ShuttlegentEditorWebField::KindChoice;
 			}
 		case EShuttlegentChatEntryKind::Notice:
 		default:
@@ -984,6 +989,8 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 		Item->SetStringField(ShuttlegentEditorWebField::PlanStatus, Entry.Status);
 		Item->SetStringField(ShuttlegentEditorWebField::PlanFeedback, Entry.Detail);
 	}
+
+	if (Entry.Kind == EShuttlegentChatEntryKind::Choice) Item->SetObjectField(ShuttlegentEditorWebField::Choice, FShuttlegentChoiceJson::ToJson(Entry.Choice, Entry.ChoiceAnswer, Entry.Status));
 
 	if (Entry.Kind == EShuttlegentChatEntryKind::Permission)
 	{

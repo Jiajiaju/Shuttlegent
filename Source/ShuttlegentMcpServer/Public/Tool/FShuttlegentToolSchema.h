@@ -26,6 +26,9 @@ public:
 	/** 取值必须为 Values 之一的字符串。 */
 	FShuttlegentToolSchema& Enum(const FString& Name, const FString& Description, const TArray<FString>& Values, bool bRequired = false);
 
+	/** 对象数组，每个元素的结构由 Item 描述；元素个数限定在 MinItems～MaxItems。 */
+	FShuttlegentToolSchema& ObjectArray(const FString& Name, const FString& Description, const FShuttlegentToolSchema& Item, int32 MinItems, int32 MaxItems, bool bRequired = false);
+
 	/** 定长数值数组，例如位置 [x, y, z]。 */
 	FShuttlegentToolSchema& NumberTuple(const FString& Name, const FString& Description, int32 Length, bool bRequired = false);
 

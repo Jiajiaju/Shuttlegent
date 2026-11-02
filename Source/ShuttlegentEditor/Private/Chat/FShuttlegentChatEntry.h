@@ -5,6 +5,8 @@
 #include "FShuttlegentMemoryChange.h"
 
 #include "Chat/EShuttlegentChatEntryKind.h"
+#include "Chat/FShuttlegentChoiceAnswer.h"
+#include "QuestionGate/FShuttlegentChoiceRequest.h"
 #include "WriteGate/FShuttlegentWriteResult.h"
 
 /** 聊天面板中的一行。控件通过属性读取它，因此流式文本无需重建。 */
@@ -65,6 +67,10 @@ struct FShuttlegentChatEntry
 
 	/** 记忆条目：Agent 所做的修改，撤销时据此还原（bUndone 记录已撤销）；读取提示的 Text 为条数。 */
 	FShuttlegentMemoryChange MemoryChange {};
+
+	/** 选择卡条目：卡片内容与用户提交的选择；状态写在 Status（ShuttlegentEditorWebField::Choice*）。 */
+	FShuttlegentChoiceRequest Choice {};
+	FShuttlegentChoiceAnswer ChoiceAnswer {};
 
 	/** 用于答复待处理权限请求的稳定 id。 */
 	int32 Id = 0;

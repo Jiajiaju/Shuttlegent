@@ -67,6 +67,15 @@ FShuttlegentToolSchema& FShuttlegentToolSchema::Enum(const FString& Name, const 
 	return Add(Name, Property, bRequired);
 }
 
+FShuttlegentToolSchema& FShuttlegentToolSchema::ObjectArray(const FString& Name, const FString& Description, const FShuttlegentToolSchema& Item, int32 MinItems, int32 MaxItems, bool bRequired)
+{
+	const TSharedRef<FJsonObject> Property = FShuttlegentToolSchemaPrivate::MakeProperty(ShuttlegentMcpTool::TypeArray, Description);
+	Property->SetObjectField(ShuttlegentMcpTool::SchemaItems, Item.Build());
+	Property->SetNumberField(ShuttlegentMcpTool::SchemaMinItems, MinItems);
+	Property->SetNumberField(ShuttlegentMcpTool::SchemaMaxItems, MaxItems);
+	return Add(Name, Property, bRequired);
+}
+
 FShuttlegentToolSchema& FShuttlegentToolSchema::NumberTuple(const FString& Name, const FString& Description, int32 Length, bool bRequired)
 {
 	const TSharedRef<FJsonObject> Property = FShuttlegentToolSchemaPrivate::MakeProperty(ShuttlegentMcpTool::TypeArray, Description);

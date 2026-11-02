@@ -193,6 +193,10 @@
   const PLAN_STATUS_TEXT = { pending: '待审批', approved: '已批准', revised: '已退回', cancelled: '已取消' };
   const PLAN_STATUS_TONE = { pending: 'warning', approved: 'success', revised: 'warning', cancelled: '' };
 
+  // Choice cards (ask_choices): the chip of each state
+  const CHOICE_STATUS_TEXT = { pending: '等待你的选择', answered: '已提交', unanswered: '未作答', cancelled: '已取消' };
+  const CHOICE_STATUS_TONE = { pending: 'warning', answered: 'success', unanswered: '', cancelled: '' };
+
   const state = {
     status: 'notConnected',
     connected: false,
@@ -255,6 +259,9 @@
   // load — and the asset paths whose thumbnails the editor is still fetching
   const imageStates = new Map();
   const requestedThumbnails = new Set();
+  // What the user has picked and written on each waiting choice card, by entry id, so redraws keep it:
+  // { selected: [ids], notes: { id: text }, overall, open: [ids whose note field is open], submitting, error }
+  const choiceDrafts = new Map();
   // Replies whose "show more" was used: how many asset thumbnails each now shows (markdown.thumbnailPage when absent)
   const thumbnailLimits = new Map();
   const view = {
@@ -328,7 +335,6 @@
   let emptyMark = null;
   // The message input (composer-editor.js), created by bindComposer; its value is Markdown
   let draftInput = null;
-  let hasUnseenContent = false;
 
   function bridge() {
     return window.ue && window.ue.bridge ? window.ue.bridge : null;
@@ -740,6 +746,105 @@
       + '<div class="markdown" style="font-size:.92em">' + rendered.html + '</div>' + feedback + '</article>';
   }
 
+  function choiceDraft(entryId) {
+    if (!choiceDrafts.has(entryId)) choiceDrafts.set(entryId, { selected: [], notes: {}, overall: '', open: [], submitting: false, error: '' });
+    return choiceDrafts.get(entryId);
+  }
+
+  /** One option of a choice card: its picture (same frame as a reply image), pick mark, title, line of description and its note. */
+  function choiceOptionHtml(choice, option, draft, live) {
+    const picked = draft.selected.includes(option.id);
+    const note = draft.notes[option.id] || '';
+    const frame = option.image ? markdown.imageFrameFor(option.image) : '';
+    const mark = '<span class="choice-mark' + (choice.multiSelect ? ' is-check' : ' is-radio') + '" aria-hidden="true">' + (picked ? icons.svg('check', 12) : '') + '</span>';
+
+    let noteHtml = '';
+    if (choice.itemNotes && live) {
+      noteHtml = draft.open.includes(option.id) || note
+        ? '<textarea class="field choice-note" data-choice-note="' + esc(option.id) + '" rows="2" placeholder="对这一项的评语" aria-label="' + esc(option.title) + ' 的评语">' + esc(note) + '</textarea>'
+        : '<button class="btn btn-ghost btn-sm choice-note-open" data-choice-note-open="' + esc(option.id) + '">' + icons.svg('edit', 12) + '写评语</button>';
+    } else if (note) {
+      noteHtml = '<div class="choice-note-text">' + esc(note) + '</div>';
+    }
+
+    const role = live ? ' role="' + (choice.multiSelect ? 'checkbox' : 'radio') + '" aria-checked="' + picked + '" tabindex="0"' : '';
+    return '<div class="choice-option' + (picked ? ' picked' : '') + (live ? '' : ' readonly') + '" data-choice-option="' + esc(option.id) + '"' + role + '>'
+      + (frame ? '<div class="choice-image">' + frame + '</div>' : '')
+      + '<div class="choice-body">' + mark + '<div class="choice-text"><div class="choice-title">' + esc(option.title) + '</div>' + (option.description ? '<div class="choice-desc">' + esc(option.description) + '</div>' : '') + '</div></div>'
+      + noteHtml + '</div>';
+  }
+
+  /**
+   * A choice card (ask_choices) in the conversation: options to pick (one or several), notes per option and overall when the card
+   * allows them, and Submit, which sends the choice as the next message. Once it is no longer waiting it shows what was sent.
+   */
+  function renderChoice(entry) {
+    const choice = entry.choice || { options: [] };
+    const status = choice.status || 'pending';
+    const live = status === 'pending';
+    const draft = live ? choiceDraft(entry.id) : { selected: choice.selected || [], notes: choice.notes || {}, overall: choice.overall || '', open: [], submitting: false, error: '' };
+    const tone = CHOICE_STATUS_TONE[status] ? ' chip-' + CHOICE_STATUS_TONE[status] : '';
+    const head = '<div class="card-head">' + icons.svg('question', 16).replace('class="sg-icon"', 'class="sg-icon tone-info"') + '<span class="card-title">' + esc(choice.question || '') + '</span><span class="chip' + tone + '">' + esc(CHOICE_STATUS_TEXT[status] || status) + '</span></div>';
+    const options = '<div class="choice-grid">' + (choice.options || []).map((option) => choiceOptionHtml(choice, option, draft, live)).join('') + '</div>';
+
+    let overall = '';
+    if (choice.overallNote && live) overall = '<textarea class="field choice-overall" data-choice-overall="' + entry.id + '" rows="2" placeholder="整体意见（可不填）" aria-label="整体意见">' + esc(draft.overall) + '</textarea>';
+    else if (draft.overall) overall = '<div class="choice-note-text">整体意见：' + esc(draft.overall) + '</div>';
+
+    const error = draft.error ? '<div class="card-desc is-danger">' + esc(draft.error) + '</div>' : '';
+    const hint = (choice.multiSelect ? '可多选' : '选一项') + ' · 双击图片放大';
+    const foot = live ? '<div class="card-foot"><span class="hint">' + hint + '</span><button class="btn btn-primary" data-choice-submit="' + entry.id + '"' + (draft.submitting ? ' disabled' : '') + '>' + (draft.submitting ? '提交中…' : '提交') + '</button></div>' : '';
+    return '<article class="card choice-card ' + esc(status) + '" data-entry="' + entry.id + '" data-choice="' + entry.id + '">' + head + options + overall + error + foot + '</article>';
+  }
+
+  /** Redraws one choice card after a pick or a note field opens; its thumbnails come from the cache or are asked for. */
+  function redrawChoice(entryId) {
+    changedIds.add(entryId);
+    renderConversation(false);
+    changedIds = new Set();
+    requestThumbnails();
+  }
+
+  function toggleChoiceOption(card, optionId) {
+    const entryId = Number(card.dataset.choice);
+    const entry = state.entries.get(entryId);
+    if (!entry || !entry.choice || entry.choice.status !== 'pending') return;
+
+    const draft = choiceDraft(entryId);
+    const index = draft.selected.indexOf(optionId);
+    if (index >= 0) draft.selected.splice(index, 1);
+    else if (entry.choice.multiSelect) draft.selected.push(optionId);
+    else draft.selected = [optionId];
+    draft.error = '';
+    redrawChoice(entryId);
+  }
+
+  function submitChoice(entryId) {
+    const draft = choiceDraft(entryId);
+    const notes = {};
+    for (const id in draft.notes) {
+      if (draft.notes[id].trim()) notes[id] = draft.notes[id].trim();
+    }
+    if (!draft.selected.length && !Object.keys(notes).length && !draft.overall.trim()) {
+      draft.error = '先选择一项或写下意见再提交';
+      redrawChoice(entryId);
+      return;
+    }
+
+    draft.submitting = true;
+    draft.error = '';
+    redrawChoice(entryId);
+    call('submitchoice', entryId, JSON.stringify({ selected: draft.selected, notes: notes, overall: draft.overall.trim() }));
+  }
+
+  /** The editor refused a choice card's submission: { id, reason }. */
+  function onChoiceRejected(result) {
+    const draft = choiceDraft(result.id);
+    draft.submitting = false;
+    draft.error = result.reason || '现在不能提交';
+    redrawChoice(result.id);
+  }
+
   /** A divider row in the conversation (feature plan C7): compacting now, how much it took away, or why it failed. */
   function renderCompaction(entry) {
     const how = entry.manual ? '手动' : '自动';
@@ -785,6 +890,8 @@
         return renderCompaction(entry);
       case 'plan':
         return renderPlan(entry);
+      case 'choice':
+        return renderChoice(entry);
       default:
         return renderNotice(entry);
     }
@@ -798,8 +905,14 @@
   function scrollToEnd() {
     const scroller = $('conversation');
     scroller.scrollTop = scroller.scrollHeight;
-    hasUnseenContent = false;
-    $('back-bottom').hidden = true;
+    updateBackBottom();
+  }
+
+  /** The round button above the composer: shown whenever the view is away from the end; three dots while the turn still writes below. */
+  function updateBackBottom() {
+    const button = $('back-bottom');
+    button.hidden = state.order.length === 0 || isAtEnd();
+    button.classList.toggle('is-live', !!state.prompting);
   }
 
   // An empty conversation keeps the composer at the bottom and centres the large mark in the space above it; the inspector stays away until the first message
@@ -876,9 +989,8 @@
     // shorter conversation after a switch) there is nothing to go back to
     if (atEnd || state.order.length === 0 || isAtEnd()) {
       scrollToEnd();
-    } else if (!reset) {
-      hasUnseenContent = true;
-      $('back-bottom').hidden = false;
+    } else {
+      updateBackBottom();
     }
   }
 
@@ -2816,6 +2928,7 @@
       imageStates.clear();
       requestedThumbnails.clear();
       thumbnailLimits.clear();
+      choiceDrafts.clear();
     }
     if ('fontSize' in message) {
       document.documentElement.style.setProperty('--chat-font-size', message.fontSize + 'px');
@@ -2888,6 +3001,7 @@
     }
 
     requestThumbnails();
+    if ('prompting' in message) updateBackBottom();
   }
 
   /** A font stack from Editor Preferences: the names that pass FONT_NAME, quoted, in front of the fallback stack. */
@@ -2953,6 +3067,7 @@
     onReferenceResults: onReferenceResults,
     onReferenceValidity: onReferenceValidity,
     onThumbnails: onThumbnails,
+    onChoiceRejected: onChoiceRejected,
     onSubmitResult: onSubmitResult,
     onQueueItemTaken: onQueueItemTaken,
     onDrawerState(open) {
@@ -3086,14 +3201,35 @@
   function bindConversation() {
     trackComposerHeight();
     $('back-bottom').addEventListener('click', scrollToEnd);
-    $('conversation').addEventListener('scroll', () => {
-      if (hasUnseenContent && isAtEnd()) {
-        hasUnseenContent = false;
-        $('back-bottom').hidden = true;
-      }
+    $('conversation').addEventListener('scroll', updateBackBottom);
+
+    $('messages').addEventListener('input', (event) => {
+      const card = event.target.closest('[data-choice]');
+      if (!card) return;
+
+      const draft = choiceDraft(Number(card.dataset.choice));
+      if (event.target.dataset.choiceNote !== undefined) draft.notes[event.target.dataset.choiceNote] = event.target.value;
+      else if (event.target.dataset.choiceOverall !== undefined) draft.overall = event.target.value;
+    });
+    $('messages').addEventListener('keydown', (event) => {
+      const option = event.target.closest('[data-choice-option]');
+      if (!option || event.target !== option || (event.key !== ' ' && event.key !== 'Enter')) return;
+
+      event.preventDefault();
+      const card = option.closest('[data-choice]');
+      const optionId = option.dataset.choiceOption;
+      toggleChoiceOption(card, optionId);
+      const again = [...document.querySelectorAll('[data-choice="' + card.dataset.choice + '"] [data-choice-option]')].find((item) => item.dataset.choiceOption === optionId);
+      if (again) again.focus();
     });
 
     $('messages').addEventListener('dblclick', (event) => {
+      const picture = event.target.closest('.choice-image img');
+      if (picture) {
+        openImageViewer(picture.src);
+        return;
+      }
+
       const link = event.target.closest('[data-obj-path]');
       if (link) revealObject(link, true);
     });
@@ -3120,6 +3256,30 @@
     });
 
     $('messages').addEventListener('click', (event) => {
+      const choiceSubmit = event.target.closest('[data-choice-submit]');
+      if (choiceSubmit) {
+        submitChoice(Number(choiceSubmit.dataset.choiceSubmit));
+        return;
+      }
+
+      const choiceNoteOpen = event.target.closest('[data-choice-note-open]');
+      if (choiceNoteOpen) {
+        const entryId = Number(choiceNoteOpen.closest('[data-choice]').dataset.choice);
+        const optionId = choiceNoteOpen.dataset.choiceNoteOpen;
+        choiceDraft(entryId).open.push(optionId);
+        redrawChoice(entryId);
+        const field = [...document.querySelectorAll('[data-choice="' + entryId + '"] [data-choice-note]')].find((item) => item.dataset.choiceNote === optionId);
+        if (field) field.focus();
+        return;
+      }
+
+      // A click on a choice card's option picks it; its fields and links keep their own clicks, and a double click opens the picture
+      const choiceOption = event.target.closest('[data-choice-option]');
+      if (choiceOption && !event.target.closest('textarea, button, a')) {
+        toggleChoiceOption(choiceOption.closest('[data-choice]'), choiceOption.dataset.choiceOption);
+        return;
+      }
+
       const moreThumbnails = event.target.closest('[data-more-thumbnails]');
       if (moreThumbnails) {
         showMoreThumbnails(Number(moreThumbnails.dataset.moreThumbnails));

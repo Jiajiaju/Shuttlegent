@@ -248,6 +248,11 @@ flowchart TB
   - 显示：圆角加 1px 边框，最大 320×240，保持比例，下方一行灰色说明；只由图片组成的段落横排并换行；单击图片用现有图片查看器放大。
   - 缩略图按需抓取：页面渲染后把还没有取过的资产路径经 `UShuttlegentWebBridge::RequestThumbnails`（JSON 数组，每次最多 24 个）交给编辑器。`FShuttlegentAssetThumbnails` 排队，每个 Core Ticker tick 取一张，按顺序尝试 `ThumbnailTools::FindCachedThumbnail`（内存）→ `LoadThumbnailFromPackage`（读 .uasset，不加载资产）→ `RenderThumbnail`（同步加载后以 256 像素现渲染，`NeverFlush`，不等待流送与着色器编译）。现渲染前先经 `UThumbnailManager::GetRenderingInfo` 问渲染器 `CanVisualizeAsset`，画不出的资产（没有可见组件的蓝图、没捕获缩略图的 Niagara 系统）按取不到处理，否则只会得到清屏的纯黑图。取到的图补成不透明，编成 PNG data URL，经 `onThumbnails({ 路径: dataUrl | null })` 逐张回传。Output Log 的 `Shuttlegent thumbnail:` 行写明每张的来源。
   - 页面按路径缓存缩略图，回答流式重绘时直接用缓存，不会闪烁；打开会话（完整快照）时清空，重新抓取。取不到时显示“无缩略图”。
+- 选择卡（`ask_choices`）：Agent 需要用户挑图、配色、选材质、对比方案或逐条批注时调用。
+  - 运行时对编辑器工具调用固定 60 秒超时（Harness `mcp-client` 的 `DEFAULT_TOOL_CALL_TIMEOUT_MS`，ACP 声明服务器时不能改），写评语不够用，所以选择卡不等待作答：工具把卡片交给 `FShuttlegentQuestionGate::PresentChoice` 后立即返回，提示 Agent 结束本轮；没有面板时返回失败说明，Agent 改在回复里列出选项。
+  - 对话模型把卡片放进正在运行回合的对话（当前对话优先），条目类型 `EShuttlegentChatEntryKind::Choice`，同一对话只保留一张等待中的卡片。卡片内容与提交结果按 `FShuttlegentChoiceJson` 的形状写进会话记录（`choice`，出现与结束各记一条，回放以最后一条为准），重开会话后照样显示，仍在等待的可以继续作答。
+  - 页面在对话流里渲染卡片：选项网格（图片复用回答图片的取图与缩略图缓存，双击放大）、单选或多选、逐项“写评语”、整体意见、“提交”。草稿按条目保存在页面，重绘不丢。提交经 `UShuttlegentWebBridge::SubmitChoice` 交给 `FShuttlegentChatModel::SubmitChoice`：卡片标为已提交，选择整理成一条用户消息（选中项标题与 id、各项评语、整体意见）走 `SubmitDraft` 发出，本轮仍在运行时进入队列；被拒绝时经 `onChoiceRejected` 把原因显示在卡片上。
+  - 等待中的卡片让对话显示黄色“等待输入”提醒。用户没在卡片上作答而直接发了别的消息，卡片标为“未作答”；交出卡片的回合被停止，卡片标为“已取消”。
 - 右侧检视窗格由五张可单独展开的卡片组成，折叠时标题行右侧显示摘要；上下文与记忆两张默认展开：
 
   | 卡片 | 摘要 | 展开内容 | 数据 |

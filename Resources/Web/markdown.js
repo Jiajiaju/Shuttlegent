@@ -207,6 +207,13 @@
     return '<span class="md-figure-empty' + (src === undefined ? ' loading' : '') + '"><span>' + text + '</span>' + link + '</span>';
   }
 
+  /** The picture frame for an image source outside a reply (choice card options): the same frame a figure has, or '' when src is not shown. */
+  function imageFrameFor(src) {
+    const target = parseImage(String(src || '').trim());
+    if (!target) return '';
+    return '<span class="md-figure-frame" data-img-kind="' + target.kind + '" data-img-key="' + escapeHtml(target.key) + '">' + imageFrame(target.kind, target.key, imageLookup(target.kind, target.key)) + '</span>';
+  }
+
   /** ![caption](src): a figure with its caption underneath (an asset's caption is its object link); a src the panel does not show stays as text. */
   function image(caption, src, source) {
     const target = parseImage(src);
@@ -477,6 +484,7 @@
     escapeHtml: escapeHtml,
     thumbnailPage: THUMBNAIL_PAGE,
     imageFrame: imageFrame,
+    imageFrameFor: imageFrameFor,
     setLocalImageRoot(url) {
       localImageRoot = url && !url.endsWith('/') ? url + '/' : (url || '');
     },

@@ -296,6 +296,12 @@ public:
 	/** 答复或跳过一个问题；对同一问题的再次答复不产生任何作用。 */
 	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
+	/**
+	 * 提交当前对话中等待作答的选择卡（页面的答案 JSON：selected、notes、overall）：卡片变为已提交，选择作为下一条用户消息发出
+	 * （本轮仍在运行时进入队列）。卡片已不在等待、什么都没选也没写意见，或此时不能发送消息时返回 false，OutReason 说明原因。
+	 */
+	bool SubmitChoice(int32 EntryId, const FString& AnswerJson, FText& OutReason);
+
 	/** 为当前对话正在运行的回合发送一次取消；之后的调用等待该回合结束。 */
 	void Cancel();
 
@@ -447,6 +453,12 @@ private:
 	/** 给计划条目记下审批结果，写入会话记录，并清除等待中的审批。 */
 	void SettlePlanReview(FShuttlegentConversation& Conversation, const TCHAR* Outcome, const FString& Feedback);
 
+	/** 结束对话中等待作答的选择卡：写入状态（及提交内容）并记入会话记录；没有等待的卡片时不做任何事。 */
+	void SettleChoice(FShuttlegentConversation& Conversation, const TCHAR* Status, const FShuttlegentChoiceAnswer& Answer);
+
+	/** 选择卡条目写入会话记录；回放时按卡片键对应回同一条目。 */
+	void RecordChoice(const FShuttlegentConversation& Conversation, const FShuttlegentChatEntry& Entry) const;
+
 	/** 有处于计划模式的对话正在运行回合；写入门据此拒绝写入（写入请求不带会话，无法区分是哪个对话发起的）。 */
 	bool IsPlanTurnRunning() const;
 
@@ -465,6 +477,9 @@ private:
 
 	void HandleQuestionsChanged();
 	void HandleQuestionClosed(const FShuttlegentQuestion& Question, EShuttlegentQuestionOutcome Outcome, const FString& Answer);
+
+	/** Agent 交出选择卡：放进正在运行回合的对话（优先当前对话），之前等待中的卡片改为未作答。 */
+	void HandleChoicePresented(const FShuttlegentChoiceRequest& Request);
 
 	/** Agent 修改了记忆：在正在运行的对话中加一行提示（面板自己删除的不提示）。 */
 	void HandleMemoryChanged(const FShuttlegentMemoryChange& Change, bool bByAgent);

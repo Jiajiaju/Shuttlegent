@@ -85,6 +85,32 @@ textarea.field{height:auto;min-height:56px;padding:6px 10px;line-height:var(--lh
 .card-desc{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted);overflow-wrap:anywhere}
 .card-desc code,.card-desc .mono{font:11px var(--font-mono);color:var(--text)}
 .card-desc.is-warning{color:var(--warning)}
+.card-desc.is-danger{color:var(--danger)}
+
+/* Choice cards (ask_choices): a grid of options with their pictures; the picked ones carry the accent border and a filled mark */
+.choice-card .card-title{white-space:normal;overflow-wrap:anywhere}
+.choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s-2)}
+.choice-option{display:flex;flex-direction:column;gap:var(--s-1-5);padding:var(--s-2);border:1px solid var(--line);border-radius:var(--r-md);background:var(--field);cursor:pointer;min-width:0;transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+.choice-option:hover{border-color:var(--line-strong);background:var(--hover)}
+.choice-option:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.choice-option.picked{border-color:var(--accent);background:var(--selected)}
+.choice-option.readonly{cursor:default}
+.choice-option.readonly:not(.picked){opacity:.6}
+.choice-image .md-figure-frame{display:flex;justify-content:center}
+.choice-image img{display:block;width:100%;aspect-ratio:1;object-fit:contain;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg)}
+.choice-image .md-figure-empty{box-sizing:border-box;width:100%;aspect-ratio:1;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--faint);font-size:var(--fs-caption);line-height:var(--lh-caption);text-align:center;padding:var(--s-2)}
+.choice-image .md-figure-empty a{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.choice-body{display:flex;align-items:flex-start;gap:var(--s-1-5);min-width:0}
+.choice-mark{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border:1.5px solid var(--line-strong);background:var(--field);color:var(--on-brand)}
+.choice-mark.is-radio{border-radius:50%}
+.choice-mark.is-check{border-radius:var(--r-xs)}
+.choice-option.picked .choice-mark{border-color:var(--accent);background:var(--accent)}
+.choice-text{min-width:0}
+.choice-title{font-size:var(--fs-body);line-height:var(--lh-body);color:var(--text);overflow-wrap:anywhere}
+.choice-desc{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted);overflow-wrap:anywhere}
+.choice-note-open{align-self:flex-start;gap:var(--s-1)}
+.choice-note,.choice-overall{height:auto;min-height:var(--h-md);padding:var(--s-1-5) 10px;line-height:var(--lh-small);font-size:var(--fs-small);resize:vertical;font-family:inherit}
+.choice-note-text{font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
 .card-foot{display:flex;align-items:center;justify-content:flex-end;gap:var(--s-2);margin-top:var(--s-1);flex-wrap:wrap}
 .card-foot .hint{margin-right:auto;font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted);min-width:0}
 .card-foot .btn-ghost.lead{margin-right:auto}
@@ -496,9 +522,18 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .queue-item .n{color:var(--faint);width:14px;flex-shrink:0}
 .queue-item .q{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* Back to the end: a round button above the composer whenever the view is away from the end; three dots while the turn still writes below (the arrow again on hover or focus) */
 .back-bottom{position:absolute;left:calc((100% - var(--inspector-space)) / 2);transform:translateX(-50%);bottom:calc(var(--composer-height,140px) + var(--s-3));z-index:3;
-  display:inline-flex;align-items:center;gap:var(--s-1-5);height:28px;padding:0 var(--s-3);border:1px solid var(--line);border-radius:var(--r-pill);background:var(--raised);box-shadow:var(--shadow-float);font-size:var(--fs-small);color:var(--text)}
+  display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--raised);box-shadow:var(--shadow-float);color:var(--text);cursor:pointer}
 .back-bottom:hover{background:var(--raised-hover)}
+.back-bottom-dots{display:none;align-items:center;gap:3px}
+.back-bottom-dots i{width:4px;height:4px;border-radius:50%;background:var(--accent);animation:sg-back-dots 1.2s var(--ease) infinite}
+.back-bottom-dots i:nth-child(2){animation-delay:.15s}
+.back-bottom-dots i:nth-child(3){animation-delay:.3s}
+.back-bottom.is-live:not(:hover):not(:focus-visible) .back-bottom-dots{display:inline-flex}
+.back-bottom.is-live:not(:hover):not(:focus-visible) .sg-icon{display:none}
+.motion-off .back-bottom-dots i{animation:none}
+@keyframes sg-back-dots{0%,100%{opacity:.35}50%{opacity:1}}
 
 /* The decision card replaces the composer while a request waits for an answer */
 .decision{box-shadow:none}

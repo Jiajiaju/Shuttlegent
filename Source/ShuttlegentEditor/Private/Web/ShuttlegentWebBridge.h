@@ -67,6 +67,8 @@ public:
 
 	TFunction<void(int32, const FString&, bool)> OnAnswerQuestion;
 
+	TFunction<void(int32, const FString&)> OnSubmitChoice;
+
 	TFunction<void(int32)> OnUndoWrite;
 
 	TFunction<void(int32)> OnUndoMemory;
@@ -203,6 +205,10 @@ public:
 	/** 以所选选项或用户自行输入的文本答复 Agent 提出的问题（ask_user），或跳过该问题。 */
 	UFUNCTION()
 	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
+
+	/** 提交对话中的选择卡（ask_choices）：AnswerJson 为 { selected, notes, overall }；被拒绝时经 onChoiceRejected 告知原因。 */
+	UFUNCTION()
+	void SubmitChoice(int32 EntryId, const FString& AnswerJson);
 
 	/** 写入结果上的“撤销本次修改”。 */
 	UFUNCTION()

@@ -79,6 +79,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 
 	/** 等待审批的计划在对话中的条目 id；没有时为 0。 */
 	int32 PlanEntryId = 0;
+
+	/** 等待作答的选择卡在对话中的条目 id；没有时为 0。用户改发别的消息、或回合被停止时结束等待。 */
+	int32 ChoiceEntryId = 0;
 	EShuttlegentTurnOutcome LastOutcome = EShuttlegentTurnOutcome::None;
 
 	/** 已为正在运行的回合发送停止；回合结束时清除。 */

@@ -105,6 +105,7 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* JsOnSubmitResult = TEXT("onSubmitResult");
 	inline const TCHAR* JsOnQueueItemTaken = TEXT("onQueueItemTaken");
 	inline const TCHAR* JsOnThumbnails = TEXT("onThumbnails");
+	inline const TCHAR* JsOnChoiceRejected = TEXT("onChoiceRejected");
 
 	// 传给 runCommand 的面板快捷键名称，与 FShuttlegentPanelCommands 的条目一一对应
 	inline const TCHAR* CommandToggleSidebar = TEXT("toggleSidebar");
@@ -452,6 +453,26 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* PlanApproved = TEXT("approved");
 	inline const TCHAR* PlanRevised = TEXT("revised");
 	inline const TCHAR* PlanCancelled = TEXT("cancelled");
+
+	// 选择卡条目（ask_choices）：条目上的 choice 对象，也是会话记录 choice 的内容（FShuttlegentChoiceJson）。
+	// key、question、options（id、title、description、image）、multiSelect、itemNotes、overallNote、status、selected、notes、overall
+	inline const TCHAR* KindChoice = TEXT("choice");
+	inline const TCHAR* Choice = TEXT("choice");
+	inline const TCHAR* ChoiceKey = TEXT("key");
+	inline const TCHAR* ChoiceOptionDescription = TEXT("description");
+	inline const TCHAR* ChoiceOptionImage = TEXT("image");
+	inline const TCHAR* ChoiceMultiSelect = TEXT("multiSelect");
+	inline const TCHAR* ChoiceItemNotes = TEXT("itemNotes");
+	inline const TCHAR* ChoiceOverallNote = TEXT("overallNote");
+	inline const TCHAR* ChoiceSelected = TEXT("selected");
+	inline const TCHAR* ChoiceNotes = TEXT("notes");
+	inline const TCHAR* ChoiceOverall = TEXT("overall");
+
+	// 选择卡状态：等待作答、已提交、用户改发了别的消息、回合被停止
+	inline const TCHAR* ChoicePending = TEXT("pending");
+	inline const TCHAR* ChoiceAnswered = TEXT("answered");
+	inline const TCHAR* ChoiceUnanswered = TEXT("unanswered");
+	inline const TCHAR* ChoiceCancelled = TEXT("cancelled");
 
 	// 计划模式：是否开启、能否切换及原因；等待审批的计划（reviewId、plan）
 	inline const TCHAR* PlanMode = TEXT("planMode");

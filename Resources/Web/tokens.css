@@ -1,5 +1,69 @@
-/* Shared by the editable boards and the interactive prototype. Brand colours are fixed. */
-:root{color-scheme:dark;--bg:#1C1C1B;--surface:#262625;--raised:#343432;--sidebar:#20201F;--text:#E8DFCF;--muted:#A9A8A2;--line:#3C3C39;--subtle:#30302E;--red:#A94743;--accent:#E17D73;--success:#8CAD92;--warning:#D5B57B;--error:#E68F82;--info:#9EB4C1;--control-radius:6px;--panel-radius:10px;--header-height:44px}
+/* Design tokens of the panel (Shuttlegent panel design spec 1.0). app.css reads colours, sizes and type only from here; brand colours are fixed. */
+:root{
+  color-scheme:dark;
+
+  /* Background layers: canvas, sidebar, surface (cards, composer, menus), raised (secondary buttons, chips), field (inputs, parameter blocks) */
+  --bg:#1C1C1B;--sidebar:#20201F;--surface:#262625;--raised:#343432;--raised-hover:#3D3D3A;--field:#191918;
+
+  /* Lines */
+  --line:#3C3C39;--line-strong:#4A4A46;--subtle:#30302E;
+
+  /* Text */
+  --text:#E8DFCF;--muted:#A9A8A2;--faint:#7A7974;
+
+  /* Brand red is reserved for send, the main confirmation and the mark */
+  --brand:#A94743;--brand-hover:#BD5550;--brand-active:#97403C;--on-brand:#FFF9EF;
+  --accent:#E17D73;
+
+  /* States: foreground, background, line */
+  --success:#8CAD92;--success-bg:#252B26;--success-line:#3D5041;
+  --warning:#D5B57B;--warning-bg:#2E2922;--warning-line:#5A4A30;
+  --danger:#E68F82;--danger-bg:#312322;--danger-line:#6B3F3A;--danger-fill:#B4524B;--danger-fill-hover:#C25E57;
+  --info:#9EB4C1;--info-bg:#232A2E;--info-line:#3D4E58;
+
+  /* Interaction overlays, valid on any background */
+  --hover:rgba(232,223,207,.06);--selected:rgba(232,223,207,.10);--pressed:rgba(232,223,207,.14);
+  --focus:#9EB4C1;
+
+  /* Context usage parts and session list dots */
+  --ctx-messages:#C9A27E;--ctx-tools:#8FA89A;--ctx-system:#B98A8A;--ctx-free:var(--line);
+  --dot-done:#5B9BE6;--dot-input:var(--warning);
+
+  /* Scrims and shadows */
+  --scrim:rgba(10,10,9,.45);--overlay:rgba(10,10,9,.6);--viewer:rgba(10,10,9,.88);--drop:rgba(28,28,27,.9);
+  --shadow-float:0 4px 14px rgba(0,0,0,.4);
+  --shadow-pop:0 10px 28px rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.35);
+  --shadow-dialog:0 24px 64px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.35);
+  --shadow-pane:0 0 32px rgba(0,0,0,.45);
+
+  /* Fonts; app.js puts the Editor Preferences fonts in front of these stacks */
+  --font-ui:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif;
+  --font-chat:var(--font-ui);
+  --font-mono:"Cascadia Mono",Consolas,"Microsoft YaHei UI",monospace;
+  --chat-font-size:14px;
+
+  /* Type scale and weights (YaHei has no 500) */
+  --fs-caption:11px;--lh-caption:16px;
+  --fs-small:12px;--lh-small:18px;
+  --fs-body:13px;--lh-body:20px;
+  --fs-title:15px;--lh-title:22px;
+  --fs-display:18px;--lh-display:26px;
+  --lh-prose:1.75;
+  --fw-regular:400;--fw-strong:600;
+
+  /* Spacing on a 4px grid; 2 and 6 only inside controls */
+  --s-0-5:2px;--s-1:4px;--s-1-5:6px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;
+
+  /* Radii */
+  --r-xs:4px;--r-sm:6px;--r-md:8px;--r-lg:12px;--r-pill:999px;
+
+  /* Sizes */
+  --h-sm:24px;--h-md:30px;--h-row:32px;
+  --header-height:44px;--column-max:720px;--gutter:24px;
+
+  /* Motion */
+  --t-fast:120ms;--t-base:180ms;--t-slow:240ms;--ease:cubic-bezier(.2,0,0,1);
+}
 
 *{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 

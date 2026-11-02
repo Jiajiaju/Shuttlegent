@@ -244,7 +244,7 @@
 
   function codeBlock(language, source, codeIndex) {
     const label = language ? '<span class="code-language">' + escapeHtml(language) + '</span>' : '<span></span>';
-    return '<div class="code-block"><div class="code-head">' + label + '<button class="icon small" data-copy-code="' + codeIndex + '" title="复制代码" aria-label="复制代码">' + window.ShuttlegentIcons.svg('copy', 14) + '</button></div><pre><code>' + window.ShuttlegentHighlight.highlight(language, source) + '</code></pre></div>';
+    return '<div class="code-block"><div class="code-head">' + label + '<button class="btn btn-icon btn-sm" data-copy-code="' + codeIndex + '" title="复制代码" aria-label="复制代码">' + window.ShuttlegentIcons.svg('copy', 14) + '</button></div><pre><code>' + window.ShuttlegentHighlight.highlight(language, source) + '</code></pre></div>';
   }
 
   /** Returns { html, codes }: codes holds the source of each code block, indexed by data-copy-code. */

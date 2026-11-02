@@ -237,5 +237,17 @@ namespace ShuttlegentMemoryConstant
 namespace ShuttlegentAppearanceConstant
 {
 	// 面板页面中对话的字号，单位 CSS 像素（UShuttlegentSettings::FontSize）
-	inline constexpr int32 DefaultFontSize = 13;
+	inline constexpr int32 DefaultFontSize = 14;
+
+	// 字体设置中多个字体族之间的分隔符（UShuttlegentSettings::UiFontFamily 等）
+	inline const TCHAR* FontSeparator = TEXT(",");
+
+	// 一项字体设置最多下发给面板的字体族个数，与 Resources/Web/app.js 的 MAX_FONT_NAMES 一致
+	inline constexpr int32 MaxFontNames = 4;
+
+	// 字体族名称中除字母、数字外允许的字符，与 Resources/Web/app.js 的 FONT_NAME 一致
+	inline const TCHAR* FontNameExtraChars = TEXT(" _.-");
+
+	// 第一个非 ASCII 字符的码位；之前的字符按 FontNameExtraChars 与字母数字逐个检查
+	inline constexpr TCHAR FirstNonAsciiChar = 0x80;
 }

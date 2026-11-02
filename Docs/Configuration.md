@@ -47,8 +47,13 @@ Shuttlegent 的设置分两处：
 | Runtime > Runtime Executable Override | 空 | 用其他运行时 exe 代替插件的 `Runtime/shuttlegent-runtime.exe` |
 | Runtime > Prewarm Runtime | 开 | 编辑器启动空闲后预先启动运行时，打开面板时已连接 |
 | Appearance > Animate Mark | 开 | 面板中播放标志动画 |
-| Appearance > Font Size | 13 | 对话与输入框字号（11–20） |
+| Appearance > Font Size | 14 | 对话与输入框字号（11–20） |
 | Appearance > Wide Layout | 关 | 对话铺满两侧窗格之间的宽度 |
+| Appearance > Ui Font Family | 空 | 界面字体（侧栏、菜单、按钮、卡片）；空为 Segoe UI 与微软雅黑 UI |
+| Appearance > Chat Font Family | 空 | 对话消息与输入框字体；空为跟随界面字体，可填衬线字体如 Noto Serif SC |
+| Appearance > Code Font Family | 空 | 代码、参数与日志的等宽字体；空为 Cascadia Mono 与 Consolas |
+
+三项字体都可以直接输入，或点右侧"预设"选择；多个字体用逗号分隔，最多取前 4 个。名称只接受字母、数字、空格和 `- _ .`，其余字符会被丢弃。填写的字体总是排在默认字体前面，本机没有安装时自动退回默认，修改后面板立即生效。
 
 ## 5. 项目设置（团队）
 

@@ -170,6 +170,16 @@ namespace ShuttlegentEditorSettingsUi
 	// 工具描述第一行的结束符，该行显示为开关的提示信息
 	inline const TCHAR* LineBreak = TEXT("\n");
 
+	// 字体设置行：值区域最小宽度（Slate 单位），输入框与预设按钮之间的间距
+	inline constexpr float FontValueMinWidth = 260.0f;
+	inline constexpr float FontPresetGap = 4.0f;
+
+	// 界面字体与对话字体的预设下拉项（空字符串为"默认"）
+	inline const TCHAR* TextFontPresets[] = { TEXT(""), TEXT("Microsoft YaHei UI"), TEXT("DengXian"), TEXT("Noto Sans SC"), TEXT("Noto Serif SC"), TEXT("Source Han Serif SC") };
+
+	// 等宽字体的预设下拉项（空字符串为"默认"）
+	inline const TCHAR* MonoFontPresets[] = { TEXT(""), TEXT("Cascadia Mono"), TEXT("Consolas"), TEXT("JetBrains Mono"), TEXT("Sarasa Mono SC") };
+
 	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
 }
@@ -220,6 +230,12 @@ namespace ShuttlegentEditorWebField
 	// 外观设置：以 CSS 像素为单位的对话字号，以及宽布局开关
 	inline const TCHAR* FontSize = TEXT("fontSize");
 	inline const TCHAR* WideLayout = TEXT("wideLayout");
+
+	// 外观设置中的字体：界面、对话、等宽三项，值为清理后的逗号分隔字体族，空字符串表示默认
+	inline const TCHAR* Fonts = TEXT("fonts");
+	inline const TCHAR* FontUi = TEXT("ui");
+	inline const TCHAR* FontChat = TEXT("chat");
+	inline const TCHAR* FontMono = TEXT("mono");
 
 	// 记录的窗格宽度，随快照发送；用户从未调整过窗格时为 0
 	inline const TCHAR* SidebarWidth = TEXT("sidebarWidth");

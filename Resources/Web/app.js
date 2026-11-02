@@ -35,18 +35,18 @@
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
-  // Docked pane widths in CSS pixels: default, narrowest and widest a drag can make them
+  // Docked sidebar width in CSS pixels: default, narrowest and widest a drag can make it
   const SIDEBAR_DEFAULT_WIDTH = 248;
   const SIDEBAR_MIN_WIDTH = 180;
   const SIDEBAR_MAX_WIDTH = 480;
-  const INSPECTOR_DEFAULT_WIDTH = 360;
-  const INSPECTOR_MIN_WIDTH = 280;
-  const INSPECTOR_MAX_WIDTH = 720;
 
-  // Narrowest the conversation gets when the docked panes are dragged wider, in CSS pixels (.workbench.full .chat)
+  // The inspector's fixed width in CSS pixels, docked or as an overlay
+  const INSPECTOR_WIDTH = 360;
+
+  // Narrowest the conversation gets when the docked sidebar is dragged wider, in CSS pixels (.workbench.full .chat)
   const CHAT_MIN_WIDTH = 320;
 
-  // Width change per arrow key on a focused pane grip, in CSS pixels
+  // Width change per arrow key on the focused sidebar grip, in CSS pixels
   const RESIZE_KEY_STEP = 16;
 
   // Context usage shares where the context card turns to the warning and then the error colour
@@ -75,20 +75,28 @@
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
 
-  // Modes in menu order: how editor writes are confirmed, and plan (read-only until a plan is approved); Shift+Tab cycles in MODE_CYCLE order
+  // Modes in menu order, which is also the Shift+Tab order: how editor writes are confirmed, and plan (read-only until a plan is approved)
   const MODES = [
-    { value: 'auto', label: '自动', detail: '除删除、移动、改名外，修改直接执行' },
-    { value: 'manual', label: '手动', detail: '每次修改前都先询问' },
-    { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先询问' },
+    { value: 'manual', label: '手动', detail: '每次修改前都先问你' },
+    { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先问你' },
+    { value: 'auto', label: '自动', detail: '除删除、移动、改名外直接执行' },
     { value: 'plan', label: '计划', detail: '先出方案，批准后再修改' }
   ];
   // Share of the memory file limit at which the memory card summary warns
   const MEMORY_WARN_SHARE = 0.9;
 
-  const MODE_CYCLE = ['manual', 'acceptEdits', 'auto', 'plan'];
+  const MODE_CYCLE = MODES.map((item) => item.value);
 
   // Session list dots: what each attention value means, for the tooltip and screen readers
   const ATTENTION_TEXT = { done: '已完成，还没查看', input: '等待你的输入' };
+
+  // Default font stacks; fonts from Editor Preferences go in front of them (tokens.css carries the same stacks)
+  const FONT_UI = '"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+  const FONT_MONO = '"Cascadia Mono",Consolas,"Microsoft YaHei UI",monospace';
+
+  // A font family name the page accepts from settings: letters, digits, spaces and - _ . only; at most this many names
+  const FONT_NAME = /^[\p{L}\p{N} _.\-]+$/u;
+  const MAX_FONT_NAMES = 4;
   const EFFORT_NOTE = '推理强度越高，回答越周全，但耗时更长、用量消耗更快。';
 
   // Gap between a picker and what opened it, and least distance kept from the panel edge, in CSS pixels
@@ -157,14 +165,29 @@
     startBlocked: '运行时无法启动',
     resumeFailed: '恢复会话失败'
   };
-  const WARNING_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite', 'failed', 'lost', 'startBlocked', 'resumeFailed']);
+
+  // The header shows a status chip only while something is in progress or wrong; a running turn shows through the mark instead
+  const STATUS_CHIP = {
+    notConnected: { tone: '', text: '未连接' },
+    connecting: { tone: '', text: '正在连接', spin: true },
+    resuming: { tone: '', text: '正在恢复会话', spin: true },
+    stopping: { tone: '', text: '正在停止', spin: true },
+    awaitingWrite: { tone: 'warning', text: '等待确认' },
+    awaitingPermission: { tone: 'warning', text: '等待确认' },
+    awaitingPlanReview: { tone: 'warning', text: '等待审批计划' },
+    resumeFailed: { tone: 'warning', text: '恢复失败' },
+    failed: { tone: 'danger', text: '查询失败' },
+    lost: { tone: 'danger', text: '连接已断开' },
+    startBlocked: { tone: 'danger', text: '运行时无法启动' }
+  };
 
   // Background sessions in the sidebar: running ones, ones waiting for a confirmation (Shuttlegent.md section 14.3.7)
   const RUNNING_STATUSES = new Set(['connecting', 'querying', 'writing', 'stopping', 'resuming']);
   const CONFIRM_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite']);
 
-  // Plan entry review outcomes (feature plan C2), as the badge on the plan in the conversation
+  // Plan entry review outcomes (feature plan C2), as the chip on the plan in the conversation, with the chip's tone
   const PLAN_STATUS_TEXT = { pending: '待审批', approved: '已批准', revised: '已退回', cancelled: '已取消' };
+  const PLAN_STATUS_TONE = { pending: 'warning', approved: 'success', revised: 'warning', cancelled: '' };
 
   const state = {
     status: 'notConnected',
@@ -243,8 +266,11 @@
     // Elements focus returns to as dialogs close; a dialog can open over another (delete over the archived list)
     dialogOpeners: [],
 
-    // Docked pane widths the user dragged; 0 means the default
+    // Docked sidebar width the user dragged, 0 means the default; the inspector's saved value is only passed back, its width is fixed
     paneWidths: { sidebar: 0, inspector: 0 },
+
+    // The conversation has no messages yet: the large mark alone, no inspector
+    empty: true,
 
     // Session the right-click menu, and the rename, archive or delete dialog opened from it, act on
     menuSessionId: '',
@@ -289,6 +315,7 @@
   let wasWorking = false;
   let emptyMark = null;
   let headerMark = null;
+  let workingMark = null;
   let hasUnseenContent = false;
 
   function bridge() {
@@ -358,17 +385,21 @@
     return blocks;
   }
 
-  function toolIcon(status) {
-    if (status === TOOL_COMPLETED) return '<span class="state-icon ok">' + icons.svg('check', 14) + '</span>';
-    if (status === TOOL_FAILED) return '<span class="state-icon failed">' + icons.svg('alert', 14) + '</span>';
-    return '<span class="state-icon running">' + icons.svg('loader', 14) + '</span>';
+  /** State mark of a tool call: a check when done, an alert when it failed, a turning loader while it runs. */
+  function toolIcon(status, size) {
+    if (status === TOOL_COMPLETED) return '<span class="state-icon ok">' + icons.svg('check', size) + '</span>';
+    if (status === TOOL_FAILED) return '<span class="state-icon failed">' + icons.svg('alert', size) + '</span>';
+    return '<span class="state-icon running">' + icons.svg('loader', size) + '</span>';
   }
 
-  function toolTrailer(status, readOnly, objects, failed) {
-    if (!isToolFinished(status)) return '正在执行 ›';
-    if (failed > 0) return failed + ' 项失败 ›';
-    if (readOnly) return '只读 · ' + objects + ' 个对象 ›';
-    return '已完成 ›';
+  /** One event row of the conversation: icon, label, optional detail and trailer; a button when it reacts to clicks. */
+  function eventHtml(options) {
+    const tag = options.attributes ? 'button' : 'div';
+    const tone = options.tone ? ' is-' + options.tone : '';
+    const detail = options.detail ? '<span class="ev-detail">' + options.detail + '</span>' : '';
+    const trail = options.trail ? '<span class="ev-trail">' + options.trail + '</span>' : '';
+    return '<' + tag + ' class="event' + tone + (options.extraClass ? ' ' + options.extraClass : '') + '"' + (options.attributes || '') + '>' + options.icon
+      + '<span class="ev-label' + (options.wrap ? ' is-wrap' : '') + '">' + options.label + '</span>' + (options.caret ? '<span class="ev-caret">' + icons.svg('chevron', 14) + '</span>' : '') + detail + trail + (options.after || '') + '</' + tag + '>';
   }
 
   /** Time of a message as Claude shows it: just now, minutes or hours ago, then the date. */
@@ -393,9 +424,9 @@
     const references = entry.references && entry.references.length ? '<div class="user-references">' + entry.references.map((line) => '<div>' + esc(line) + '</div>').join('') + '</div>' : '';
     const time = entry.time ? '<time class="user-time" data-time="' + entry.time + '" title="' + fullTime(entry.time) + '">' + relativeTime(entry.time) + '</time><span class="user-dot">·</span>' : '';
     const actions = '<div class="user-actions">' + time
-      + '<button class="icon user-action" data-user-copy="' + entry.id + '" title="复制" aria-label="复制">' + icons.svg('copy', 15) + '</button>'
-      + '<button class="icon user-action history" data-user-rewind="' + entry.id + '" aria-label="回到这里">' + icons.svg('rewind', 15) + '</button>'
-      + '<button class="icon user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 15) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action" data-user-copy="' + entry.id + '" title="复制" aria-label="复制">' + icons.svg('copy', 14) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action history" data-user-rewind="' + entry.id + '" aria-label="回到这里">' + icons.svg('rewind', 14) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 14) + '</button>'
       + '</div>';
     const images = entry.images && entry.images.length ? '<div class="user-images">' + entry.images.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
     return '<div class="user-turn"><article class="message user">' + esc(entry.text) + images + references + '</article>' + actions + '</div>';
@@ -459,16 +490,16 @@
     const expanded = expandedThoughts.has(entry.id);
     let label = entry.thoughtSeconds >= 0 ? '已思考 ' + entry.thoughtSeconds + ' 秒' : '思考过程';
     if (isThinking(entry)) label = '思考中…';
-    const chevron = '<span class="thought-chevron' + (expanded ? ' open' : '') + '">' + icons.svg('chevron', 12) + '</span>';
-    const body = expanded ? '<div class="thought-body">' + esc(entry.thought) + '</div>' : '';
-    return '<div class="note thought"><button class="thought-toggle" data-thought="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起思考过程">' + label + chevron + '</button>' + body + '</div>';
+    const row = eventHtml({ icon: icons.svg('thought', 16), label: label, caret: true, attributes: ' data-thought="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起思考过程"' });
+    return row + (expanded ? '<div class="event-body">' + esc(entry.thought) + '</div>' : '');
   }
 
+  /** A reply: its thought as an event row, then the text; replies carry no name or mark of their own. */
   function renderAssistant(entry) {
     const rendered = markdown.render(entry.text);
     codeSources.set(entry.id, rendered.codes);
-    const header = '<div class="assistant-name"><img src="../png/mark-red-white.png" alt="">Shuttlegent</div>';
-    return '<article class="message assistant" data-entry="' + entry.id + '">' + header + renderThought(entry) + '<div class="markdown">' + rendered.html + '</div></article>';
+    const text = entry.text ? '<div class="markdown">' + rendered.html + '</div>' : '';
+    return '<article class="message assistant" data-entry="' + entry.id + '">' + renderThought(entry) + text + '</article>';
   }
 
   /** Screenshots a tool returned, from the saved paths the editor writes into its result text. */
@@ -478,83 +509,91 @@
     return urls.length ? '<div class="tool-images">' + urls.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
   }
 
+  /** A tool call as an event row: state icon, name and summary; a failure adds its reason underneath. Clicking opens its details. */
   function renderTool(entry) {
     const failed = entry.toolStatus === TOOL_FAILED;
-    const reason = failed && entry.failureReason ? '<div class="tool-failure">' + esc(entry.failureReason) + '</div>' : '';
-    return '<div class="tool"><button class="tool-row" data-tool="' + entry.id + '" title="在检视窗格查看参数与结果">' + toolIcon(entry.toolStatus) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><small>' + toolTrailer(entry.toolStatus, entry.readOnly, 1, failed ? 1 : 0) + '</small></button>' + reason + toolImages(entry) + '</div>';
+    const reason = failed && entry.failureReason ? '<div class="event-body is-danger">' + esc(entry.failureReason) + '</div>' : '';
+    const row = eventHtml({ icon: toolIcon(entry.toolStatus, 16), label: esc(entry.displayName), detail: esc(entry.summary), tone: failed ? 'danger' : '', attributes: ' data-tool="' + entry.id + '" title="在检视窗格查看参数与结果"' });
+    return '<div class="tool">' + row + reason + toolImages(entry) + '</div>';
   }
 
+  /** Consecutive read-only calls as one row: how many, the first few names, and any failures. */
   function renderToolGroup(ids) {
-    let status = TOOL_COMPLETED;
     let failed = 0;
     let running = false;
+    const names = [];
     for (const id of ids) {
       const entry = state.entries.get(id);
       if (!isToolFinished(entry.toolStatus)) running = true;
       if (entry.toolStatus === TOOL_FAILED) ++failed;
-      if (entry.toolStatus !== TOOL_COMPLETED) status = entry.toolStatus;
+      if (names.length < 3 && !names.includes(entry.displayName)) names.push(entry.displayName);
     }
-    const trailer = toolTrailer(running ? '' : TOOL_COMPLETED, true, ids.length, failed);
-    return '<div class="tool"><button class="tool-row" data-tool="' + ids[0] + '" title="在检视窗格查看这组查询">' + toolIcon(status) + '<span class="tool-name">已查询 ' + ids.length + ' 项</span><span class="tool-summary"></span><small>' + trailer + '</small></button></div>';
+    let icon = icons.svg('search', 16);
+    if (running) icon = toolIcon('', 16);
+    else if (failed) icon = toolIcon(TOOL_FAILED, 16);
+    const label = running ? '正在查询 ' + ids.length + ' 项' : '已查询 ' + ids.length + ' 项';
+    return '<div class="tool">' + eventHtml({ icon: icon, label: label, detail: esc(names.join(' · ')), trail: failed ? failed + ' 项失败' : '', attributes: ' data-tool="' + ids[0] + '" title="在检视窗格查看这组查询"' }) + '</div>';
   }
 
   function renderPermission(entry) {
-    let suffix = '等待本次授权';
-    if (entry.answered) suffix = entry.allowed ? '已允许本次' : '已拒绝';
-    return '<div class="note' + (entry.answered ? '' : ' warning') + '">运行时请求额外权限：' + esc(entry.displayName) + ' · ' + suffix + '</div>';
+    let label = '等待授权：' + esc(entry.displayName);
+    if (entry.answered) label = entry.allowed ? '已允许' + esc(entry.displayName) + '（仅这一次）' : '已拒绝' + esc(entry.displayName);
+    return eventHtml({ icon: icons.svg('shield', 16), label: label, tone: entry.answered ? '' : 'warning', wrap: true });
   }
 
-  function writeObjectRow(object) {
-    let icon = icons.svg('check', 12);
-    let label = '已完成';
-    if (object.status === 'failed') {
-      icon = icons.svg('alert', 12);
-      label = '失败';
-    } else if (object.status === 'notRun') {
-      icon = icons.svg('partial', 12);
-      label = '未执行';
-    } else if (object.status === 'rolledBack') {
-      icon = icons.svg('undo', 12);
-      label = '已回滚';
-    }
+  /** One object of a write: state, name, the change and why it failed; the change reads "Field current → planned". */
+  function objectRow(object, status) {
+    const states = {
+      completed: ['', 'check', '已完成'],
+      failed: ['failed', 'alert', '失败'],
+      notRun: ['skipped', 'partial', '未执行'],
+      rolledBack: ['skipped', 'undo', '已回滚'],
+      unknown: ['unknown', 'alert', '未知']
+    };
+    const [cls, icon, label] = states[status] || states.completed;
     const change = object.field ? esc(object.field) + ' ' + esc(object.current) + ' → ' + esc(object.planned) : '';
-    const message = object.message ? '<span class="dim"> · ' + esc(object.message) + '</span>' : '';
-    return '<li class="write-object ' + object.status + '"><span class="state">' + icon + label + '</span><span class="name" title="' + esc(object.path) + '">' + esc(object.name) + '</span><span class="change">' + change + message + '</span></li>';
+    const message = object.message ? (change ? ' · ' : '') + esc(object.message) : '';
+    return '<li><span class="st' + (cls ? ' ' + cls : '') + '">' + icons.svg(icon, 12) + label + '</span><span class="nm" title="' + esc(object.path) + '">' + esc(object.name) + '</span><span class="ch">' + change + message + '</span></li>';
   }
 
-  /** Result bar of an editor write (interaction spec sections 5.2, 5.4): real per-object outcome, undo only while its transaction is on top. */
+  /** Result card of an editor write (interaction spec sections 5.2, 5.4): real per-object outcome, undo only while its transaction is on top. */
   function renderWriteResult(entry) {
     const objects = entry.objects || [];
     const completed = objects.filter((object) => object.status === 'completed').length;
-    let title = icons.svg('check', 14) + ' 已完成 · ' + completed + ' 个对象';
-    let warn = false;
+    let icon = icons.svg('circle-check', 16).replace('class="sg-icon"', 'class="sg-icon tone-success"');
+    let title = '已完成 · ' + completed + ' 个对象';
     const rolledBack = objects.some((object) => object.status === 'rolledBack');
     if (entry.undone) {
-      title = icons.svg('undo', 14) + ' 已撤销本次修改';
+      icon = icons.svg('undo', 16);
+      title = '已撤销本次修改';
     } else if (rolledBack) {
-      warn = true;
-      title = icons.svg('alert', 14) + ' 失败，已全部回滚 · ' + objects.length + ' 个对象';
+      icon = icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-danger"');
+      title = '失败，已全部回滚 · ' + objects.length + ' 个对象';
     } else if (completed < objects.length) {
-      warn = true;
-      title = completed > 0 ? icons.svg('partial', 14) + ' 部分完成 · 已完成 ' + completed + ' / ' + objects.length + ' 个对象' : icons.svg('alert', 14) + ' 未完成 · 0 / ' + objects.length + ' 个对象';
+      icon = completed > 0 ? icons.svg('partial', 16).replace('class="sg-icon"', 'class="sg-icon tone-warning"') : icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-danger"');
+      title = completed > 0 ? '部分完成 · ' + completed + ' / ' + objects.length + ' 个对象' : '未完成 · 0 / ' + objects.length + ' 个对象';
     }
 
-    const undoLabel = entry.undone ? '已撤销' : entry.canUndo ? '撤销本次修改' : '撤销不可用';
-    const undo = entry.undoable ? '<div class="actions start"><button data-undo-write="' + entry.id + '" ' + (entry.canUndo ? '' : 'disabled') + ' title="' + esc(entry.undoReason) + '">' + undoLabel + '</button></div><p class="fine">' + esc(entry.undoReason) + '</p>' : '<p class="fine">此操作不可撤销。</p>';
-    const auto = entry.autoApproved ? '<span class="badge auto" title="按当前模式未弹确认卡、直接执行">自动执行</span>' : '';
-    return '<article class="message"><div class="result' + (warn ? ' warn' : '') + '"><h3>' + title + auto + '</h3><p>' + esc(entry.action) + '</p><ul class="write-objects">' + objects.map(writeObjectRow).join('') + '</ul>' + undo + '</div></article>';
+    const auto = entry.autoApproved && !entry.undone ? '<span class="chip" title="按当前模式没有弹确认卡，直接执行">自动执行</span>' : '';
+    const list = entry.undone ? '' : '<ul class="obj-list">' + objects.map((object) => objectRow(object, object.status)).join('') + '</ul>';
+    let foot = '';
+    if (entry.undoable && !entry.undone) {
+      const undoLabel = entry.canUndo ? '撤销本次修改' : '撤销不可用';
+      foot = '<div class="card-foot"><span class="hint">' + esc(entry.undoReason) + '</span><button class="btn btn-sm" data-undo-write="' + entry.id + '" ' + (entry.canUndo ? '' : 'disabled') + ' title="' + esc(entry.undoReason) + '">' + undoLabel + '</button></div>';
+    } else if (!entry.undoable) {
+      foot = '<div class="card-foot"><span class="hint">此操作不可撤销</span></div>';
+    }
+    return '<article class="card result"><div class="card-head">' + icon + '<span class="card-title' + (entry.undone ? ' is-quiet' : '') + '">' + title + '</span>' + auto + '</div><div class="card-desc">' + esc(entry.action) + '</div>' + list + foot + '</article>';
   }
 
   /** A confirmed write whose result never arrived (interaction spec section 5.3): what was confirmed, verified by the user before sending again. */
   function renderWriteUnknown(entry) {
     const objects = entry.objects || [];
-    const rows = objects.map((object) => {
-      const change = object.field ? esc(object.field) + ' ' + esc(object.current) + ' → ' + esc(object.planned) : '';
-      return '<li class="write-object unknown"><span class="state">' + icons.svg('alert', 12) + '未知</span><span class="name" title="' + esc(object.path) + '">' + esc(object.name) + '</span><span class="change">' + change + '</span></li>';
-    }).join('');
-    const button = '<div class="actions start"><button data-ack-write="' + entry.id + '" ' + (entry.answered ? 'disabled' : '') + '>' + (entry.answered ? '已核对' : '已核对，可以继续') + '</button></div>';
-    const hint = entry.answered ? '已核对。' : '运行时在写入途中断开，不知道以下对象是否已经修改，也不会自动重放。请在关卡中核对这些对象，再点“已核对”；核对前不能发送新消息。';
-    return '<article class="message"><div class="result warn"><h3>' + icons.svg('alert', 14) + ' 结果未知 · ' + objects.length + ' 个对象</h3><p>' + esc(entry.action) + '</p><ul class="write-objects">' + rows + '</ul><p class="fine">' + hint + '</p>' + button + '</div></article>';
+    const rows = objects.map((object) => objectRow(object, 'unknown')).join('');
+    const button = '<button class="btn btn-sm' + (entry.answered ? '' : ' btn-primary') + '" data-ack-write="' + entry.id + '" ' + (entry.answered ? 'disabled' : '') + '>' + (entry.answered ? '已核对' : '已核对，继续') + '</button>';
+    const hint = entry.answered ? '已核对' : '运行时在写入途中断开，不知道这些对象是否已修改，也不会自动重放。在关卡中核对后再继续；核对前不能发送新消息。';
+    return '<article class="card result"><div class="card-head">' + icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-warning"') + '<span class="card-title">结果未知 · ' + objects.length + ' 个对象</span></div>'
+      + '<div class="card-desc">' + esc(entry.action) + '</div><ul class="obj-list">' + rows + '</ul><div class="card-desc">' + hint + '</div><div class="card-foot">' + button + '</div></article>';
   }
 
   /** A plan the agent presented (feature plan C2), kept in the conversation with its review outcome and feedback. */
@@ -562,32 +601,34 @@
     const rendered = markdown.render(entry.text || '');
     codeSources.set(entry.id, rendered.codes);
     const status = entry.planStatus || 'pending';
-    const feedback = status === 'revised' && entry.feedback ? '<p class="plan-note">退回意见：' + esc(entry.feedback) + '</p>' : '';
-    return '<article class="plan-entry ' + esc(status) + '" data-entry="' + entry.id + '"><header><span>计划</span><span class="plan-badge">' + esc(PLAN_STATUS_TEXT[status] || status) + '</span></header>'
-      + '<div class="markdown">' + rendered.html + '</div>' + feedback + '</article>';
+    const tone = PLAN_STATUS_TONE[status] ? ' chip-' + PLAN_STATUS_TONE[status] : '';
+    const feedback = status === 'revised' && entry.feedback ? '<div class="card-desc is-warning">退回意见：' + esc(entry.feedback) + '</div>' : '';
+    return '<article class="card plan-entry ' + esc(status) + '" data-entry="' + entry.id + '"' + (status === 'cancelled' ? ' style="opacity:.7"' : '') + '><div class="card-head">' + icons.svg('plan', 16).replace('class="sg-icon"', 'class="sg-icon tone-info"') + '<span class="card-title">计划</span><span class="chip' + tone + '">' + esc(PLAN_STATUS_TEXT[status] || status) + '</span></div>'
+      + '<div class="markdown" style="font-size:.92em">' + rendered.html + '</div>' + feedback + '</article>';
   }
 
   /** A divider row in the conversation (feature plan C7): compacting now, how much it took away, or why it failed. */
   function renderCompaction(entry) {
     const how = entry.manual ? '手动' : '自动';
     let text;
-    if (entry.compactionStatus === 'running') text = icons.svg('loader', 13) + '<span>正在' + how + '压缩上下文…</span>';
-    else if (entry.compactionStatus === 'failed') text = '<span>' + how + '压缩失败：' + esc(entry.text) + '</span>';
-    else text = '<span>上下文已' + how + '压缩' + (entry.shadowedTokens > 0 ? ' · 约 ' + entry.shadowedTokens.toLocaleString('en-US') + ' tokens 转为摘要' : '') + '</span>';
-    return '<div class="compaction ' + esc(entry.compactionStatus) + '" title="较早的对话已由模型总结为摘要，摘要之后的内容原样保留">' + text + '</div>';
+    if (entry.compactionStatus === 'running') text = icons.svg('loader', 14) + '正在' + how + '压缩上下文…';
+    else if (entry.compactionStatus === 'failed') text = icons.svg('alert', 14) + how + '压缩失败：' + esc(entry.text);
+    else text = icons.svg('compress', 14) + '上下文已' + how + '压缩' + (entry.shadowedTokens > 0 ? ' · 约 ' + entry.shadowedTokens.toLocaleString('en-US') + ' tokens 转为摘要' : '');
+    const tone = entry.compactionStatus === 'failed' ? ' is-danger' : entry.compactionStatus === 'running' ? ' running' : '';
+    return '<div class="event-divider' + tone + '" title="较早的对话已由模型总结为摘要，摘要之后的内容原样保留"><span>' + text + '</span></div>';
   }
 
   /** One grey line: how many memories this conversation started with, or a memory the agent saved, changed or dropped (undoable). */
   function renderMemoryNote(entry) {
     if (entry.memoryAction === 'read') {
-      return '<div class="memory-note"><button class="link" data-show-memory title="在检视窗格查看全部记忆">已读取记忆 · ' + esc(entry.text) + ' 条</button></div>';
+      return eventHtml({ icon: icons.svg('memory', 16), label: '已读取 ' + esc(entry.text) + ' 条记忆', attributes: ' data-show-memory title="在检视窗格查看全部记忆"' });
     }
-    const undo = entry.undone ? '<span class="memory-undone">已撤销</span>' : '<button class="link" data-undo-memory="' + entry.id + '">撤销</button>';
-    return '<div class="memory-note' + (entry.undone ? ' undone' : '') + '"><span class="memory-note-text">' + (MEMORY_ACTION_TEXT[entry.memoryAction] || '') + esc(entry.text) + '</span>' + undo + '</div>';
+    const after = entry.undone ? '<span class="ev-trail">已撤销</span>' : '<button class="btn btn-link" data-undo-memory="' + entry.id + '">撤销</button>';
+    return eventHtml({ icon: icons.svg('memory', 16), label: (MEMORY_ACTION_TEXT[entry.memoryAction] || '') + esc(entry.text), wrap: true, extraClass: entry.undone ? 'is-undone' : '', after: after });
   }
 
   function renderNotice(entry) {
-    return '<div class="note' + (entry.error ? ' error' : '') + '">' + esc(entry.text) + '</div>';
+    return eventHtml({ icon: icons.svg(entry.error ? 'alert' : 'info', 16), label: esc(entry.text), tone: entry.error ? 'danger' : '', wrap: true });
   }
 
   function renderBlock(block) {
@@ -630,9 +671,13 @@
     $('back-bottom').hidden = true;
   }
 
-  // An empty conversation keeps the composer at the bottom and centres the large mark in the space above it
+  // An empty conversation keeps the composer at the bottom and centres the large mark in the space above it; the inspector stays away until the first message
   function renderEmptyState(empty) {
     $('chat').classList.toggle('is-empty', empty);
+    if (view.empty !== empty) {
+      view.empty = empty;
+      applyLayout();
+    }
     if (!empty) {
       if (emptyMark) markPlayer.detach(emptyMark);
       emptyMark = null;
@@ -713,14 +758,28 @@
 
   function renderHeader() {
     const status = $('status');
-    status.textContent = STATUS_TEXT[state.status] || '';
-    status.classList.toggle('warning', WARNING_STATUSES.has(state.status));
+    const chip = STATUS_CHIP[state.status];
+    status.hidden = !chip;
+    if (chip) {
+      status.className = 'chip chip-md' + (chip.tone ? ' chip-' + chip.tone : '');
+      const lead = chip.spin ? '<span class="spin">' + icons.svg('loader', 12) + '</span>' : '<span class="dot"></span>';
+      status.innerHTML = lead + '<span class="label">' + chip.text + '</span>';
+      status.title = chip.text;
+    }
     updateMarkOpacity();
 
-    // Working loops while a turn runs and nothing waits for the user; a confirmation, a stop or a lost runtime rests it
-    const working = state.prompting && !state.pendingWrite && !state.pendingPermission && !state.pendingQuestion;
-    if (working && !wasWorking) markPlayer.play(headerMark, 'working');
-    if (!working && wasWorking && headerMark.motion === 'working') markPlayer.rest(headerMark);
+    // Working loops while a turn runs and nothing waits for the user; a confirmation, a stop or a lost runtime rests it.
+    // The conversation's end shows a small working mark at the same time.
+    const working = state.prompting && !state.pendingWrite && !state.pendingPermission && !state.pendingQuestion && !state.pendingPlanReview;
+    if (working && !wasWorking) {
+      markPlayer.play(headerMark, 'working');
+      markPlayer.play(workingMark, 'working');
+    }
+    if (!working && wasWorking) {
+      if (headerMark.motion === 'working') markPlayer.rest(headerMark);
+      markPlayer.rest(workingMark);
+    }
+    $('working').hidden = !working;
     wasWorking = working;
   }
 
@@ -744,14 +803,15 @@
       return;
     }
 
+    // Folds itself once every item is done and the turn ended, and while a decision card waits; a fold or unfold by the user wins
     const done = todos.filter((todo) => todo.status === 'completed').length;
-    const folded = view.todosFolded !== null ? view.todosFolded : done === todos.length && !state.prompting;
+    const folded = view.todosFolded !== null ? view.todosFolded : (done === todos.length && !state.prompting) || currentDecision() !== null;
     const current = todos.find((todo) => todo.status === 'in_progress');
     const summary = current ? esc(current.content) : done === todos.length ? '全部完成' : '';
-    const header = '<button class="todos-head" data-todos-toggle aria-expanded="' + !folded + '"><span class="todos-chevron' + (folded ? '' : ' open') + '">' + icons.svg('chevron', 12) + '</span>'
-      + '<span class="todos-title">任务 ' + done + '/' + todos.length + '</span><span class="todos-summary">' + summary + '</span></button>';
-    const rows = folded ? '' : '<ol class="todos-list">' + todos.map((todo) => {
-      const icon = todo.status === 'completed' ? icons.svg('check', 13) : todo.status === 'in_progress' ? icons.svg('loader', 13) : '<span class="todo-dot"></span>';
+    const header = '<button class="stack-head" data-todos-toggle aria-expanded="' + !folded + '">' + icons.svg('chevron', 14)
+      + '<span class="t num">任务 ' + done + '/' + todos.length + '</span><span class="s">' + summary + '</span></button>';
+    const rows = folded ? '' : '<ol class="stack-list">' + todos.map((todo) => {
+      const icon = todo.status === 'completed' ? icons.svg('check', 13) : todo.status === 'in_progress' ? icons.svg('loader', 13) : '<span class="todo-ring"></span>';
       return '<li class="todo ' + esc(todo.status) + '"><span class="todo-mark">' + icon + '</span><span class="todo-text">' + esc(todo.content) + '</span></li>';
     }).join('') + '</ol>';
     panel.innerHTML = header + rows;
@@ -769,12 +829,14 @@
     const paused = state.queue.paused;
     const canContinue = !state.busy && !state.runtimeLost;
     const header = paused
-      ? '<header class="paused"><span>队列已暂停 · ' + items.length + '</span><button id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? '按顺序发送剩余条目' : '当前轮次结束或重新连接后才能继续') + '">继续队列</button></header>'
-      : '<header><span>待发送 · ' + items.length + '</span><span>完成后按顺序发送</span></header>';
-    queue.innerHTML = header + items.map((item, index) => {
-      const refs = item.references && item.references.length ? '<small>' + item.references.length + ' 个引用</small>' : '';
-      return '<div class="queue-item"><span class="queue-text" title="' + esc(item.text) + '">' + (index + 1) + '. ' + esc(item.text) + '</span>' + refs + '<button data-take-queued="' + item.id + '" title="取回为草稿；当前草稿会放到这一条的位置">取回</button><button class="icon small" data-remove-queued="' + item.id + '" aria-label="移除第 ' + (index + 1) + ' 条排队消息">' + icons.svg('close', 12) + '</button></div>';
-    }).join('');
+      ? '<div class="stack-head is-paused"><span class="t num">队列已暂停 · ' + items.length + '</span><button class="btn btn-sm" style="margin-left:auto" id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? '按顺序发送剩余条目' : '当前轮次结束或重新连接后才能继续') + '">继续发送</button></div>'
+      : '<div class="stack-head"><span class="t num">待发送 · ' + items.length + '</span><span class="r">本轮结束后依次发送</span></div>';
+    queue.innerHTML = header + '<div class="queue-list">' + items.map((item, index) => {
+      const refs = item.references && item.references.length ? '<span class="chip">' + item.references.length + ' 个引用</span>' : '';
+      return '<div class="queue-item"><span class="n num">' + (index + 1) + '</span><span class="q" title="' + esc(item.text) + '">' + esc(item.text) + '</span>' + refs
+        + '<button class="btn btn-sm btn-ghost" data-take-queued="' + item.id + '" title="取回为草稿；当前草稿会放到这一条的位置">取回</button>'
+        + '<button class="btn btn-icon btn-sm" data-remove-queued="' + item.id + '" title="移除" aria-label="移除第 ' + (index + 1) + ' 条排队消息">' + icons.svg('close', 14) + '</button></div>';
+    }).join('') + '</div>';
   }
 
   function draftReferencesJson() {
@@ -812,23 +874,28 @@
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
       case 'missingKey':
-        return { title: '未找到 ' + esc(issue.provider) + ' 密钥', body: '在“编辑器偏好设置 > Shuttlegent > General > Providers”中填写 ' + esc(issue.provider) + ' 的 API 密钥（和端点 URL），然后点“重试”。', settings: true };
+        return { tone: '', icon: 'key', title: '没有找到 ' + esc(issue.provider) + ' 密钥', body: '在偏好设置 › Shuttlegent › Providers 填写密钥和端点后重试。', settings: true };
       case 'authFailed':
-        return { title: esc(issue.provider) + ' 拒绝了当前密钥', body: '鉴权失败，密钥可能有误或已失效。在“编辑器偏好设置 > Shuttlegent > General > Providers”中改正密钥和端点 URL，然后点“重试”，运行时会重新启动并读取新设置。', settings: true };
+        return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Providers 改正后重试，运行时会重新启动并读取新设置。', settings: true };
       case 'missingRuntime':
-        return { title: '未找到运行时', body: '期望位置：' + code(issue.runtimePath) + '<br>在插件目录运行 ' + code(issue.buildScript) + ' 构建运行时，或在编辑器偏好设置中指定运行时路径，然后点“重试”。', folder: true };
+        return { tone: 'danger', icon: 'alert', title: '没有找到运行时', body: '期望位置 ' + code(issue.runtimePath) + '。在插件目录运行 ' + code(issue.buildScript) + ' 构建，或在偏好设置里指定路径。', folder: true };
       default:
-        return { title: '运行时启动失败', body: issue.detail ? code(issue.detail) : '查看 Output Log 中的 LogShuttlegent 了解原因。', folder: false };
+        return { tone: 'danger', icon: 'alert', title: '运行时没能启动', body: issue.detail ? code(issue.detail) : '查看 Output Log 中的 LogShuttlegent 了解原因。', folder: false };
     }
+  }
+
+  /** A session-wide notice at the top of the conversation column: icon, title, one line of help, and its buttons. */
+  function calloutHtml(tone, icon, title, body, actions) {
+    return '<div class="callout' + (tone ? ' is-' + tone : '') + '" role="alert">' + icons.svg(icon, 16) + '<div class="callout-body"><div class="callout-title">' + title + '</div>'
+      + (body ? '<div class="callout-text">' + body + '</div>' : '') + '</div><div class="callout-actions">' + actions + '</div></div>';
   }
 
   function renderBanner() {
     const banner = $('banner');
-    banner.classList.remove('guide');
     if (state.startIssue) {
       const guide = startGuide(state.startIssue);
-      banner.classList.add('guide');
-      banner.innerHTML = '<div class="guide-text"><strong>' + guide.title + '</strong><p>' + guide.body + '</p></div><div class="guide-actions">' + (guide.settings ? '<button id="open-guide-settings">打开偏好设置</button>' : '') + (guide.folder ? '<button id="open-plugin-folder">打开插件目录</button>' : '') + '<button id="retry-start" class="primary">重试</button></div>';
+      const actions = (guide.settings ? '<button class="btn btn-sm" id="open-guide-settings">打开设置</button>' : '') + (guide.folder ? '<button class="btn btn-sm" id="open-plugin-folder">打开插件目录</button>' : '') + '<button class="btn btn-sm btn-primary" id="retry-start">重试</button>';
+      banner.innerHTML = calloutHtml(guide.tone, guide.icon, guide.title, guide.body, actions);
       banner.hidden = false;
       if (guide.settings) $('open-guide-settings').addEventListener('click', () => call('opensettings'));
       if (guide.folder) $('open-plugin-folder').addEventListener('click', () => call('openpluginfolder'));
@@ -836,13 +903,13 @@
       return;
     }
     if (state.runtimeLost) {
-      banner.innerHTML = '<span>连接中断，草稿与队列已保留。</span><button id="reconnect">重新连接</button>';
+      banner.innerHTML = calloutHtml('', 'unplug', '连接已中断', '草稿和待发送队列都保留着。', '<button class="btn btn-sm" id="reconnect">重新连接</button>');
       banner.hidden = false;
       $('reconnect').addEventListener('click', () => call('reconnect'));
       return;
     }
     if (state.resumeFailed && state.status !== 'resuming') {
-      banner.innerHTML = '<span>无法恢复此会话的运行时上下文，本地记录仍保留。新建会话不会带上之前对话的上下文，当前草稿会带过去。</span><span><button id="retry-resume">重试恢复</button> <button id="resume-new">新建会话</button></span>';
+      banner.innerHTML = calloutHtml('', 'alert', '没能恢复这个会话的上下文', '本地记录还在。新建会话不会带上之前的对话，当前草稿会带过去。', '<button class="btn btn-sm" id="resume-new">新建会话</button><button class="btn btn-sm" id="retry-resume">重试恢复</button>');
       banner.hidden = false;
       $('retry-resume').addEventListener('click', () => call('retryresume'));
 
@@ -851,7 +918,7 @@
       return;
     }
     if (state.status === 'failed') {
-      banner.innerHTML = '<span>查询失败，尚未执行修改。草稿和队列已保留。</span>' + (state.canRetry ? '<button id="retry">重试查询</button>' : '');
+      banner.innerHTML = calloutHtml('danger', 'alert', '查询失败，没有执行任何修改', '草稿和待发送队列都保留着。', state.canRetry ? '<button class="btn btn-sm" id="retry">重试</button>' : '');
       banner.hidden = false;
       if (state.canRetry) $('retry').addEventListener('click', () => call('retry'));
       return;
@@ -898,9 +965,10 @@
     const send = $('send');
     const stop = $('stop');
 
-    // While a turn runs the send button queues; stop stays next to it
-    send.classList.toggle('queued', state.busy);
-    send.innerHTML = state.busy ? '排队' : icons.svg('send', 18);
+    // While a turn runs the send button queues as a secondary button; stop stays next to it
+    send.classList.toggle('is-queue', state.busy);
+    send.classList.toggle('btn-primary', !state.busy);
+    send.innerHTML = state.busy ? '排队' : icons.svg('send', 16);
     send.setAttribute('aria-label', state.busy ? '加入队列' : '发送消息');
     updateSendButton();
 
@@ -938,37 +1006,38 @@
     const mode = currentMode();
     const info = MODES.find((item) => item.value === mode);
     const modeTrigger = $('mode-trigger');
-    modeTrigger.textContent = info.label;
+    modeTrigger.innerHTML = '<span>' + info.label + '</span>' + icons.svg('chevron-down', 12);
     modeTrigger.title = '模式：' + info.detail + ' · Shift+Tab 切换';
     for (const item of MODES) {
       $('composer').classList.toggle('mode-' + item.value, item.value === mode);
+      modeTrigger.classList.toggle('mode-' + item.value, item.value === mode);
     }
   }
 
   function pickerItemHtml(attributes, label, detail, checked, disabled) {
-    return '<button class="picker-item" role="menuitemradio" aria-checked="' + checked + '"' + attributes + (disabled ? ' disabled' : '') + '><span>' + esc(label) + '</span>'
-      + (checked ? '<span class="picker-check">' + icons.svg('check', 16) + '</span>' : '')
-      + (detail ? '<small>' + esc(detail) + '</small>' : '') + '</button>';
+    return '<button class="menu-item" role="menuitemradio" aria-checked="' + checked + '"' + attributes + (disabled ? ' disabled' : '') + '><span class="menu-text">' + esc(label)
+      + (detail ? '<small>' + esc(detail) + '</small>' : '') + '</span>'
+      + (checked ? '<span class="menu-check">' + icons.svg('check', 16) + '</span>' : '') + '</button>';
   }
 
   function modelMenuHtml() {
     const models = configChoices('model');
     const efforts = configChoices('reasoning_effort');
-    let html = models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
+    let html = '<div class="menu-label">模型</div>' + models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
     if (efforts.choices.length) {
-      html += '<div class="picker-sep"></div><button class="picker-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span>推理强度</span><span class="picker-value">' + esc(choiceName('reasoning_effort')) + icons.svg('chevron', 14) + '</span></button>';
+      html += '<div class="menu-sep"></div><button class="menu-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span class="menu-text">推理强度</span><span class="menu-trail">' + esc(choiceName('reasoning_effort')) + icons.svg('chevron', 14) + '</span></button>';
     }
     return html;
   }
 
   function effortMenuHtml() {
     const efforts = configChoices('reasoning_effort');
-    return '<div class="picker-note">' + EFFORT_NOTE + '</div>' + efforts.choices.map((choice) => pickerItemHtml(' data-pick-effort="' + esc(choice.value) + '"', choice.name, '', choice.value === efforts.current, false)).join('');
+    return '<div class="menu-note">' + EFFORT_NOTE + '</div>' + efforts.choices.map((choice) => pickerItemHtml(' data-pick-effort="' + esc(choice.value) + '"', choice.name, '', choice.value === efforts.current, false)).join('');
   }
 
   function modeMenuHtml() {
     const mode = currentMode();
-    return '<div class="picker-title">模式</div>' + MODES.map((item) => {
+    return '<div class="menu-label">模式 · Shift+Tab 切换</div>' + MODES.map((item) => {
       const disabled = item.value === 'plan' && !state.canSetPlanMode && !state.planMode;
       return pickerItemHtml(' data-pick-mode="' + item.value + '"' + (disabled && state.planModeReason ? ' title="' + esc(state.planModeReason) + '"' : ''), item.label, item.detail, item.value === mode, disabled);
     }).join('');
@@ -1057,7 +1126,7 @@
   }
 
   function focusPickerItem(picker, index) {
-    const items = Array.from(picker.querySelectorAll('.picker-item:not(:disabled)'));
+    const items = Array.from(picker.querySelectorAll('.menu-item:not(:disabled)'));
     if (items.length) items[(index + items.length) % items.length].focus();
   }
 
@@ -1103,7 +1172,7 @@
     });
     // Hovering the effort row opens its submenu; hovering a model row closes it
     $('model-menu').addEventListener('mouseover', (event) => {
-      const item = event.target.closest('.picker-item');
+      const item = event.target.closest('.menu-item');
       if (!item) return;
       if (item.id === 'effort-row') openEffortMenu(false);
       else closeEffortMenu();
@@ -1149,7 +1218,7 @@
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault();
         const target = picker || $(view.openPicker);
-        const items = Array.from(target.querySelectorAll('.picker-item:not(:disabled)'));
+        const items = Array.from(target.querySelectorAll('.menu-item:not(:disabled)'));
         const index = items.indexOf(document.activeElement);
         const step = event.key === 'ArrowDown' ? 1 : -1;
         focusPickerItem(target, index < 0 ? (step > 0 ? 0 : items.length - 1) : index + step);
@@ -1196,38 +1265,47 @@
   }
 
   /** Editor write card (interaction spec section 5.1): action, objects with current and planned values, level, undo, raw arguments. */
+  /** Head row of a decision card: icon, the title that takes focus, and an optional chip. */
+  function decisionHead(icon, tone, title, chip) {
+    const svg = icons.svg(icon, 16).replace('class="sg-icon"', 'class="sg-icon' + (tone ? ' tone-' + tone : '') + '"');
+    return '<div class="card-head">' + svg + '<h3 class="card-title" id="decision-title" tabindex="-1">' + title + '</h3>' + (chip || '') + '</div>';
+  }
+
+  /** Editor write card (interaction spec section 5.1): action, objects with current and planned values, level, undo, raw arguments. */
   function writeCardHtml(request) {
-    const rows = request.objects.map((object) => '<tr><td title="' + esc(object.path) + '">' + esc(object.name) + '</td><td>' + esc(object.field) + '</td><td>' + esc(object.current) + '</td><td>' + esc(object.planned) + '</td></tr>').join('');
-    const badge = request.undoable ? '同步事务 · 可撤销' : '不可撤销';
-    const level = request.level ? ' · ' + esc(request.level) : '';
+    const plannedClass = request.destructive ? 'planned is-danger' : 'planned';
+    const rows = request.objects.map((object) => '<tr><td title="' + esc(object.path) + '">' + esc(object.name) + '</td><td title="' + esc(object.field) + '">' + esc(object.field) + '</td><td title="' + esc(object.current) + '">' + esc(object.current) + '</td><td class="' + plannedClass + '" title="' + esc(object.planned) + '">' + esc(object.planned) + '</td></tr>').join('');
+    const chip = request.undoable ? '<span class="chip chip-success">可撤销</span>' : '<span class="chip chip-danger">不可撤销</span>';
+    const level = request.level ? esc(request.level) + ' · ' : '';
     // Deletes, moves and renames are called out so they are not approved in passing
-    const destructive = request.destructive ? '<p class="destructive-note">删除、移动或改名操作：确认前请逐个核对下方对象，这类改动可能无法恢复。</p>' : '';
-    return '<header><h3 id="decision-title" tabindex="-1">' + esc(request.action) + '</h3><span class="badge' + (request.undoable ? '' : ' warn') + '">' + badge + '</span></header>'
+    const destructive = request.destructive ? '<div class="note-strip">' + icons.svg('alert', 14) + '<span>删除、移动、改名可能无法恢复，确认前逐个核对下方对象。</span></div>' : '';
+    return decisionHead(request.destructive ? 'trash' : 'edit', request.destructive ? 'danger' : '', esc(request.action), chip)
       + destructive
-      + '<p>影响 ' + request.objects.length + ' 个对象' + level + ' · 工具 <code>' + esc(request.tool) + '</code></p>'
-      + '<div class="decision-table"><table><thead><tr><th>对象</th><th>字段</th><th>当前</th><th>计划</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '<details><summary>原始参数</summary><pre>' + esc(prettyRaw(request.raw)) + '</pre></details>'
-      + '<p class="fine">仅确认这一次操作。对象、关卡或参数变化后需要重新确认。<span id="decision-countdown"></span></p>'
-      + '<div class="actions"><button id="decision-reject">取消本次操作</button><button id="decision-allow" class="primary">确认执行</button></div>';
+      + '<div class="card-desc">' + level + request.objects.length + ' 个对象 · <span class="mono">' + esc(request.tool) + '</span></div>'
+      + '<div class="mini-table"><table><thead><tr><th>对象</th><th>字段</th><th>当前</th><th>计划</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<button class="disclosure" id="decision-raw-toggle" aria-expanded="false">' + icons.svg('chevron', 14) + '原始参数</button><pre class="pre" id="decision-raw" hidden>' + esc(prettyRaw(request.raw)) + '</pre>'
+      + '<div class="card-foot"><span class="hint num" title="对象、关卡或参数变化后需要重新确认">仅确认这一次<span id="decision-countdown"></span></span><button class="btn" id="decision-reject">取消</button><button class="btn ' + (request.destructive ? 'btn-danger' : 'btn-primary') + '" id="decision-allow">确认执行</button></div>';
   }
 
   function permissionCardHtml(request) {
-    const target = request.target ? '<p><code>' + esc(request.target) + '</code></p>' : '';
-    const content = request.content ? '<p>内容：' + esc(request.content) + '</p>' : '';
-    const detail = request.detail ? '<p>说明：' + esc(request.detail) + '</p>' : '';
-    return '<header><h3 id="decision-title" tabindex="-1">运行时请求额外权限</h3><span class="badge">不可撤销</span></header><p>操作：' + esc(request.displayName) + '</p>' + target + content + detail + '<p class="fine">本次授权只覆盖这一个请求，不会开放后续请求。拒绝后保留任务记录。</p><div class="actions"><button id="decision-reject">拒绝</button><button id="decision-allow" class="primary">允许本次</button></div>';
+    const lines = [];
+    if (request.target) lines.push('<span class="mono">' + esc(request.target) + '</span>');
+    if (request.content) lines.push('内容：' + esc(request.content));
+    if (request.detail) lines.push('说明：' + esc(request.detail));
+    return decisionHead('shield', 'warning', '运行时请求权限：' + esc(request.displayName), '<span class="chip chip-danger">不可撤销</span>')
+      + (lines.length ? '<div class="card-desc">' + lines.join('<br>') + '</div>' : '')
+      + '<div class="card-foot"><span class="hint" title="拒绝后保留任务记录">只允许这一次，后续请求仍会询问</span><button class="btn" id="decision-reject">拒绝</button><button class="btn btn-primary" id="decision-allow">允许本次</button></div>';
   }
 
   /** Question the agent asked (ask_user): the options as numbered buttons, an own answer when allowed, skip. */
   function questionCardHtml(request) {
-    const options = request.options.map((option, index) => '<button class="question-option" data-question-option="' + index + '"><kbd>' + (index + 1) + '</kbd>' + esc(option) + '</button>').join('');
+    const options = request.options.map((option, index) => '<button class="option" data-question-option="' + index + '"><kbd class="kbd">' + (index + 1) + '</kbd>' + esc(option) + '</button>').join('');
     const other = request.allowOther
-      ? '<div class="question-other"><input id="question-other" placeholder="其他：写下你的回答" aria-label="其他回答" autocomplete="off"><button id="question-other-send">回答</button></div>'
+      ? '<div class="option-other"><input class="field" id="question-other" placeholder="其他：写下你的回答" aria-label="其他回答" autocomplete="off"><button class="btn" id="question-other-send">回答</button></div>'
       : '';
-    return '<header><h3 id="decision-title" tabindex="-1">' + esc(request.question) + '</h3><span class="badge">Agent 提问</span></header>'
-      + '<div class="question-options">' + options + '</div>' + other
-      + '<p class="fine">按数字键选择，Esc 跳过。<span id="decision-countdown"></span></p>'
-      + '<div class="actions"><button id="decision-reject">跳过</button></div>';
+    return decisionHead('question', 'info', esc(request.question), '')
+      + '<div class="option-list">' + options + other + '</div>'
+      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">跳过</button><span class="hint num">按数字键选择 · Esc 跳过<span id="decision-countdown"></span></span></div>';
   }
 
   /** The request the card shows: an editor write first, then a runtime permission, then a question; null when nothing waits. */
@@ -1242,11 +1320,11 @@
   /** Plan the agent presented in plan mode: the plan itself, optional feedback, send back or approve. It waits without a time limit. */
   function planCardHtml(request) {
     const rendered = markdown.render(request.plan || '');
-    return '<header><h3 id="decision-title" tabindex="-1">Agent 交出了计划，请审批</h3><span class="badge">计划模式</span></header>'
-      + '<div class="plan-body markdown">' + rendered.html + '</div>'
-      + '<textarea id="plan-feedback" class="plan-feedback" rows="2" placeholder="退回时的修改意见（可选），如：只改走廊里的灯" aria-label="修改意见"></textarea>'
-      + '<p class="fine">批准后 Agent 退出计划模式并按计划执行：自动接受编辑时可撤销的写入直接执行，逐项确认时每次写入都弹确认卡；删除、移动、改名始终要确认。退回则继续规划。</p>'
-      + '<div class="actions"><button id="decision-reject">继续规划</button><button id="decision-allow-manual">批准，逐项确认</button><button id="decision-allow" class="primary">批准，自动接受编辑</button></div>';
+    return decisionHead('plan', 'info', '计划待审批', '<span class="chip chip-info">计划模式</span>')
+      + '<div class="plan-box markdown">' + rendered.html + '</div>'
+      + '<textarea id="plan-feedback" class="field" rows="2" placeholder="退回时的修改意见（可选），如：只改走廊里的灯" aria-label="修改意见"></textarea>'
+      + '<div class="card-desc">批准后退出计划模式并执行。"批准并执行"按自动接受编辑处理可撤销的写入，"逐项确认"每次写入都先问你；删除、移动、改名始终要确认。</div>'
+      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">继续规划</button><button class="btn" id="decision-allow-manual">批准，逐项确认</button><button class="btn btn-primary" id="decision-allow">批准并执行</button></div>';
   }
 
   /** The decision card replaces the composer while an editor write or a runtime permission request waits for an answer. */
@@ -1255,9 +1333,9 @@
     const card = $('decision');
     const waiting = decision !== null;
     $('composer').hidden = waiting;
-    $('composer-meta').hidden = waiting;
     if (waiting) closePickers();
     card.hidden = !waiting;
+    renderTodos();
     if (!waiting || decision.kind === 'permission' || decision.kind === 'plan') stopCountdown();
     if (!waiting) {
       // Focus that sat on the card goes back to the draft once it is answered
@@ -1272,7 +1350,7 @@
 
     // Focus that was on the previous card or in the composer moves to the new title; focus elsewhere (the viewport) is not stolen
     const focusWasOurs = $('composer').contains(document.activeElement) || card.contains(document.activeElement) || document.activeElement === document.body;
-    card.classList.toggle('elevation', decision.kind === 'permission');
+    card.classList.toggle('card-danger', decision.kind === 'write' && !!decision.request.destructive);
     if (decision.kind === 'question') {
       card.innerHTML = questionCardHtml(decision.request);
       for (const button of card.querySelectorAll('[data-question-option]')) {
@@ -1294,9 +1372,16 @@
       $('decision-reject').addEventListener('click', () => answerDecision(false));
       $('decision-allow').addEventListener('click', () => answerDecision(true));
       if (decision.kind === 'plan') $('decision-allow-manual').addEventListener('click', () => answerDecision(true, false));
+      if (decision.kind === 'write') {
+        $('decision-raw-toggle').addEventListener('click', () => {
+          const raw = $('decision-raw');
+          raw.hidden = !raw.hidden;
+          $('decision-raw-toggle').setAttribute('aria-expanded', String(!raw.hidden));
+        });
+      }
     }
     view.shownDecisionKey = decision.key;
-    if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '，超时后 Agent 改用文字提问。' : '，超时自动取消。');
+    if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '后改为文字提问' : '后自动取消');
     if (focusWasOurs && document.hasFocus()) $('decision-title').focus({ preventScroll: true });
   }
 
@@ -1307,7 +1392,7 @@
       const label = $('decision-countdown');
       if (!label) return;
       const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      label.textContent = ' 剩余 ' + seconds + ' 秒' + suffix;
+      label.textContent = ' · ' + seconds + ' 秒' + suffix;
     };
     tick();
     view.countdownTimer = window.setInterval(tick, COUNTDOWN_INTERVAL_MS);
@@ -1632,8 +1717,9 @@
       const invalid = ref.valid === false;
       const kind = ref.kind === 'actor' ? 'Actor' : '资产';
       const title = invalid ? '对象已删除或失效：移除或重新添加后再发送' : kind + ' · ' + ref.cls + ' · ' + ref.path;
-      const alert = invalid ? icons.svg('alert', 12) : '';
-      return '<span class="ref' + (invalid ? ' invalid' : '') + '" title="' + esc(title) + '">' + alert + '<span class="ref-name">' + esc(ref.name) + '</span><button data-remove-ref="' + index + '" aria-label="移除引用 ' + esc(ref.name) + '">' + icons.svg('close', 12) + '</button></span>';
+      const lead = icons.svg(invalid ? 'alert' : ref.kind === 'actor' ? 'locate' : 'file', 12);
+      const cls = ref.cls && !invalid ? '<span class="ref-kind">' + esc(ref.cls) + '</span>' : '';
+      return '<span class="ref' + (invalid ? ' invalid' : '') + '" title="' + esc(title) + '">' + lead + '<span class="ref-name">' + esc(ref.name) + '</span>' + cls + '<button data-remove-ref="' + index + '" title="移除" aria-label="移除引用 ' + esc(ref.name) + '">' + icons.svg('close', 12) + '</button></span>';
     }).join('');
     updateSendButton();
   }
@@ -1804,7 +1890,10 @@
       if (!section.items.length) continue;
       html += '<div class="menu-label">' + section.label + '</div>';
       for (const item of section.items) {
-        html += '<button role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '"' + (item.off ? ' class="off"' : '') + ' tabindex="-1">' + esc(item.label) + (item.tag ? '<em class="tag">' + esc(item.tag) + '</em>' : '') + '<small>' + esc(item.detail) + '</small></button>';
+        const icon = section.icon ? icons.svg(section.icon, 16) : '';
+        const tag = item.tag ? '<span class="menu-trail">' + esc(item.tag) + '</span>' : '';
+        html += '<button class="menu-item' + (item.off ? ' is-off' : '') + '" role="option" data-menu-item="' + itemIndex + '" aria-selected="' + (itemIndex === menu.index) + '" tabindex="-1">' + icon
+          + '<span class="menu-text">' + esc(item.label) + '<small>' + esc(item.detail) + '</small></span>' + tag + '</button>';
         ++itemIndex;
       }
     }
@@ -1843,7 +1932,7 @@
         return { label: '/' + item.name, detail: blocker || item.detail, body: item.body, command: true, off: !!blocker };
       });
       const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body, tag: item.builtin ? '内置' : '' }));
-      menu.sections = [{ label: '命令', items: commands }, { label: '模板', items }];
+      menu.sections = [{ label: '命令', icon: 'terminal', items: commands }, { label: '模板', icon: 'file', items }];
       menu.items = commands.concat(items);
       renderMenu(menu.sections, state.templates.length ? '没有匹配的命令或模板' : '没有匹配的命令；暂无可用模板（项目设置 → Shuttlegent → Template Dirs）');
       return;
@@ -1858,9 +1947,9 @@
 
     const selection = result.selection || [];
     const sections = [
-      { label: '当前选择', items: selection.length ? [{ label: '当前选择', detail: selection.length + ' 个对象（选择快照）', refs: selection }] : [] },
-      { label: '关卡 Actor', items: (result.actors || []).map((ref) => ({ label: ref.name, detail: 'Actor · ' + ref.cls, refs: [ref] })) },
-      { label: '资产', items: (result.assets || []).map((ref) => ({ label: ref.name, detail: ref.cls + ' · ' + ref.path, refs: [ref] })) }
+      { label: '当前选择', icon: 'selection', items: selection.length ? [{ label: '当前选择', detail: selection.length + ' 个对象（选择快照）', refs: selection }] : [] },
+      { label: '关卡 Actor', icon: 'locate', items: (result.actors || []).map((ref) => ({ label: ref.name, detail: 'Actor · ' + ref.cls, refs: [ref] })) },
+      { label: '资产', icon: 'file', items: (result.assets || []).map((ref) => ({ label: ref.name, detail: ref.cls + ' · ' + ref.path, refs: [ref] })) }
     ];
     menu.items = sections.flatMap((section) => section.items);
     menu.index = Math.min(menu.index, Math.max(0, menu.items.length - 1));
@@ -1959,33 +2048,37 @@
         section = label;
       }
 
-      // The current session shows how it runs; a background one that runs, waits or has queued prompts says so; the others show their model and last activity
+      // One line per session. A background one shows a turning loader while it runs, a yellow dot while it waits for the
+      // user and an accent dot when it finished unseen; the open one shows nothing. The tooltip carries the details.
       const current = session.id === state.currentSessionId;
-      const activity = current ? '' : backgroundActivity(session);
-      const detail = current ? STATUS_TEXT[state.status] || '' : activity || (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt);
-      const warning = (current && WARNING_STATUSES.has(state.status)) || (!current && CONFIRM_STATUSES.has(session.status)) ? ' class="warning"' : '';
       const title = session.title || '新会话';
-      // A background session that finished unseen gets a green dot, one waiting for input a yellow dot; the open one needs none
       const attention = current ? '' : ATTENTION_TEXT[session.attention] || '';
-      const dot = attention ? '<span class="session-dot ' + session.attention + '" role="img" aria-label="' + attention + '"></span>' : '';
-      html += '<button class="session' + (dot ? ' has-dot' : '') + '" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(title + (attention ? ' · ' + attention : '')) + '"><span class="session-name">' + esc(title) + '</span><small' + warning + '>' + esc(detail) + '</small>' + dot + '</button>';
+      const activity = current ? STATUS_TEXT[state.status] || '' : backgroundActivity(session);
+      let mark = '';
+      if (!current && RUNNING_STATUSES.has(session.status)) mark = '<span class="session-mark spin" role="img" aria-label="运行中">' + icons.svg('loader', 14) + '</span>';
+      else if (!current && (CONFIRM_STATUSES.has(session.status) || session.attention === 'input')) mark = '<span class="session-mark" role="img" aria-label="' + (attention || '等待确认') + '"><span class="dot input"></span></span>';
+      else if (attention) mark = '<span class="session-mark" role="img" aria-label="' + attention + '"><span class="dot ' + session.attention + '"></span></span>';
+      const tooltip = [title, attention || activity, (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt)].filter(Boolean).join('\n');
+      html += '<button class="session" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(tooltip) + '"><span class="session-name">' + esc(title) + '</span>' + mark + '</button>';
     }
     if (!visible.length) html = '<p class="sessions-empty">' + (query ? '没有匹配的会话' : '还没有会话') + '</p>';
 
     $('sessions').innerHTML = html;
-    $('archive-count').textContent = state.archived.length;
+    const archived = '已归档会话（' + state.archived.length + '）';
+    $('archived-button').title = archived;
+    $('archived-button').setAttribute('aria-label', archived);
     const sandbox = state.permissionMode === 'workspaceWrite' ? '工作区可写' : '只读';
-    $('permission-mode').textContent = '权限：' + sandbox + ' · Shell ' + (state.shellEnabled ? '开' : '关');
+    $('permission-mode').textContent = sandbox + ' · Shell ' + (state.shellEnabled ? '开' : '关');
     renderArchivedList();
   }
 
   function renderArchivedList() {
     const list = $('archived-list');
     if (!state.archived.length) {
-      list.innerHTML = '<p>没有已归档的会话</p>';
+      list.innerHTML = '<p class="dialog-empty">没有已归档的会话</p>';
       return;
     }
-    list.innerHTML = state.archived.map((session) => '<div class="archive-item"><span title="' + esc(session.title || '新会话') + '">' + esc(session.title || '新会话') + '</span><button data-restore="' + esc(session.id) + '">恢复</button><button data-delete="' + esc(session.id) + '">删除</button></div>').join('');
+    list.innerHTML = state.archived.map((session) => '<div class="dialog-row"><span title="' + esc(session.title || '新会话') + '">' + esc(session.title || '新会话') + '</span><button class="btn btn-sm" data-restore="' + esc(session.id) + '">恢复</button><button class="btn btn-sm btn-ghost is-danger" data-delete="' + esc(session.id) + '">删除</button></div>').join('');
   }
 
   // ---------- Session menu ----------
@@ -2042,40 +2135,27 @@
 
   // ---------- Pane widths ----------
 
-  function paneLimits(pane) {
-    if (pane === 'sidebar') return { min: SIDEBAR_MIN_WIDTH, max: SIDEBAR_MAX_WIDTH, fallback: SIDEBAR_DEFAULT_WIDTH };
-    return { min: INSPECTOR_MIN_WIDTH, max: INSPECTOR_MAX_WIDTH, fallback: INSPECTOR_DEFAULT_WIDTH };
+  /** The sidebar's remembered width, or the default, within its limits. */
+  function preferredSidebarWidth() {
+    return Math.max(SIDEBAR_MIN_WIDTH, Math.min(view.paneWidths.sidebar || SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MAX_WIDTH));
   }
 
-  /** The remembered width, or the default, within the pane's own limits. */
-  function preferredWidth(pane) {
-    const limits = paneLimits(pane);
-    return Math.max(limits.min, Math.min(view.paneWidths[pane] || limits.fallback, limits.max));
+  /** Room the sidebar may take: the panel less the docked inspector and the conversation's minimum. */
+  function sidebarRoom() {
+    const inspectorWidth = paneMode('inspector') === 'docked' ? INSPECTOR_WIDTH : 0;
+    return ($('workbench').clientWidth || window.innerWidth) - inspectorWidth - CHAT_MIN_WIDTH;
   }
 
-  /** Room a pane may take: the panel less the other docked pane and the conversation's minimum. */
-  function roomFor(pane) {
-    const other = pane === 'sidebar' ? 'inspector' : 'sidebar';
-    const otherWidth = paneMode(other) === 'docked' ? preferredWidth(other) : 0;
-    return ($('workbench').clientWidth || window.innerWidth) - otherWidth - CHAT_MIN_WIDTH;
-  }
-
-  /** Width a docked pane gets now: its preferred width, narrowed so the conversation keeps CHAT_MIN_WIDTH, never below the pane's minimum. */
-  function dockedWidth(pane) {
-    return Math.max(paneLimits(pane).min, Math.min(preferredWidth(pane), roomFor(pane)));
-  }
-
+  /** The docked sidebar gets its preferred width, narrowed so the conversation keeps CHAT_MIN_WIDTH, never below its minimum; the inspector's width is fixed in app.css. */
   function applyPaneWidths() {
-    const workbench = $('workbench');
-    for (const pane of ['sidebar', 'inspector']) {
-      if (paneMode(pane) === 'docked') workbench.style.setProperty('--' + pane + '-width', dockedWidth(pane) + 'px');
-    }
+    if (paneMode('sidebar') !== 'docked') return;
+    const width = Math.max(SIDEBAR_MIN_WIDTH, Math.min(preferredSidebarWidth(), sidebarRoom()));
+    $('workbench').style.setProperty('--sidebar-width', width + 'px');
   }
 
-  /** A drag or arrow key asked for this width: clamped like a docked width, it becomes the pane's remembered width. */
-  function resizePane(pane, wanted) {
-    const limits = paneLimits(pane);
-    view.paneWidths[pane] = Math.round(Math.max(limits.min, Math.min(wanted, limits.max, roomFor(pane))));
+  /** A drag or arrow key asked for this sidebar width: clamped like the docked width, it becomes the remembered width. */
+  function resizeSidebar(wanted) {
+    view.paneWidths.sidebar = Math.round(Math.max(SIDEBAR_MIN_WIDTH, Math.min(wanted, SIDEBAR_MAX_WIDTH, sidebarRoom())));
     applyPaneWidths();
   }
 
@@ -2098,6 +2178,7 @@
   }
 
   function paneMode(pane) {
+    if (pane === 'inspector' && view.empty) return 'hidden';
     if (isDocked(pane)) return view.docked[pane] ? 'docked' : 'hidden';
     return view.overlay === pane ? 'overlay' : 'hidden';
   }
@@ -2107,6 +2188,7 @@
     const workbench = $('workbench');
     view.layout = layoutForWidth(workbench.clientWidth || window.innerWidth);
     if (view.overlay && isDocked(view.overlay)) view.overlay = null;
+    if (view.overlay === 'inspector' && view.empty) view.overlay = null;
 
     workbench.classList.remove('full', 'wide', 'medium', 'narrow');
     workbench.classList.add(view.layout);
@@ -2122,6 +2204,7 @@
     $('inspector').inert = view.overlay === 'sidebar';
 
     $('toggle-sidebar').setAttribute('aria-expanded', String(paneMode('sidebar') !== 'hidden'));
+    $('toggle-inspector').hidden = view.empty;
     $('toggle-inspector').setAttribute('aria-expanded', String(paneMode('inspector') !== 'hidden'));
     applyPaneWidths();
     if (paneMode('inspector') !== 'hidden') renderInspector();
@@ -2133,6 +2216,7 @@
   }
 
   function openPane(pane) {
+    if (pane === 'inspector' && view.empty) return;
     if (isDocked(pane)) {
       view.docked[pane] = true;
       applyLayout();
@@ -2156,6 +2240,7 @@
   }
 
   function togglePane(pane) {
+    if (pane === 'inspector' && view.empty) return;
     if (isDocked(pane)) {
       view.docked[pane] = !view.docked[pane];
       applyLayout();
@@ -2168,9 +2253,9 @@
   // ---------- Inspector ----------
 
   function toolStateText(status) {
-    if (status === TOOL_COMPLETED) return '已完成';
-    if (status === TOOL_FAILED) return '执行失败';
-    return '正在执行';
+    if (status === TOOL_COMPLETED) return '完成';
+    if (status === TOOL_FAILED) return '失败';
+    return '进行中';
   }
 
   function prettyJson(text) {
@@ -2184,18 +2269,18 @@
 
   function renderToolDetails() {
     const tools = state.order.map((id) => state.entries.get(id)).filter((entry) => entry && entry.kind === 'toolCall');
-    if (!tools.length) return '<p class="empty-note">本会话还没有工具调用。</p>';
+    if (!tools.length) return '<p class="empty-note">工具调用会显示在这里。</p>';
 
     return tools.map((entry) => {
       const expanded = expandedTools.has(entry.id);
-      const body = expanded ? '<div class="tool-detail-body"><h4>参数</h4><pre>' + esc(prettyJson(entry.input) || '（无参数）') + '</pre><h4>结果</h4>' + toolImages(entry) + '<pre>' + esc(entry.result || '（尚无结果）') + '</pre></div>' : '';
+      const body = expanded ? '<div class="tool-detail-body"><h4>参数</h4><pre class="pre">' + esc(prettyJson(entry.input) || '（无参数）') + '</pre><h4>结果</h4>' + toolImages(entry) + '<pre class="pre">' + esc(entry.result || '（尚无结果）') + '</pre></div>' : '';
       const selected = view.selectedTool === entry.id ? ' selected' : '';
-      return '<div class="tool-detail' + selected + '" id="tool-detail-' + entry.id + '"><button data-expand-tool="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起参数与结果">' + toolIcon(entry.toolStatus) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><span class="tool-state">' + toolStateText(entry.toolStatus) + '</span></button>' + body + '</div>';
+      return '<div class="tool-detail' + selected + '" id="tool-detail-' + entry.id + '"><button data-expand-tool="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起参数与结果">' + toolIcon(entry.toolStatus, 14) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><span class="tool-state">' + toolStateText(entry.toolStatus) + '</span></button>' + body + '</div>';
     }).join('');
   }
 
   function renderRunLog() {
-    if (!state.runLog.length) return '<p class="empty-note">尚无调用记录。密钥、完整环境变量不进入日志。</p>';
+    if (!state.runLog.length) return '<p class="empty-note">调用记录会显示在这里。密钥与完整环境变量不会写进日志。</p>';
     return state.runLog.map((item) => '<div class="log' + (item.warning ? ' warning' : '') + '"><time>' + clock(item.time, true) + '</time>' + esc(item.text) + '</div>').join('');
   }
 
@@ -2226,7 +2311,7 @@
     let lead = '';
     if (opts.icon) lead = '<span class="lead">' + icons.svg(opts.icon, 16) + '</span>';
     else if (opts.swatch) lead = '<span class="swatch ' + opts.swatch + '"></span>';
-    const tag = opts.tag ? '<span class="tag">' + esc(opts.tag) + '</span>' : '';
+    const tag = opts.tag ? '<span class="chip">' + esc(opts.tag) + '</span>' : '';
     const extra = opts.extra !== undefined ? '<span class="x">' + esc(opts.extra) + '</span>' : '';
     return '<li class="kv' + (opts.icon ? ' lit' : '') + (opts.warn ? ' warn' : '') + (opts.mono ? ' mono' : '') + '">' + lead + '<span class="k" title="' + esc(label) + '">' + esc(label) + '</span>' + tag + '<span class="v">' + esc(value) + '</span>' + extra + '</li>';
   }
@@ -2239,7 +2324,7 @@
   function compactAction() {
     const label = state.compacting ? '压缩中…' : '压缩上下文';
     const title = state.canCompact ? '把较早的对话总结为摘要，腾出上下文空间' : state.compactReason;
-    return '<div class="card-actions"><button class="small" data-compact' + (state.canCompact ? '' : ' disabled') + ' title="' + esc(title) + '">' + label + '</button></div>';
+    return '<div class="card-actions"><button class="btn btn-sm" data-compact' + (state.canCompact ? '' : ' disabled') + ' title="' + esc(title) + '">' + label + '</button></div>';
   }
 
   function renderContextCard() {
@@ -2255,14 +2340,14 @@
       legend = parts.map((part) => kvRow(part.label, shortTokens(part.tokens), { swatch: part.key, extra: percentText(part.tokens / state.contextSize) })).join('');
     } else {
       const level = share >= USAGE_FULL_SHARE ? ' full' : share >= USAGE_HIGH_SHARE ? ' high' : '';
-      meter = '<div class="meter' + level + '"><span class="used" style="width:' + share * 100 + '%"></span></div>';
+      meter = '<div class="meter"><span class="used' + level + '" style="width:' + share * 100 + '%"></span></div>';
       legend = kvRow('已用', shortTokens(state.usedTokens), { swatch: 'used' + level, extra: percentText(share) });
     }
     const note = parts ? ' title="分项按运行时估算的比例分摊实际用量"' : '';
     return '<div class="context-head"><span>已用 ' + Math.round(share * 100) + '%</span><span class="count">' + shortTokens(state.usedTokens) + ' / ' + shortTokens(state.contextSize) + '</span></div>'
       + meter
       + '<ul class="kv-list legend"' + note + '>' + legend + kvRow('剩余', shortTokens(free), { swatch: 'free', extra: percentText(1 - share) }) + '</ul>'
-      + '<ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>'
+      + '<div class="divider"></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>'
       + compactAction();
   }
 
@@ -2312,7 +2397,7 @@
   function cardGroup(id, label, count, rows, empty) {
     const open = view.cardGroups.has(id);
     const body = open ? (rows ? '<ul class="kv-list nested">' + rows + '</ul>' : '<p class="empty-note nested">' + empty + '</p>') : '';
-    return '<div class="card-group' + (open ? ' open' : '') + '"><button class="group-head" data-card-group="' + id + '" aria-expanded="' + open + '"><span class="group-chevron">' + icons.svg('chevron', 14) + '</span><span class="k">' + label + '</span><span class="v">' + count + '</span></button>' + body + '</div>';
+    return '<div class="card-group' + (open ? ' open' : '') + '"><button class="group-head" data-card-group="' + id + '" aria-expanded="' + open + '">' + icons.svg('chevron', 14) + '<span>' + label + '</span><span class="c">' + count + '</span></button>' + body + '</div>';
   }
 
   function renderMcpCard() {
@@ -2388,9 +2473,9 @@
   function renderMemoryCard() {
     const items = state.memory ? state.memory.items : [];
     const list = items.length
-      ? '<ul class="memory-list">' + items.map((item, index) => '<li><span class="memory-text">' + esc(item.text) + (item.date ? '<small>' + esc(item.date) + '</small>' : '') + '</span><button class="icon memory-forget" data-forget-memory="' + index + '" title="删除这条记忆" aria-label="删除这条记忆">' + icons.svg('close', 12) + '</button></li>').join('') + '</ul>'
-      : '<p class="memory-empty">还没有记忆。你说“记住……”，或 Agent 判断以后用得上时，会自动记在这里。</p>';
-    return list + '<div class="memory-foot"><span>删除或修改从下一次请求起生效</span><button id="memory-open">打开文件</button></div>';
+      ? '<ul class="memory-list">' + items.map((item, index) => '<li><span class="memory-text">' + esc(item.text) + (item.date ? '<small>' + esc(item.date) + '</small>' : '') + '</span><button class="btn btn-icon btn-sm memory-forget" data-forget-memory="' + index + '" title="删除这条记忆" aria-label="删除这条记忆">' + icons.svg('close', 14) + '</button></li>').join('') + '</ul>'
+      : '<p class="empty-note">你说“记住……”，或 Agent 判断以后用得上时，会记在这里。</p>';
+    return list + '<div class="memory-foot"><span>修改从下一次请求起生效</span><button class="btn btn-link" id="memory-open">打开文件</button></div>';
   }
 
   /** Opens the inspector on the memory card. */
@@ -2414,6 +2499,7 @@
       summary.classList.toggle('warn', cardWarns(card));
 
       const body = $('card-body-' + card);
+      body.className = 'icard-body' + (card === 'tools' ? ' is-flush is-wide' : card === 'memory' || card === 'log' ? ' is-flush' : '');
       body.hidden = !expanded;
       body.innerHTML = expanded ? renderCardBody(card) : '';
     }
@@ -2510,6 +2596,7 @@
       markPlayer.setEnabled(state.animateMark);
       warpPlayer.setEnabled(state.animateMark);
     }
+    if ('fonts' in message) applyFonts(message.fonts || {});
     if ('fontSize' in message) {
       document.documentElement.style.setProperty('--chat-font-size', message.fontSize + 'px');
       growDraft();
@@ -2583,6 +2670,21 @@
       if (event === 'turnCompleted') markPlayer.play(headerMark, 'done');
       if (event === 'turnStopped') markPlayer.rest(headerMark);
     }
+  }
+
+  /** A font stack from Editor Preferences: the names that pass FONT_NAME, quoted, in front of the fallback stack. */
+  function fontStack(names, fallback) {
+    const valid = String(names || '').split(',').map((name) => name.trim()).filter((name) => FONT_NAME.test(name)).slice(0, MAX_FONT_NAMES);
+    return valid.length ? valid.map((name) => '"' + name + '"').join(',') + ',' + fallback : fallback;
+  }
+
+  /** Fonts chosen in Editor Preferences; empty values keep the defaults, and the chat font follows the UI font unless set. */
+  function applyFonts(fonts) {
+    const root = document.documentElement.style;
+    root.setProperty('--font-ui', fontStack(fonts.ui, FONT_UI));
+    root.setProperty('--font-chat', fontStack(fonts.chat, 'var(--font-ui)'));
+    root.setProperty('--font-mono', fontStack(fonts.mono, FONT_MONO));
+    growDraft();
   }
 
   function startNewSession() {
@@ -2848,8 +2950,8 @@
       if (copyUser) {
         const entry = state.entries.get(Number(copyUser.dataset.userCopy));
         if (entry) call('copytext', entry.text || '');
-        copyUser.innerHTML = icons.svg('check', 15);
-        setTimeout(() => { copyUser.innerHTML = icons.svg('copy', 15); }, COPIED_MS);
+        copyUser.innerHTML = icons.svg('check', 14);
+        setTimeout(() => { copyUser.innerHTML = icons.svg('copy', 14); }, COPIED_MS);
         return;
       }
 
@@ -2965,47 +3067,41 @@
     });
   }
 
-  /** Grips on the docked panes' inner edges: drag to resize, arrow keys step, double click restores the default; widths are saved when a change ends. */
+  /** The grip on the docked sidebar's inner edge: drag to resize, arrow keys step, double click restores the default; the width is saved when a change ends. */
   function bindResizers() {
-    for (const grip of document.querySelectorAll('.pane-resizer')) {
-      const pane = grip.dataset.pane;
+    const grip = $('sidebar-resizer');
 
-      grip.addEventListener('pointerdown', (event) => {
-        if (event.button !== 0) return;
-        event.preventDefault();
-        grip.setPointerCapture(event.pointerId);
-        grip.classList.add('dragging');
-        document.body.classList.add('resizing');
-      });
-      grip.addEventListener('pointermove', (event) => {
-        if (!grip.hasPointerCapture(event.pointerId)) return;
-        const rect = $(pane).getBoundingClientRect();
-        resizePane(pane, pane === 'sidebar' ? event.clientX - rect.left : rect.right - event.clientX);
-      });
-      grip.addEventListener('pointerup', (event) => {
-        if (!grip.hasPointerCapture(event.pointerId)) return;
-        grip.releasePointerCapture(event.pointerId);
-        savePaneWidths();
-      });
-      grip.addEventListener('lostpointercapture', () => {
-        grip.classList.remove('dragging');
-        document.body.classList.remove('resizing');
-      });
-      grip.addEventListener('dblclick', () => {
-        view.paneWidths[pane] = 0;
-        applyPaneWidths();
-        savePaneWidths();
-      });
-      grip.addEventListener('keydown', (event) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-        event.preventDefault();
-
-        // The sidebar grows to the right, the inspector to the left
-        const outward = (event.key === 'ArrowRight') === (pane === 'sidebar');
-        resizePane(pane, $(pane).offsetWidth + (outward ? RESIZE_KEY_STEP : -RESIZE_KEY_STEP));
-        savePaneWidths();
-      });
-    }
+    grip.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      grip.setPointerCapture(event.pointerId);
+      grip.classList.add('dragging');
+      document.body.classList.add('resizing');
+    });
+    grip.addEventListener('pointermove', (event) => {
+      if (!grip.hasPointerCapture(event.pointerId)) return;
+      resizeSidebar(event.clientX - $('sidebar').getBoundingClientRect().left);
+    });
+    grip.addEventListener('pointerup', (event) => {
+      if (!grip.hasPointerCapture(event.pointerId)) return;
+      grip.releasePointerCapture(event.pointerId);
+      savePaneWidths();
+    });
+    grip.addEventListener('lostpointercapture', () => {
+      grip.classList.remove('dragging');
+      document.body.classList.remove('resizing');
+    });
+    grip.addEventListener('dblclick', () => {
+      view.paneWidths.sidebar = 0;
+      applyPaneWidths();
+      savePaneWidths();
+    });
+    grip.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      resizeSidebar($('sidebar').offsetWidth + (event.key === 'ArrowRight' ? RESIZE_KEY_STEP : -RESIZE_KEY_STEP));
+      savePaneWidths();
+    });
   }
 
   function bindDialogs() {
@@ -3097,8 +3193,9 @@
   }
 
   function decorateIcons() {
+    // The placeholder becomes the icon itself, so layout rules can address the svg as a direct child
     for (const element of document.querySelectorAll('[data-icon]')) {
-      element.innerHTML = icons.svg(element.dataset.icon, Number(element.dataset.size || 16));
+      element.outerHTML = icons.svg(element.dataset.icon, Number(element.dataset.size || 16));
     }
   }
 
@@ -3112,6 +3209,7 @@
 
   decorateIcons();
   headerMark = markPlayer.attach($('header-mark'), 's');
+  workingMark = markPlayer.attach($('working-mark'), 's');
   warpPlayer.attach($('chat'));
 
   // Whether CEF reports a hidden panel tab decides if the shell must pause the mark itself (Shuttlegent.md section 14.3.8)

@@ -89,6 +89,18 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	bool bWideLayout = false;
 
+	/** 侧栏、菜单、按钮、卡片使用的字体，可填多个并用逗号分隔；留空使用 Segoe UI 与微软雅黑 UI。立即生效。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
+	FString UiFontFamily;
+
+	/** 对话消息与输入框使用的字体；留空跟随界面字体。想让回复更像书页，可以填思源宋体等衬线字体。立即生效。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
+	FString ChatFontFamily;
+
+	/** 代码、参数与日志使用的等宽字体；留空使用 Cascadia Mono 与 Consolas。立即生效。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
+	FString CodeFontFamily;
+
 	//~ Begin UDeveloperSettings Interface.
 	virtual FName GetContainerName() const override;
 	virtual FName GetCategoryName() const override;

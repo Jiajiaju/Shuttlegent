@@ -28,6 +28,39 @@
 
 namespace FShuttlegentWebProtocolPrivate
 {
+	/**
+	 * 字体设置中可下发的字体族：ASCII 部分只允许字母、数字与少数分隔字符（挡住引号、分号、括号等能改写 CSS 的字符），
+	 * 中文等非 ASCII 字符交给页面端按 Unicode 字母、数字再校验一次；最多 MaxFontNames 个，逗号连接。
+	 */
+	FString SanitizeFontFamilies(const FString& Value)
+	{
+		TArray<FString> Names;
+		Value.ParseIntoArray(Names, ShuttlegentAppearanceConstant::FontSeparator, true);
+
+		TArray<FString> Valid;
+		const FString ExtraChars = ShuttlegentAppearanceConstant::FontNameExtraChars;
+		for (const FString& Name : Names)
+		{
+			const FString Trimmed = Name.TrimStartAndEnd();
+			if (Trimmed.IsEmpty()) continue;
+
+			bool bValid = true;
+			for (const TCHAR Char : Trimmed)
+			{
+				int32 Unused = INDEX_NONE;
+				const bool bAscii = Char < ShuttlegentAppearanceConstant::FirstNonAsciiChar;
+				if (bAscii && !FChar::IsAlnum(Char) && !ExtraChars.FindChar(Char, Unused))
+				{
+					bValid = false;
+					break;
+				}
+			}
+			if (bValid) Valid.Add(Trimmed);
+			if (Valid.Num() >= ShuttlegentAppearanceConstant::MaxFontNames) break;
+		}
+		return FString::Join(Valid, ShuttlegentAppearanceConstant::FontSeparator);
+	}
+
 	const TCHAR* WriteModeName(EShuttlegentWriteMode Mode)
 	{
 		switch (Mode)
@@ -501,6 +534,12 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetBoolField(ShuttlegentEditorWebField::AnimateMark, IsValid(Settings) && Settings->bAnimateMark);
 	Root->SetNumberField(ShuttlegentEditorWebField::FontSize, IsValid(Settings) ? Settings->FontSize : ShuttlegentAppearanceConstant::DefaultFontSize);
 	Root->SetBoolField(ShuttlegentEditorWebField::WideLayout, IsValid(Settings) && Settings->bWideLayout);
+
+	const TSharedRef<FJsonObject> Fonts = MakeShared<FJsonObject>();
+	Fonts->SetStringField(ShuttlegentEditorWebField::FontUi, IsValid(Settings) ? FShuttlegentWebProtocolPrivate::SanitizeFontFamilies(Settings->UiFontFamily) : FString());
+	Fonts->SetStringField(ShuttlegentEditorWebField::FontChat, IsValid(Settings) ? FShuttlegentWebProtocolPrivate::SanitizeFontFamilies(Settings->ChatFontFamily) : FString());
+	Fonts->SetStringField(ShuttlegentEditorWebField::FontMono, IsValid(Settings) ? FShuttlegentWebProtocolPrivate::SanitizeFontFamilies(Settings->CodeFontFamily) : FString());
+	Root->SetObjectField(ShuttlegentEditorWebField::Fonts, Fonts);
 	Root->SetNumberField(ShuttlegentEditorWebField::UsedTokens, static_cast<double>(Model->GetUsedTokens()));
 	Root->SetNumberField(ShuttlegentEditorWebField::ContextSize, static_cast<double>(Model->GetContextSize()));
 

@@ -172,18 +172,39 @@ namespace ShuttlegentEditorSettingsUi
 	// 工具描述第一行的结束符，该行显示为开关的提示信息
 	inline const TCHAR* LineBreak = TEXT("\n");
 
-	// 字体设置行：值区域最小宽度（Slate 单位），输入框与预设按钮之间的间距
+	// 字体设置行：值区域最小宽度（Slate 单位）
 	inline constexpr float FontValueMinWidth = 260.0f;
-	inline constexpr float FontPresetGap = 4.0f;
 
-	// 界面字体与对话字体的预设下拉项（空字符串为"默认"）
+	// 字体输入框“推荐”分组中的界面与对话字体（本机已安装的才列出；空字符串忽略）
 	inline const TCHAR* TextFontPresets[] = { TEXT(""), TEXT("Microsoft YaHei UI"), TEXT("DengXian"), TEXT("Noto Sans SC"), TEXT("Noto Serif SC"), TEXT("Source Han Serif SC") };
 
-	// 等宽字体的预设下拉项（空字符串为"默认"）
+	// 字体输入框“推荐”分组中的等宽字体
 	inline const TCHAR* MonoFontPresets[] = { TEXT(""), TEXT("Cascadia Mono"), TEXT("Consolas"), TEXT("JetBrains Mono"), TEXT("Sarasa Mono SC") };
 
 	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
+
+	// 字体输入框（SShuttlegentFontField）：下拉列表最大高度、框右端为下拉箭头留出的宽度与箭头边长、列表行与分组标题的内边距，单位为 Slate 单位
+	inline constexpr float FontListMaxHeight = 320.0f;
+	inline constexpr float FontFieldChevronSpace = 22.0f;
+	inline constexpr float FontFieldChevronSize = 12.0f;
+	inline constexpr float FontFieldChevronInset = 6.0f;
+	inline constexpr float FontRowPaddingX = 8.0f;
+	inline constexpr float FontRowPaddingY = 3.0f;
+	inline constexpr float FontWarningGap = 3.0f;
+
+	// 字体输入框的箭头与提示图标（引擎样式）
+	inline const FName FontChevronBrush = TEXT("Icons.ChevronDown");
+	inline const FName FontWarningBrush = TEXT("Icons.Warning");
+	inline const FName FontWarningColor = TEXT("Colors.Warning");
+	inline const FName FontListBackgroundBrush = TEXT("Menu.Background");
+
+	// 多个字体的分隔符，以及选中一项后写回时的连接符
+	inline const TCHAR* FontSeparator = TEXT(",");
+	inline const TCHAR* FontJoiner = TEXT(", ");
+
+	// CSS 通用字族名，面板总能识别，不提示“未安装”
+	inline const TCHAR* GenericFontFamilies[] = { TEXT("serif"), TEXT("sans-serif"), TEXT("monospace"), TEXT("system-ui"), TEXT("cursive"), TEXT("fantasy") };
 }
 
 /** 斜杠模板（Shuttlegent.md 第 11 节）。 */

@@ -41,5 +41,10 @@ public class ShuttlegentEditor : ModuleRules
 				"ImageCore",
 			}
 			);
+
+		if (Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PublicSystemLibraries.Add("dwrite.lib");
+		}
 	}
 }

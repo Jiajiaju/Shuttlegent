@@ -3,15 +3,14 @@
 #include "DetailCategoryBuilder.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailWidgetRow.h"
-#include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "IDetailPropertyRow.h"
 #include "PropertyHandle.h"
 #include "Widgets/Input/SCheckBox.h"
-#include "Widgets/Input/SComboButton.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
 #include "FShuttlegentToolsets.h"
+#include "Settings/SShuttlegentFontField.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentMcpServerModule.h"
 #include "ShuttlegentSettings.h"
@@ -74,20 +73,8 @@ namespace FShuttlegentSettingsCustomizationPrivate
 		return Presets;
 	}
 
-	/** 预设下拉：每项写入属性句柄，经属性变更通知让面板实时换字体；空值显示为"默认"。 */
-	TSharedRef<SWidget> MakeFontPresetMenu(TSharedRef<IPropertyHandle> Handle, const TArray<FString>& Presets)
-	{
-		FMenuBuilder Menu(true, nullptr);
-		for (const FString& Preset : Presets)
-		{
-			const FText Label = Preset.IsEmpty() ? LOCTEXT("DefaultFont", "默认") : FText::FromString(Preset);
-			Menu.AddMenuEntry(Label, FText::GetEmpty(), FSlateIcon(), FUIAction(FExecuteAction::CreateLambda([Handle, Preset]() { Handle->SetValue(Preset); })));
-		}
-		return Menu.MakeWidget();
-	}
-
-	/** 一项字体设置：可直接输入的文本框，右侧一个预设按钮。 */
-	void CustomizeFontRow(IDetailLayoutBuilder& DetailBuilder, FName PropertyName, const TArray<FString>& Presets)
+	/** 一项字体设置：单个输入框，点进去列出本机字体；值经属性句柄写入，属性变更通知让面板实时换字体。 */
+	void CustomizeFontRow(IDetailLayoutBuilder& DetailBuilder, FName PropertyName, const TArray<FString>& Recommended, bool bMonospaceOnly, const FText& DefaultLabel)
 	{
 		const TSharedRef<IPropertyHandle> Handle = DetailBuilder.GetProperty(PropertyName);
 		IDetailPropertyRow* Row = DetailBuilder.EditDefaultProperty(Handle);
@@ -101,26 +88,17 @@ namespace FShuttlegentSettingsCustomizationPrivate
 			.ValueContent()
 			.MinDesiredWidth(ShuttlegentEditorSettingsUi::FontValueMinWidth)
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.0f)
-				[
-					Handle->CreatePropertyValueWidget(false)
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.Padding(ShuttlegentEditorSettingsUi::FontPresetGap, 0.0f, 0.0f, 0.0f)
-				[
-					SNew(SComboButton)
-					.ToolTipText(LOCTEXT("FontPresetTooltip", "从常用字体中选择；本机没有安装的字体会自动退回默认"))
-					.ButtonContent()
-					[
-						SNew(STextBlock)
-						.Text(LOCTEXT("FontPreset", "预设"))
-						.Font(IDetailLayoutBuilder::GetDetailFont())
-					]
-					.OnGetMenuContent_Lambda([Handle, Presets]() { return MakeFontPresetMenu(Handle, Presets); })
-				]
+				SNew(SShuttlegentFontField)
+				.Value_Lambda([Handle]()
+				{
+					FString Value;
+					Handle->GetValue(Value);
+					return Value;
+				})
+				.Recommended(Recommended)
+				.bMonospaceOnly(bMonospaceOnly)
+				.DefaultLabel(DefaultLabel)
+				.OnCommitted_Lambda([Handle](const FString& Value) { Handle->SetValue(Value); })
 			];
 	}
 }
@@ -171,9 +149,9 @@ void FShuttlegentSettingsCustomization::CustomizeFonts(IDetailLayoutBuilder& Det
 	const TArray<FString> TextPresets = FShuttlegentSettingsCustomizationPrivate::ToPresets(ShuttlegentEditorSettingsUi::TextFontPresets);
 	const TArray<FString> MonoPresets = FShuttlegentSettingsCustomizationPrivate::ToPresets(ShuttlegentEditorSettingsUi::MonoFontPresets);
 
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, UiFontFamily), TextPresets);
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, ChatFontFamily), TextPresets);
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, CodeFontFamily), MonoPresets);
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, UiFontFamily), TextPresets, false, LOCTEXT("DefaultUiFont", "默认（Segoe UI + 微软雅黑 UI）"));
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, ChatFontFamily), TextPresets, false, LOCTEXT("DefaultChatFont", "默认（跟随界面字体）"));
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, CodeFontFamily), MonoPresets, true, LOCTEXT("DefaultCodeFont", "默认（Cascadia Mono + Consolas）"));
 }
 
 void FShuttlegentSettingsCustomization::CustomizeToolsets(IDetailLayoutBuilder& DetailBuilder)

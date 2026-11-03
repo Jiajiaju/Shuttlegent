@@ -496,6 +496,7 @@ body.obj-dragging,body.obj-dragging *{cursor:grabbing!important;user-select:none
 .send:active{background:var(--raised-hover)}
 .stop.is-stopping .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
 .workbench.narrow #model-trigger{max-width:120px}
+.workbench.narrow #agent-trigger{max-width:96px}
 .workbench.narrow #effort-name{display:none}
 
 /* @ and / suggestions above the composer */

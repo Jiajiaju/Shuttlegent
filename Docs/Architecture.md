@@ -103,11 +103,13 @@ sequenceDiagram
   - `SHUTTLEGENT_EDITOR_ENDPOINT`、`SHUTTLEGENT_EDITOR_TOKEN`：编辑器端点的 URL 与本次启动新生成的 token，只供插件自带的运行时插件使用（`FShuttlegentAgentService::RuntimeEnvironmentProvider`，由 `ShuttlegentMcpServer` 在启动前填入；token 每次启动运行时轮换）。
 - **补丁**：
   - `Runtime/profile/shuttlegent.patch.yml`：固定的插件补丁。关闭 Shell、后台作业工具（`tool-jobs`，随 Shell 开关由生成的补丁一同打开）、切换工作目录工具（`tool-working-directory`，会把文件工具带出项目）、子任务工具（`tool-subagent`、`tool-subagent-fork`、`tool-subagent-control`、`tool-subagent-list-agents`：ACP 按会话声明编辑器端点，子会话拿不到编辑器工具，派出去的编辑器任务只会失败；回归场景 `s17_subagent`）、workflow、遥测；项目提示词只读 `SHUTTLEGENT.md`；技能只来自配置的目录；人设改为“UE 编辑器内助手”。
-  - `generated.patch.yml`：每次启动前写入 `DSH_HOME`，包含用户的 DeepSeek 端点、自定义路由、默认模型、项目技能目录、Shell 开关，以及以绝对路径插入的插件自带运行时插件（见下）。补丁里不写密钥。
+  - `generated.patch.yml`：每次启动前写入 `DSH_HOME`，包含内置模型的端点、由模型自动分组的路由（`FShuttlegentModelRoutes`）、默认模型、项目技能目录、Shell 开关，以及以绝对路径插入的插件自带运行时插件（见下）；Agent 分发插件存在时停用基础补丁的 `agent-loop` 行。补丁里不写密钥。
 - **插件自带的运行时插件**（`Runtime/plugins/`，不改 Harness 源码）：
   - `shuttlegent-context-tap.mjs`：每条助手消息之后（与 `usage_update` 同一时机）读取 Harness 的 `contextBreakdown` 投影（系统提示、工具定义、消息三项估算），以 JSON-RPC 通知 `shuttlegent/contextBreakdown` 发到编辑器端点；端点交给 `FShuttlegentMcpServerModule::OnContextBreakdown()`，对话模型按会话保存后推给面板。发送失败只记一次警告，不影响对话。⚠️ 依赖 Harness 的 `session/event` 事件与 `sessionProjections` 服务，二者不是稳定接口，升级 Harness 后需用回归场景 `s14_context` 复查。
   - `shuttlegent-session-control.mjs`：供“回到这里”和“分支”截断会话。ACP 没有截断或分叉会话的方法，插件在本机开一个只认当前 token 的端口，加载后以通知 `shuttlegent/runtimeControl` 把 URL 报给编辑器端点（`FShuttlegentMcpServerModule::CanForkSessions()`）。编辑器调用其 `fork`（会话 ID、第几条用户消息、截在该消息之前或该轮结束之后），插件把源会话的事件截到该处，经 `sessionPersistence` 另存为一个**不带 `parentSession` 的普通会话**（Harness 自带的 `Sessions.fork` 会写入 `parentSession`，ACP 的 `session/resume` 拒绝这类会话），编辑器再用 `session/resume` 接入。用户消息只数 `source.kind` 为 `user` 的 `user/message`（运行时自己注入的运行时上下文、system-reminder 也记为 `user/message`，来源不同），与面板的用户条目一一对应；截在某条消息之前时，连同把它放进收件箱的 `agent/inbox/spliced` 一起排除，否则接入后会重新执行这条消息。复制的 `session-log-deepseek/delivery-accepted` 标记记着源会话 ID，原样复制会被存储校验判为损坏（“current-generation delivery marker names the wrong Session”），因此改标为旧格式代次，校验与 DeepSeek 投递都忽略它，新会话首次请求时重新投递完整记录。⚠️ 依赖 Harness 的 `sessions`、`sessionPersistence` 服务与事件类型名，升级后需用回归场景 `s15_fork` 复查。
-    - 同一端口另有三个方法（`FShuttlegentMcpServerModule` 的同名函数调用，经共用的 `CallRuntimeControl`）：
+    - 分支出的会话保留源会话头的 `agentPreset`，由同一个 Agent 恢复。
+    - 同一端口另有五个方法（`FShuttlegentMcpServerModule` 的同名函数调用，经共用的 `CallRuntimeControl`）：
+      - `nextAgent`：指定下一个新会话的 Agent（`SetNextAgent`），转给 `shuttlegent-agent-dispatch`；Agent 未安装时报错。对话模型在每个 `session/new` 之前调用，同一时间只交接一个新会话。
       - `command`：执行一条斜杠命令（`ctx.commands.execute`，与 Harness 网页客户端相同），如 `/compact`、`/plan`。ACP 的 `session/prompt` 不解析斜杠命令，会把它当普通文字发给模型，因此命令只能走这里（`RunCommand`，超时 600 秒，`/compact` 要调用模型生成摘要）。
       - `planMode`：进入或退出计划模式（`ctx.planMode.set`），不带 `active` 时只查询；回合进行中时在下一步生效（`SetPlanMode`）。
       - `answerPlanReview`：答复计划审批（`AnswerPlanReview`）。计划模式下模型调用 `exit_plan_mode` 后，Harness 经“用户提问”通道（`user-questions/request`）请用户批准，ACP 下没有任何应答方，原本直接报 `NO_PROVIDER`。插件接管其中 `intent.kind` 为 `plan-review` 的请求，以通知 `shuttlegent/planReview`（会话 ID、审批 ID、计划正文）交给编辑器，等编辑器答复批准或“继续规划 + 意见”；回合取消时发 `shuttlegent/planReviewClosed`。编辑器没有订阅 `OnPlanReview()` 时，模块直接以“不可用”退回，回合不会卡住；对话模型订阅后，交出计划的会话不在面板中时同样退回。
@@ -124,7 +126,8 @@ sequenceDiagram
     | `goal/change` | `operation`、`objective`、`phase` |
 
     ⚠️ 依赖 Harness 的事件类型名与数据结构，升级后需用回归场景 `s16_session_tap` 复查。
-- **密钥**：只来自编辑器偏好设置，以环境变量交给运行时。内置路由用 `DEEPSEEK_API_KEY`，自定义路由用 `SHUTTLEGENT_<ROUTE>_API_KEY`。
+  - `shuttlegent-agent-dispatch.mjs`：占据运行时唯一的 Agent 工厂槽位（`ctx.agents.setFactory`），让一个运行时同时承载多个循环。默认循环 `dsh-agent-loop` 经加载器导入后在分发插件之下运行，第三方循环按补丁配置中的入口模块加载（来自 `FShuttlegentAgentCatalog` 扫描的 `Runtime/plugins/agents/<id>/agent.json`）。每个循环在只隔离 `agents` 服务的作用域里运行，该作用域的 `agents` 是一个替身，记下循环注册的工厂而不占槽位，其余调用转给真实注册表，因此控制口按会话查 Agent（`agents.get`）不受影响。新会话取 `nextAgent` 指定的 Agent（只对下一个会话有效，30 秒后作废），没有指定时用默认 Agent，并把 `shuttlegent:<AgentId>` 写入会话头 `agentPreset`；带父会话的子会话沿用父会话的 Agent；恢复时按会话头分派，没有 `agentPreset` 的旧会话归默认 Agent，指向未安装的 Agent 时拒绝恢复并报错，不改用默认循环。设计与接入约束见工作区 `Doc/ShuttlegentAgentModel_Design.md` 第 9 节。⚠️ 依赖 Cordis 的隔离作用域与追踪层行为，升级 Harness 后需重跑该文档第 17.2 节的脚本。
+- **密钥**：只来自编辑器偏好设置，以环境变量交给运行时。内置路由用 `DEEPSEEK_API_KEY`，其余路由用 `SHUTTLEGENT_<ROUTE>_API_KEY`。
 
 ### 2.3 会话
 
@@ -134,7 +137,9 @@ sequenceDiagram
 - 处理的 `session/update` 类型：`agent_message_chunk`、`agent_thought_chunk`、`tool_call`、`tool_call_update`、`usage_update`。
 - `FShuttlegentSessionStore`：运行时不支持 `session/load` 回放，所以每次提问、每条更新和每个回合结束都由插件追加到项目 `Saved/Shuttlegent/Sessions` 下的 JSONL 记录。重新打开会话时，由面板回放这些记录。
 
-Harness 的 ACP 实现只暴露标准 ACP 的最小子集，待办、计划、命令、模式、上下文压缩、子任务进度和向用户提问都不经 ACP 传递。插件以 `shuttlegent-session-tap`、`shuttlegent-session-control` 两个运行时插件补上（见 §2.2）；面板已接入待办、压缩、计划模式与内置斜杠命令（见 §4）。子任务不需要接入：插件补丁关闭了子任务工具（见 §2.2），因为子会话拿不到编辑器端点。
+- 会话的 Agent：对话模型在发出第一条消息前可以换 Agent，之后锁定；建立会话后写入会话索引（`agent` 字段），打开已有会话以索引为准。
+
+Harness 的 ACP 实现只暴露标准 ACP 的最小子集，待办、计划、命令、模式、上下文压缩、子任务进度和向用户提问都不经 ACP 传递，`session/new` 也带不了 Agent。插件以 `shuttlegent-session-tap`、`shuttlegent-session-control`、`shuttlegent-agent-dispatch` 三个运行时插件补上（见 §2.2）；面板已接入待办、压缩、计划模式与内置斜杠命令（见 §4）。子任务不需要接入：插件补丁关闭了子任务工具（见 §2.2），因为子会话拿不到编辑器端点。
 
 ## 3. 编辑器工具
 
@@ -278,6 +283,10 @@ flowchart TB
 | Core | `FShuttlegentRuntimeLaunchSpec` | 组装启动所需的可执行文件、参数、环境与密钥 |
 | Core | `FShuttlegentGeneratedPatch` | 每次启动前写入的第二个补丁 |
 | Core | `FShuttlegentProjectConfig` / `FShuttlegentSecrets` | 读出生效配置 / 从偏好设置解析密钥 |
+| Core | `FShuttlegentModelRoutes` | 由模型推出运行时路由：分组、路由名、密钥沿用、默认模型 |
+| Core | `FShuttlegentModelProbe` | 检测连接：按协议发最小请求并分类结果 |
+| Core | `FShuttlegentAgentCatalog` | 可用 Agent 的目录：默认循环与 `Runtime/plugins/agents/<id>/agent.json` 声明的循环插件 |
+| Core | `FShuttlegentSettingsMigration` | 旧版供应商设置一次性迁移到模型、Agent、默认值 |
 | Core | `FShuttlegentSessionStore` | 会话索引与 JSONL 记录 |
 | Core | `FShuttlegentConsoleCommands` | `Shuttlegent.*` 控制台命令 |
 | Core | `UShuttlegentSettings` / `UShuttlegentProjectSettings` | 个人设置 / 项目设置 |
@@ -293,4 +302,5 @@ flowchart TB
 | Editor | `FShuttlegentReferenceFinder` | `@` 引用的候选与有效性 |
 | Editor | `FShuttlegentReferenceNavigator` | 回答中对象链接的点击：在内容浏览器定位或打开资产，在关卡中选中 Actor 或让视口移到它 |
 | Editor | `FShuttlegentTemplateLibrary` | 读取斜杠模板 |
-| Editor | `FShuttlegentSettingsCustomization` | 偏好设置中的工具与 Toolset 开关 |
+| Editor | `FShuttlegentSettingsCustomization` | 偏好设置中的工具与 Toolset 开关、默认 Agent 与默认模型下拉 |
+| Editor | `FShuttlegentModelEntryCustomization` / `FShuttlegentAgentEntryCustomization` / `SShuttlegentProbeRow` | 模型条目 / Agent 条目的设置页显示 / 检测连接行 |

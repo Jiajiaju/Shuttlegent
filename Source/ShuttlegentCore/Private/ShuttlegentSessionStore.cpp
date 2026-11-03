@@ -25,6 +25,7 @@ namespace ShuttlegentSessionStorePrivate
 	inline const TCHAR* FieldCwd = TEXT("cwd");
 	inline const TCHAR* FieldModel = TEXT("model");
 	inline const TCHAR* FieldModelName = TEXT("modelName");
+	inline const TCHAR* FieldAgent = TEXT("agent");
 	inline const TCHAR* FieldArchived = TEXT("archived");
 	inline const TCHAR* FieldCreatedAt = TEXT("createdAt");
 	inline const TCHAR* FieldUpdatedAt = TEXT("updatedAt");
@@ -46,6 +47,7 @@ namespace ShuttlegentSessionStorePrivate
 		Object->SetStringField(FieldCwd, Record.WorkingDirectory);
 		Object->SetStringField(FieldModel, Record.Model);
 		Object->SetStringField(FieldModelName, Record.ModelName);
+		if (!Record.AgentId.IsEmpty()) Object->SetStringField(FieldAgent, Record.AgentId);
 		Object->SetBoolField(FieldArchived, Record.bArchived);
 		Object->SetStringField(FieldCreatedAt, Record.CreatedAt.ToIso8601());
 		Object->SetStringField(FieldUpdatedAt, Record.UpdatedAt.ToIso8601());
@@ -60,6 +62,7 @@ namespace ShuttlegentSessionStorePrivate
 		Object->TryGetStringField(FieldCwd, OutRecord.WorkingDirectory);
 		Object->TryGetStringField(FieldModel, OutRecord.Model);
 		Object->TryGetStringField(FieldModelName, OutRecord.ModelName);
+		Object->TryGetStringField(FieldAgent, OutRecord.AgentId);
 		Object->TryGetBoolField(FieldArchived, OutRecord.bArchived);
 
 		FString CreatedAt;

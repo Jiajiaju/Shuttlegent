@@ -3,8 +3,8 @@
 # Row ids come from packages/bundle/base/cordis.patch.yml in the pinned dsh revision.
 
 # Default model: DeepSeek-V4.1-Flash, which the llm-deepseek catalog lists with image input (packages/llm/llm-deepseek/src/models.ts);
-# the acp template defaults to deepseek-v4-flash, which declines images. A personal Default Provider in the editor
-# preferences replaces this row through the generated patch.
+# the acp template defaults to deepseek-v4-flash, which declines images. The personal default model in the editor
+# preferences (Defaults > Default Model Name) replaces this row through the generated patch.
 - id: acp
   config:
     provider: deepseek-official

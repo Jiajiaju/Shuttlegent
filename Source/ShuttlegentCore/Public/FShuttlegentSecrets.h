@@ -8,6 +8,6 @@
  */
 struct SHUTTLEGENTCORE_API FShuttlegentSecrets
 {
-	/** 变量的值：DeepSeek 密钥、供应商条目的密钥或 MCP 请求头的值；设置中没有时返回 false。 */
+	/** 变量的值：模型路由的密钥（FShuttlegentModelRoutes）或 MCP 请求头的值；设置中没有时返回 false。 */
 	static bool Resolve(const FString& Variable, FString& OutValue);
 };

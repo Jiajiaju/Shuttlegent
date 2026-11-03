@@ -111,6 +111,12 @@ public:
 	 */
 	void QueryImageInput(const FString& ModelValue, TFunction<void(TOptional<bool> /*bImage*/)> OnDone) const;
 
+	/**
+	 * 指定下一个新会话使用的 Agent（ACP 的 session/new 带不了 Agent，ShuttlegentAgentModel_Design.md 第 4.7 节）；
+	 * 须在发 session/new 之前完成。OnDone 在游戏线程收到错误原因，成功时为空；Agent 未安装时失败。
+	 */
+	void SetNextAgent(const FString& AgentId, TFunction<void(const FString& /*Error*/)> OnDone) const;
+
 	/** 答复计划审批：批准后 Agent 退出计划模式并执行；否则继续规划，Feedback 交给 Agent。OnDone 收到错误原因，成功时为空。 */
 	void AnswerPlanReview(const FString& ReviewId, bool bApprove, const FString& Feedback, TFunction<void(const FString& /*Error*/)> OnDone) const;
 

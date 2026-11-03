@@ -629,7 +629,7 @@ void FShuttlegentWebProtocol::WriteLocalImageRoot(const TSharedRef<FJsonObject>&
 void FShuttlegentWebProtocol::WriteConfig(const TSharedRef<FJsonObject>& Root) const
 {
 	const TSharedRef<FJsonObject> Config = MakeShared<FJsonObject>();
-	for (const TCHAR* ConfigId : { ShuttlegentEditorConfigId::Model, ShuttlegentEditorConfigId::Reasoning })
+	for (const TCHAR* ConfigId : { ShuttlegentEditorConfigId::Agent, ShuttlegentEditorConfigId::Model, ShuttlegentEditorConfigId::Reasoning })
 	{
 		TArray<FShuttlegentConfigChoice> Choices;
 		FString CurrentValue;
@@ -647,6 +647,7 @@ void FShuttlegentWebProtocol::WriteConfig(const TSharedRef<FJsonObject>& Root) c
 		const TSharedRef<FJsonObject> Option = MakeShared<FJsonObject>();
 		Option->SetStringField(ShuttlegentEditorWebField::Current, CurrentValue);
 		Option->SetArrayField(ShuttlegentEditorWebField::Choices, ChoiceValues);
+		if (FCString::Strcmp(ConfigId, ShuttlegentEditorConfigId::Agent) == 0) Option->SetBoolField(ShuttlegentEditorWebField::Locked, Model->IsAgentLocked());
 		Config->SetObjectField(ConfigId, Option);
 	}
 	Root->SetObjectField(ShuttlegentEditorWebField::Config, Config);

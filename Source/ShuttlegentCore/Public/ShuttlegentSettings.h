@@ -4,7 +4,8 @@
 #include "Engine/DeveloperSettings.h"
 
 #include "EShuttlegentWriteMode.h"
-#include "FShuttlegentProviderEntry.h"
+#include "FShuttlegentAgentEntry.h"
+#include "FShuttlegentModelEntry.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentPermissionPolicy.h"
 
@@ -16,6 +17,11 @@ class SHUTTLEGENTCORE_API UShuttlegentSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
+private:
+	/** 编辑前内置模型的地址与密钥；内置条目被误删后按它加回，密钥不丢失。 */
+	FString BuiltinBaseUrlBeforeEdit;
+	FString BuiltinApiKeyBeforeEdit;
+
 public:
 	/** 代替插件自带 Runtime/shuttlegent-runtime.exe 启动的运行时可执行文件；留空使用默认值。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Runtime", meta = (FilePathFilter = "exe"))
@@ -25,25 +31,25 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Runtime")
 	bool bPrewarmRuntime = true;
 
-	/** 内置 DeepSeek 路由的端点（Anthropic Messages 协议）；留空使用 DeepSeek 官方端点。下次启动运行时生效。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Providers")
-	FString DeepSeekBaseUrl = ShuttlegentProviderConstant::DeepSeekBaseUrl;
+	/** 可在会话中选用的模型；内置 DeepSeek 的两个模型预装且不可删除。下次启动运行时生效。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Models")
+	TArray<FShuttlegentModelEntry> Models;
 
-	/** 内置 DeepSeek 路由的密钥，只保存在本机设置中；未填写时运行时无法在该路由上启动。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Providers", meta = (PasswordField = true))
-	FString DeepSeekApiKey;
+	/** 插件提供的 Agent：启用后出现在会话的 Agent 选择器中，可各自指定默认模型。 */
+	UPROPERTY(Config, EditAnywhere, EditFixedSize, Category = "Agents")
+	TArray<FShuttlegentAgentEntry> Agents;
 
-	/** 内置 DeepSeek 之外的供应商路由，例如团队网关。下次启动运行时生效。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Providers")
-	TArray<FShuttlegentProviderEntry> Providers;
+	/** 新会话默认使用的 Agent。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Defaults")
+	FString DefaultAgent = ShuttlegentAgentConstant::DefaultAgentId;
 
-	/** 新会话使用的路由；留空使用内置 DeepSeek 路由。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Providers")
-	FString DefaultProvider;
+	/** 新会话默认使用的模型，按模型名称选择；留空使用第一个内置模型。下次启动运行时生效。 */
+	UPROPERTY(Config, EditAnywhere, Category = "Defaults")
+	FString DefaultModelName;
 
-	/** 新会话使用的模型，取自默认路由的模型列表；留空使用该路由的第一个模型。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Providers")
-	FString DefaultModel;
+	/** 旧版供应商设置已迁移到 Models（FShuttlegentSettingsMigration）。 */
+	UPROPERTY(Config)
+	bool bModelsMigrated = false;
 
 	/** 允许运行时的文件工具不经询问写入项目目录；关闭时每次写入都需提权。下次启动运行时生效。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
@@ -101,9 +107,26 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	FString CodeFontFamily;
 
+	/**
+	 * 补齐内置模型：缺少的按预装顺序加回，名称、模型 ID 与协议恢复为预装值，地址与密钥保持一致。
+	 * Agent 列表与 FShuttlegentAgentCatalog 对齐，默认 Agent 不可用时改回默认循环。
+	 */
+	void EnsureBuiltins();
+
+	//~ Begin UObject Interface.
+#if WITH_EDITOR
+	virtual void PreEditChange(FProperty* PropertyAboutToChange) override;
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+#endif // WITH_EDITOR
+	//~ End UObject Interface.
+
 	//~ Begin UDeveloperSettings Interface.
 	virtual FName GetContainerName() const override;
 	virtual FName GetCategoryName() const override;
 	virtual FName GetSectionName() const override;
 	//~ End UDeveloperSettings Interface.
+
+private:
+	/** 内置模型的地址与密钥统一为 SourceIndex 处内置模型的值（llm-deepseek 只有一个端点和一个密钥）。 */
+	void SyncBuiltinConnection(int32 SourceIndex);
 };

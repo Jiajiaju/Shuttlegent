@@ -5,7 +5,7 @@
 #include "FShuttlegentModelProbeResult.h"
 #include "FShuttlegentModelProbeTarget.h"
 
-struct FShuttlegentProviderEntry;
+class UShuttlegentSettings;
 
 /**
  * 检测连接：编辑器直接向模型服务发一次最小请求并分类结果，不依赖运行时（ShuttlegentAgentModel_Design.md 第 8 节）。
@@ -15,11 +15,8 @@ struct SHUTTLEGENTCORE_API FShuttlegentModelProbe
 {
 	DECLARE_DELEGATE_OneParam(FOnProbeDone, const FShuttlegentModelProbeResult& /*Result*/);
 
-	/** 内置 DeepSeek 路由的检测对象：个人设置中的地址与密钥，运行时的默认模型。 */
-	static FShuttlegentModelProbeTarget MakeBuiltinTarget();
-
-	/** 供应商条目下每个模型一个检测对象；条目没有模型时返回一个模型 ID 为空的对象。 */
-	static TArray<FShuttlegentModelProbeTarget> MakeEntryTargets(const FShuttlegentProviderEntry& Entry);
+	/** 模型条目的检测对象：地址、协议、模型 ID 取自条目，密钥按运行时规则取（留空时沿用同地址同协议的模型的密钥）。 */
+	static FShuttlegentModelProbeTarget MakeTarget(const UShuttlegentSettings& Settings, int32 ModelIndex);
 
 	/** 运行时对该对象实际请求的完整地址；地址为空时返回空。 */
 	static FString GetRequestUrl(const FShuttlegentModelProbeTarget& Target);

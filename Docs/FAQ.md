@@ -2,7 +2,7 @@
 
 ## 1. 面板提示“缺少密钥”或“鉴权失败”
 
-- **缺少密钥**：在 **编辑器偏好设置 > Shuttlegent > General > Providers** 填写 DeepSeek Api Key；使用其他供应商时，填写对应条目的 Api Key。
+- **缺少密钥**：在 **编辑器偏好设置 > Shuttlegent > General > Models** 中给默认模型填写 Api Key（内置 DeepSeek 的两个模型共用一个密钥）；填好后可点该模型的“检测连接”确认。
 - **鉴权失败**：检查密钥是否正确、是否过期，以及 Base Url 是否和密钥属于同一供应商。
 
 改完后在面板点“重试”。
@@ -37,14 +37,14 @@
 
 ## 7. 改了模型设置没生效
 
-模型、供应商和权限开关在运行时重启后才生效：在面板点“重试”，或重启编辑器。工具开关和 Toolset 开关立即生效。
+模型、默认值和权限开关在运行时重启后才生效：在面板点“重试”，或重启编辑器。工具开关和 Toolset 开关立即生效。
 
 ## 8. 能不能用其他模型
 
-可以。在 **编辑器偏好设置 > Providers > Providers** 添加条目，支持：
+可以。在 **编辑器偏好设置 > Shuttlegent > General > Models** 添加模型，填名称、模型 ID、地址、协议和密钥，协议支持：
 
-- OpenAI 协议；
-- Anthropic 协议；
-- 任何 OpenAI 兼容端点，如团队网关、本地模型服务。
+- OpenAI Chat Completions（含任何兼容端点，如团队网关、本地模型服务）；
+- OpenAI Responses；
+- Anthropic Messages。
 
-然后在 Default Provider / Default Model 中选择这个条目，或在面板的模型下拉框中切换。
+协议必须与地址实际提供的接口一致，填好后点条目末尾的“检测连接”确认。然后在 **Defaults > Default Model Name** 选择它作为新会话的默认模型，或在面板的模型菜单中切换。见 [Configuration.md §1](Configuration.md#1-模型agent-与默认值个人)。

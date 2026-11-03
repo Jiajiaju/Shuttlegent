@@ -20,6 +20,9 @@ struct FShuttlegentSessionRecord
 	/** Model 的显示名，取自同一配置选项；显示在会话列表中。 */
 	FString ModelName;
 
+	/** 建立该会话的 Agent；发出第一条消息后不再改变，为空表示默认 Agent。 */
+	FString AgentId;
+
 	FDateTime CreatedAt {};
 
 	FDateTime UpdatedAt {};

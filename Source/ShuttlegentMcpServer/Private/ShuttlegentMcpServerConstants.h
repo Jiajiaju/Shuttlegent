@@ -173,6 +173,10 @@ namespace ShuttlegentMcpEndpointConstant
 	inline const TCHAR* FieldModel = TEXT("model");
 	inline const TCHAR* FieldImage = TEXT("image");
 
+	// session control 插件的 nextAgent 请求：下一个新会话使用的 Agent（字段 agentId），由 Agent 分发插件保留到该会话建立
+	inline const TCHAR* MethodNextAgent = TEXT("nextAgent");
+	inline const TCHAR* FieldAgentId = TEXT("agentId");
+
 	// planMode 与 answerPlanReview 请求的超时，单位秒
 	inline constexpr float ControlTimeoutSeconds = 10.0f;
 	inline const TCHAR* FieldSessionId = TEXT("sessionId");

@@ -1,8 +1,9 @@
 // Shuttlegent session control: lets the editor do what ACP has no method for. The plugin listens on a localhost port
 // guarded by the editor endpoint token and announces the port to the editor endpoint (notification
 // shuttlegent/runtimeControl). Methods: fork (below), command (run a slash command such as /compact), planMode (enter
-// or leave plan mode), answerPlanReview (the user's verdict on a plan the model presented in plan mode) and imageInput
-// (whether a model route declares image input; ACP decides it once, for the default model). A fork copies the source session's event log up to the
+// or leave plan mode), answerPlanReview (the user's verdict on a plan the model presented in plan mode), imageInput
+// (whether a model route declares image input; ACP decides it once, for the default model) and nextAgent (the agent of
+// the next new session, kept by shuttlegent-agent-dispatch). A fork copies the source session's event log up to the
 // cut into a new, ordinary session (no parentSession, so session/resume accepts it), writes it to storage and lets go
 // of it; the editor then resumes it over ACP.
 // Loaded by the patch the editor generates before every launch; the endpoint URL and token come from the environment.
@@ -94,10 +95,14 @@ export function apply(ctx) {
       ? { ...event, data: { ...event.data, sessionFormatVersion: LEGACY_FORMAT_VERSION } }
       : event)
 
-    // Built but never entered into the live store: the copy goes straight to storage, where session/resume finds it
+    // Built but never entered into the live store: the copy goes straight to storage, where session/resume finds it.
+    // The copy keeps the source's agent (agentPreset), so the agent dispatch resumes it with the same loop
     const child = sessions.prepare(id, {
       seed,
-      meta: source.header.cwd === undefined ? {} : { cwd: source.header.cwd },
+      meta: {
+        ...source.header.cwd === undefined ? {} : { cwd: source.header.cwd },
+        ...source.header.agentPreset === undefined ? {} : { agentPreset: source.header.agentPreset },
+      },
     })
     const handle = await persistence.create(child.header)
     try {
@@ -198,7 +203,19 @@ export function apply(ctx) {
     }
   }
 
-  const METHODS = { fork, command, planMode, answerPlanReview, imageInput }
+  /**
+   * Names the agent of the next new session: ACP session/new carries no agent, so the editor calls this right before it
+   * (shuttlegent-agent-dispatch keeps the choice for that one session).
+   */
+  const nextAgent = ({ agentId }) => {
+    if (typeof agentId !== 'string' || !agentId) throw new ControlError('nextAgent needs agentId')
+    const dispatch = ctx.get('shuttlegentAgentDispatch')
+    if (!dispatch) throw new ControlError('the runtime has no agent dispatch')
+    if (!dispatch.setNext(agentId)) throw new ControlError(`agent ${agentId} is not installed in this runtime`)
+    return { agentId }
+  }
+
+  const METHODS = { fork, command, planMode, answerPlanReview, imageInput, nextAgent }
 
   const reply = (response, status, body) => {
     response.writeHead(status, { 'Content-Type': 'application/json' })

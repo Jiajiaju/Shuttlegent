@@ -4,10 +4,10 @@
 #include "IPropertyTypeCustomization.h"
 
 /**
- * Editor Preferences > Shuttlegent > General > Providers 中每个供应商条目：标题行显示名称、协议与模型数，
- * 字段照常显示，末尾加“检测连接”行，依次检测条目下的每个模型。M2 改为按模型条目检测后删除本类。
+ * Editor Preferences > Shuttlegent > General > Models 中每个模型：标题行显示名称与协议；内置 DeepSeek 模型锁定名称、模型 ID 与协议，
+ * 不可删除；密钥留空时提示沿用谁的密钥；可把密钥同步到同一地址的其他模型；末尾一行“检测连接”。
  */
-class FShuttlegentProviderEntryCustomization : public IPropertyTypeCustomization
+class FShuttlegentModelEntryCustomization : public IPropertyTypeCustomization
 {
 public:
 	static TSharedRef<IPropertyTypeCustomization> MakeInstance();

@@ -23,6 +23,8 @@
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSessionStore.h"
 #include "ShuttlegentSettings.h"
+#include "FShuttlegentModelRoutes.h"
+#include "Settings/FShuttlegentSettingsChoices.h"
 
 #define LOCTEXT_NAMESPACE "ShuttlegentChatModel"
 
@@ -239,6 +241,62 @@ namespace ShuttlegentChatModelPrivate
 
 namespace ShuttlegentChatModelPrivate
 {
+	/** 对话的 Agent 已锁定：已有会话（发出过消息或打开的是已有会话），或已有条目。 */
+	bool IsAgentLocked(const FShuttlegentConversation& Conversation)
+	{
+		return !Conversation.SessionId.IsEmpty() || !Conversation.Entries.IsEmpty();
+	}
+
+	/** 已启用的 Agent，按设置中的顺序。 */
+	TArray<FString> EnabledAgents()
+	{
+		TArray<FString> Ids;
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		if (!IsValid(Settings)) return Ids;
+
+		for (const FShuttlegentAgentEntry& Entry : Settings->Agents)
+		{
+			if (Entry.bEnabled) Ids.Add(Entry.AgentId);
+		}
+		return Ids;
+	}
+
+	/** 新对话默认使用的 Agent：默认值中的 Agent 已启用时用它，否则为默认 Agent。 */
+	FString DefaultAgent()
+	{
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		const FString Wanted = IsValid(Settings) ? Settings->DefaultAgent : FString();
+		return EnabledAgents().Contains(Wanted) ? Wanted : FString(ShuttlegentAgentConstant::DefaultAgentId);
+	}
+
+	/**
+	 * Agent 指定的默认模型在运行时模型选项中的取值；Agent 没有指定、模型不存在或选项中没有它时为空。
+	 * 选项的值是 ["路由", "模型 ID"] 的 JSON 文本，按路由与模型 ID 比对。
+	 */
+	FString AgentModelValue(const FString& AgentId, const TArray<TSharedPtr<FJsonValue>>& ConfigOptions)
+	{
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		if (!IsValid(Settings)) return FString();
+
+		const FShuttlegentAgentEntry* Agent = Settings->Agents.FindByPredicate([&AgentId](const FShuttlegentAgentEntry& Entry) { return Entry.AgentId == AgentId; });
+		const int32 ModelIndex = Agent != nullptr ? FShuttlegentModelRoutes::FindModel(*Settings, Agent->DefaultModel) : INDEX_NONE;
+		FShuttlegentModelRoute Route;
+		if (!FShuttlegentModelRoutes::FindRoute(FShuttlegentModelRoutes::Build(*Settings), ModelIndex, Route)) return FString();
+
+		const FString ModelId = Settings->Models[ModelIndex].ModelId.TrimStartAndEnd();
+		TArray<FShuttlegentConfigChoice> Choices;
+		FString Current;
+		ParseConfigChoices(ConfigOptions, ShuttlegentEditorConfigId::Model, Choices, Current);
+		for (const FShuttlegentConfigChoice& Choice : Choices)
+		{
+			TArray<TSharedPtr<FJsonValue>> Parts;
+			const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Choice.Value);
+			if (!FJsonSerializer::Deserialize(Reader, Parts) || Parts.Num() < 2 || !Parts[0].IsValid() || !Parts[1].IsValid()) continue;
+			if (Parts[0]->AsString() == Route.Route && Parts[1]->AsString() == ModelId) return Choice.Value;
+		}
+		return FString();
+	}
+
 	/** 新对话的写入确认方式，取自编辑器偏好设置。 */
 	EShuttlegentWriteMode DefaultWriteMode()
 	{
@@ -284,6 +342,7 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	Service = InService;
 	Current = MakeShared<FShuttlegentConversation>();
 	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
+	SetAgent(*Current, ShuttlegentChatModelPrivate::DefaultAgent());
 	Conversations.Add(Current);
 
 	InService->OnStateChanged.AddSP(this, &FShuttlegentChatModel::HandleStateChanged);
@@ -991,6 +1050,7 @@ void FShuttlegentChatModel::NewConversation()
 	LeaveCurrent();
 	Current = MakeShared<FShuttlegentConversation>();
 	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
+	SetAgent(*Current, ShuttlegentChatModelPrivate::DefaultAgent());
 	Conversations.Add(Current);
 	BroadcastAll();
 }
@@ -1010,9 +1070,13 @@ void FShuttlegentChatModel::OpenSession(const FString& SessionId)
 		return;
 	}
 
+	// 已有会话的 Agent 以会话索引的记录为准，没有记录的旧会话属于默认 Agent
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	const FShuttlegentSessionRecord* Record = Pinned.IsValid() ? Pinned->GetSessionStore().FindRecord(SessionId) : nullptr;
 	Current = MakeShared<FShuttlegentConversation>();
 	Current->SessionId = SessionId;
 	Current->WriteMode = ShuttlegentChatModelPrivate::DefaultWriteMode();
+	Current->AgentId = Record != nullptr && !Record->AgentId.IsEmpty() ? Record->AgentId : FString(ShuttlegentAgentConstant::DefaultAgentId);
 	Conversations.Add(Current);
 	ReplayTranscript(*Current);
 	AddRunLog(*Current, LOCTEXT("LogOpenSession", "打开会话记录，恢复运行时上下文"), false);
@@ -1092,6 +1156,22 @@ bool FShuttlegentChatModel::GetConfigChoices(const FString& ConfigId, TArray<FSh
 	return GetConfigChoices(*Current, ConfigId, OutChoices, OutCurrentValue);
 }
 
+bool FShuttlegentChatModel::IsAgentLocked() const
+{
+	return ShuttlegentChatModelPrivate::IsAgentLocked(*Current);
+}
+
+void FShuttlegentChatModel::SetAgent(FShuttlegentConversation& Conversation, const FString& AgentId)
+{
+	if (ShuttlegentChatModelPrivate::IsAgentLocked(Conversation) || !ShuttlegentChatModelPrivate::EnabledAgents().Contains(AgentId)) return;
+
+	// 带出 Agent 的默认模型；Agent 没有指定时新会话用运行时的默认模型，撤掉等待中的模型选择
+	Conversation.AgentId = AgentId;
+	const FString ModelValue = ShuttlegentChatModelPrivate::AgentModelValue(AgentId, LastConfigOptions);
+	if (ModelValue.IsEmpty()) Conversation.PendingConfig.Remove(ShuttlegentEditorConfigId::Model);
+	else Conversation.PendingConfig.Add(ShuttlegentEditorConfigId::Model, ModelValue);
+}
+
 void FShuttlegentChatModel::SetConfigValue(const FString& ConfigId, const FString& Value)
 {
 	SetConfigValue(*Current, ConfigId, Value);
@@ -1101,6 +1181,17 @@ bool FShuttlegentChatModel::GetConfigChoices(const FShuttlegentConversation& Con
 {
 	OutChoices.Reset();
 	OutCurrentValue.Reset();
+
+	// Agent 由面板自己管理：已启用的 Agent 与该对话的 Agent
+	if (ConfigId == ShuttlegentEditorConfigId::Agent)
+	{
+		for (const FString& AgentId : ShuttlegentChatModelPrivate::EnabledAgents())
+		{
+			OutChoices.Add(FShuttlegentConfigChoice { AgentId, FShuttlegentSettingsChoices::GetAgentLabel(AgentId).ToString() });
+		}
+		OutCurrentValue = Conversation.AgentId.IsEmpty() ? FString(ShuttlegentAgentConstant::DefaultAgentId) : Conversation.AgentId;
+		return true;
+	}
 
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return false;
@@ -1116,6 +1207,13 @@ bool FShuttlegentChatModel::GetConfigChoices(const FShuttlegentConversation& Con
 
 void FShuttlegentChatModel::SetConfigValue(FShuttlegentConversation& Conversation, const FString& ConfigId, const FString& Value)
 {
+	if (ConfigId == ShuttlegentEditorConfigId::Agent)
+	{
+		SetAgent(Conversation, Value);
+		NotifyStatus(Conversation);
+		return;
+	}
+
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return;
 
@@ -2004,24 +2102,100 @@ void FShuttlegentChatModel::RequestSession(FShuttlegentConversation& Conversatio
 	}
 
 	Conversation.bWantsSession = false;
-	FString Error;
 	if (!bResume)
 	{
-		if (Pinned->NewSession(Error))
-		{
-			AwaitingNewSession.Add(Conversation.AsShared());
-			return;
-		}
-		ParkPendingPrompt(Conversation);
-		AddNotice(Conversation, FText::Format(LOCTEXT("NewSessionFailed", "新建会话失败：{0}"), FText::FromString(Error)), true);
+		StartNewSession(Conversation);
 		return;
 	}
 
+	FString Error;
 	if (Pinned->ResumeSession(Conversation.SessionId, Error)) return;
 
 	ParkPendingPrompt(Conversation);
 	Conversation.bResumeFailed = true;
 	AddNotice(Conversation, FText::Format(LOCTEXT("ResumeFailed", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+}
+
+void FShuttlegentChatModel::StartNewSession(FShuttlegentConversation& Conversation)
+{
+	// 指定 Agent 与 session/new 之间不能夹进另一个新会话，否则两个会话可能互换 Agent
+	const TSharedPtr<FShuttlegentConversation> Handoff = AgentHandoff.Pin();
+	if (Handoff.IsValid() && Handoff.Get() != &Conversation)
+	{
+		WaitingForHandoff.AddUnique(Conversation.AsShared());
+		return;
+	}
+
+	const FString AgentId = Conversation.AgentId.IsEmpty() ? FString(ShuttlegentAgentConstant::DefaultAgentId) : Conversation.AgentId;
+	FShuttlegentMcpServerModule& Mcp = FShuttlegentMcpServerModule::Get();
+	if (!Mcp.CanForkSessions())
+	{
+		// 控制口尚未报来：分发插件没收到指定时用默认 Agent，其他 Agent 不能静默改用它
+		if (AgentId == ShuttlegentAgentConstant::DefaultAgentId)
+		{
+			SendNewSession(Conversation);
+			return;
+		}
+		ParkPendingPrompt(Conversation);
+		AddNotice(Conversation, FText::Format(LOCTEXT("AgentControlMissing", "运行时控制口未就绪，无法为新会话指定 Agent“{0}”；稍后重新发送"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId)), true);
+		return;
+	}
+
+	AgentHandoff = Conversation.AsShared();
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const TWeakPtr<FShuttlegentConversation> WeakConversation = Conversation.AsShared();
+	Mcp.SetNextAgent(AgentId, [WeakThis, WeakConversation, AgentId](const FString& Error)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
+		if (!This.IsValid()) return;
+		if (!Held.IsValid())
+		{
+			This->ReleaseAgentHandoff();
+			return;
+		}
+
+		if (!Error.IsEmpty())
+		{
+			This->ParkPendingPrompt(*Held);
+			This->AddNotice(*Held, FText::Format(LOCTEXT("AgentHandoffFailed", "无法为新会话指定 Agent“{0}”：{1}"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId), FText::FromString(Error)), true);
+			This->NotifyStatus(*Held);
+			This->ReleaseAgentHandoff();
+			return;
+		}
+
+		// 交接在 session/new 答复（会话就绪或出错）时结束
+		This->SendNewSession(*Held);
+	});
+}
+
+void FShuttlegentChatModel::SendNewSession(FShuttlegentConversation& Conversation)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	FString Error;
+	if (Pinned.IsValid() && Pinned->NewSession(Error))
+	{
+		AwaitingNewSession.Add(Conversation.AsShared());
+		return;
+	}
+
+	ParkPendingPrompt(Conversation);
+	AddNotice(Conversation, FText::Format(LOCTEXT("NewSessionFailed", "新建会话失败：{0}"), FText::FromString(Error)), true);
+	if (AgentHandoff.Pin().Get() == &Conversation) ReleaseAgentHandoff();
+}
+
+void FShuttlegentChatModel::ReleaseAgentHandoff()
+{
+	AgentHandoff.Reset();
+	while (!WaitingForHandoff.IsEmpty())
+	{
+		const TSharedPtr<FShuttlegentConversation> Next = WaitingForHandoff[0].Pin();
+		WaitingForHandoff.RemoveAt(0);
+		if (!Next.IsValid()) continue;
+
+		RequestSession(*Next);
+		return;
+	}
 }
 
 bool FShuttlegentChatModel::ApplyUpdate(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Update, const FDateTime& At)
@@ -2235,11 +2409,22 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 	}
 	if (!Conversation.IsValid()) return;
 
+	if (AgentHandoff.Pin() == Conversation) ReleaseAgentHandoff();
 	if (Conversation->bResuming) AddRunLog(*Conversation, LOCTEXT("LogResumed", "会话已恢复"), false);
 	Conversation->SessionId = SessionId;
 	Conversation->bResuming = false;
 	Conversation->bResumeFailed = false;
 	bRuntimeLost = false;
+
+	// 新会话记下建立它的 Agent，恢复与分支都以此为准
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	const FShuttlegentSessionRecord* Record = Pinned.IsValid() ? Pinned->GetSessionStore().FindRecord(SessionId) : nullptr;
+	if (Record != nullptr && Record->AgentId.IsEmpty() && !Conversation->AgentId.IsEmpty())
+	{
+		FShuttlegentSessionRecord Updated = *Record;
+		Updated.AgentId = Conversation->AgentId;
+		Pinned->GetSessionStore().UpsertRecord(Updated);
+	}
 
 	const TMap<FString, FString> PendingConfig = MoveTemp(Conversation->PendingConfig);
 	Conversation->PendingConfig.Reset();
@@ -2361,6 +2546,8 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 {
 	AwaitingNewSession.Reset();
+	AgentHandoff.Reset();
+	WaitingForHandoff.Reset();
 	ModelImageInput.Reset();
 	if (!bExpected) bRuntimeLost = true;
 	ParkPendingPrompts();
@@ -2424,6 +2611,8 @@ void FShuttlegentChatModel::HandleError(const FString& SessionId, const FString&
 		Conversation = AwaitingNewSession[0].Pin();
 		AwaitingNewSession.RemoveAt(0);
 	}
+	if (Conversation.IsValid() && AgentHandoff.Pin() == Conversation) ReleaseAgentHandoff();
+
 	// 失败的 initialize 不属于任何对话；由启动引导卡片显示
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Conversation.IsValid() && SessionId.IsEmpty() && Pinned.IsValid() && Pinned->GetStartIssue() != EShuttlegentStartIssue::None)
@@ -2448,6 +2637,9 @@ void FShuttlegentChatModel::HandleConfigOptionsChanged(const FString& SessionId)
 	{
 		const TArray<TSharedPtr<FJsonValue>> Options = Pinned->GetConfigOptions(SessionId);
 		if (!Options.IsEmpty()) LastConfigOptions = Options;
+
+		// 新对话建立时还没有模型选项，Agent 的默认模型此时才能对上
+		if (!ShuttlegentChatModelPrivate::IsAgentLocked(*Current) && !Current->PendingConfig.Contains(ShuttlegentEditorConfigId::Model)) SetAgent(*Current, Current->AgentId);
 
 		TArray<FShuttlegentConfigChoice> Models;
 		FString ModelValue;

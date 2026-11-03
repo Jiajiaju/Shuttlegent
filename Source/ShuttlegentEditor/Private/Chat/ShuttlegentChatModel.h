@@ -88,6 +88,12 @@ private:
 	/** session/new 正在进行中的对话，按从早到晚排列；每个答复归属最早的一个。 */
 	TArray<TWeakPtr<FShuttlegentConversation>> AwaitingNewSession;
 
+	/** 正在交接 Agent 的新对话：已向运行时指定 Agent、其 session/new 尚未答复；同一时间只有一个，以免两个新会话互换 Agent。 */
+	TWeakPtr<FShuttlegentConversation> AgentHandoff;
+
+	/** 等前一个交接结束后再建会话的新对话，按先后排列。 */
+	TArray<TWeakPtr<FShuttlegentConversation>> WaitingForHandoff;
+
 	/** 最近一个上报配置选项的会话所给出的选项；用于显示会话尚未打开的对话。 */
 	TArray<TSharedPtr<FJsonValue>> LastConfigOptions;
 
@@ -319,11 +325,14 @@ public:
 
 	void AnswerPermission(int32 EntryId, bool bAllow);
 
-	/** 当前对话某个配置选项（"model"、"reasoning_effort"）的可选值与当前值。 */
+	/** 当前对话某个配置选项（"model"、"reasoning_effort"、面板自己的 "agent"）的可选值与当前值。 */
 	bool GetConfigChoices(const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
 
-	/** 设置当前对话的配置选项；其会话打开前，该值处于等待状态。 */
+	/** 设置当前对话的配置选项；其会话打开前，该值处于等待状态。"agent" 只在发出第一条消息前可改。 */
 	void SetConfigValue(const FString& ConfigId, const FString& Value);
+
+	/** 当前对话的 Agent 已锁定（已发出第一条消息或打开的是已有会话）。 */
+	bool IsAgentLocked() const;
 
 	/** 索引中的会话，按最近更新时间从新到旧排列：活动列表或已归档列表。 */
 	TArray<FShuttlegentSessionRecord> GetSessions(bool bArchived) const;
@@ -403,8 +412,20 @@ private:
 	/** 创建（尚无会话 id 时）或恢复该对话的会话，或将其标记为待运行时就绪后处理。 */
 	void RequestSession(FShuttlegentConversation& Conversation);
 
+	/** 新会话：先经运行时控制口指定该对话的 Agent，再发 session/new；控制口未就绪时只有默认 Agent 可以直接建会话。 */
+	void StartNewSession(FShuttlegentConversation& Conversation);
+
+	/** 发 session/new；失败时搁置待发的提示并在对话中说明。 */
+	void SendNewSession(FShuttlegentConversation& Conversation);
+
+	/** 结束当前的 Agent 交接，并为下一个等待的新对话开始交接。 */
+	void ReleaseAgentHandoff();
+
 	bool GetConfigChoices(const FShuttlegentConversation& Conversation, const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
 	void SetConfigValue(FShuttlegentConversation& Conversation, const FString& ConfigId, const FString& Value);
+
+	/** 为尚未锁定的对话选 Agent，并带出它的默认模型（会话打开前作为等待中的模型选择）。 */
+	void SetAgent(FShuttlegentConversation& Conversation, const FString& AgentId);
 
 	/** 以当前所选选项固定，因此之后更换模型不会改写已入队的内容。 */
 	FShuttlegentQueuedPrompt MakeQueued(const FString& Text, const TArray<FShuttlegentReference>& References);

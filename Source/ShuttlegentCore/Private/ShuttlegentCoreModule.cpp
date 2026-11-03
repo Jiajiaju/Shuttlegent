@@ -3,6 +3,7 @@
 #include "Modules/ModuleManager.h"
 
 #include "FShuttlegentMemoryStore.h"
+#include "FShuttlegentSettingsMigration.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentConsoleCommands.h"
 
@@ -22,6 +23,9 @@ FShuttlegentCoreModule& FShuttlegentCoreModule::Get()
 
 void FShuttlegentCoreModule::StartupModule()
 {
+	// 旧版供应商设置迁移到模型、Agent、默认值；须在运行时生成补丁之前
+	FShuttlegentSettingsMigration::MigrateIfNeeded();
+
 	AgentService = MakeShared<FShuttlegentAgentService>();
 	ConsoleCommands = MakeUnique<FShuttlegentConsoleCommands>(AgentService.ToSharedRef());
 

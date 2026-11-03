@@ -42,7 +42,7 @@ namespace ShuttlegentEnvVar
 	inline const TCHAR* DshTelemetryDisabled = TEXT("DSH_TELEMETRY_DISABLED");
 	inline const TCHAR* LocalAppData = TEXT("LOCALAPPDATA");
 
-	// 内置 DeepSeek 路由（deepseek-official）读取密钥的变量；取值来自 UShuttlegentSettings::DeepSeekApiKey
+	// 内置 DeepSeek 路由（deepseek-official）读取密钥的变量；取值来自内置模型的密钥
 	inline const TCHAR* ProviderKey = TEXT("DEEPSEEK_API_KEY");
 
 	// 该供应商在启动引导卡中的显示名
@@ -82,13 +82,19 @@ namespace ShuttlegentProviderConstant
 	// 运行时内置的 DeepSeek 路由，未指定默认供应商时使用
 	inline const TCHAR* BuiltinRoute = TEXT("deepseek-official");
 
-	// 内置路由的官方端点（Anthropic Messages）；UShuttlegentSettings::DeepSeekBaseUrl 的默认值
+	// 内置路由的官方端点（Anthropic Messages）；内置模型地址的默认值
 	inline const TCHAR* DeepSeekBaseUrl = TEXT("https://api.deepseek.com/anthropic");
 
-	// DeepSeek 的 OpenAI 兼容端点；新增供应商条目的默认基础 URL
+	// DeepSeek 的 OpenAI 兼容端点；新增模型条目的默认基础 URL
 	inline const TCHAR* DeepSeekOpenAiBaseUrl = TEXT("https://api.deepseek.com");
 
-	// 供应商条目未指定密钥变量时使用的变量名：SHUTTLEGENT_<ROUTE>_API_KEY，连字符换成下划线
+	// 自动生成的路由名：前缀 + “地址 + 协议”的 CRC（8 位十六进制）；同地址同协议而密钥不同的组再加 -2、-3
+	inline const TCHAR* GeneratedRoutePrefix = TEXT("sg-");
+
+	// 分组键与 CRC 输入中各段的分隔符
+	inline const TCHAR* RouteKeySeparator = TEXT("|");
+
+	// 路由的密钥变量：SHUTTLEGENT_<ROUTE>_API_KEY，连字符换成下划线
 	inline const TCHAR* KeyVariablePrefix = TEXT("SHUTTLEGENT_");
 	inline const TCHAR* KeyVariableSuffix = TEXT("_API_KEY");
 	inline const TCHAR* RouteSeparator = TEXT("-");
@@ -138,6 +144,15 @@ namespace ShuttlegentProviderConstant
 
 	// 插入记忆插件的行，按绝对路径加载
 	inline const TCHAR* RowMemory = TEXT("shuttlegent-memory");
+
+	// 默认循环所在的基础补丁行；分发插件接管工厂槽位时停用（ShuttlegentAgentModel_Design.md 第 9.2 节）
+	inline const TCHAR* RowAgentLoop = TEXT("agent-loop");
+
+	// 插入 Agent 分发插件的行，按绝对路径加载；配置 agents 为各第三方循环的 id 与入口模块绝对路径
+	inline const TCHAR* RowAgentDispatch = TEXT("shuttlegent-agent-dispatch");
+	inline const TCHAR* FieldAgents = TEXT("agents");
+	inline const TCHAR* FieldAgentId = TEXT("id");
+	inline const TCHAR* FieldAgentEntry = TEXT("entry");
 	inline const TCHAR* FieldInsert = TEXT("insert");
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
@@ -150,12 +165,6 @@ namespace ShuttlegentProviderConstant
  */
 namespace ShuttlegentProbeConstant
 {
-	// 内置 DeepSeek 路由检测的模型：Runtime/profile/shuttlegent.patch.yml 中 acp 行的默认模型
-	inline const TCHAR* BuiltinModelId = TEXT("deepseek-flash");
-
-	// 内置 DeepSeek 的显示名
-	inline const TCHAR* BuiltinLabel = TEXT("DeepSeek");
-
 	// 内置 DeepSeek 地址已以此结尾时不再补版本段（messages-api.ts 的 messagesApiRoot）
 	inline const TCHAR* VersionSegment = TEXT("/v1");
 
@@ -254,6 +263,9 @@ namespace ShuttlegentPath
 	// 每次请求带上 Saved/Shuttlegent 下个人提示词与记忆的运行时插件，相对插件目录
 	inline const TCHAR* MemoryPlugin = TEXT("Runtime/plugins/shuttlegent-memory.mjs");
 
+	// 占据 Agent 工厂槽位、按会话的 Agent 转交各循环的运行时插件，相对插件目录
+	inline const TCHAR* AgentDispatchPlugin = TEXT("Runtime/plugins/shuttlegent-agent-dispatch.mjs");
+
 	// DSH_HOME，相对 %LOCALAPPDATA%；同时是运行时的启动目录，必须在系统盘
 	inline const TCHAR* DshHome = TEXT("Shuttlegent/dsh-home");
 
@@ -290,6 +302,65 @@ namespace ShuttlegentSessionConstant
 
 	// 用户重命名时标题的最大长度，单位字符（Shuttlegent 界面交互规范第 6 节）
 	inline constexpr int32 RenameMaxChars = 60;
+}
+
+/** 内置 DeepSeek 模型：运行时 llm-deepseek 自带目录中的两个模型（packages/llm/llm-deepseek/src/models.ts），设置中预装、不可删除。 */
+namespace ShuttlegentBuiltinModel
+{
+	// 模型 ID 与运行时目录中的显示名，按预装顺序；第一个为未指定默认模型时的默认模型
+	inline const TCHAR* Ids[] = { TEXT("deepseek-flash"), TEXT("deepseek-v4-pro") };
+	inline const TCHAR* Names[] = { TEXT("DeepSeek-V4.1-Flash"), TEXT("DeepSeek-V4-Pro") };
+}
+
+/** Agent 的提供与选择（ShuttlegentAgentModel_Design.md 第 9 节）。 */
+namespace ShuttlegentAgentConstant
+{
+	// 默认循环 dsh-agent-loop 的 AgentId；始终存在、不可停用
+	inline const TCHAR* DefaultAgentId = TEXT("default");
+
+	// 默认循环声明的能力：全部能力项（第 9.4 节）
+	inline const TCHAR* AllCapabilities[] = { TEXT("rewind"), TEXT("slashCommands"), TEXT("planMode"), TEXT("todo"), TEXT("contextUsage"), TEXT("memory"), TEXT("modelSwitch"), TEXT("imageInput") };
+
+	// 插件自带 Agent 的目录（相对插件目录），每个 Agent 一个子目录，内含说明文件
+	inline const TCHAR* AgentsDir = TEXT("Runtime/plugins/agents");
+	inline const TCHAR* ManifestFile = TEXT("agent.json");
+
+	// 列出 Agent 子目录的通配符
+	inline const TCHAR* DirWildcard = TEXT("*");
+
+	// 说明文件的字段
+	inline const TCHAR* FieldId = TEXT("id");
+	inline const TCHAR* FieldDisplayName = TEXT("displayName");
+	inline const TCHAR* FieldDescription = TEXT("description");
+	inline const TCHAR* FieldCapabilities = TEXT("capabilities");
+	inline const TCHAR* FieldSuggestedModel = TEXT("suggestedModel");
+	inline const TCHAR* FieldEntry = TEXT("entry");
+}
+
+/** 旧模型设置的一次性迁移（ShuttlegentAgentModel_Design.md 第 11 节）。 */
+namespace ShuttlegentMigrationConstant
+{
+	// 旧版个人设置中的键
+	inline const TCHAR* KeyDeepSeekBaseUrl = TEXT("DeepSeekBaseUrl");
+	inline const TCHAR* KeyDeepSeekApiKey = TEXT("DeepSeekApiKey");
+	inline const TCHAR* KeyProviders = TEXT("Providers");
+	inline const TCHAR* KeyDefaultProvider = TEXT("DefaultProvider");
+	inline const TCHAR* KeyDefaultModel = TEXT("DefaultModel");
+
+	// 迁移前的备份：相对项目 Saved 目录的目录，文件名为前缀 + 时间戳 + 扩展名
+	inline const TCHAR* BackupDir = TEXT("Shuttlegent/Backup");
+	inline const TCHAR* BackupPrefix = TEXT("EditorPerProjectUserSettings-");
+	inline const TCHAR* BackupExtension = TEXT(".ini");
+	inline const TCHAR* BackupTimeFormat = TEXT("%Y%m%d-%H%M%S");
+
+	// ini 节标题的括号与键值分隔符
+	inline const TCHAR* SectionOpen = TEXT("[");
+	inline const TCHAR* SectionClose = TEXT("]");
+	inline const TCHAR* KeyValueSeparator = TEXT("=");
+
+	// 迁移来的模型与已有名称重名时，名称后加“ (旧路由名)”
+	inline const TCHAR* DuplicateNameOpen = TEXT(" (");
+	inline const TCHAR* DuplicateNameClose = TEXT(")");
 }
 
 /** 个人记忆与本地目录（<Project>/Saved/Shuttlegent，不进版本库）。 */

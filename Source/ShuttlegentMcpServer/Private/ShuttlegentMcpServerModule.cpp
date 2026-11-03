@@ -311,6 +311,18 @@ void FShuttlegentMcpServerModule::QueryImageInput(const FString& ModelValue, TFu
 	});
 }
 
+void FShuttlegentMcpServerModule::SetNextAgent(const FString& AgentId, TFunction<void(const FString&)> OnDone) const
+{
+	const TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
+	Params->SetStringField(ShuttlegentMcpEndpointConstant::FieldAgentId, AgentId);
+
+	CallRuntimeControl(ShuttlegentMcpEndpointConstant::MethodNextAgent, Params, ShuttlegentMcpEndpointConstant::ControlTimeoutSeconds, [OnDone, AgentId](const TSharedPtr<FJsonObject>& Result, const FString& Error)
+	{
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent next session agent %s: %s"), *AgentId, Result.IsValid() ? TEXT("ok") : *Error);
+		OnDone(Result.IsValid() ? FString() : Error);
+	});
+}
+
 void FShuttlegentMcpServerModule::HandlePlanReview(const FShuttlegentPlanReview& Review)
 {
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent plan review %s requested in session %s"), *Review.ReviewId, *Review.SessionId);

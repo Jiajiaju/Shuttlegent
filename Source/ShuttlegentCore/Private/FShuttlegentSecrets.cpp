@@ -1,6 +1,6 @@
 #include "FShuttlegentSecrets.h"
 
-#include "FShuttlegentProjectConfig.h"
+#include "FShuttlegentModelRoutes.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentSettings.h"
 
@@ -10,18 +10,15 @@ bool FShuttlegentSecrets::Resolve(const FString& Variable, FString& OutValue)
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	if (Variable.IsEmpty() || !IsValid(Settings)) return false;
 
-	if (Variable == ShuttlegentEnvVar::ProviderKey)
+	// 模型路由的密钥：内置 DeepSeek 为 DEEPSEEK_API_KEY，其余为各路由的 SHUTTLEGENT_<ROUTE>_API_KEY
+	const TArray<FShuttlegentModelRoute> Routes = FShuttlegentModelRoutes::Build(*Settings);
+	const FShuttlegentModelRoute* Route = Routes.FindByPredicate([&Variable](const FShuttlegentModelRoute& Item) { return Item.KeyVariable == Variable; });
+	if (Route != nullptr)
 	{
-		OutValue = Settings->DeepSeekApiKey.TrimStartAndEnd();
+		OutValue = Route->ApiKey;
 		return !OutValue.IsEmpty();
 	}
-
-	const FShuttlegentProviderEntry* Entry = Settings->Providers.FindByPredicate([&Variable](const FShuttlegentProviderEntry& Provider) { return FShuttlegentProjectConfig::GetKeyVariable(Provider) == Variable; });
-	if (Entry != nullptr)
-	{
-		OutValue = Entry->ApiKey.TrimStartAndEnd();
-		return !OutValue.IsEmpty();
-	}
+	if (Variable == ShuttlegentEnvVar::ProviderKey) return false;
 
 	const FString* HeaderValue = Settings->McpHeaderValues.Find(Variable);
 	if (HeaderValue != nullptr) OutValue = HeaderValue->TrimStartAndEnd();

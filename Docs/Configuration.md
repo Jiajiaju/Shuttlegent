@@ -9,23 +9,29 @@ Shuttlegent 的设置分两处：
 
 另有项目提示词 `SHUTTLEGENT.md`，放在项目根目录，团队共享。个人文件都放在项目的本地目录 `Saved/Shuttlegent/`（UE 约定不进版本库的 `Saved/` 之下，项目的 `.gitignore` 排除 `Saved/` 即可）：个人提示词 `SHUTTLEGENT.local.md`、个人记忆 `MEMORY.md`（见 [Extending.md §1](Extending.md#1-项目提示词)），以及会话记录 `Sessions/`、截图 `Captures/`、数据表导出 `Exports/`。旧版放在项目根目录的 `SHUTTLEGENT.local.md` 会在编辑器启动时自动移到这里。
 
-## 1. 模型与密钥（个人）
+## 1. 模型、Agent 与默认值（个人）
 
-模型供应商的端点和 API 密钥、外部 MCP 服务请求头的密钥，**只从编辑器偏好设置读取**；不读 Windows 凭据管理器、环境变量或 `.env` 文件。密钥以明文保存在上表的个人 ini 中。
+模型的地址和 API 密钥、外部 MCP 服务请求头的密钥，**只从编辑器偏好设置读取**；不读 Windows 凭据管理器、环境变量或 `.env` 文件。密钥以明文保存在上表的个人 ini 中。
 
 | 字段 | 默认值 | 说明 |
 |---|---|---|
-| Providers > DeepSeek Base Url | `https://api.deepseek.com/anthropic` | 内置 DeepSeek 路由的端点（Anthropic Messages 协议）；留空也用这个地址 |
-| Providers > DeepSeek Api Key | 空 | 内置路由的密钥；默认路由缺密钥时运行时不启动，面板提示到这里填写 |
-| Providers > Providers | 空 | 其他路由：OpenAI、Anthropic 协议或任何 OpenAI 兼容端点（团队网关、本地模型服务）。每个条目填自己的 Base Url 和 Api Key；新条目的 Base Url 默认 `https://api.deepseek.com` |
-| Providers > Default Provider / Default Model | 空 | 新会话使用的路由和模型；留空用内置 DeepSeek |
+| Models | 两个内置 DeepSeek 模型 | 会话中可选的模型。每个模型填名称（会话中显示，不可重名）、Model Id、Base Url、Api（协议）、Api Key；新模型的 Base Url 默认 `https://api.deepseek.com` |
+| Agents | 默认 | 插件提供的 Agent：能力、是否启用（默认 Agent 始终启用）、Default Model（选中该 Agent 时带出的模型，留空跟随默认值） |
+| Defaults > Default Agent | 默认 | 新会话默认使用的 Agent |
+| Defaults > Default Model Name | 空 | 新会话默认使用的模型，按名称选；留空为第一个内置模型 DeepSeek-V4.1-Flash |
 | Credentials > Mcp Header Values | 空 | 变量名到值的映射，填项目设置中外部 MCP 服务请求头引用的变量 |
 
-模型设置在运行时重启后生效（面板中点“重试”或重启编辑器）；MCP 请求头的值在新会话中生效。
+- **内置模型**：DeepSeek-V4.1-Flash（`deepseek-flash`）与 DeepSeek-V4-Pro（`deepseek-v4-pro`），由运行时自带的 DeepSeek 接入提供，名称、Model Id 与协议（Anthropic Messages）锁定，不可删除。两者共用一个地址和密钥，改其中一个，另一个随之改变；地址默认 `https://api.deepseek.com/anthropic`。默认模型缺密钥时运行时不启动，面板提示到 Models 填写。
+- **协议**：`Open Ai Completions`、`Open Ai Responses`、`Anthropic Messages`，必须与地址实际提供的接口一致；插件不内置任何厂商的地址表，用“检测连接”（§1.1）确认。
+- **密钥沿用**：模型的 Api Key 留空时，沿用地址与协议相同、排在前面且填了密钥的模型的密钥，条目中会注明沿用了谁的。填了密钥的模型下方有“同步密钥到同一地址的其他 N 个模型”按钮。
+- 地址、协议、密钥相同的模型在运行时归为一组，组名自动生成，设置与面板中都看不到。
+- 旧版的 Deep Seek Base Url、Deep Seek Api Key、Providers、Default Provider、Default Model 在首次启动新版插件时自动迁移到 Models 与 Defaults；迁移前把原设置备份到 `Saved/Shuttlegent/Backup/`，迁移前后的默认模型必须一致，结果写入 Output Log（`Settings migration:` 开头）。
+
+模型与默认值在运行时重启后生效（面板中点“重试”或重启编辑器）；Agent 的默认模型在新会话中生效；MCP 请求头的值在新会话中生效。
 
 ### 1.1 检测连接
 
-DeepSeek Api Key 下方和每个 Providers 条目末尾各有一行“检测连接”。点击后编辑器直接向模型服务发一次最小请求（一条 `ping`，输出上限 1 个 token，Responses 协议为 16），不需要运行时已启动，也不必先保存设置；条目下有多个模型时逐个检测。请求地址与运行时实际使用的一致：
+每个模型条目末尾有一行“检测连接”。点击后编辑器直接向模型服务发一次最小请求（一条 `ping`，输出上限 1 个 token，Responses 协议为 16），不需要运行时已启动，也不必先保存设置；密钥按上面的沿用规则取。请求地址与运行时实际使用的一致：
 
 | 对象 | 实际请求 |
 |---|---|

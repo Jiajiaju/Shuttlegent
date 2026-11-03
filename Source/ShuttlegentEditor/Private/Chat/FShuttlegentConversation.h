@@ -41,6 +41,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 会话未打开期间选择的配置值，按配置 id 索引；会话打开后应用。 */
 	TMap<FString, FString> PendingConfig;
 
+	/** 运行该对话的 Agent；发出第一条消息后锁定（ShuttlegentAgentModel_Design.md 第 10 节）。 */
+	FString AgentId;
+
 	int64 UsedTokens = 0;
 	int64 ContextSize = 0;
 

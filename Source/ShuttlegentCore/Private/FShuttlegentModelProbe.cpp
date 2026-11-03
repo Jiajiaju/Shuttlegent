@@ -9,8 +9,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 
-#include "FShuttlegentProviderEntry.h"
-#include "FShuttlegentSecrets.h"
+#include "FShuttlegentModelRoutes.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSettings.h"
@@ -94,41 +93,22 @@ namespace FShuttlegentModelProbePrivate
 	}
 }
 
-FShuttlegentModelProbeTarget FShuttlegentModelProbe::MakeBuiltinTarget()
+FShuttlegentModelProbeTarget FShuttlegentModelProbe::MakeTarget(const UShuttlegentSettings& Settings, int32 ModelIndex)
 {
-	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
-	const FString BaseUrl = IsValid(Settings) ? Settings->DeepSeekBaseUrl.TrimStartAndEnd() : FString();
-
 	FShuttlegentModelProbeTarget Target;
-	Target.Label = ShuttlegentProbeConstant::BuiltinLabel;
-	Target.ModelId = ShuttlegentProbeConstant::BuiltinModelId;
-	Target.BaseUrl = BaseUrl.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : BaseUrl;
-	Target.Api = EShuttlegentProviderApi::AnthropicMessages;
-	Target.bBuiltinDeepSeek = true;
-	FShuttlegentSecrets::Resolve(ShuttlegentEnvVar::ProviderKey, Target.ApiKey);
+	if (!Settings.Models.IsValidIndex(ModelIndex)) return Target;
+
+	// 与 FShuttlegentModelRoutes 对该模型的取值一致：运行时只收到个人设置中的密钥，留空时沿用同地址同协议的模型的密钥
+	const FShuttlegentModelEntry& Entry = Settings.Models[ModelIndex];
+	const FString BaseUrl = Entry.BaseUrl.TrimStartAndEnd();
+	int32 KeySource = INDEX_NONE;
+	Target.Label = Entry.Name;
+	Target.ModelId = Entry.ModelId.TrimStartAndEnd();
+	Target.BaseUrl = Entry.bBuiltin && BaseUrl.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : BaseUrl;
+	Target.Api = Entry.Api;
+	Target.bBuiltinDeepSeek = Entry.bBuiltin;
+	Target.ApiKey = FShuttlegentModelRoutes::ResolveKey(Settings, ModelIndex, KeySource);
 	return Target;
-}
-
-TArray<FShuttlegentModelProbeTarget> FShuttlegentModelProbe::MakeEntryTargets(const FShuttlegentProviderEntry& Entry)
-{
-	// 与 FShuttlegentSecrets::Resolve 对该条目的取值一致：运行时只收到个人设置中的密钥
-	FShuttlegentModelProbeTarget Base;
-	Base.BaseUrl = Entry.BaseUrl;
-	Base.Api = Entry.Api;
-	Base.ApiKey = Entry.ApiKey.TrimStartAndEnd();
-
-	TArray<FShuttlegentModelProbeTarget> Targets;
-	for (const FShuttlegentProviderModel& Model : Entry.Models)
-	{
-		if (Model.Id.TrimStartAndEnd().IsEmpty()) continue;
-
-		FShuttlegentModelProbeTarget& Target = Targets.Add_GetRef(Base);
-		Target.ModelId = Model.Id.TrimStartAndEnd();
-		Target.Label = Model.Name.IsEmpty() ? Target.ModelId : Model.Name;
-	}
-
-	if (Targets.IsEmpty()) Targets.Add(Base);
-	return Targets;
 }
 
 FString FShuttlegentModelProbe::GetRequestUrl(const FShuttlegentModelProbeTarget& Target)

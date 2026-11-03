@@ -9,10 +9,9 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 
-#include "FShuttlegentModelProbe.h"
 #include "FShuttlegentToolsets.h"
+#include "Settings/FShuttlegentSettingsChoices.h"
 #include "Settings/SShuttlegentFontField.h"
-#include "Settings/SShuttlegentProbeRow.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentMcpServerModule.h"
 #include "ShuttlegentSettings.h"
@@ -142,31 +141,36 @@ void FShuttlegentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder& D
 			];
 	}
 
-	CustomizeProviders(DetailBuilder);
+	CustomizeDefaults(DetailBuilder);
 	CustomizeToolsets(DetailBuilder);
 	CustomizeFonts(DetailBuilder);
 }
 
-void FShuttlegentSettingsCustomization::CustomizeProviders(IDetailLayoutBuilder& DetailBuilder)
+void FShuttlegentSettingsCustomization::CustomizeDefaults(IDetailLayoutBuilder& DetailBuilder)
 {
-	// 先显式加入 DeepSeek 的地址与密钥，检测行才能排在二者之后、供应商列表之前
-	IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(ShuttlegentEditorSettingsUi::ProvidersCategory);
-	Category.AddProperty(DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DeepSeekBaseUrl)));
-	Category.AddProperty(DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DeepSeekApiKey)));
+	// 默认 Agent 与默认模型都从下拉中选，不手填
+	const TSharedRef<IPropertyHandle> Agent = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DefaultAgent));
+	const TSharedRef<IPropertyHandle> Model = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DefaultModelName));
+	const TPair<TSharedRef<IPropertyHandle>, TSharedRef<SWidget>> Rows[] = {
+		{ Agent, FShuttlegentSettingsChoices::MakeAgentCombo(Agent) },
+		{ Model, FShuttlegentSettingsChoices::MakeModelCombo(Model, LOCTEXT("FirstBuiltin", "第一个内置模型")) },
+	};
+	for (const TPair<TSharedRef<IPropertyHandle>, TSharedRef<SWidget>>& Row : Rows)
+	{
+		IDetailPropertyRow* PropertyRow = DetailBuilder.EditDefaultProperty(Row.Key);
+		if (PropertyRow == nullptr) continue;
 
-	Category.AddCustomRow(LOCTEXT("DeepSeekProbeSearch", "检测连接 DeepSeek"))
-		.NameContent()
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("DeepSeekProbeName", "检测 DeepSeek 连接"))
-			.Font(IDetailLayoutBuilder::GetDetailFont())
-		]
-		.ValueContent()
-		.MinDesiredWidth(ShuttlegentEditorSettingsUi::ProbeValueMinWidth)
-		[
-			SNew(SShuttlegentProbeRow)
-			.OnGetTargets_Lambda([]() { return TArray<FShuttlegentModelProbeTarget> { FShuttlegentModelProbe::MakeBuiltinTarget() }; })
-		];
+		PropertyRow->CustomWidget()
+			.NameContent()
+			[
+				Row.Key->CreatePropertyNameWidget()
+			]
+			.ValueContent()
+			.MinDesiredWidth(ShuttlegentEditorSettingsUi::ProbeValueMinWidth)
+			[
+				Row.Value
+			];
+	}
 }
 
 void FShuttlegentSettingsCustomization::CustomizeFonts(IDetailLayoutBuilder& DetailBuilder)

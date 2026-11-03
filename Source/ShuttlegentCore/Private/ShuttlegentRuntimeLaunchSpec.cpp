@@ -102,7 +102,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 	if (!OutSpec.Environment.Contains(KeyVariable))
 	{
 		OutIssue = EShuttlegentStartIssue::MissingKey;
-		OutError = FString::Printf(TEXT("%s has no API key in Editor Preferences > Shuttlegent > General > Providers."), *ProviderName);
+		OutError = FString::Printf(TEXT("%s has no API key in Editor Preferences > Shuttlegent > General > Models."), *ProviderName);
 		return false;
 	}
 

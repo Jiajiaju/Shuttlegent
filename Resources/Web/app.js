@@ -266,7 +266,7 @@
   const thumbnailLimits = new Map();
   const view = {
     layout: 'full',
-    // The model or mode picker that is open under the composer ('model-menu', 'mode-menu'), or null
+    // The agent, model or mode picker that is open under the composer ('agent-menu', 'model-menu', 'mode-menu'), or null
     openPicker: null,
     // Docked panes remember whether they stay open; overlays open fresh each time
     docked: { sidebar: true, inspector: true },
@@ -1172,9 +1172,9 @@
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
       case 'missingKey':
-        return { tone: '', icon: 'key', title: '没有找到 ' + esc(issue.provider) + ' 密钥', body: '在偏好设置 › Shuttlegent › Providers 填写密钥和端点后重试。', settings: true };
+        return { tone: '', icon: 'key', title: '没有找到 ' + esc(issue.provider) + ' 密钥', body: '在偏好设置 › Shuttlegent › Models 填写该模型的密钥和地址后重试。', settings: true };
       case 'authFailed':
-        return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Providers 改正后重试，运行时会重新启动并读取新设置。', settings: true };
+        return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Models 改正后重试，运行时会重新启动并读取新设置。', settings: true };
       case 'missingRuntime':
         return { tone: 'danger', icon: 'alert', title: '没有找到运行时', body: '期望位置 ' + code(issue.runtimePath) + '。在插件目录运行 ' + code(issue.buildScript) + ' 构建，或在偏好设置里指定路径。', folder: true };
       default:
@@ -1227,7 +1227,7 @@
 
   function configChoices(configId) {
     const option = state.config[configId] || { current: '', choices: [] };
-    return { current: option.current, choices: option.choices || [] };
+    return { current: option.current, choices: option.choices || [], locked: !!option.locked };
   }
 
   /** A model choice reads "Provider / Model"; the trigger and the menu show the model alone. */
@@ -1294,8 +1294,16 @@
     return state.planMode ? 'plan' : state.writeMode;
   }
 
-  /** Below the composer, right-aligned: model with reasoning effort, then mode; the composer outline shows any mode other than manual. */
+  /** Below the composer, right-aligned: agent, model with reasoning effort, then mode; the composer outline shows any mode other than manual. */
   function renderMetaTriggers() {
+    // The agent is fixed once the first message is sent: the session history belongs to the agent that wrote it
+    const agents = configChoices('agent');
+    $('agent-name').textContent = choiceName('agent') || 'Agent';
+    const agentTrigger = $('agent-trigger');
+    agentTrigger.hidden = agents.choices.length === 0;
+    agentTrigger.disabled = agents.locked || state.prompting;
+    agentTrigger.title = agents.locked ? '会话历史由该 Agent 记录，换 Agent 请新建会话' : 'Agent：选中时带出它的默认模型';
+
     const models = configChoices('model');
     $('model-name').textContent = shortModelName(choiceName('model')) || '模型';
     $('effort-name').textContent = choiceName('reasoning_effort');
@@ -1318,6 +1326,11 @@
     return '<button class="menu-item" role="menuitemradio" aria-checked="' + checked + '"' + attributes + (disabled ? ' disabled' : '') + '><span class="menu-text">' + esc(label)
       + (detail ? '<small>' + esc(detail) + '</small>' : '') + '</span>'
       + (checked ? '<span class="menu-check">' + icons.svg('check', 16) + '</span>' : '') + '</button>';
+  }
+
+  function agentMenuHtml() {
+    const agents = configChoices('agent');
+    return '<div class="menu-label">Agent</div>' + agents.choices.map((choice) => pickerItemHtml(' data-pick-agent="' + esc(choice.value) + '"', choice.name, '', choice.value === agents.current, false)).join('');
   }
 
   function modelMenuHtml() {
@@ -1364,11 +1377,11 @@
   }
 
   function pickerTrigger(id) {
-    return $(id === 'model-menu' ? 'model-trigger' : 'mode-trigger');
+    return $(id === 'agent-menu' ? 'agent-trigger' : id === 'model-menu' ? 'model-trigger' : 'mode-trigger');
   }
 
   function fillPicker(id) {
-    $(id).innerHTML = id === 'model-menu' ? modelMenuHtml() : id === 'effort-menu' ? effortMenuHtml() : modeMenuHtml();
+    $(id).innerHTML = id === 'agent-menu' ? agentMenuHtml() : id === 'model-menu' ? modelMenuHtml() : id === 'effort-menu' ? effortMenuHtml() : modeMenuHtml();
   }
 
   function openPicker(id, focusFirst) {
@@ -1403,9 +1416,10 @@
   }
 
   function closePickers() {
-    for (const id of ['model-menu', 'effort-menu', 'mode-menu']) {
+    for (const id of ['agent-menu', 'model-menu', 'effort-menu', 'mode-menu']) {
       $(id).hidden = true;
     }
+    $('agent-trigger').setAttribute('aria-expanded', 'false');
     $('model-trigger').setAttribute('aria-expanded', 'false');
     $('mode-trigger').setAttribute('aria-expanded', 'false');
     view.openPicker = null;
@@ -1414,7 +1428,7 @@
   /** A state push while a picker is open redraws it in place, so the check follows what the editor applied. */
   function refreshOpenPicker() {
     if (!view.openPicker) return;
-    if (view.openPicker === 'model-menu' && $('model-trigger').disabled) {
+    if ((view.openPicker === 'model-menu' || view.openPicker === 'agent-menu') && pickerTrigger(view.openPicker).disabled) {
       closePickers();
       return;
     }
@@ -1446,7 +1460,7 @@
   }
 
   function bindPickers() {
-    for (const id of ['model-menu', 'mode-menu']) {
+    for (const id of ['agent-menu', 'model-menu', 'mode-menu']) {
       const trigger = pickerTrigger(id);
       trigger.addEventListener('click', () => {
         if (view.openPicker === id) closePickers();
@@ -1459,6 +1473,12 @@
       });
     }
 
+    $('agent-menu').addEventListener('click', (event) => {
+      const agent = event.target.closest('[data-pick-agent]');
+      if (!agent) return;
+      if (agent.getAttribute('aria-checked') !== 'true') call('setconfig', 'agent', agent.dataset.pickAgent);
+      closePickers();
+    });
     $('model-menu').addEventListener('click', (event) => {
       const model = event.target.closest('[data-pick-model]');
       if (model) {

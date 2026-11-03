@@ -184,9 +184,6 @@ namespace ShuttlegentEditorSettingsUi
 	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
 
-	// 内置 DeepSeek 与供应商条目所在的类别，检测连接行插在 DeepSeek 密钥之后
-	inline const TCHAR* ProvidersCategory = TEXT("Providers");
-
 	// 检测连接行（SShuttlegentProbeRow）：值区域最小宽度，按钮与提示文字之间、结果各行之间的间距，单位为 Slate 单位
 	inline constexpr float ProbeValueMinWidth = 260.0f;
 	inline constexpr float ProbeButtonGap = 8.0f;
@@ -388,9 +385,10 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* IssueUrlMissing = TEXT("urlMissing");
 	inline const TCHAR* IssueHeaderValueMissing = TEXT("headerValueMissing");
 
-	// 配置选项：当前值与可选值
+	// 配置选项：当前值与可选值；Agent 选项另带是否已锁定
 	inline const TCHAR* Current = TEXT("current");
 	inline const TCHAR* Choices = TEXT("choices");
+	inline const TCHAR* Locked = TEXT("locked");
 	inline const TCHAR* Value = TEXT("value");
 	inline const TCHAR* Name = TEXT("name");
 
@@ -641,6 +639,9 @@ namespace ShuttlegentEditorConfigId
 {
 	inline const TCHAR* Model = TEXT("model");
 	inline const TCHAR* Reasoning = TEXT("reasoning_effort");
+
+	// 面板自己的选项，不发给运行时：对话的 Agent，经同一条 setconfig 通道选择
+	inline const TCHAR* Agent = TEXT("agent");
 }
 
 /** tool_call 标题中报告的运行时工具名称（dsh 包 fs/tool-fs、fs/tool-fs-search、web/tool-web、subagent、todo、goal）。 */

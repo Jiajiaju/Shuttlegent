@@ -59,6 +59,7 @@
       </section>
       <div class="composer-meta" id="composer-meta">
         <span id="command-note" class="composer-note" role="status" hidden></span>
+        <button id="agent-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="agent-menu"><span id="agent-name"></span></button>
         <button id="model-trigger" class="meta-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="model-menu"><span id="model-name"></span><span id="effort-name" class="sub"></span></button>
         <button id="mode-trigger" class="meta-trigger mode-trigger" aria-haspopup="menu" aria-expanded="false" aria-controls="mode-menu"></button>
       </div>
@@ -114,6 +115,7 @@
   <p class="dialog-text">"<span id="delete-name"></span>"的本地记录会被永久删除，删除后无法恢复。</p>
   <div class="dialog-actions"><button class="btn" data-close>取消</button><button class="btn btn-danger" id="delete-confirm">删除</button></div>
 </dialog>
+<div class="menu picker" id="agent-menu" role="menu" aria-label="Agent" hidden></div>
 <div class="menu picker" id="model-menu" role="menu" aria-label="模型" hidden></div>
 <div class="menu picker" id="effort-menu" role="menu" aria-label="推理强度" hidden></div>
 <div class="menu picker" id="mode-menu" role="menu" aria-label="模式" hidden></div>

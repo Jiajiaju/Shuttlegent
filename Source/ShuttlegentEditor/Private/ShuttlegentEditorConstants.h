@@ -184,6 +184,17 @@ namespace ShuttlegentEditorSettingsUi
 	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
 
+	// 内置 DeepSeek 与供应商条目所在的类别，检测连接行插在 DeepSeek 密钥之后
+	inline const TCHAR* ProvidersCategory = TEXT("Providers");
+
+	// 检测连接行（SShuttlegentProbeRow）：值区域最小宽度，按钮与提示文字之间、结果各行之间的间距，单位为 Slate 单位
+	inline constexpr float ProbeValueMinWidth = 260.0f;
+	inline constexpr float ProbeButtonGap = 8.0f;
+	inline constexpr float ProbeLineGap = 2.0f;
+
+	// 检测连接结果中连接各段的分隔符
+	inline const TCHAR* ProbeFieldSeparator = TEXT(" · ");
+
 	// 字体输入框（SShuttlegentFontField）：下拉列表最大高度、框右端为下拉箭头留出的宽度与箭头边长、列表行与分组标题的内边距，单位为 Slate 单位
 	inline constexpr float FontListMaxHeight = 320.0f;
 	inline constexpr float FontFieldChevronSpace = 22.0f;

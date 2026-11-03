@@ -12,6 +12,8 @@
 #include "Chat/ShuttlegentChatModel.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentCoreModule.h"
+#include "FShuttlegentProviderEntry.h"
+#include "Settings/FShuttlegentProviderEntryCustomization.h"
 #include "Settings/FShuttlegentSettingsCustomization.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentSettings.h"
@@ -28,6 +30,7 @@ void FShuttlegentEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditor = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(ShuttlegentEditorSettingsUi::PropertyEditorModule);
 	PropertyEditor.RegisterCustomClassLayout(UShuttlegentSettings::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FShuttlegentSettingsCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(FShuttlegentProviderEntry::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FShuttlegentProviderEntryCustomization::MakeInstance));
 
 	ChatModel = MakeShared<FShuttlegentChatModel>();
 	const TSharedPtr<FShuttlegentAgentService> Service = FShuttlegentCoreModule::Get().GetAgentService();
@@ -47,7 +50,11 @@ void FShuttlegentEditorModule::StartupModule()
 void FShuttlegentEditorModule::ShutdownModule()
 {
 	FPropertyEditorModule* PropertyEditor = FModuleManager::GetModulePtr<FPropertyEditorModule>(ShuttlegentEditorSettingsUi::PropertyEditorModule);
-	if (PropertyEditor != nullptr) PropertyEditor->UnregisterCustomClassLayout(UShuttlegentSettings::StaticClass()->GetFName());
+	if (PropertyEditor != nullptr)
+	{
+		PropertyEditor->UnregisterCustomClassLayout(UShuttlegentSettings::StaticClass()->GetFName());
+		PropertyEditor->UnregisterCustomPropertyTypeLayout(FShuttlegentProviderEntry::StaticStruct()->GetFName());
+	}
 
 	FCoreDelegates::OnFEngineLoopInitComplete.RemoveAll(this);
 	FTSTicker::GetCoreTicker().RemoveTicker(PrewarmHandle);

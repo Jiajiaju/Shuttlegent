@@ -23,6 +23,30 @@ Shuttlegent 的设置分两处：
 
 模型设置在运行时重启后生效（面板中点“重试”或重启编辑器）；MCP 请求头的值在新会话中生效。
 
+### 1.1 检测连接
+
+DeepSeek Api Key 下方和每个 Providers 条目末尾各有一行“检测连接”。点击后编辑器直接向模型服务发一次最小请求（一条 `ping`，输出上限 1 个 token，Responses 协议为 16），不需要运行时已启动，也不必先保存设置；条目下有多个模型时逐个检测。请求地址与运行时实际使用的一致：
+
+| 对象 | 实际请求 |
+|---|---|
+| 内置 DeepSeek | `{Base Url}/v1/messages`；地址已以 `/v1` 结尾时不再补 |
+| Api 为 Anthropic Messages | `{Base Url}/v1/messages`；地址以 `/v1` 结尾时也照补，得到 `/v1/v1/messages` |
+| Api 为 OpenAI Completions | `{Base Url}/chat/completions` |
+| Api 为 OpenAI Responses | `{Base Url}/responses` |
+
+| 结果 | 含义 |
+|---|---|
+| 已连通（模型 ID，耗时） | 2xx：地址、协议、密钥、模型 ID 都对 |
+| 已连通，当前被限流 | 429 |
+| 密钥无效或无权限 | 401 / 403 |
+| 地址与协议不配套 | 404 或返回网页：地址不是所选协议的接口地址 |
+| 模型 ID 不对 | 400 且错误内容涉及模型；结果附服务方给出的说明 |
+| 请求失败（HTTP 状态码） | 其他错误；结果附服务方给出的说明 |
+| 地址不可达 | 域名无法解析、连接被拒绝或 15 秒超时 |
+| 未填写密钥 / 地址 / 模型 ID | 未发请求 |
+
+每个结果下方显示实际请求的完整地址。Output Log（`LogShuttlegent`）只记一行 `Model probe: POST <地址> -> <状态码> in <耗时> ms.`，不记密钥与响应内容。
+
 ## 2. 权限（个人）
 
 | 字段 | 默认值 | 说明 |

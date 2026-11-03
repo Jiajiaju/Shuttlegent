@@ -18,6 +18,7 @@ public class ShuttlegentCore : ModuleRules
 			{
 				"CoreUObject",
 				"DeveloperSettings",
+				"HTTP",
 				"Json",
 				"Projects",
 			}

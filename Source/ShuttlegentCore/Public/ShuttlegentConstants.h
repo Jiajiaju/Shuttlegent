@@ -142,6 +142,88 @@ namespace ShuttlegentProviderConstant
 	inline const TCHAR* FieldPluginName = TEXT("name");
 }
 
+/**
+ * 检测连接的请求（ShuttlegentAgentModel_Design.md 第 8.1 节）。路径与运行时同源，出处相对 ThirdParty/deepseek-harness：
+ * 内置 DeepSeek 见 packages/llm/llm-deepseek/src/messages-api.ts；其余三种协议由 pi-ai 交给官方 SDK，
+ * 见 node_modules/.pnpm 下 @anthropic-ai/sdk 0.129.0 的 resources/messages/messages.js 与 openai 7.19.0 的
+ * resources/chat/completions/completions.js、resources/responses/responses.js；SDK 把地址去掉末尾斜杠后直接拼接路径。
+ */
+namespace ShuttlegentProbeConstant
+{
+	// 内置 DeepSeek 路由检测的模型：Runtime/profile/shuttlegent.patch.yml 中 acp 行的默认模型
+	inline const TCHAR* BuiltinModelId = TEXT("deepseek-flash");
+
+	// 内置 DeepSeek 的显示名
+	inline const TCHAR* BuiltinLabel = TEXT("DeepSeek");
+
+	// 内置 DeepSeek 地址已以此结尾时不再补版本段（messages-api.ts 的 messagesApiRoot）
+	inline const TCHAR* VersionSegment = TEXT("/v1");
+
+	// 各协议接在地址后的路径
+	inline const TCHAR* BuiltinMessagesPath = TEXT("/messages");
+	inline const TCHAR* AnthropicMessagesPath = TEXT("/v1/messages");
+	inline const TCHAR* OpenAiCompletionsPath = TEXT("/chat/completions");
+	inline const TCHAR* OpenAiResponsesPath = TEXT("/responses");
+
+	// 地址末尾要去掉的斜杠
+	inline const TCHAR* UrlSlash = TEXT("/");
+
+	inline const TCHAR* Verb = TEXT("POST");
+
+	// 请求头
+	inline const TCHAR* HeaderContentType = TEXT("Content-Type");
+	inline const TCHAR* ContentTypeJson = TEXT("application/json");
+	inline const TCHAR* HeaderAnthropicKey = TEXT("x-api-key");
+	inline const TCHAR* HeaderAnthropicVersion = TEXT("anthropic-version");
+
+	// 运行时发送的 Anthropic API 版本（llm-deepseek adapter.ts 与 @anthropic-ai/sdk client.js）
+	inline const TCHAR* AnthropicVersion = TEXT("2023-06-01");
+	inline const TCHAR* HeaderAuthorization = TEXT("Authorization");
+	inline const TCHAR* BearerPrefix = TEXT("Bearer ");
+
+	// 请求体字段
+	inline const TCHAR* FieldModel = TEXT("model");
+	inline const TCHAR* FieldMaxTokens = TEXT("max_tokens");
+	inline const TCHAR* FieldMaxOutputTokens = TEXT("max_output_tokens");
+	inline const TCHAR* FieldMessages = TEXT("messages");
+	inline const TCHAR* FieldRole = TEXT("role");
+	inline const TCHAR* FieldContent = TEXT("content");
+	inline const TCHAR* FieldInput = TEXT("input");
+	inline const TCHAR* RoleUser = TEXT("user");
+
+	// 发给模型的唯一一条消息
+	inline const TCHAR* PingText = TEXT("ping");
+
+	// 输出上限：Messages 与 Chat Completions 取 1；Responses 接口要求 max_output_tokens 不小于 16
+	inline constexpr int32 MinOutputTokens = 1;
+	inline constexpr int32 MinResponsesOutputTokens = 16;
+
+	// 整个请求的超时，单位秒
+	inline constexpr float TimeoutSeconds = 15.0f;
+
+	// HTTP 状态码分类
+	inline constexpr int32 StatusOkMin = 200;
+	inline constexpr int32 StatusOkMax = 299;
+	inline constexpr int32 StatusBadRequest = 400;
+	inline constexpr int32 StatusUnauthorized = 401;
+	inline constexpr int32 StatusForbidden = 403;
+	inline constexpr int32 StatusNotFound = 404;
+	inline constexpr int32 StatusTooManyRequests = 429;
+
+	// 判断“返回 HTML”：响应类型含此串，或正文以尖括号开头
+	inline const TCHAR* HtmlContentType = TEXT("text/html");
+	inline const TCHAR* HtmlLeadingChar = TEXT("<");
+
+	// 400 的错误内容含此词（不区分大小写）时判为模型 ID 不对；DeepSeek 原文为 The supported API model names are ...
+	inline const TCHAR* ModelKeyword = TEXT("model");
+
+	// 保留的响应正文长度，单位字符
+	inline constexpr int32 DetailMaxChars = 200;
+
+	// 秒转毫秒
+	inline constexpr double MillisecondsPerSecond = 1000.0;
+}
+
 /** 相对插件目录的路径与用户级路径。 */
 namespace ShuttlegentPath
 {

@@ -13,6 +13,9 @@ MCP_LOG = os.path.join(OUT, "mcp_mock.log")
 
 # s10_parallel: two prompts sent together count as run side by side when the later one finishes before this multiple of the earlier one's time
 PARALLEL_FINISH_RATIO = 1.5
+
+# s21_write_owner: the newName each session is told to write, in session order (RunRegression.ps1 $OwnerPrompts)
+WRITE_OWNER_NAMES = ["ALPHA", "BRAVO"]
 with open(os.path.join(OUT, "mode.json"), encoding="utf-8") as mode_file:
     SPLIT_LAUNCH_DIR = json.load(mode_file).get("splitLaunchDir", False)
 
@@ -123,6 +126,23 @@ def check_parallel(ev):
     elapsed = sorted(d["elapsed"] for d in done)
     parallel = elapsed[1] < elapsed[0] * PARALLEL_FINISH_RATIO
     return True, f"parallel={parallel} elapsed={elapsed} windows={[(w['first'], w['last'], w['chunks']) for w in windows]}"
+
+
+def check_write_owner(ev):
+    # Every tool call carries the conversation header its own session declared: the editor routes confirmation cards by it
+    sessions = next((e["data"] for e in ev if e["kind"] == "parallel_sessions"), {})
+    keys = sessions.get("conversationKeys") or []
+    if len(keys) != len(WRITE_OWNER_NAMES):
+        return False, f"conversationKeys={keys}"
+
+    names_by_key = {}
+    for call in mcp_calls("s21_write_owner"):
+        if call["body"].get("method") != "tools/call" or call["body"].get("params", {}).get("name") != "ue_write_probe":
+            continue
+        names_by_key.setdefault(call.get("conversation"), []).append(call["body"]["params"].get("arguments", {}).get("newName"))
+    expected = dict(zip(keys, WRITE_OWNER_NAMES))
+    ok = set(names_by_key) == set(keys) and all(names and all(name == expected[key] for name in names) for key, names in names_by_key.items())
+    return ok, f"writes by conversation={names_by_key}"
 
 
 def check_image(ev):
@@ -278,7 +298,8 @@ CHECKS = [
     ("s16_session_tap", "Session tap reports plan mode, todos and compaction; control enters plan mode, approves the plan, runs /compact", check_session_tap),
     ("s19_tool_image", "An image in an MCP tool result reaches the default model, which reads it", check_tool_image),
     ("s18_skill_dirs", "Project skill directories listed before the built-in one win a duplicate skill name; built-in skills still load", check_skill_dirs),
-    ("s20_memory", "Personal prompt and memory load from Saved/Shuttlegent/; a root-level SHUTTLEGENT.local.md does not", check_memory),
+    ("s21_write_owner", "Two sessions declared with their own X-Shuttlegent-Conversation each get it back on their tool calls", check_write_owner),
+    ("s20_memory","Personal prompt and memory load from Saved/Shuttlegent/; a root-level SHUTTLEGENT.local.md does not", check_memory),
 ]
 
 failed = 0

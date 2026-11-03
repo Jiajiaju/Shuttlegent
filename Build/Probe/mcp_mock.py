@@ -84,7 +84,7 @@ class Handler(BaseHTTPRequestHandler):
             msg = json.loads(raw)
         except json.JSONDecodeError:
             msg = None
-        log({"method": "POST", "scenario": self.headers.get("X-Probe-Scenario"), "auth_ok": auth == f"Bearer {TOKEN}", "accept": self.headers.get("Accept"), "body": msg})
+        log({"method": "POST", "scenario": self.headers.get("X-Probe-Scenario"), "conversation": self.headers.get("X-Shuttlegent-Conversation"), "auth_ok": auth == f"Bearer {TOKEN}", "accept": self.headers.get("Accept"), "body": msg})
         if auth != f"Bearer {TOKEN}":
             self._send(401, {"error": "unauthorized"})
             return

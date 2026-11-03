@@ -9,6 +9,7 @@
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 
+#include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentCoreModule.h"
@@ -38,6 +39,8 @@ void FShuttlegentEditorModule::StartupModule()
 	ChatModel = MakeShared<FShuttlegentChatModel>();
 	const TSharedPtr<FShuttlegentAgentService> Service = FShuttlegentCoreModule::Get().GetAgentService();
 	if (Service.IsValid()) ChatModel->Initialize(Service.ToSharedRef());
+	HubView = MakeShared<FShuttlegentChatView>();
+	HubView->Initialize(ChatModel.ToSharedRef());
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId, FOnSpawnTab::CreateRaw(this, &FShuttlegentEditorModule::SpawnChatTab))
 		.SetDisplayName(LOCTEXT("ChatTabTitle", "Shuttlegent"))
@@ -72,6 +75,8 @@ void FShuttlegentEditorModule::ShutdownModule()
 	if (FSlateApplication::IsInitialized()) FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId);
 	Panel.Reset();
 
+	if (HubView.IsValid()) HubView->Shutdown();
+	HubView.Reset();
 	if (ChatModel.IsValid()) ChatModel->Shutdown();
 	ChatModel.Reset();
 
@@ -82,7 +87,7 @@ void FShuttlegentEditorModule::ShutdownModule()
 TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs& Args)
 {
 	// 模块生命周期内只有一个面板：重新打开的标签页显示同一页面，而不是重新加载
-	if (!Panel.IsValid()) Panel = SNew(SShuttlegentWebPanel).Model(ChatModel);
+	if (!Panel.IsValid()) Panel = SNew(SShuttlegentWebPanel).View(HubView);
 	Panel->SetHostTabOpen(true);
 
 	const TWeakPtr<SShuttlegentWebPanel> WeakPanel = Panel;
@@ -99,6 +104,7 @@ TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs&
 		];
 
 	ChatTab = Tab;
+	Panel->SetHostTab(Tab);
 	return Tab;
 }
 
@@ -115,7 +121,7 @@ FLinearColor FShuttlegentEditorModule::GetChatTabColor() const
 bool FShuttlegentEditorModule::HandleTabForegroundCheck(float DeltaTime)
 {
 	const TSharedPtr<SDockTab> Tab = ChatTab.Pin();
-	if (ChatModel.IsValid()) ChatModel->SetPanelVisible(Tab.IsValid() && Tab->IsForeground());
+	if (HubView.IsValid()) HubView->SetVisible(Tab.IsValid() && Tab->IsForeground());
 	return true;
 }
 

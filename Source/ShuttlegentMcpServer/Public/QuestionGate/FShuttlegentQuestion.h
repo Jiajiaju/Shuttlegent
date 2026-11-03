@@ -8,6 +8,9 @@ struct FShuttlegentQuestion
 	/** 由 FShuttlegentQuestionGate 分配。 */
 	int32 QuestionId = 0;
 
+	/** 由提问通道设置：提问的对话（工具调用带回的 X-Shuttlegent-Conversation）；未带时为空。 */
+	FString ConversationKey;
+
 	FString Question;
 
 	/** 提供的候选答案，按显示顺序排列。 */

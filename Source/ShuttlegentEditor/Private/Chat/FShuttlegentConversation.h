@@ -22,6 +22,12 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 运行时会话；新对话在 session/new 答复前为空。 */
 	FString SessionId;
 
+	/**
+	 * 对话的标识，随本对话的 session/new、session/resume 声明为编辑器端点的请求头 X-Shuttlegent-Conversation；
+	 * 工具调用据此归属到发起它的对话。只在内存中存在，重新打开的会话由新对话再次声明。
+	 */
+	FString ConversationKey = FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+
 	TArray<TSharedPtr<FShuttlegentChatEntry>> Entries;
 
 	/** 本对话中仍在等待答复的权限请求，按条目 id 索引。 */
@@ -73,6 +79,10 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 
 	/** 一轮结束（用户自己停止的除外）时用户没在看这个对话；用户看到它时清除。页签与会话列表据此显示绿点。 */
 	bool bUnseenFinish = false;
+
+	/** 正在显示本对话的视图数，以及其中所在页签在前台的数目（FShuttlegentChatModel::SetDisplayed）；有视图显示的对话不会被释放。 */
+	int32 DisplayCount = 0;
+	int32 VisibleCount = 0;
 
 	/** 本对话已显示过“已读取记忆”的提示；每个对话只在第一次发送时显示一次。 */
 	bool bMemoryNoticeShown = false;

@@ -20,6 +20,8 @@ scenario keys:
   set_config: [{configId, value}]  optional session/set_config_option calls before prompting
   parallel_prompts: [text]         optional; one new session per text, all prompts sent at once on the same
                                    connection, then every answer collected (logs parallel_done per session)
+  conversation_headers: bool       optional, with parallel_prompts; each session declares the MCP servers with its own
+                                   X-Shuttlegent-Conversation header, as the editor does (keys logged in parallel_sessions)
   fork: {mcp_log, token, user_message, cut, prompts}
                                    optional; cut the session through the session control plugin, resume the copy
   control: {mcp_log, token, before: [{method, params}], after: [{method, params}], plan_review: approve|reject}
@@ -157,10 +159,15 @@ def request(method, params, timeout=None, on_wait=None):
 def run_parallel(mcp):
     """Opens one session per prompt, sends every prompt before reading any answer, and records when each session's updates arrived."""
     sessions = []
-    for _ in SCENARIO["parallel_prompts"]:
-        sess = request("session/new", {"cwd": SCENARIO["cwd"], "mcpServers": mcp})
+    keys = []
+    for index, _ in enumerate(SCENARIO["parallel_prompts"]):
+        servers = mcp
+        if SCENARIO.get("conversation_headers"):
+            keys.append(f"probe-conversation-{index + 1}")
+            servers = [{**s, "headers": s["headers"] + [{"name": "X-Shuttlegent-Conversation", "value": keys[-1]}]} for s in mcp]
+        sess = request("session/new", {"cwd": SCENARIO["cwd"], "mcpServers": servers})
         sessions.append(sess.get("result", {}).get("sessionId"))
-    log("parallel_sessions", {"sessionIds": sessions})
+    log("parallel_sessions", {"sessionIds": sessions, "conversationKeys": keys})
 
     pending = {}
     started = time.time()

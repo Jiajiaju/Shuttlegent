@@ -147,6 +147,7 @@ function Invoke-Scenario {
         [string]$Key = '',
         [string[]]$ExtraPatches = @(),
         [string[]]$ParallelPrompts = @(),
+        [switch]$ConversationHeaders,
         [hashtable]$ExtraEnv = @{},
         [hashtable]$Fork = $null,
         [hashtable]$Control = $null
@@ -180,6 +181,7 @@ function Invoke-Scenario {
     if ($CancelAfter -ge 0) { $Scenario.cancel_after = $CancelAfter }
     if ($Resume) { $Scenario.resume = $Resume }
     if ($ParallelPrompts.Count -gt 0) { $Scenario.parallel_prompts = $ParallelPrompts }
+    if ($ConversationHeaders) { $Scenario.conversation_headers = $true }
     if ($Fork) { $Scenario.fork = $Fork }
     if ($Control) { $Scenario.control = $Control }
     if ($SplitLaunchDir) {
@@ -238,6 +240,11 @@ try {
         # M3.7 precondition: two sessions of one runtime prompted at the same time (Shuttlegent.md section 14.3.7)
         $LongPrompt = 'Without using any tool, write the numbers from 1 to 120 in English words, one per line.'
         Invoke-Scenario -Name 's10_parallel' -HomeName 'parallel' -ParallelPrompts @($LongPrompt, $LongPrompt) -Key $ApiKey
+
+        # Session tabs M1: each session's tool calls carry the X-Shuttlegent-Conversation header its session/new declared
+        # (newName values must match WRITE_OWNER_NAMES in check_results.py)
+        $OwnerPrompts = @('Call the ue_write_probe tool once with actor "Door" and newName "ALPHA", then reply with just the word done.', 'Call the ue_write_probe tool once with actor "Door" and newName "BRAVO", then reply with just the word done.')
+        Invoke-Scenario -Name 's21_write_owner' -HomeName 'owner' -ParallelPrompts $OwnerPrompts -ConversationHeaders -Key $ApiKey
 
         # H6: does the default model route accept and read an image (left half red, right half blue)
         $ImagePrompt = @{ text = 'Without using any tool: what colour is the left half of this image, and what colour is the right half? Answer in English in one short sentence.'; image = (Join-Path $ProbeDir 'fixtures\split-red-blue.png') }

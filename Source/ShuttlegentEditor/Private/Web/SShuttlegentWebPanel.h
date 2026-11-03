@@ -11,18 +11,19 @@
 
 class FActiveTimerHandle;
 class FShuttlegentAssetThumbnails;
-class FShuttlegentChatModel;
+class FShuttlegentChatView;
 class FShuttlegentReferenceFinder;
 class FShuttlegentWebProtocol;
 class SBorder;
 class SBox;
+class SDockTab;
 class SWebBrowser;
 class UShuttlegentWebBridge;
 struct FWebNavigationRequest;
 enum class EWebBrowserConsoleLogSeverity;
 
 /**
- * Shuttlegent 面板：在 CEF 中承载 Resources/Web/index.html，并将其连接到 FShuttlegentChatModel。
+ * Shuttlegent 面板：在 CEF 中承载 Resources/Web/index.html，并将其连接到 FShuttlegentChatView。
  *
  * 浏览器在面板首次绘制时创建，页面报告就绪前显示占位内容。宿主在页面之外承担 CEF
  * 无法处理的部分：编辑器拖放、Ctrl+Space 与 Esc、面板自有的 Content Browser 抽屉，
@@ -33,11 +34,11 @@ class SShuttlegentWebPanel : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SShuttlegentWebPanel) {}
-		SLATE_ARGUMENT(TSharedPtr<FShuttlegentChatModel>, Model)
+		SLATE_ARGUMENT(TSharedPtr<FShuttlegentChatView>, View)
 	SLATE_END_ARGS()
 
 private:
-	TSharedPtr<FShuttlegentChatModel> Model;
+	TSharedPtr<FShuttlegentChatView> View;
 	TSharedPtr<FShuttlegentWebProtocol> Protocol;
 	TSharedPtr<SWebBrowser> Browser;
 	TStrongObjectPtr<UShuttlegentWebBridge> Bridge;
@@ -55,6 +56,9 @@ private:
 
 	/** 有停靠标签页正在显示面板；仅在此时面板才答复运行时权限请求。 */
 	bool bHostTabOpen = false;
+
+	/** 最近一个显示面板的标签页；会话拖拽原型把占位页签插到它所在的栈。 */
+	TWeakPtr<SDockTab> HostTab;
 
 	/** Content Browser 抽屉：首次使用时创建的真实 SContentBrowser，在面板生命周期内保留。 */
 	TSharedPtr<SWidget> ContentBrowser;
@@ -86,6 +90,9 @@ public:
 
 	/** 当某个标签页开始或停止显示面板时由模块调用；实例的生命周期长于其标签页。 */
 	void SetHostTabOpen(bool bOpen);
+
+	/** 模块生成标签页后告知面板该标签页。 */
+	void SetHostTab(const TSharedPtr<SDockTab>& Tab);
 
 	//~ Begin SWidget Interface.
 	virtual FReply OnPreviewKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;

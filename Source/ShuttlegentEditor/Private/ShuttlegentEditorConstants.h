@@ -244,6 +244,19 @@ namespace ShuttlegentEditorRuntime
 	inline constexpr float TabForegroundCheckSeconds = 0.25f;
 }
 
+/** 会话页签方案 M0 的拖拽原型（工作区 Doc/ShuttlegentSessionTabs_Design.md §12）；M3 正式实现后移除。 */
+namespace ShuttlegentEditorPrototype
+{
+	// 打开拖拽原型的控制台变量，默认关闭
+	inline const TCHAR* SessionDragVariable = TEXT("Shuttlegent.Prototype.SessionDrag");
+
+	// 占位页签的类型名；不能与主页签同名，否则按类型查找主页签时会找到占位页签
+	inline const FName SessionDragTabId = TEXT("ShuttlegentSessionPrototype");
+
+	// 插入占位页签后等待它取得几何信息的最多帧数
+	inline constexpr int32 MaxDragWaitFrames = 10;
+}
+
 namespace ShuttlegentEditorWebField
 {
 	// 顶层：完整快照标志、状态字段、条目列表与顺序、一次性事件

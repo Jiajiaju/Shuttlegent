@@ -58,8 +58,11 @@ public:
 	/** 绑定后权限请求交由它处理（参数中注明会话）；未绑定时按 UShuttlegentSettings::PermissionPolicy 答复。 */
 	FShuttlegentPermissionHandler PermissionHandler;
 
-	/** 每次 session/new 与 session/resume 声明的 ACP mcpServers 条目；ShuttlegentMcpServer 在此声明编辑器端点。未绑定时为空。 */
-	TFunction<TArray<TSharedPtr<FJsonValue>>()> McpServersProvider;
+	/**
+	 * 每次 session/new 与 session/resume 声明的 ACP mcpServers 条目，参数为发起该会话的对话标识（可为空）；
+	 * ShuttlegentMcpServer 在此声明编辑器端点。未绑定时为空。
+	 */
+	TFunction<TArray<TSharedPtr<FJsonValue>>(const FString& /*ConversationKey*/)> McpServersProvider;
 
 	/** 在运行时启动前向其环境追加变量；ShuttlegentMcpServer 在此加入端点 URL 与新 token。 */
 	TFunction<void(TMap<FString, FString>& /*Environment*/)> RuntimeEnvironmentProvider;
@@ -89,11 +92,14 @@ public:
 	/** 关闭运行时。其会话可在下次 Start 后恢复。 */
 	void Stop();
 
-	/** 新建一个以项目目录为 cwd 的会话，由 OnSessionReady 给出其 ID。不影响其他已打开的会话。 */
-	bool NewSession(FString& OutError);
+	/**
+	 * 新建一个以项目目录为 cwd 的会话，由 OnSessionReady 给出其 ID。不影响其他已打开的会话。
+	 * ConversationKey 随编辑器端点的声明下发，工具调用据此归属到发起的对话；为空时不下发。
+	 */
+	bool NewSession(const FString& ConversationKey, FString& OutError);
 
-	/** 重新接入一个已保存的会话，由运行时恢复其模型上下文。不影响其他已打开的会话。 */
-	bool ResumeSession(const FString& SessionId, FString& OutError);
+	/** 重新接入一个已保存的会话，由运行时恢复其模型上下文。不影响其他已打开的会话。ConversationKey 同 NewSession。 */
+	bool ResumeSession(const FString& SessionId, const FString& ConversationKey, FString& OutError);
 
 	/** 向一个已打开且没有进行中提问的会话发送一条文本提问。 */
 	bool Prompt(const FString& SessionId, const FString& Text, FString& OutError);
@@ -127,7 +133,7 @@ public:
 
 private:
 	void SetState(EShuttlegentAgentState NewState);
-	TSharedRef<FJsonObject> MakeSessionParams(const FString& SessionId) const;
+	TSharedRef<FJsonObject> MakeSessionParams(const FString& SessionId, const FString& ConversationKey) const;
 	void ApplySessionResult(const FString& SessionId, const TSharedPtr<FJsonObject>& Result, bool bCreated);
 	/** 配置选项中当前的 "model" 值及其显示名（选项没有名称时即为该值）。 */
 	static void GetCurrentModel(const TArray<TSharedPtr<FJsonValue>>& ConfigOptions, FString& OutValue, FString& OutName);

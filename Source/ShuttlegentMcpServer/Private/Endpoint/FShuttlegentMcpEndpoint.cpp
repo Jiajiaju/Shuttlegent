@@ -15,6 +15,7 @@
 #include "Endpoint/FShuttlegentContextBreakdown.h"
 #include "Endpoint/FShuttlegentPlanReview.h"
 #include "Endpoint/FShuttlegentSessionEvent.h"
+#include "Endpoint/FShuttlegentToolCallScope.h"
 #include "Endpoint/FShuttlegentToolRegistry.h"
 #include "FShuttlegentProjectConfig.h"
 #include "Endpoint/FShuttlegentToolRunner.h"
@@ -139,7 +140,7 @@ void FShuttlegentMcpEndpoint::RotateToken()
 	Token = FGuid::NewGuid().ToString(EGuidFormats::Digits) + FGuid::NewGuid().ToString(EGuidFormats::Digits);
 }
 
-TArray<TSharedPtr<FJsonValue>> FShuttlegentMcpEndpoint::MakeDeclaration() const
+TArray<TSharedPtr<FJsonValue>> FShuttlegentMcpEndpoint::MakeDeclaration(const FString& ConversationKey) const
 {
 	TArray<TSharedPtr<FJsonValue>> Servers;
 	if (!IsListening()) return Servers;
@@ -147,13 +148,25 @@ TArray<TSharedPtr<FJsonValue>> FShuttlegentMcpEndpoint::MakeDeclaration() const
 	const TSharedRef<FJsonObject> Authorization = MakeShared<FJsonObject>();
 	Authorization->SetStringField(ShuttlegentMcpEndpointConstant::FieldName, ShuttlegentMcpEndpointConstant::HeaderAuthorization);
 	Authorization->SetStringField(ShuttlegentMcpEndpointConstant::FieldValue, FString(ShuttlegentMcpEndpointConstant::BearerPrefix) + Token);
+	TArray<TSharedPtr<FJsonValue>> Headers = { MakeShared<FJsonValueObject>(Authorization) };
+
+	// 运行时按会话挂载 MCP 并原样带回请求头（Harness packages/acp/acp/src/session.ts、mcp.ts）
+	if (!ConversationKey.IsEmpty())
+	{
+		const TSharedRef<FJsonObject> Conversation = MakeShared<FJsonObject>();
+		Conversation->SetStringField(ShuttlegentMcpEndpointConstant::FieldName, ShuttlegentMcpEndpointConstant::HeaderConversation);
+		Conversation->SetStringField(ShuttlegentMcpEndpointConstant::FieldValue, ConversationKey);
+		Headers.Add(MakeShared<FJsonValueObject>(Conversation));
+	}
 
 	const TSharedRef<FJsonObject> Server = MakeShared<FJsonObject>();
 	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldType, ShuttlegentMcpEndpointConstant::DeclarationTypeHttp);
 	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldName, ShuttlegentMcpEndpointConstant::ServerName);
 	Server->SetStringField(ShuttlegentMcpEndpointConstant::FieldUrl, GetUrl());
-	Server->SetArrayField(ShuttlegentMcpEndpointConstant::FieldHeaders, { MakeShared<FJsonValueObject>(Authorization) });
+	Server->SetArrayField(ShuttlegentMcpEndpointConstant::FieldHeaders, Headers);
 	Servers.Add(MakeShared<FJsonValueObject>(Server));
+
+	UE_LOG(LogShuttlegent, Log, TEXT("MCP endpoint declared for conversation %s."), ConversationKey.IsEmpty() ? ShuttlegentMcpEndpointConstant::LogNoConversation : *ConversationKey);
 	return Servers;
 }
 
@@ -206,7 +219,12 @@ bool FShuttlegentMcpEndpoint::HandleRequest(const FHttpServerRequest& Request, c
 
 	const TSharedPtr<FJsonObject>* Params = nullptr;
 	Message->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldParams, Params);
-	Dispatch(Method, Params != nullptr ? *Params : nullptr, [Id, OnComplete](const TSharedRef<FJsonObject>& Result, int32 ErrorCode, const FString& ErrorMessage)
+
+	// 发起调用的对话，由该会话声明端点时下发的请求头带回；运行时自有插件的通知不带它
+	const TArray<FString>* ConversationValues = Request.Headers.Find(ShuttlegentMcpEndpointConstant::HeaderConversation);
+	const FString ConversationKey = ConversationValues != nullptr && !ConversationValues->IsEmpty() ? (*ConversationValues)[0] : FString();
+
+	Dispatch(Method, Params != nullptr ? *Params : nullptr, ConversationKey, [Id, OnComplete](const TSharedRef<FJsonObject>& Result, int32 ErrorCode, const FString& ErrorMessage)
 	{
 		if (ErrorCode != 0)
 		{
@@ -287,7 +305,7 @@ void FShuttlegentMcpEndpoint::HandleNotification(const FString& Method, const TS
 	OnContextBreakdown(SessionId, Breakdown);
 }
 
-void FShuttlegentMcpEndpoint::Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, TFunction<void(const TSharedRef<FJsonObject>&, int32, const FString&)> OnAnswer)
+void FShuttlegentMcpEndpoint::Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, const FString& ConversationKey, TFunction<void(const TSharedRef<FJsonObject>&, int32, const FString&)> OnAnswer)
 {
 	const TSharedRef<FJsonObject> Empty = MakeShared<FJsonObject>();
 	if (Method == ShuttlegentMcpEndpointConstant::MethodInitialize)
@@ -335,7 +353,10 @@ void FShuttlegentMcpEndpoint::Dispatch(const FString& Method, const TSharedPtr<F
 
 	const TSharedPtr<FJsonObject>* ArgumentsField = nullptr;
 	const TSharedRef<FJsonObject> Arguments = Params->TryGetObjectField(ShuttlegentMcpEndpointConstant::FieldArguments, ArgumentsField) && ArgumentsField->IsValid() ? ArgumentsField->ToSharedRef() : MakeShared<FJsonObject>();
-	UE_LOG(LogShuttlegent, Log, TEXT("MCP tool call: %s"), *Name);
+	UE_LOG(LogShuttlegent, Log, TEXT("MCP tool call: %s (conversation %s)"), *Name, ConversationKey.IsEmpty() ? ShuttlegentMcpEndpointConstant::LogNoConversation : *ConversationKey);
+
+	// 工具同步进入写入门与提问通道（FShuttlegentToolRunner::Call），它们在此期间取得所属对话
+	const FShuttlegentToolCallScope CallScope(ConversationKey);
 	FShuttlegentToolRunner::Call(PinnedGate.ToSharedRef(), Tool.ToSharedRef(), Arguments, [OnAnswer](const FShuttlegentToolResult& Result)
 	{
 		OnAnswer(FShuttlegentMcpEndpointPrivate::MakeToolResult(Result), 0, FString());

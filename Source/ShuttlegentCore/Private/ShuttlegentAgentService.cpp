@@ -229,7 +229,7 @@ void FShuttlegentAgentService::Stop()
 	Connection->Close();
 }
 
-bool FShuttlegentAgentService::NewSession(FString& OutError)
+bool FShuttlegentAgentService::NewSession(const FString& ConversationKey, FString& OutError)
 {
 	if (State != EShuttlegentAgentState::Ready)
 	{
@@ -237,7 +237,7 @@ bool FShuttlegentAgentService::NewSession(FString& OutError)
 		return false;
 	}
 
-	TSharedRef<FJsonObject> Params = MakeSessionParams(FString());
+	TSharedRef<FJsonObject> Params = MakeSessionParams(FString(), ConversationKey);
 	TWeakPtr<FShuttlegentAgentService> WeakThis = AsShared();
 	Connection->Request(ShuttlegentAcpMethod::SessionNew, Params, [WeakThis](const FShuttlegentAcpResponse& Response)
 	{
@@ -256,7 +256,7 @@ bool FShuttlegentAgentService::NewSession(FString& OutError)
 	return true;
 }
 
-bool FShuttlegentAgentService::ResumeSession(const FString& SessionId, FString& OutError)
+bool FShuttlegentAgentService::ResumeSession(const FString& SessionId, const FString& ConversationKey, FString& OutError)
 {
 	if (State != EShuttlegentAgentState::Ready)
 	{
@@ -269,7 +269,7 @@ bool FShuttlegentAgentService::ResumeSession(const FString& SessionId, FString& 
 		return false;
 	}
 
-	TSharedRef<FJsonObject> Params = MakeSessionParams(SessionId);
+	TSharedRef<FJsonObject> Params = MakeSessionParams(SessionId, ConversationKey);
 	TWeakPtr<FShuttlegentAgentService> WeakThis = AsShared();
 	Connection->Request(ShuttlegentAcpMethod::SessionResume, Params, [WeakThis, SessionId](const FShuttlegentAcpResponse& Response)
 	{
@@ -480,12 +480,12 @@ void FShuttlegentAgentService::SetState(EShuttlegentAgentState NewState)
 	OnStateChanged.Broadcast(State);
 }
 
-TSharedRef<FJsonObject> FShuttlegentAgentService::MakeSessionParams(const FString& SessionId) const
+TSharedRef<FJsonObject> FShuttlegentAgentService::MakeSessionParams(const FString& SessionId, const FString& ConversationKey) const
 {
 	TSharedRef<FJsonObject> Params = MakeShared<FJsonObject>();
 	if (!SessionId.IsEmpty()) Params->SetStringField(ShuttlegentAgentServicePrivate::FieldSessionId, SessionId);
 	Params->SetStringField(ShuttlegentAgentServicePrivate::FieldCwd, FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
-	Params->SetArrayField(ShuttlegentAgentServicePrivate::FieldMcpServers, McpServersProvider ? McpServersProvider() : TArray<TSharedPtr<FJsonValue>>());
+	Params->SetArrayField(ShuttlegentAgentServicePrivate::FieldMcpServers, McpServersProvider ? McpServersProvider(ConversationKey) : TArray<TSharedPtr<FJsonValue>>());
 	return Params;
 }
 

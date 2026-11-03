@@ -35,6 +35,7 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
+#include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
 #include "FShuttlegentMemoryStore.h"
 #include "FShuttlegentPromptImage.h"
@@ -44,6 +45,7 @@
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentStyle.h"
+#include "Tabs/FShuttlegentSessionDragPrototype.h"
 #include "Web/FShuttlegentAssetThumbnails.h"
 #include "Web/FShuttlegentImageFiles.h"
 #include "Web/FShuttlegentPanelCommands.h"
@@ -65,8 +67,8 @@ SShuttlegentWebPanel::SShuttlegentWebPanel() = default;
 
 void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 {
-	Model = InArgs._Model;
-	check(Model.IsValid());
+	View = InArgs._View;
+	check(View.IsValid());
 
 	ChildSlot
 	[
@@ -105,7 +107,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 
 	Protocol = MakeShared<FShuttlegentWebProtocol>();
 	const TWeakPtr<SShuttlegentWebPanel> WeakThis = SharedThis(this);
-	Protocol->Initialize(Model.ToSharedRef(), [WeakThis](const FString& Json)
+	Protocol->Initialize(View.ToSharedRef(), [WeakThis](const FString& Json)
 	{
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->CallPage(ShuttlegentEditorWeb::JsApply, Json);
@@ -124,7 +126,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 
 	// 活动计时器仅在控件被绘制后才运行，因此恢复在其他标签页之后的面板不会创建浏览器
 	RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &SShuttlegentWebPanel::HandleCreateBrowser));
-	Model->EnsureRuntime();
+	View->EnsureRuntime();
 }
 
 SShuttlegentWebPanel::~SShuttlegentWebPanel()
@@ -156,6 +158,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnCopyText = nullptr;
 	Bridge->OnToggleContentBrowser = nullptr;
 	Bridge->OnOpenSession = nullptr;
+	Bridge->OnBeginSessionDrag = nullptr;
 	Bridge->OnRenameSession = nullptr;
 	Bridge->OnArchiveSession = nullptr;
 	Bridge->OnRestoreSession = nullptr;
@@ -199,7 +202,12 @@ void SShuttlegentWebPanel::SetHostTabOpen(bool bOpen)
 
 	// 没有标签页显示面板时，请求回退到 UShuttlegentSettings::PermissionPolicy 处理；待处理的请求被拒绝
 	bHostTabOpen = bOpen;
-	if (Model.IsValid()) Model->SetPermissionHandlerAttached(bOpen);
+	if (View.IsValid()) View->SetPermissionHandlerAttached(bOpen);
+}
+
+void SShuttlegentWebPanel::SetHostTab(const TSharedPtr<SDockTab>& Tab)
+{
+	HostTab = Tab;
 }
 
 FReply SShuttlegentWebPanel::OnPreviewKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent)
@@ -358,7 +366,7 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleCreateBrowser(double InCurren
 void SShuttlegentWebPanel::BindBridge()
 {
 	const TWeakPtr<SShuttlegentWebPanel> WeakThis = SharedThis(this);
-	const TWeakPtr<FShuttlegentChatModel> WeakModel = Model;
+	const TWeakPtr<FShuttlegentChatView> WeakView = View;
 
 	Bridge->OnReady = [WeakThis]()
 	{
@@ -375,9 +383,9 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandlePickImages();
 	};
-	Bridge->OnRemoveQueued = [WeakModel](int32 ItemId)
+	Bridge->OnRemoveQueued = [WeakView](int32 ItemId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RemoveQueued(ItemId);
 	};
 	Bridge->OnTakeQueued = [WeakThis](int32 ItemId, const FString& DraftText, const FString& DraftReferencesJson)
@@ -385,24 +393,24 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandleTakeQueued(ItemId, DraftText, DraftReferencesJson);
 	};
-	Bridge->OnResumeQueue = [WeakModel]()
+	Bridge->OnResumeQueue = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->ResumeQueue();
 	};
-	Bridge->OnRetry = [WeakModel]()
+	Bridge->OnRetry = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->Retry();
 	};
-	Bridge->OnAnswerWrite = [WeakModel](int32 RequestId, bool bApprove)
+	Bridge->OnAnswerWrite = [WeakView](int32 RequestId, bool bApprove)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->AnswerWrite(RequestId, bApprove);
 	};
-	Bridge->OnAnswerQuestion = [WeakModel](int32 QuestionId, const FString& Answer, bool bSkip)
+	Bridge->OnAnswerQuestion = [WeakView](int32 QuestionId, const FString& Answer, bool bSkip)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->AnswerQuestion(QuestionId, Answer, bSkip);
 	};
 	Bridge->OnSubmitChoice = [WeakThis](int32 EntryId, const FString& AnswerJson)
@@ -410,14 +418,14 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandleSubmitChoice(EntryId, AnswerJson);
 	};
-	Bridge->OnUndoWrite = [WeakModel](int32 EntryId)
+	Bridge->OnUndoWrite = [WeakView](int32 EntryId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->UndoWrite(EntryId);
 	};
-	Bridge->OnUndoMemory = [WeakModel](int32 EntryId)
+	Bridge->OnUndoMemory = [WeakView](int32 EntryId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->UndoMemory(EntryId);
 	};
 	Bridge->OnForgetMemory = [](const FString& Text)
@@ -441,29 +449,29 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid() && This->Protocol.IsValid()) This->Protocol->MarkMemoryDirty();
 	};
-	Bridge->OnRewindTo = [WeakModel](int32 EntryId)
+	Bridge->OnRewindTo = [WeakView](int32 EntryId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RewindTo(EntryId);
 	};
-	Bridge->OnBranchFrom = [WeakModel](int32 EntryId)
+	Bridge->OnBranchFrom = [WeakView](int32 EntryId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->BranchFrom(EntryId);
 	};
-	Bridge->OnRetryStart = [WeakModel]()
+	Bridge->OnRetryStart = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RetryStart();
 	};
-	Bridge->OnRetryResume = [WeakModel]()
+	Bridge->OnRetryResume = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RetryResume();
 	};
-	Bridge->OnAcknowledgeWrite = [WeakModel](int32 EntryId)
+	Bridge->OnAcknowledgeWrite = [WeakView](int32 EntryId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->AcknowledgeUnknownWrite(EntryId);
 	};
 	Bridge->OnOpenPluginFolder = []()
@@ -471,19 +479,19 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
 		if (Plugin.IsValid()) FPlatformProcess::ExploreFolder(*FPaths::ConvertRelativePathToFull(Plugin->GetBaseDir()));
 	};
-	Bridge->OnSetPlanMode = [WeakModel](bool bActive)
+	Bridge->OnSetPlanMode = [WeakView](bool bActive)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->SetPlanMode(bActive);
 	};
-	Bridge->OnAnswerPlanReview = [WeakModel](bool bApprove, const FString& Feedback, bool bAcceptEdits)
+	Bridge->OnAnswerPlanReview = [WeakView](bool bApprove, const FString& Feedback, bool bAcceptEdits)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->AnswerPlanReview(bApprove, Feedback, bAcceptEdits);
 	};
-	Bridge->OnSetWriteMode = [WeakModel](const FString& Mode)
+	Bridge->OnSetWriteMode = [WeakView](const FString& Mode)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (!Pinned.IsValid()) return;
 
 		EShuttlegentWriteMode WriteMode = EShuttlegentWriteMode::Manual;
@@ -491,9 +499,9 @@ void SShuttlegentWebPanel::BindBridge()
 		else if (Mode == ShuttlegentEditorWebField::WriteModeAuto) WriteMode = EShuttlegentWriteMode::Auto;
 		Pinned->SetWriteMode(WriteMode);
 	};
-	Bridge->OnCompactContext = [WeakModel]()
+	Bridge->OnCompactContext = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->CompactContext();
 	};
 	Bridge->OnRevealObject = [](const FString& Kind, const FString& Path, bool bOpen)
@@ -523,24 +531,24 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandleRequestThumbnails(PathsJson);
 	};
-	Bridge->OnCancel = [WeakModel]()
+	Bridge->OnCancel = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->Cancel();
 	};
-	Bridge->OnNewConversation = [WeakModel]()
+	Bridge->OnNewConversation = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->NewConversation();
 	};
-	Bridge->OnReconnect = [WeakModel]()
+	Bridge->OnReconnect = [WeakView]()
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->Reconnect();
 	};
-	Bridge->OnSetConfig = [WeakModel](const FString& ConfigId, const FString& Value)
+	Bridge->OnSetConfig = [WeakView](const FString& ConfigId, const FString& Value)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->SetConfigValue(ConfigId, Value);
 	};
 	Bridge->OnCopyText = [](const FString& Text)
@@ -552,29 +560,34 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandlePageToggleDrawer();
 	};
-	Bridge->OnOpenSession = [WeakModel](const FString& SessionId)
+	Bridge->OnOpenSession = [WeakView](const FString& SessionId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid() && SessionId != Pinned->GetCurrentSessionId()) Pinned->OpenSession(SessionId);
 	};
-	Bridge->OnRenameSession = [WeakModel](const FString& SessionId, const FString& Title)
+	Bridge->OnBeginSessionDrag = [WeakThis](const FString& SessionId, const FString& Title)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid()) FShuttlegentSessionDragPrototype::Begin(This->HostTab.Pin(), SessionId, Title);
+	};
+	Bridge->OnRenameSession = [WeakView](const FString& SessionId, const FString& Title)
+	{
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RenameSession(SessionId, Title);
 	};
-	Bridge->OnArchiveSession = [WeakModel](const FString& SessionId)
+	Bridge->OnArchiveSession = [WeakView](const FString& SessionId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->ArchiveSession(SessionId);
 	};
-	Bridge->OnRestoreSession = [WeakModel](const FString& SessionId)
+	Bridge->OnRestoreSession = [WeakView](const FString& SessionId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->RestoreSession(SessionId);
 	};
-	Bridge->OnDeleteSession = [WeakModel](const FString& SessionId)
+	Bridge->OnDeleteSession = [WeakView](const FString& SessionId)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->DeleteSession(SessionId);
 	};
 	Bridge->OnSetPaneWidths = [](int32 SidebarWidth, int32 InspectorWidth)
@@ -582,9 +595,9 @@ void SShuttlegentWebPanel::BindBridge()
 		GConfig->SetInt(ShuttlegentEditorWeb::ConfigSection, ShuttlegentEditorWeb::ConfigKeySidebarWidth, SidebarWidth, GEditorPerProjectIni);
 		GConfig->SetInt(ShuttlegentEditorWeb::ConfigSection, ShuttlegentEditorWeb::ConfigKeyInspectorWidth, InspectorWidth, GEditorPerProjectIni);
 	};
-	Bridge->OnAnswerPermission = [WeakModel](int32 EntryId, bool bAllow)
+	Bridge->OnAnswerPermission = [WeakView](int32 EntryId, bool bAllow)
 	{
-		const TSharedPtr<FShuttlegentChatModel> Pinned = WeakModel.Pin();
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid()) Pinned->AnswerPermission(EntryId, bAllow);
 	};
 	Bridge->OnOpenSettings = []()
@@ -690,16 +703,16 @@ FString SShuttlegentWebPanel::GetDraggedItems(const FDragDropEvent& DragDropEven
 
 void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& ReferencesJson, bool bEnterPlanMode, const FString& ImagesJson)
 {
-	if (!Model.IsValid()) return;
+	if (!View.IsValid()) return;
 
 	// 已不存在的引用会阻止发送；页面将其标记出来并保留草稿
 	TArray<FString> InvalidPaths;
 	const TArray<FShuttlegentPromptImage> Images = FShuttlegentWebJson::ParseImages(ImagesJson);
-	const EShuttlegentSubmitResult Outcome = Model->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), bEnterPlanMode, Images, InvalidPaths);
+	const EShuttlegentSubmitResult Outcome = View->SubmitDraft(Text, FShuttlegentWebJson::ParseReferences(ReferencesJson), bEnterPlanMode, Images, InvalidPaths);
 
 	// 图片暂不能发送时告诉页面原因，草稿与图片保留
 	FText ImageReason;
-	const bool bImagesRefused = Outcome == EShuttlegentSubmitResult::Rejected && !Images.IsEmpty() && !Model->CanAttachImages(ImageReason);
+	const bool bImagesRefused = Outcome == EShuttlegentSubmitResult::Rejected && !Images.IsEmpty() && !View->CanAttachImages(ImageReason);
 
 	TArray<TSharedPtr<FJsonValue>> Invalid;
 	for (const FString& Path : InvalidPaths)
@@ -718,7 +731,7 @@ void SShuttlegentWebPanel::HandleSubmit(const FString& Text, const FString& Refe
 void SShuttlegentWebPanel::HandleTakeQueued(int32 ItemId, const FString& DraftText, const FString& DraftReferencesJson)
 {
 	FShuttlegentQueuedPrompt Item;
-	if (!Model.IsValid() || !Model->TakeQueued(ItemId, DraftText, FShuttlegentWebJson::ParseReferences(DraftReferencesJson), Item)) return;
+	if (!View.IsValid() || !View->TakeQueued(ItemId, DraftText, FShuttlegentWebJson::ParseReferences(DraftReferencesJson), Item)) return;
 
 	const TSharedRef<FJsonObject> Taken = MakeShared<FJsonObject>();
 	Taken->SetStringField(ShuttlegentEditorWebField::Text, Item.Text);
@@ -774,7 +787,7 @@ void SShuttlegentWebPanel::PushReferenceValidity()
 void SShuttlegentWebPanel::HandleSubmitChoice(int32 EntryId, const FString& AnswerJson)
 {
 	FText Reason;
-	if (!Model.IsValid() || Model->SubmitChoice(EntryId, AnswerJson, Reason)) return;
+	if (!View.IsValid() || View->SubmitChoice(EntryId, AnswerJson, Reason)) return;
 
 	const TSharedRef<FJsonObject> Result = MakeShared<FJsonObject>();
 	Result->SetNumberField(ShuttlegentEditorWebField::Id, EntryId);

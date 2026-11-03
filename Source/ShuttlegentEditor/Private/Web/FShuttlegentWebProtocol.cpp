@@ -10,6 +10,7 @@
 
 #include "Chat/FShuttlegentChoiceJson.h"
 #include "Chat/FShuttlegentToolPresentation.h"
+#include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
 #include "Reference/FShuttlegentReferencePrompt.h"
 #include "Web/FShuttlegentWebJson.h"
@@ -365,43 +366,43 @@ namespace FShuttlegentWebProtocolPrivate
 	}
 
 	/** 会话列表项；面板所持有的会话还带有其状态与排队数量。 */
-	TSharedPtr<FJsonValue> MakeSession(const FShuttlegentSessionRecord& Record, const FShuttlegentChatModel& Model)
+	TSharedPtr<FJsonValue> MakeSession(const FShuttlegentSessionRecord& Record, const FShuttlegentChatView& View)
 	{
 		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
 		Item->SetStringField(ShuttlegentEditorWebField::Id, Record.SessionId);
 		Item->SetStringField(ShuttlegentEditorWebField::Title, Record.Title);
 		Item->SetStringField(ShuttlegentEditorWebField::ModelName, Record.ModelName);
 		Item->SetNumberField(ShuttlegentEditorWebField::UpdatedAt, UnixMilliseconds(Record.UpdatedAt));
-		Item->SetBoolField(ShuttlegentEditorWebField::CanArchive, Model.CanArchive(Record.SessionId));
+		Item->SetBoolField(ShuttlegentEditorWebField::CanArchive, View.CanArchive(Record.SessionId));
 
 		EShuttlegentChatStatus Status;
 		int32 Queued = 0;
-		if (Model.GetSessionActivity(Record.SessionId, Status, Queued))
+		if (View.GetSessionActivity(Record.SessionId, Status, Queued))
 		{
 			Item->SetStringField(ShuttlegentEditorWebField::Status, StatusName(Status));
 			Item->SetNumberField(ShuttlegentEditorWebField::QueuedCount, Queued);
 		}
 
-		const EShuttlegentAttention Attention = Model.GetSessionAttention(Record.SessionId);
+		const EShuttlegentAttention Attention = View.GetSessionAttention(Record.SessionId);
 		if (Attention == EShuttlegentAttention::Done) Item->SetStringField(ShuttlegentEditorWebField::Attention, ShuttlegentEditorWebField::AttentionDone);
 		else if (Attention == EShuttlegentAttention::Input) Item->SetStringField(ShuttlegentEditorWebField::Attention, ShuttlegentEditorWebField::AttentionInput);
 		return MakeShared<FJsonValueObject>(Item);
 	}
 }
 
-void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, TFunction<void(const FString&)> InPush)
+void FShuttlegentWebProtocol::Initialize(const TSharedRef<FShuttlegentChatView>& InView, TFunction<void(const FString&)> InPush)
 {
-	Model = InModel;
+	View = InView;
 	Push = MoveTemp(InPush);
 
-	InModel->OnStatusChanged.AddSP(this, &FShuttlegentWebProtocol::HandleStatusChanged);
-	InModel->OnStructureChanged.AddSP(this, &FShuttlegentWebProtocol::HandleEntriesChanged);
-	InModel->OnContentChanged.AddSP(this, &FShuttlegentWebProtocol::HandleEntriesChanged);
-	InModel->OnTurnFinished.AddSP(this, &FShuttlegentWebProtocol::HandleTurnFinished);
-	InModel->OnSessionsChanged.AddSP(this, &FShuttlegentWebProtocol::HandleSessionsChanged);
-	InModel->OnRunLogChanged.AddSP(this, &FShuttlegentWebProtocol::HandleRunLogChanged);
-	InModel->OnQueueChanged.AddSP(this, &FShuttlegentWebProtocol::HandleQueueChanged);
-	InModel->OnDraftRestored.AddSP(this, &FShuttlegentWebProtocol::HandleDraftRestored);
+	InView->OnStatusChanged.AddSP(this, &FShuttlegentWebProtocol::HandleStatusChanged);
+	InView->OnStructureChanged.AddSP(this, &FShuttlegentWebProtocol::HandleEntriesChanged);
+	InView->OnContentChanged.AddSP(this, &FShuttlegentWebProtocol::HandleEntriesChanged);
+	InView->OnTurnFinished.AddSP(this, &FShuttlegentWebProtocol::HandleTurnFinished);
+	InView->OnSessionsChanged.AddSP(this, &FShuttlegentWebProtocol::HandleSessionsChanged);
+	InView->OnRunLogChanged.AddSP(this, &FShuttlegentWebProtocol::HandleRunLogChanged);
+	InView->OnQueueChanged.AddSP(this, &FShuttlegentWebProtocol::HandleQueueChanged);
+	InView->OnDraftRestored.AddSP(this, &FShuttlegentWebProtocol::HandleDraftRestored);
 
 	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
 	if (IsValid(Settings)) SettingsChangedHandle = Settings->OnSettingChanged().AddSP(this, &FShuttlegentWebProtocol::HandleSettingChanged);
@@ -429,18 +430,18 @@ void FShuttlegentWebProtocol::Shutdown()
 	if (IsValid(ProjectSettings) && ProjectSettingsChangedHandle.IsValid()) ProjectSettings->OnSettingChanged().Remove(ProjectSettingsChangedHandle);
 	ProjectSettingsChangedHandle.Reset();
 
-	if (Model.IsValid())
+	if (View.IsValid())
 	{
-		Model->OnStatusChanged.RemoveAll(this);
-		Model->OnStructureChanged.RemoveAll(this);
-		Model->OnContentChanged.RemoveAll(this);
-		Model->OnTurnFinished.RemoveAll(this);
-		Model->OnSessionsChanged.RemoveAll(this);
-		Model->OnRunLogChanged.RemoveAll(this);
-		Model->OnQueueChanged.RemoveAll(this);
-		Model->OnDraftRestored.RemoveAll(this);
+		View->OnStatusChanged.RemoveAll(this);
+		View->OnStructureChanged.RemoveAll(this);
+		View->OnContentChanged.RemoveAll(this);
+		View->OnTurnFinished.RemoveAll(this);
+		View->OnSessionsChanged.RemoveAll(this);
+		View->OnRunLogChanged.RemoveAll(this);
+		View->OnQueueChanged.RemoveAll(this);
+		View->OnDraftRestored.RemoveAll(this);
 	}
-	Model.Reset();
+	View.Reset();
 	Push = nullptr;
 }
 
@@ -462,7 +463,7 @@ bool FShuttlegentWebProtocol::HandleTick(float DeltaTime)
 
 void FShuttlegentWebProtocol::Flush()
 {
-	if (!Model.IsValid() || !Push) return;
+	if (!View.IsValid() || !Push) return;
 
 	const bool bReset = bResetPending;
 	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
@@ -527,16 +528,16 @@ void FShuttlegentWebProtocol::Flush()
 
 void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) const
 {
-	const EShuttlegentAgentState State = Model->GetState();
-	const bool bConnected = !Model->IsRuntimeLost() && State == EShuttlegentAgentState::Ready;
+	const EShuttlegentAgentState State = View->GetState();
+	const bool bConnected = !View->IsRuntimeLost() && State == EShuttlegentAgentState::Ready;
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 
-	Root->SetStringField(ShuttlegentEditorWebField::Status, FShuttlegentWebProtocolPrivate::StatusName(Model->GetStatus()));
+	Root->SetStringField(ShuttlegentEditorWebField::Status, FShuttlegentWebProtocolPrivate::StatusName(View->GetStatus()));
 	Root->SetBoolField(ShuttlegentEditorWebField::Connected, bConnected);
-	Root->SetBoolField(ShuttlegentEditorWebField::Prompting, Model->IsPrompting());
-	Root->SetBoolField(ShuttlegentEditorWebField::Stopping, Model->IsStopping());
-	Root->SetBoolField(ShuttlegentEditorWebField::Busy, Model->IsBusy());
-	Root->SetBoolField(ShuttlegentEditorWebField::RuntimeLost, Model->IsRuntimeLost());
+	Root->SetBoolField(ShuttlegentEditorWebField::Prompting, View->IsPrompting());
+	Root->SetBoolField(ShuttlegentEditorWebField::Stopping, View->IsStopping());
+	Root->SetBoolField(ShuttlegentEditorWebField::Busy, View->IsBusy());
+	Root->SetBoolField(ShuttlegentEditorWebField::RuntimeLost, View->IsRuntimeLost());
 	Root->SetBoolField(ShuttlegentEditorWebField::AnimateMark, IsValid(Settings) && Settings->bAnimateMark);
 	Root->SetNumberField(ShuttlegentEditorWebField::FontSize, IsValid(Settings) ? Settings->FontSize : ShuttlegentAppearanceConstant::DefaultFontSize);
 	Root->SetBoolField(ShuttlegentEditorWebField::WideLayout, IsValid(Settings) && Settings->bWideLayout);
@@ -546,10 +547,10 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Fonts->SetStringField(ShuttlegentEditorWebField::FontChat, IsValid(Settings) ? FShuttlegentWebProtocolPrivate::SanitizeFontFamilies(Settings->ChatFontFamily) : FString());
 	Fonts->SetStringField(ShuttlegentEditorWebField::FontMono, IsValid(Settings) ? FShuttlegentWebProtocolPrivate::SanitizeFontFamilies(Settings->CodeFontFamily) : FString());
 	Root->SetObjectField(ShuttlegentEditorWebField::Fonts, Fonts);
-	Root->SetNumberField(ShuttlegentEditorWebField::UsedTokens, static_cast<double>(Model->GetUsedTokens()));
-	Root->SetNumberField(ShuttlegentEditorWebField::ContextSize, static_cast<double>(Model->GetContextSize()));
+	Root->SetNumberField(ShuttlegentEditorWebField::UsedTokens, static_cast<double>(View->GetUsedTokens()));
+	Root->SetNumberField(ShuttlegentEditorWebField::ContextSize, static_cast<double>(View->GetContextSize()));
 
-	const FShuttlegentContextBreakdown& Breakdown = Model->GetContextBreakdown();
+	const FShuttlegentContextBreakdown& Breakdown = View->GetContextBreakdown();
 	if (Breakdown.IsEmpty())
 	{
 		Root->SetField(ShuttlegentEditorWebField::ContextBreakdown, MakeShared<FJsonValueNull>());
@@ -562,16 +563,16 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 		BreakdownObject->SetNumberField(ShuttlegentEditorWebField::MessageTokens, static_cast<double>(Breakdown.MessageTokens));
 		Root->SetObjectField(ShuttlegentEditorWebField::ContextBreakdown, BreakdownObject);
 	}
-	Root->SetField(ShuttlegentEditorWebField::StartIssue, FShuttlegentWebProtocolPrivate::MakeStartIssue(Model->GetStartIssue(), Model->GetStartIssueDetail()));
-	Root->SetBoolField(ShuttlegentEditorWebField::ResumeFailed, Model->IsResumeFailed());
+	Root->SetField(ShuttlegentEditorWebField::StartIssue, FShuttlegentWebProtocolPrivate::MakeStartIssue(View->GetStartIssue(), View->GetStartIssueDetail()));
+	Root->SetBoolField(ShuttlegentEditorWebField::ResumeFailed, View->IsResumeFailed());
 
 	FText HistoryReason;
-	Root->SetBoolField(ShuttlegentEditorWebField::CanEditHistory, Model->CanEditHistory(HistoryReason));
+	Root->SetBoolField(ShuttlegentEditorWebField::CanEditHistory, View->CanEditHistory(HistoryReason));
 	Root->SetStringField(ShuttlegentEditorWebField::EditHistoryReason, HistoryReason.ToString());
-	Root->SetBoolField(ShuttlegentEditorWebField::NeedsVerify, Model->NeedsVerify());
+	Root->SetBoolField(ShuttlegentEditorWebField::NeedsVerify, View->NeedsVerify());
 
 	TArray<TSharedPtr<FJsonValue>> Todos;
-	for (const FShuttlegentTodoItem& Todo : Model->GetTodos())
+	for (const FShuttlegentTodoItem& Todo : View->GetTodos())
 	{
 		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
 		Item->SetStringField(ShuttlegentEditorWebField::TodoContent, Todo.Content);
@@ -581,21 +582,21 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 	Root->SetArrayField(ShuttlegentEditorWebField::Todos, Todos);
 
 	FText CompactReason;
-	Root->SetBoolField(ShuttlegentEditorWebField::Compacting, Model->IsCompacting());
-	Root->SetBoolField(ShuttlegentEditorWebField::CanCompact, Model->CanCompact(CompactReason));
+	Root->SetBoolField(ShuttlegentEditorWebField::Compacting, View->IsCompacting());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanCompact, View->CanCompact(CompactReason));
 	Root->SetStringField(ShuttlegentEditorWebField::CompactReason, CompactReason.ToString());
 
 	FText PlanModeReason;
-	Root->SetBoolField(ShuttlegentEditorWebField::PlanMode, Model->IsPlanMode());
-	Root->SetBoolField(ShuttlegentEditorWebField::CanSetPlanMode, Model->CanSetPlanMode(PlanModeReason));
+	Root->SetBoolField(ShuttlegentEditorWebField::PlanMode, View->IsPlanMode());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanSetPlanMode, View->CanSetPlanMode(PlanModeReason));
 	Root->SetStringField(ShuttlegentEditorWebField::PlanModeReason, PlanModeReason.ToString());
-	Root->SetStringField(ShuttlegentEditorWebField::WriteMode, FShuttlegentWebProtocolPrivate::WriteModeName(Model->GetWriteMode()));
+	Root->SetStringField(ShuttlegentEditorWebField::WriteMode, FShuttlegentWebProtocolPrivate::WriteModeName(View->GetWriteMode()));
 
 	FText AttachImagesReason;
-	Root->SetBoolField(ShuttlegentEditorWebField::CanAttachImages, Model->CanAttachImages(AttachImagesReason));
+	Root->SetBoolField(ShuttlegentEditorWebField::CanAttachImages, View->CanAttachImages(AttachImagesReason));
 	Root->SetStringField(ShuttlegentEditorWebField::AttachImagesReason, AttachImagesReason.ToString());
 
-	const FShuttlegentPlanReview& Review = Model->GetPendingPlanReview();
+	const FShuttlegentPlanReview& Review = View->GetPendingPlanReview();
 	if (Review.ReviewId.IsEmpty())
 	{
 		Root->SetField(ShuttlegentEditorWebField::PendingPlanReview, MakeShared<FJsonValueNull>());
@@ -633,7 +634,7 @@ void FShuttlegentWebProtocol::WriteConfig(const TSharedRef<FJsonObject>& Root) c
 	{
 		TArray<FShuttlegentConfigChoice> Choices;
 		FString CurrentValue;
-		Model->GetConfigChoices(ConfigId, Choices, CurrentValue);
+		View->GetConfigChoices(ConfigId, Choices, CurrentValue);
 
 		TArray<TSharedPtr<FJsonValue>> ChoiceValues;
 		for (const FShuttlegentConfigChoice& Choice : Choices)
@@ -647,7 +648,7 @@ void FShuttlegentWebProtocol::WriteConfig(const TSharedRef<FJsonObject>& Root) c
 		const TSharedRef<FJsonObject> Option = MakeShared<FJsonObject>();
 		Option->SetStringField(ShuttlegentEditorWebField::Current, CurrentValue);
 		Option->SetArrayField(ShuttlegentEditorWebField::Choices, ChoiceValues);
-		if (FCString::Strcmp(ConfigId, ShuttlegentEditorConfigId::Agent) == 0) Option->SetBoolField(ShuttlegentEditorWebField::Locked, Model->IsAgentLocked());
+		if (FCString::Strcmp(ConfigId, ShuttlegentEditorConfigId::Agent) == 0) Option->SetBoolField(ShuttlegentEditorWebField::Locked, View->IsAgentLocked());
 		Config->SetObjectField(ConfigId, Option);
 	}
 	Root->SetObjectField(ShuttlegentEditorWebField::Config, Config);
@@ -671,15 +672,15 @@ void FShuttlegentWebProtocol::WriteTemplates(const TSharedRef<FJsonObject>& Root
 void FShuttlegentWebProtocol::WriteSessions(const TSharedRef<FJsonObject>& Root) const
 {
 	TArray<TSharedPtr<FJsonValue>> Active;
-	for (const FShuttlegentSessionRecord& Record : Model->GetSessions(false))
+	for (const FShuttlegentSessionRecord& Record : View->GetSessions(false))
 	{
-		Active.Add(FShuttlegentWebProtocolPrivate::MakeSession(Record, *Model));
+		Active.Add(FShuttlegentWebProtocolPrivate::MakeSession(Record, *View));
 	}
 
 	TArray<TSharedPtr<FJsonValue>> Archived;
-	for (const FShuttlegentSessionRecord& Record : Model->GetSessions(true))
+	for (const FShuttlegentSessionRecord& Record : View->GetSessions(true))
 	{
-		Archived.Add(FShuttlegentWebProtocolPrivate::MakeSession(Record, *Model));
+		Archived.Add(FShuttlegentWebProtocolPrivate::MakeSession(Record, *View));
 	}
 
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
@@ -687,9 +688,9 @@ void FShuttlegentWebProtocol::WriteSessions(const TSharedRef<FJsonObject>& Root)
 
 	Root->SetArrayField(ShuttlegentEditorWebField::Sessions, Active);
 	Root->SetArrayField(ShuttlegentEditorWebField::Archived, Archived);
-	Root->SetStringField(ShuttlegentEditorWebField::CurrentSessionId, Model->GetCurrentSessionId());
-	Root->SetStringField(ShuttlegentEditorWebField::CurrentTitle, Model->GetCurrentTitle());
-	Root->SetBoolField(ShuttlegentEditorWebField::CanArchiveCurrent, Model->CanArchive(Model->GetCurrentSessionId()));
+	Root->SetStringField(ShuttlegentEditorWebField::CurrentSessionId, View->GetCurrentSessionId());
+	Root->SetStringField(ShuttlegentEditorWebField::CurrentTitle, View->GetCurrentTitle());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanArchiveCurrent, View->CanArchive(View->GetCurrentSessionId()));
 	Root->SetNumberField(ShuttlegentEditorWebField::RenameMaxChars, ShuttlegentSessionConstant::RenameMaxChars);
 	Root->SetStringField(ShuttlegentEditorWebField::PermissionMode, bWorkspaceWrite ? ShuttlegentEditorWebField::PermissionWorkspaceWrite : ShuttlegentEditorWebField::PermissionReadOnly);
 	Root->SetBoolField(ShuttlegentEditorWebField::ShellEnabled, IsValid(Settings) && Settings->bAllowShell);
@@ -698,7 +699,7 @@ void FShuttlegentWebProtocol::WriteSessions(const TSharedRef<FJsonObject>& Root)
 void FShuttlegentWebProtocol::WriteRunLog(const TSharedRef<FJsonObject>& Root) const
 {
 	TArray<TSharedPtr<FJsonValue>> Items;
-	for (const FShuttlegentRunLogEntry& Entry : Model->GetRunLog())
+	for (const FShuttlegentRunLogEntry& Entry : View->GetRunLog())
 	{
 		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
 		Item->SetNumberField(ShuttlegentEditorWebField::Time, FShuttlegentWebProtocolPrivate::UnixMilliseconds(Entry.Time));
@@ -766,7 +767,7 @@ void FShuttlegentWebProtocol::WriteMcp(const TSharedRef<FJsonObject>& Root) cons
 
 void FShuttlegentWebProtocol::WriteQueue(const TSharedRef<FJsonObject>& Root) const
 {
-	const FShuttlegentPromptQueue Queue = Model->GetCurrentQueue();
+	const FShuttlegentPromptQueue Queue = View->GetCurrentQueue();
 
 	TArray<TSharedPtr<FJsonValue>> Items;
 	for (const FShuttlegentQueuedPrompt& Item : Queue.Items)
@@ -782,12 +783,12 @@ void FShuttlegentWebProtocol::WriteQueue(const TSharedRef<FJsonObject>& Root) co
 	QueueObject->SetBoolField(ShuttlegentEditorWebField::Paused, Queue.bPaused);
 	QueueObject->SetArrayField(ShuttlegentEditorWebField::Items, Items);
 	Root->SetObjectField(ShuttlegentEditorWebField::Queue, QueueObject);
-	Root->SetBoolField(ShuttlegentEditorWebField::CanRetry, Model->CanRetry());
+	Root->SetBoolField(ShuttlegentEditorWebField::CanRetry, View->CanRetry());
 }
 
 void FShuttlegentWebProtocol::WritePendingWrite(const TSharedRef<FJsonObject>& Root) const
 {
-	const FShuttlegentWriteRequest* Request = Model->GetPendingWrite();
+	const FShuttlegentWriteRequest* Request = View->GetPendingWrite();
 	if (Request == nullptr)
 	{
 		Root->SetField(ShuttlegentEditorWebField::PendingWrite, MakeShared<FJsonValueNull>());
@@ -809,7 +810,7 @@ void FShuttlegentWebProtocol::WritePendingWrite(const TSharedRef<FJsonObject>& R
 
 void FShuttlegentWebProtocol::WritePendingQuestion(const TSharedRef<FJsonObject>& Root) const
 {
-	const FShuttlegentQuestion* Question = Model->GetPendingQuestion();
+	const FShuttlegentQuestion* Question = View->GetPendingQuestion();
 	if (Question == nullptr)
 	{
 		Root->SetField(ShuttlegentEditorWebField::PendingQuestion, MakeShared<FJsonValueNull>());
@@ -833,7 +834,7 @@ void FShuttlegentWebProtocol::WritePendingQuestion(const TSharedRef<FJsonObject>
 
 void FShuttlegentWebProtocol::WritePendingPermission(const TSharedRef<FJsonObject>& Root) const
 {
-	const TSharedPtr<FShuttlegentChatEntry> Permission = Model->GetPendingPermission();
+	const TSharedPtr<FShuttlegentChatEntry> Permission = View->GetPendingPermission();
 	if (!Permission.IsValid())
 	{
 		Root->SetField(ShuttlegentEditorWebField::PendingPermission, MakeShared<FJsonValueNull>());
@@ -841,7 +842,7 @@ void FShuttlegentWebProtocol::WritePendingPermission(const TSharedRef<FJsonObjec
 	}
 
 	// 目标与内容取自该请求所涉及的工具调用
-	const TSharedPtr<FShuttlegentChatEntry> ToolCall = Model->FindToolCallOf(Permission);
+	const TSharedPtr<FShuttlegentChatEntry> ToolCall = View->FindToolCallOf(Permission);
 	const FString Input = ToolCall.IsValid() ? ToolCall->Input : FString();
 
 	const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
@@ -855,7 +856,7 @@ void FShuttlegentWebProtocol::WritePendingPermission(const TSharedRef<FJsonObjec
 
 void FShuttlegentWebProtocol::WriteEntries(const TSharedRef<FJsonObject>& Root, bool bAll)
 {
-	const TArray<TSharedPtr<FShuttlegentChatEntry>>& Entries = Model->GetEntries();
+	const TArray<TSharedPtr<FShuttlegentChatEntry>>& Entries = View->GetEntries();
 
 	TArray<int32> Order;
 	TArray<TSharedPtr<FJsonValue>> Changed;
@@ -870,7 +871,7 @@ void FShuttlegentWebProtocol::WriteEntries(const TSharedRef<FJsonObject>& Root, 
 		if (Entry->Kind == EShuttlegentChatEntryKind::WriteResult)
 		{
 			FText Reason;
-			Fingerprint = HashCombine(Fingerprint, GetTypeHash(Model->CanUndoWrite(*Entry, Reason)));
+			Fingerprint = HashCombine(Fingerprint, GetTypeHash(View->CanUndoWrite(*Entry, Reason)));
 			Fingerprint = HashCombine(Fingerprint, GetTypeHash(Entry->bUndone));
 		}
 		const uint32* Sent = SentFingerprints.Find(Entry->Id);
@@ -952,7 +953,7 @@ TSharedRef<FJsonObject> FShuttlegentWebProtocol::MakeEntry(const FShuttlegentCha
 	if (Entry.Kind == EShuttlegentChatEntryKind::WriteResult)
 	{
 		FText Reason;
-		const bool bCanUndo = Model->CanUndoWrite(Entry, Reason);
+		const bool bCanUndo = View->CanUndoWrite(Entry, Reason);
 		Item->SetStringField(ShuttlegentEditorWebField::Action, Entry.WriteResult.Action);
 		Item->SetBoolField(ShuttlegentEditorWebField::Undoable, Entry.WriteResult.bUndoable);
 		Item->SetBoolField(ShuttlegentEditorWebField::AutoApproved, Entry.bAutoApproved);

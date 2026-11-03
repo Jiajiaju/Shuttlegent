@@ -61,6 +61,9 @@ public:
 	/** 令所有等待中的请求过期，不执行写入。 */
 	void ExpireAll();
 
+	/** 令该对话发起的等待中请求过期（对话的回合结束时）；不带对话标识的请求不受影响。 */
+	void ExpireConversation(const FString& ConversationKey);
+
 	const TArray<FShuttlegentWriteRequest>& GetPending() const { return Pending; }
 
 	/** 工具上报一次已批准写入的执行结果。 */

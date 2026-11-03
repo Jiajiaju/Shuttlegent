@@ -1,5 +1,6 @@
 #include "QuestionGate/FShuttlegentQuestionGate.h"
 
+#include "Endpoint/FShuttlegentToolCallScope.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentMcpServerConstants.h"
 
@@ -58,6 +59,7 @@ void FShuttlegentQuestionGate::SetAnswererAttached(bool bAttached)
 int32 FShuttlegentQuestionGate::Ask(FShuttlegentQuestion Question, TFunction<void(EShuttlegentQuestionOutcome, const FString&)> OnClosedCallback)
 {
 	Question.QuestionId = NextQuestionId++;
+	Question.ConversationKey = FShuttlegentToolCallScope::GetConversationKey();
 	const int32 QuestionId = Question.QuestionId;
 	if (!bAnswererAttached)
 	{
@@ -84,6 +86,7 @@ bool FShuttlegentQuestionGate::PresentChoice(FShuttlegentChoiceRequest Request)
 	}
 
 	Request.ChoiceKey = FGuid::NewGuid().ToString(EGuidFormats::Digits);
+	Request.ConversationKey = FShuttlegentToolCallScope::GetConversationKey();
 	UE_LOG(LogShuttlegent, Log, TEXT("Choice card %s shown: %d option(s), multi-select %s."), *Request.ChoiceKey, Request.Options.Num(), Request.bMultiSelect ? TEXT("on") : TEXT("off"));
 	OnChoicePresented.Broadcast(Request);
 	return true;
@@ -105,6 +108,21 @@ void FShuttlegentQuestionGate::ExpireAll()
 	while (Pending.Num() > 0)
 	{
 		Close(Pending[0].QuestionId, EShuttlegentQuestionOutcome::Expired, FString());
+	}
+}
+
+void FShuttlegentQuestionGate::ExpireConversation(const FString& ConversationKey)
+{
+	if (ConversationKey.IsEmpty()) return;
+
+	TArray<int32> Expired;
+	for (const FShuttlegentQuestion& Item : Pending)
+	{
+		if (Item.ConversationKey == ConversationKey) Expired.Add(Item.QuestionId);
+	}
+	for (const int32 QuestionId : Expired)
+	{
+		Close(QuestionId, EShuttlegentQuestionOutcome::Expired, FString());
 	}
 }
 

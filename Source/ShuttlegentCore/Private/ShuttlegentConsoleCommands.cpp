@@ -98,7 +98,7 @@ void FShuttlegentConsoleCommands::HandleNew(const TArray<FString>& Args)
 	if (!Pinned.IsValid()) return;
 
 	FString Error;
-	LogResult(Pinned->NewSession(Error), TEXT("New session"), Error);
+	LogResult(Pinned->NewSession(FString(), Error), TEXT("New session"), Error);
 }
 
 void FShuttlegentConsoleCommands::HandleResume(const TArray<FString>& Args)
@@ -108,7 +108,7 @@ void FShuttlegentConsoleCommands::HandleResume(const TArray<FString>& Args)
 
 	FString Error;
 	const FString SessionId = Args.Num() > 0 ? Args[0] : FString();
-	LogResult(Pinned->ResumeSession(SessionId, Error), TEXT("Resume session"), Error);
+	LogResult(Pinned->ResumeSession(SessionId, FString(), Error), TEXT("Resume session"), Error);
 }
 
 void FShuttlegentConsoleCommands::HandlePrompt(const TArray<FString>& Args)

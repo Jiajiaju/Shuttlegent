@@ -10,6 +10,9 @@ struct FShuttlegentWriteRequest
 	/** 由 FShuttlegentWriteGate 分配；即交互规范中的 requestId。 */
 	int32 RequestId = 0;
 
+	/** 由写入门设置：发起请求的对话（工具调用带回的 X-Shuttlegent-Conversation）；未带时为空，由对话模型按旧规则归属。 */
+	FString ConversationKey;
+
 	/** 发起请求的工具，名称与模型调用时一致。 */
 	FString ToolName;
 

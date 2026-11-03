@@ -27,63 +27,73 @@ enum class EShuttlegentQuestionOutcome : uint8;
 enum class EShuttlegentWriteDecision : uint8;
 enum class EShuttlegentWritePolicy : uint8;
 
-DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatStructureChanged);
-DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatContentChanged);
-DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatStatusChanged);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatTurnFinished, bool /*bCompleted*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatStructureChanged, const FShuttlegentConversation& /*Conversation*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatContentChanged, const FShuttlegentConversation& /*Conversation*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatStatusChanged, const FShuttlegentConversation& /*Conversation*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentChatTurnFinished, const FShuttlegentConversation& /*Conversation*/, bool /*bCompleted*/);
 DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatSessionsChanged);
-DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatRunLogChanged);
-DECLARE_MULTICAST_DELEGATE(FOnShuttlegentChatQueueChanged);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatDraftRestored, const FString& /*Text*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatRunLogChanged, const FShuttlegentConversation& /*Conversation*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatQueueChanged, const FShuttlegentConversation& /*Conversation*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentChatDraftRestored, const FString& /*SessionId*/, const FString& /*Text*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentChatSessionClosed, const FString& /*SessionId*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentChatForkAdopted, const FString& /*SourceSessionId*/, const FString& /*NewSessionId*/);
 
 /**
  * 介于 FShuttlegentAgentService 与聊天面板之间的编辑器侧对话状态。
  *
  * 位于编辑器模块中，因此对话在面板关闭并重新打开后依然保留。
- * 用户每个正在运行、排队或打开的会话对应一个 FShuttlegentConversation；
- * 面板显示当前对话，其余对话在后台继续运行并接收更新
- * （Shuttlegent.md 第 14.3.7 节）。离开空闲的对话会关闭其会话并将其丢弃；
+ * 用户每个正在运行、排队或显示中的会话对应一个 FShuttlegentConversation；
+ * 页签经 FShuttlegentChatView 显示其中一个，其余对话在后台继续运行并接收更新
+ * （Shuttlegent.md 第 14.3.7 节）。没有页签显示、且空闲的对话被释放时关闭其会话并将其丢弃；
  * 再次打开时重放其对话记录。
  *
  * 将 session/update 分块合并为条目（每个助手消息 id 一条，每次工具调用一条），
  * 并将对话的第一条提示暂存至运行时及其会话就绪。回合运行期间发送的草稿进入该对话的
  * FIFO 队列，在回合正常结束时逐条发送；停止、被拒绝的权限、失败的回合或丢失的运行时
- * 会暂停队列，直至用户继续（Shuttlegent UI 交互规范第 4.3 节）。事件均针对当前对话；
- * 后台对话仅在其状态或队列变化时触发 OnSessionsChanged。仅限游戏线程。
+ * 会暂停队列，直至用户继续（Shuttlegent UI 交互规范第 4.3 节）。接口按对话调用，事件带上所属对话，
+ * 由视图挑出自己显示的那个；任一持有对话的状态或队列变化时另触发 OnSessionsChanged。仅限游戏线程。
  */
 class FShuttlegentChatModel : public TSharedFromThis<FShuttlegentChatModel>
 {
 public:
-	/** 当前对话新增了条目或替换了列表；需要重建行。 */
+	/** 对话新增了条目或替换了列表；需要重建行。 */
 	FOnShuttlegentChatStructureChanged OnStructureChanged;
 
-	/** 当前对话条目的文本或状态已变化；行通过属性更新。 */
+	/** 对话条目的文本或状态已变化；行通过属性更新。 */
 	FOnShuttlegentChatContentChanged OnContentChanged;
 
-	/** 当前对话的运行时状态、配置选项、用量或运行时丢失横幅已变化。 */
+	/** 对话的运行时状态、配置选项、用量或运行时丢失横幅已变化。 */
 	FOnShuttlegentChatStatusChanged OnStatusChanged;
 
-	/** 当前对话的一个回合已结束；若被取消、失败或因其他原因停止，bCompleted 为 false。 */
+	/** 对话的一个回合已结束；若被取消、失败或因其他原因停止，bCompleted 为 false。 */
 	FOnShuttlegentChatTurnFinished OnTurnFinished;
 
-	/** 会话索引、当前会话或任一持有对话的状态或队列已变化；需要刷新会话列表与标题。 */
+	/** 会话索引或任一持有对话的状态或队列已变化；需要刷新会话列表与标题。 */
 	FOnShuttlegentChatSessionsChanged OnSessionsChanged;
 
-	/** 当前对话的运行日志新增了事件，或另一个对话成为当前对话。 */
+	/** 对话的运行日志新增了事件。 */
 	FOnShuttlegentChatRunLogChanged OnRunLogChanged;
 
-	/** 当前对话的队列已变化：条目被添加、发送、移除或取回，或队列被暂停或继续。 */
+	/** 对话的队列已变化：条目被添加、发送、移除或取回，或队列被暂停或继续。 */
 	FOnShuttlegentChatQueueChanged OnQueueChanged;
 
-	/** 回到某条消息后，其原文应放回输入框以便修改重发。 */
+	/** 回到某条消息后，其原文应放回显示该会话（回退后的新会话）的输入框以便修改重发。 */
 	FOnShuttlegentChatDraftRestored OnDraftRestored;
+
+	/** 会话被归档或删除；显示它的视图改为显示新对话。 */
+	FOnShuttlegentChatSessionClosed OnSessionClosed;
+
+	/** 分支或回退得到了新会话；显示源会话的视图改为显示新会话。 */
+	FOnShuttlegentChatForkAdopted OnForkAdopted;
 
 private:
 	TWeakPtr<FShuttlegentAgentService> Service;
 
-	/** 内存中持有的对话；始终包含 Current。 */
+	/** 内存中持有的对话：显示中、运行中或有排队内容的对话。 */
 	TArray<TSharedPtr<FShuttlegentConversation>> Conversations;
-	TSharedPtr<FShuttlegentConversation> Current;
+
+	/** 最近一次获得焦点的视图所显示的对话；工具调用、权限请求等找不到所属对话时退回到它。 */
+	TWeakPtr<FShuttlegentConversation> Focused;
 
 	/** session/new 正在进行中的对话，按从早到晚排列；每个答复归属最早的一个。 */
 	TArray<TWeakPtr<FShuttlegentConversation>> AwaitingNewSession;
@@ -107,9 +117,6 @@ private:
 	int32 NextQueueId = 1;
 	bool bRuntimeLost = false;
 
-	/** Shuttlegent 页签在前台、用户看得见当前对话；此时当前对话的回合结束不留“完成未看”。 */
-	bool bPanelVisible = false;
-
 	/** 运行时无法启动或无法处理提示的原因；以启动引导卡片显示，直至重试或运行时就绪将其清除。 */
 	EShuttlegentStartIssue StartIssue = EShuttlegentStartIssue::None;
 
@@ -126,8 +133,11 @@ private:
 	/** Agent 通过 ask_user 提出的问题（ShuttlegentMcpServer）；由面板答复。 */
 	TWeakPtr<FShuttlegentQuestionGate> QuestionGate;
 
-	/** 打开中的写入请求及其结果所属的对话：即其中第一个请求到达时的当前对话。 */
-	TWeakPtr<FShuttlegentConversation> WriteOwner;
+	/** 打开中的写入请求所属的对话（按请求 id 索引）：请求带对话标识时为发起它的对话，否则为请求到达时获得焦点的对话。 */
+	TMap<int32, TWeakPtr<FShuttlegentConversation>> WriteOwners;
+
+	/** 已确认、正在执行的写入所属的对话；结果到达或运行时丢失时清除。 */
+	TWeakPtr<FShuttlegentConversation> ApprovedWriteOwner;
 
 	/** 已确认的写入正在执行；结果到达或运行时丢失时清除。 */
 	bool bWriting = false;
@@ -144,21 +154,35 @@ public:
 	void Initialize(const TSharedRef<FShuttlegentAgentService>& InService);
 	void Shutdown();
 
-	const TArray<TSharedPtr<FShuttlegentChatEntry>>& GetEntries() const { return Current->Entries; }
 	EShuttlegentAgentState GetState() const;
 	bool IsRuntimeLost() const { return bRuntimeLost; }
-	bool IsStopping() const { return Current->bStopping; }
-	EShuttlegentTurnOutcome GetLastOutcome() const { return Current->LastOutcome; }
-	const TArray<FShuttlegentRunLogEntry>& GetRunLog() const { return Current->RunLog; }
 
-	/** 面板中显示的会话；新对话时为空。 */
-	const FString& GetCurrentSessionId() const { return Current->SessionId; }
+	/** 新建一个空对话并持有它；下一条提示将为它创建新会话。 */
+	TSharedRef<FShuttlegentConversation> CreateConversation();
 
-	/** 当前对话的会话正在执行提示。 */
-	bool IsPrompting() const;
+	/** 已持有的会话按原样返回；否则显示其已存储的对话记录并在运行时中恢复。会话 id 为空时返回 nullptr。 */
+	TSharedPtr<FShuttlegentConversation> HoldConversation(const FString& SessionId);
 
-	/** 当前对话供标题栏使用的状态。 */
-	EShuttlegentChatStatus GetStatus() const;
+	/** 视图不再显示该对话：没有视图显示且空闲的对话被丢弃并关闭其会话，忙碌的对话继续运行。 */
+	void ReleaseConversation(FShuttlegentConversation& Conversation);
+
+	/**
+	 * 视图开始（bShown）或停止显示该对话，以及显示它的页签是否在前台（bVisible）。在前台显示期间，
+	 * 回合结束不留“完成未看”，已有的随之清除。
+	 */
+	void SetDisplayed(FShuttlegentConversation& Conversation, bool bShown, bool bVisible);
+
+	/** 视图获得焦点（切换到某个对话或页签转到前台）；找不到所属对话的请求退回到它显示的对话。 */
+	void SetFocused(FShuttlegentConversation& Conversation);
+
+	/** 对话的会话正在执行提示。 */
+	bool IsPrompting(const FShuttlegentConversation& Conversation) const;
+
+	/** 对话中有回合正在运行、停止待完成，或运行时或会话仍在就绪过程中：新草稿将入队。 */
+	bool IsBusy(const FShuttlegentConversation& Conversation) const;
+
+	/** 对话供标题栏使用的状态。 */
+	EShuttlegentChatStatus GetStatus(const FShuttlegentConversation& Conversation) const;
 
 	/** 内存中持有的会话的状态与排队提示数量，供会话列表使用；会话未被持有时返回 false。 */
 	bool GetSessionActivity(const FString& SessionId, EShuttlegentChatStatus& OutStatus, int32& OutQueued) const;
@@ -169,48 +193,32 @@ public:
 	/** 页签上的提醒圆点：有对话等待输入时为 Input，否则有完成未看的对话时为 Done。 */
 	EShuttlegentAttention GetOverallAttention() const;
 
-	/** 由面板页签报告是否在前台；转到前台时当前对话的“完成未看”随之清除。 */
-	void SetPanelVisible(bool bVisible);
+	/** 对话中仍在等待答复的最早一个运行时权限请求，或 nullptr。 */
+	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission(const FShuttlegentConversation& Conversation) const;
 
-	/** 当前对话中仍在等待答复的最早一个运行时权限请求，或 nullptr。 */
-	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission() const;
+	/** 对话的某个权限请求所涉及的工具调用条目，或 nullptr。 */
+	TSharedPtr<FShuttlegentChatEntry> FindToolCallOf(const FShuttlegentConversation& Conversation, const TSharedPtr<FShuttlegentChatEntry>& Permission) const;
 
-	/** 当前对话的某个权限请求所涉及的工具调用条目，或 nullptr。 */
-	TSharedPtr<FShuttlegentChatEntry> FindToolCallOf(const TSharedPtr<FShuttlegentChatEntry>& Permission) const;
-	int64 GetUsedTokens() const { return Current->UsedTokens; }
-	int64 GetContextSize() const { return Current->ContextSize; }
-	const FShuttlegentContextBreakdown& GetContextBreakdown() const { return Current->ContextBreakdown; }
-	const TArray<FShuttlegentTodoItem>& GetTodos() const { return Current->Todos; }
-	bool IsCompacting() const { return Current->bCompacting; }
+	/** 对话现在能否手动压缩上下文；不能时给出原因（未连接、回合进行中、插件不可用、正在压缩）。 */
+	bool CanCompact(const FShuttlegentConversation& Conversation, FText& OutReason) const;
 
-	/** 当前对话现在能否手动压缩上下文；不能时给出原因（未连接、回合进行中、插件不可用、正在压缩）。 */
-	bool CanCompact(FText& OutReason) const;
+	/** 手动压缩对话的上下文（运行时的 /compact）；进度与结果以压缩条目显示在对话中。 */
+	void CompactContext(FShuttlegentConversation& Conversation);
 
-	/** 手动压缩当前对话的上下文（运行时的 /compact）；进度与结果以压缩条目显示在对话中。 */
-	void CompactContext();
+	/** 对话现在能否切换计划模式；不能时给出原因（运行时未就绪、插件不可用、恢复中）。会话尚未创建时可以，就绪后应用。 */
+	bool CanSetPlanMode(const FShuttlegentConversation& Conversation, FText& OutReason) const;
 
-	bool IsPlanMode() const { return Current->bPlanMode; }
-
-	/** 当前对话现在能否切换计划模式；不能时给出原因（运行时未就绪、插件不可用、恢复中）。会话尚未创建时可以，就绪后应用。 */
-	bool CanSetPlanMode(FText& OutReason) const;
-
-	/** 打开或关闭当前对话的计划模式；回合进行中时在下一步生效。 */
-	void SetPlanMode(bool bActive);
-
-	/** 当前对话等待审批的计划；ReviewId 为空表示没有。 */
-	const FShuttlegentPlanReview& GetPendingPlanReview() const { return Current->PendingPlanReview; }
+	/** 打开或关闭对话的计划模式；回合进行中时在下一步生效。 */
+	void SetPlanMode(FShuttlegentConversation& Conversation, bool bActive);
 
 	/**
-	 * 答复当前对话等待审批的计划：批准后 Agent 退出计划模式并执行，bAcceptEdits 时写入模式改为自动接受编辑，
+	 * 答复对话等待审批的计划：批准后 Agent 退出计划模式并执行，bAcceptEdits 时写入模式改为自动接受编辑，
 	 * 否则改为手动确认；退回时 Feedback 交给 Agent 继续规划。
 	 */
-	void AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits);
+	void AnswerPlanReview(FShuttlegentConversation& Conversation, bool bApprove, const FString& Feedback, bool bAcceptEdits);
 
-	/** 当前对话计划模式之外的写入确认方式。 */
-	EShuttlegentWriteMode GetWriteMode() const { return Current->WriteMode; }
-
-	/** 切换当前对话的写入确认方式；处于计划模式时同时退出计划模式。回合进行中时从下一次写入起生效。 */
-	void SetWriteMode(EShuttlegentWriteMode Mode);
+	/** 切换对话的写入确认方式；处于计划模式时同时退出计划模式。回合进行中时从下一次写入起生效。 */
+	void SetWriteMode(FShuttlegentConversation& Conversation, EShuttlegentWriteMode Mode);
 
 	/** 若运行时未在运行则启动它；失败时记为启动问题。 */
 	void EnsureRuntime();
@@ -221,56 +229,44 @@ public:
 	EShuttlegentStartIssue GetStartIssue() const { return StartIssue; }
 	const FString& GetStartIssueDetail() const { return StartIssueDetail; }
 
-	/** 清除启动问题并再次启动运行时（若正在运行则重启，以便读取修正后的密钥）。 */
-	void RetryStart();
+	/** 清除启动问题并再次启动运行时（若正在运行则重启，以便读取修正后的密钥），随后恢复该对话的会话。 */
+	void RetryStart(FShuttlegentConversation& Conversation);
 
-	/** 当前对话上一次 session/resume 失败。 */
-	bool IsResumeFailed() const { return Current->bResumeFailed; }
+	/** 恢复失败后再次恢复对话的会话。 */
+	void RetryResume(FShuttlegentConversation& Conversation);
 
-	/** 恢复失败后再次恢复当前对话的会话。 */
-	void RetryResume();
-
-	/** 当前对话存在用户尚未核对的写入结果；禁止发送。 */
-	bool NeedsVerify() const { return Current->bNeedsVerify; }
-
-	/** 将当前对话的某个未知写入结果标记为已由用户核对。 */
-	void AcknowledgeUnknownWrite(int32 EntryId);
+	/** 将对话的某个未知写入结果标记为已由用户核对。 */
+	void AcknowledgeUnknownWrite(FShuttlegentConversation& Conversation, int32 EntryId);
 
 	/**
-	 * 在当前对话中发送草稿及其引用，若该对话有回合正在运行则将其入队。每个引用都必须
+	 * 在对话中发送草稿及其引用，若该对话有回合正在运行则将其入队。每个引用都必须
 	 * 仍然存在；不存在的引用会被返回，且不发送也不入队。bEnterPlanMode 时先进入计划模式（/plan <消息>）：
 	 * 会话已打开时等运行时确认计划模式已开再发出，计划模式不可切换时拒绝。
 	 */
-	EShuttlegentSubmitResult SubmitDraft(const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutInvalidPaths);
+	EShuttlegentSubmitResult SubmitDraft(FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentReference>& References, bool bEnterPlanMode, const TArray<FShuttlegentPromptImage>& Images, TArray<FString>& OutInvalidPaths);
 
-	/** 草稿现在能否附带图片：运行时已就绪且其模型接受图片，当前对话也没有进行中的回合；否则 OutReason 说明原因。 */
-	bool CanAttachImages(FText& OutReason) const;
+	/** 草稿现在能否附带图片：运行时已就绪且其模型接受图片，对话也没有进行中的回合；否则 OutReason 说明原因。 */
+	bool CanAttachImages(const FShuttlegentConversation& Conversation, FText& OutReason) const;
 
-	/** 当前对话中有回合正在运行、停止待完成，或运行时或会话仍在就绪过程中：新草稿将入队。 */
-	bool IsBusy() const;
-
-	/** 当前对话的队列。 */
-	FShuttlegentPromptQueue GetCurrentQueue() const;
-
-	void RemoveQueued(int32 ItemId);
+	void RemoveQueued(FShuttlegentConversation& Conversation, int32 ItemId);
 
 	/**
 	 * 将排队的条目取回草稿。草稿非空时，草稿占据该条目在队列中的位置，
 	 * 因此用户所写内容不会丢失。条目已不存在时返回 false。
 	 */
-	bool TakeQueued(int32 ItemId, const FString& DraftText, const TArray<FShuttlegentReference>& DraftReferences, FShuttlegentQueuedPrompt& OutItem);
+	bool TakeQueued(FShuttlegentConversation& Conversation, int32 ItemId, const FString& DraftText, const TArray<FShuttlegentReference>& DraftReferences, FShuttlegentQueuedPrompt& OutItem);
 
-	/** 继续当前对话已暂停的队列，并在该对话无运行内容时发送下一个条目。 */
-	void ResumeQueue();
+	/** 继续对话已暂停的队列，并在该对话无运行内容时发送下一个条目。 */
+	void ResumeQueue(FShuttlegentConversation& Conversation);
 
-	/** 当前对话失败的回合可以重新发送。 */
-	bool CanRetry() const;
+	/** 对话失败的回合可以重新发送。 */
+	bool CanRetry(const FShuttlegentConversation& Conversation) const;
 
 	/** 重新发送失败回合的提示；队列保持暂停。 */
-	void Retry();
+	void Retry(FShuttlegentConversation& Conversation);
 
-	/** 属于当前对话的最早一个等待确认的编辑器写入，或 nullptr。 */
-	const FShuttlegentWriteRequest* GetPendingWrite() const;
+	/** 属于该对话的最早一个等待确认的编辑器写入，或 nullptr。 */
+	const FShuttlegentWriteRequest* GetPendingWrite(const FShuttlegentConversation& Conversation) const;
 
 	/** 确认或拒绝编辑器写入；对同一请求的再次答复不产生任何作用。 */
 	void AnswerWrite(int32 RequestId, bool bApprove);
@@ -279,66 +275,60 @@ public:
 	bool CanUndoWrite(const FShuttlegentChatEntry& Entry, FText& OutReason) const;
 
 	/** 当写入结果的事务仍位于编辑器撤销缓冲区顶部时将其撤销。 */
-	void UndoWrite(int32 EntryId);
+	void UndoWrite(FShuttlegentConversation& Conversation, int32 EntryId);
 
-	/** 撤销当前对话中一条记忆提示所记录的修改；记忆已被别处改动时在对话中说明。 */
-	void UndoMemory(int32 EntryId);
+	/** 撤销对话中一条记忆提示所记录的修改；记忆已被别处改动时在对话中说明。 */
+	void UndoMemory(FShuttlegentConversation& Conversation, int32 EntryId);
 
-	/** 当前对话能否回到某条消息或从它分支：会话已在运行时打开、空闲，且运行时的 session control 插件可用；不能时给出原因。 */
-	bool CanEditHistory(FText& OutReason) const;
+	/** 对话能否回到某条消息或从它分支：会话已在运行时打开、空闲，且运行时的 session control 插件可用；不能时给出原因。 */
+	bool CanEditHistory(const FShuttlegentConversation& Conversation, FText& OutReason) const;
 
-	/** 从当前对话的这条用户消息分支：新会话含到该消息这一轮结束为止的对话，原会话与编辑器状态不变。 */
-	void BranchFrom(int32 EntryId);
+	/** 从对话的这条用户消息分支：新会话含到该消息这一轮结束为止的对话，原会话与编辑器状态不变。完成后广播 OnForkAdopted。 */
+	void BranchFrom(FShuttlegentConversation& Conversation, int32 EntryId);
 
 	/**
-	 * 回到当前对话的这条用户消息之前：按倒序撤销其后（含这一轮）的编辑器写入，对话截到该消息之前（原会话归档保留），
-	 * 原文放回输入框。中间夹着用户自己的编辑、事务不在撤销栈顶时整体拒绝，不做任何改动。
+	 * 回到对话的这条用户消息之前：按倒序撤销其后（含这一轮）的编辑器写入，对话截到该消息之前（原会话归档保留），
+	 * 原文经 OnDraftRestored 放回输入框。中间夹着用户自己的编辑、事务不在撤销栈顶时整体拒绝，不做任何改动。
 	 */
-	void RewindTo(int32 EntryId);
+	void RewindTo(FShuttlegentConversation& Conversation, int32 EntryId);
 
-	/** Agent 提出的、仍在等待答复的最早一个问题，或 nullptr。 */
-	const FShuttlegentQuestion* GetPendingQuestion() const;
+	/** 该对话中 Agent 提出的、仍在等待答复的最早一个问题，或 nullptr。 */
+	const FShuttlegentQuestion* GetPendingQuestion(const FShuttlegentConversation& Conversation) const;
 
 	/** 答复或跳过一个问题；对同一问题的再次答复不产生任何作用。 */
 	void AnswerQuestion(int32 QuestionId, const FString& Answer, bool bSkip);
 
 	/**
-	 * 提交当前对话中等待作答的选择卡（页面的答案 JSON：selected、notes、overall）：卡片变为已提交，选择作为下一条用户消息发出
+	 * 提交对话中等待作答的选择卡（页面的答案 JSON：selected、notes、overall）：卡片变为已提交，选择作为下一条用户消息发出
 	 * （本轮仍在运行时进入队列）。卡片已不在等待、什么都没选也没写意见，或此时不能发送消息时返回 false，OutReason 说明原因。
 	 */
-	bool SubmitChoice(int32 EntryId, const FString& AnswerJson, FText& OutReason);
+	bool SubmitChoice(FShuttlegentConversation& Conversation, int32 EntryId, const FString& AnswerJson, FText& OutReason);
 
-	/** 为当前对话正在运行的回合发送一次取消；之后的调用等待该回合结束。 */
-	void Cancel();
+	/** 为对话正在运行的回合发送一次取消；之后的调用等待该回合结束。 */
+	void Cancel(FShuttlegentConversation& Conversation);
 
-	/** 显示一个空对话；下一条提示将创建新会话。被离开的对话若处于忙碌状态则继续运行。 */
-	void NewConversation();
-
-	/** 显示一个会话：已持有的对话按原样显示，否则显示其已存储的对话记录并在运行时中恢复。 */
-	void OpenSession(const FString& SessionId);
-
-	/** 重启已丢失的运行时并恢复当前会话。 */
-	void Reconnect();
+	/** 重启已丢失的运行时并恢复该对话的会话。 */
+	void Reconnect(FShuttlegentConversation& Conversation);
 
 	/** 处于挂接状态（面板打开）时，运行时权限请求会成为其所指对话中的面板条目。 */
 	void SetPermissionHandlerAttached(bool bAttached);
 
 	void AnswerPermission(int32 EntryId, bool bAllow);
 
-	/** 当前对话某个配置选项（"model"、"reasoning_effort"、面板自己的 "agent"）的可选值与当前值。 */
-	bool GetConfigChoices(const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
+	/** 对话某个配置选项（"model"、"reasoning_effort"、面板自己的 "agent"）的可选值与当前值。 */
+	bool GetConfigChoices(const FShuttlegentConversation& Conversation, const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
 
-	/** 设置当前对话的配置选项；其会话打开前，该值处于等待状态。"agent" 只在发出第一条消息前可改。 */
-	void SetConfigValue(const FString& ConfigId, const FString& Value);
+	/** 设置对话的配置选项；其会话打开前，该值处于等待状态。"agent" 只在发出第一条消息前可改。 */
+	void SetConfigValue(FShuttlegentConversation& Conversation, const FString& ConfigId, const FString& Value);
 
-	/** 当前对话的 Agent 已锁定（已发出第一条消息或打开的是已有会话）。 */
-	bool IsAgentLocked() const;
+	/** 对话的 Agent 已锁定（已发出第一条消息或打开的是已有会话）。 */
+	bool IsAgentLocked(const FShuttlegentConversation& Conversation) const;
 
 	/** 索引中的会话，按最近更新时间从新到旧排列：活动列表或已归档列表。 */
 	TArray<FShuttlegentSessionRecord> GetSessions(bool bArchived) const;
 
-	/** 当前会话的标题；新对话或未命名会话时为空。 */
-	FString GetCurrentTitle() const;
+	/** 对话所属会话的标题；新对话或未命名会话时为空。 */
+	FString GetTitle(const FShuttlegentConversation& Conversation) const;
 
 	/** 正在运行、等待权限或等待写入确认的会话不能归档。 */
 	bool CanArchive(const FString& SessionId) const;
@@ -346,20 +336,16 @@ public:
 	/** 重命名已存储的会话；名称裁剪后为空、过长或会话未知时返回 false。 */
 	bool RenameSession(const FString& SessionId, const FString& Title);
 
-	/** 从列表中隐藏会话并丢弃其对话；归档当前会话会开始一个新对话。 */
+	/** 从列表中隐藏会话并丢弃其对话；显示它的视图经 OnSessionClosed 改为显示新对话。 */
 	bool ArchiveSession(const FString& SessionId);
 
 	void RestoreSession(const FString& SessionId);
 
-	/** 永久移除会话的记录与对话记录，规则与归档相同；删除当前会话会开始一个新对话。 */
+	/** 永久移除会话的记录与对话记录，规则与归档相同；显示它的视图经 OnSessionClosed 改为显示新对话。 */
 	bool DeleteSession(const FString& SessionId);
 
 private:
-	bool IsCurrent(const FShuttlegentConversation& Conversation) const { return Current.Get() == &Conversation; }
 	TSharedPtr<FShuttlegentConversation> FindConversation(const FString& SessionId) const;
-	bool IsPrompting(const FShuttlegentConversation& Conversation) const;
-	bool IsBusy(const FShuttlegentConversation& Conversation) const;
-	EShuttlegentChatStatus GetStatus(const FShuttlegentConversation& Conversation) const;
 
 	/**
 	 * 对话在等待用户输入：写入确认、计划审批、运行时权限请求，或 Agent 提问。提问不带会话，
@@ -368,20 +354,29 @@ private:
 	bool NeedsInput(const FShuttlegentConversation& Conversation) const;
 	EShuttlegentAttention GetAttention(const FShuttlegentConversation& Conversation) const;
 
-	/** 用户看得见当前对话时，清除它的“完成未看”；有变化时返回 true。 */
-	bool MarkCurrentSeen();
-	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission(const FShuttlegentConversation& Conversation) const;
+	/** 对话在前台显示时，清除它的“完成未看”；有变化时返回 true。 */
+	bool MarkSeen(FShuttlegentConversation& Conversation);
 
-	/** 打开中的写入请求及其结果是否属于该对话（没有打开的请求时视为属于当前对话）。 */
-	bool OwnsWrite(const FShuttlegentConversation& Conversation) const;
+	/** 找不到所属对话的请求退回到的对话：获得焦点的视图所显示的对话，没有时为任一持有的对话；都没有时为 nullptr。 */
+	TSharedPtr<FShuttlegentConversation> GetFocused() const;
 
-	/** 离开当前对话：空闲的对话被丢弃并关闭其会话，忙碌的对话继续运行。 */
-	void LeaveCurrent();
+	/** 按工具调用带回的对话标识（X-Shuttlegent-Conversation）找到对话；为空或该对话已不在内存中时返回 nullptr。 */
+	TSharedPtr<FShuttlegentConversation> FindConversationByKey(const FString& ConversationKey) const;
+
+	/** 该对话有等待确认的编辑器写入请求。 */
+	bool HasPendingWrite(const FShuttlegentConversation& Conversation) const;
+
+	/** 该对话已确认的编辑器写入正在执行（所属对话已不在内存中时视为属于获得焦点的对话）。 */
+	bool IsWritingFor(const FShuttlegentConversation& Conversation) const;
+
+	/** 问题所属的对话：带对话标识时为提问的对话，否则为获得焦点的对话。 */
+	TSharedPtr<FShuttlegentConversation> FindQuestionOwner(const FShuttlegentQuestion& Question) const;
+
 	bool CanDrop(const FShuttlegentConversation& Conversation) const;
 	void DropConversation(FShuttlegentConversation& Conversation);
 
-	/** 在另一个对话成为当前对话后，广播当前对话的全部事件。 */
-	void BroadcastAll();
+	/** 运行时级别的变化（启动、丢失、重连）影响每个对话的状态：逐个广播 OnStatusChanged。 */
+	void NotifyAllStatus();
 	void NotifyStructure(const FShuttlegentConversation& Conversation);
 	void NotifyContent(const FShuttlegentConversation& Conversation);
 	void NotifyStatus(const FShuttlegentConversation& Conversation);
@@ -421,14 +416,11 @@ private:
 	/** 结束当前的 Agent 交接，并为下一个等待的新对话开始交接。 */
 	void ReleaseAgentHandoff();
 
-	bool GetConfigChoices(const FShuttlegentConversation& Conversation, const FString& ConfigId, TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutCurrentValue) const;
-	void SetConfigValue(FShuttlegentConversation& Conversation, const FString& ConfigId, const FString& Value);
-
 	/** 为尚未锁定的对话选 Agent，并带出它的默认模型（会话打开前作为等待中的模型选择）。 */
 	void SetAgent(FShuttlegentConversation& Conversation, const FString& AgentId);
 
 	/** 以当前所选选项固定，因此之后更换模型不会改写已入队的内容。 */
-	FShuttlegentQueuedPrompt MakeQueued(const FString& Text, const TArray<FShuttlegentReference>& References);
+	FShuttlegentQueuedPrompt MakeQueued(const FShuttlegentConversation& Conversation, const FString& Text, const TArray<FShuttlegentReference>& References);
 	void PauseQueue(FShuttlegentConversation& Conversation);
 
 	/** 当对话的队列处于运行状态且该对话没有其他运行内容时，发送下一个排队条目。 */
@@ -462,6 +454,9 @@ private:
 
 	/** session tap 插件推来的会话事件：待办清单、上下文压缩与计划模式切换（目标暂不显示）。 */
 	void HandleSessionEvent(const FShuttlegentSessionEvent& Event);
+	/** 把对话的写入方式记进会话索引，重新打开或重启编辑器后沿用；会话尚未建立时不记。 */
+	void RecordWriteMode(const FShuttlegentConversation& Conversation);
+
 	void ApplyTodos(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Data);
 	void ApplyCompaction(FShuttlegentConversation& Conversation, const FString& Type, const TSharedPtr<FJsonObject>& Data);
 
@@ -499,7 +494,7 @@ private:
 	void HandleQuestionsChanged();
 	void HandleQuestionClosed(const FShuttlegentQuestion& Question, EShuttlegentQuestionOutcome Outcome, const FString& Answer);
 
-	/** Agent 交出选择卡：放进正在运行回合的对话（优先当前对话），之前等待中的卡片改为未作答。 */
+	/** Agent 交出选择卡：放进交出它的对话（未带对话标识时为正在运行回合的对话，获得焦点的对话优先），之前等待中的卡片改为未作答。 */
 	void HandleChoicePresented(const FShuttlegentChoiceRequest& Request);
 
 	/** Agent 修改了记忆：在正在运行的对话中加一行提示（面板自己删除的不提示）。 */

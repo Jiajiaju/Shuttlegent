@@ -4,7 +4,7 @@
 #include "Containers/Ticker.h"
 
 class FJsonObject;
-class FShuttlegentChatModel;
+class FShuttlegentChatView;
 class UObject;
 struct FPropertyChangedEvent;
 struct FShuttlegentChatEntry;
@@ -13,14 +13,14 @@ struct FShuttlegentMemoryChange;
 /**
  * 编辑器推送给面板页面的内容：页面报告就绪时推送完整快照，之后推送增量。
  *
- * 监听 FShuttlegentChatModel，仅标记发生变化的部分；由核心 ticker 将一帧内的全部变化
+ * 监听 FShuttlegentChatView，仅标记发生变化的部分；由核心 ticker 将一帧内的全部变化
  * 合并为一条 JSON 消息，因此流式分块不会各自产生一次页面调用。条目仅在其指纹自上一条
  * 消息以来发生变化时才重新发送。仅限游戏线程。
  */
 class FShuttlegentWebProtocol : public TSharedFromThis<FShuttlegentWebProtocol>
 {
 private:
-	TSharedPtr<FShuttlegentChatModel> Model;
+	TSharedPtr<FShuttlegentChatView> View;
 
 	/** 向页面投递一条 JSON 消息。 */
 	TFunction<void(const FString&)> Push;
@@ -53,7 +53,7 @@ private:
 	FDelegateHandle MemoryChangedHandle;
 
 public:
-	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, TFunction<void(const FString&)> InPush);
+	void Initialize(const TSharedRef<FShuttlegentChatView>& InView, TFunction<void(const FString&)> InPush);
 	void Shutdown();
 
 	/** 页面已（重新）加载并请求完整状态；在此之前不推送任何内容。 */

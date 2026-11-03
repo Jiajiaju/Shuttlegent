@@ -97,6 +97,12 @@ namespace ShuttlegentMcpEndpointConstant
 	// Authorization 请求头及其认证方案
 	inline const TCHAR* HeaderAuthorization = TEXT("Authorization");
 	inline const TCHAR* BearerPrefix = TEXT("Bearer ");
+
+	// 标明请求来自哪个对话的请求头，值为对话的 ConversationKey，随每个会话的 mcpServers 声明下发
+	inline const TCHAR* HeaderConversation = TEXT("X-Shuttlegent-Conversation");
+
+	// 日志中没有所属对话时的写法
+	inline const TCHAR* LogNoConversation = TEXT("(none)");
 	inline const TCHAR* ContentTypeJson = TEXT("application/json");
 	inline const TCHAR* HeaderContentType = TEXT("Content-Type");
 

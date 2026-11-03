@@ -77,11 +77,11 @@ void FShuttlegentMcpServerModule::StartupModule()
 	if (!Service.IsValid()) return;
 
 	const TWeakPtr<FShuttlegentMcpEndpoint> WeakEndpoint = Endpoint;
-	Service->McpServersProvider = [WeakEndpoint]()
+	Service->McpServersProvider = [WeakEndpoint](const FString& ConversationKey)
 	{
 		// 先编辑器端点，后项目的外部服务器
 		const TSharedPtr<FShuttlegentMcpEndpoint> Pinned = WeakEndpoint.Pin();
-		TArray<TSharedPtr<FJsonValue>> Servers = Pinned.IsValid() ? Pinned->MakeDeclaration() : TArray<TSharedPtr<FJsonValue>>();
+		TArray<TSharedPtr<FJsonValue>> Servers = Pinned.IsValid() ? Pinned->MakeDeclaration(ConversationKey) : TArray<TSharedPtr<FJsonValue>>();
 		Servers.Append(FShuttlegentExternalMcp::MakeDeclarations());
 		return Servers;
 	};

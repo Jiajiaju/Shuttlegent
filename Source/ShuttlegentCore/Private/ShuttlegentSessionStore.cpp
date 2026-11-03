@@ -26,7 +26,13 @@ namespace ShuttlegentSessionStorePrivate
 	inline const TCHAR* FieldModel = TEXT("model");
 	inline const TCHAR* FieldModelName = TEXT("modelName");
 	inline const TCHAR* FieldAgent = TEXT("agent");
+	inline const TCHAR* FieldWriteMode = TEXT("writeMode");
 	inline const TCHAR* FieldArchived = TEXT("archived");
+
+	// writeMode 的取值，与面板页面的写入方式取值一致
+	inline const TCHAR* WriteModeManual = TEXT("manual");
+	inline const TCHAR* WriteModeAcceptEdits = TEXT("acceptEdits");
+	inline const TCHAR* WriteModeAuto = TEXT("auto");
 	inline const TCHAR* FieldCreatedAt = TEXT("createdAt");
 	inline const TCHAR* FieldUpdatedAt = TEXT("updatedAt");
 
@@ -39,6 +45,35 @@ namespace ShuttlegentSessionStorePrivate
 
 	using FCondensedWriterFactory = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>;
 
+	const TCHAR* WriteModeName(EShuttlegentWriteMode Mode)
+	{
+		switch (Mode)
+		{
+		case EShuttlegentWriteMode::AcceptEdits:
+			{
+				return WriteModeAcceptEdits;
+			}
+		case EShuttlegentWriteMode::Auto:
+			{
+				return WriteModeAuto;
+			}
+		case EShuttlegentWriteMode::Manual:
+		default:
+			{
+				return WriteModeManual;
+			}
+		}
+	}
+
+	/** 认不出的取值（手改的索引、更新版本写入的新取值）视为未记录。 */
+	TOptional<EShuttlegentWriteMode> ParseWriteMode(const FString& Name)
+	{
+		if (Name == WriteModeManual) return EShuttlegentWriteMode::Manual;
+		if (Name == WriteModeAcceptEdits) return EShuttlegentWriteMode::AcceptEdits;
+		if (Name == WriteModeAuto) return EShuttlegentWriteMode::Auto;
+		return TOptional<EShuttlegentWriteMode>();
+	}
+
 	TSharedRef<FJsonObject> RecordToJson(const FShuttlegentSessionRecord& Record)
 	{
 		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
@@ -48,6 +83,7 @@ namespace ShuttlegentSessionStorePrivate
 		Object->SetStringField(FieldModel, Record.Model);
 		Object->SetStringField(FieldModelName, Record.ModelName);
 		if (!Record.AgentId.IsEmpty()) Object->SetStringField(FieldAgent, Record.AgentId);
+		if (Record.WriteMode.IsSet()) Object->SetStringField(FieldWriteMode, WriteModeName(Record.WriteMode.GetValue()));
 		Object->SetBoolField(FieldArchived, Record.bArchived);
 		Object->SetStringField(FieldCreatedAt, Record.CreatedAt.ToIso8601());
 		Object->SetStringField(FieldUpdatedAt, Record.UpdatedAt.ToIso8601());
@@ -64,6 +100,9 @@ namespace ShuttlegentSessionStorePrivate
 		Object->TryGetStringField(FieldModelName, OutRecord.ModelName);
 		Object->TryGetStringField(FieldAgent, OutRecord.AgentId);
 		Object->TryGetBoolField(FieldArchived, OutRecord.bArchived);
+
+		FString WriteMode;
+		if (Object->TryGetStringField(FieldWriteMode, WriteMode)) OutRecord.WriteMode = ParseWriteMode(WriteMode);
 
 		FString CreatedAt;
 		FString UpdatedAt;

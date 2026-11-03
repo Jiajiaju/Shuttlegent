@@ -35,6 +35,8 @@ public:
 
 	TFunction<void(const FString&)> OnOpenSession;
 
+	TFunction<void(const FString&, const FString&)> OnBeginSessionDrag;
+
 	TFunction<void(const FString&, const FString&)> OnRenameSession;
 
 	TFunction<void(const FString&)> OnArchiveSession;
@@ -142,6 +144,10 @@ public:
 	/** 显示已存储会话的对话记录，并在运行时中恢复该会话。 */
 	UFUNCTION()
 	void OpenSession(const FString& SessionId);
+
+	/** 会话列表中的一行被按住拖动（会话页签方案 M0 原型，见 FShuttlegentSessionDragPrototype）；左键仍按下时由编辑器接管拖拽。 */
+	UFUNCTION()
+	void BeginSessionDrag(const FString& SessionId, const FString& Title);
 
 	/** 重命名已存储的会话；编辑器会裁剪名称首尾空白，并拒绝空名称或过长的名称。 */
 	UFUNCTION()

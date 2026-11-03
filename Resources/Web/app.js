@@ -78,6 +78,9 @@
   // Least distance kept between the session menu and the panel edge, in CSS pixels
   const MENU_EDGE_MARGIN = 8;
 
+  // Distance a pressed session row has to move before it counts as a drag out of the list, in CSS pixels
+  const SESSION_DRAG_THRESHOLD = 4;
+
   // Modes in menu order: how editor writes are confirmed, and plan (read-only until a plan is approved)
   const MODES = [
     { value: 'manual', label: '手动', detail: '每次修改前都先问你' },
@@ -3453,7 +3456,34 @@
     $('open-settings').addEventListener('click', () => call('opensettings'));
     $('archived-button').addEventListener('click', () => openDialog($('archived-dialog')));
 
+    // Session tabs prototype (M0): a row pressed and moved past the threshold is handed to the editor, which starts a dock tab drag
+    // while the button is still down; the click that follows the release is swallowed
+    let sessionPress = null;
+    let swallowSessionClick = false;
+    $('sessions').addEventListener('pointerdown', (event) => {
+      const session = event.button === 0 ? event.target.closest('[data-session]') : null;
+      sessionPress = session ? { id: session.dataset.session, x: event.clientX, y: event.clientY } : null;
+      swallowSessionClick = false;
+    });
+    $('sessions').addEventListener('pointermove', (event) => {
+      if (!sessionPress || (event.buttons & 1) === 0) {
+        sessionPress = null;
+        return;
+      }
+      if (Math.hypot(event.clientX - sessionPress.x, event.clientY - sessionPress.y) < SESSION_DRAG_THRESHOLD) return;
+
+      call('beginsessiondrag', sessionPress.id, sessionTitle(sessionPress.id));
+      sessionPress = null;
+      swallowSessionClick = true;
+    });
+    $('sessions').addEventListener('pointerup', () => { sessionPress = null; });
+
     $('sessions').addEventListener('click', (event) => {
+      if (swallowSessionClick) {
+        swallowSessionClick = false;
+        return;
+      }
+
       const session = event.target.closest('[data-session]');
       if (!session) return;
 

@@ -57,6 +57,9 @@ public:
 	/** 令所有等待中的问题在未作答状态下过期。 */
 	void ExpireAll();
 
+	/** 令该对话提出的等待中问题过期（对话的回合结束时）；不带对话标识的问题不受影响。 */
+	void ExpireConversation(const FString& ConversationKey);
+
 	const TArray<FShuttlegentQuestion>& GetPending() const { return Pending; }
 
 private:

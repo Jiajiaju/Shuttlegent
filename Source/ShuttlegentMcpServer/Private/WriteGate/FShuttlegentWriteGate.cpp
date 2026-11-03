@@ -3,6 +3,7 @@
 #include "Editor.h"
 #include "Editor/Transactor.h"
 
+#include "Endpoint/FShuttlegentToolCallScope.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentMcpServerConstants.h"
 
@@ -69,6 +70,7 @@ void FShuttlegentWriteGate::SetConfirmerAttached(bool bAttached)
 int32 FShuttlegentWriteGate::Request(FShuttlegentWriteRequest Request, TFunction<void(EShuttlegentWriteDecision)> OnDecision)
 {
 	Request.RequestId = NextRequestId++;
+	Request.ConversationKey = FShuttlegentToolCallScope::GetConversationKey();
 	const int32 RequestId = Request.RequestId;
 	if (!bConfirmerAttached)
 	{
@@ -117,6 +119,21 @@ void FShuttlegentWriteGate::ExpireAll()
 	while (Pending.Num() > 0)
 	{
 		Close(Pending[0].RequestId, EShuttlegentWriteDecision::Expired);
+	}
+}
+
+void FShuttlegentWriteGate::ExpireConversation(const FString& ConversationKey)
+{
+	if (ConversationKey.IsEmpty()) return;
+
+	TArray<int32> Expired;
+	for (const FShuttlegentWriteRequest& Item : Pending)
+	{
+		if (Item.ConversationKey == ConversationKey) Expired.Add(Item.RequestId);
+	}
+	for (const int32 RequestId : Expired)
+	{
+		Close(RequestId, EShuttlegentWriteDecision::Expired);
 	}
 }
 

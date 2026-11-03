@@ -13,6 +13,9 @@ struct FShuttlegentChoiceRequest
 	/** 由 FShuttlegentQuestionGate 分配的全局唯一键；会话记录据此把后来的提交结果对应到这张卡片。 */
 	FString ChoiceKey;
 
+	/** 由提问通道设置：交出卡片的对话（工具调用带回的 X-Shuttlegent-Conversation）；未带时为空。 */
+	FString ConversationKey;
+
 	FString Question;
 
 	/** 按显示顺序排列的选项。 */

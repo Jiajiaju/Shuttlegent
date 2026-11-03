@@ -59,8 +59,11 @@ public:
 	/** 生成新的随机 token；此后携带旧 token 的请求一律拒绝。 */
 	void RotateToken();
 
-	/** 声明本端点的 ACP mcpServers 条目，附带当前 token；未监听时为空。 */
-	TArray<TSharedPtr<FJsonValue>> MakeDeclaration() const;
+	/**
+	 * 声明本端点的 ACP mcpServers 条目，附带当前 token；未监听时为空。ConversationKey 非空时同时声明请求头
+	 * X-Shuttlegent-Conversation，该会话的工具调用据此归属到发起它的对话（FShuttlegentToolCallScope）。
+	 */
+	TArray<TSharedPtr<FJsonValue>> MakeDeclaration(const FString& ConversationKey) const;
 
 private:
 	bool HandleRequest(const FHttpServerRequest& Request, const FHttpResultCallback& OnComplete);
@@ -70,7 +73,7 @@ private:
 	void HandleNotification(const FString& Method, const TSharedPtr<FJsonObject>& Params) const;
 
 	/** 答复一个 JSON-RPC 请求；OnAnswer 接收结果对象或错误对象（tools/call 可能稍后答复）。 */
-	void Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, TFunction<void(const TSharedRef<FJsonObject>& /*Result*/, int32 /*ErrorCode*/, const FString& /*ErrorMessage*/)> OnAnswer);
+	void Dispatch(const FString& Method, const TSharedPtr<FJsonObject>& Params, const FString& ConversationKey, TFunction<void(const TSharedRef<FJsonObject>& /*Result*/, int32 /*ErrorCode*/, const FString& /*ErrorMessage*/)> OnAnswer);
 	TSharedRef<FJsonObject> MakeInitializeResult(const TSharedPtr<FJsonObject>& Params) const;
 	TSharedRef<FJsonObject> MakeToolsListResult() const;
 };

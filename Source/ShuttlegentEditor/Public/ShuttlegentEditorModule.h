@@ -4,6 +4,7 @@
 #include "Modules/ModuleInterface.h"
 
 class FShuttlegentChatModel;
+class FShuttlegentChatView;
 class FSpawnTabArgs;
 class SDockTab;
 class SShuttlegentWebPanel;
@@ -14,6 +15,9 @@ class FShuttlegentEditorModule : public IModuleInterface
 private:
 	TSharedPtr<FShuttlegentChatModel> ChatModel;
 
+	/** 主页签的对话视图：主页签显示的当前对话。 */
+	TSharedPtr<FShuttlegentChatView> HubView;
+
 	/** 聊天面板，在标签页关闭与重新打开之间保留，使页面保持其状态。 */
 	TSharedPtr<SShuttlegentWebPanel> Panel;
 
@@ -23,7 +27,7 @@ private:
 	/** 当前打开的聊天页签；不在前台时据此显示提醒色条。 */
 	TWeakPtr<SDockTab> ChatTab;
 
-	/** 定时把页签是否在前台告诉对话模型（Slate 没有页签转入后台的通知）。 */
+	/** 定时把页签是否在前台告诉主页签的视图（Slate 没有页签转入后台的通知）。 */
 	FTSTicker::FDelegateHandle TabForegroundHandle;
 
 public:

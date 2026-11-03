@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include "EShuttlegentWriteMode.h"
+
 /** Shuttlegent 自行维护的会话索引中的一条（不依赖运行时的 session/list）。 */
 struct FShuttlegentSessionRecord
 {
@@ -22,6 +24,9 @@ struct FShuttlegentSessionRecord
 
 	/** 建立该会话的 Agent；发出第一条消息后不再改变，为空表示默认 Agent。 */
 	FString AgentId;
+
+	/** 会话最近一次使用的写入确认方式；重新打开会话时沿用。未设置表示旧版本建立的会话，按偏好设置的默认值。 */
+	TOptional<EShuttlegentWriteMode> WriteMode {};
 
 	FDateTime CreatedAt {};
 

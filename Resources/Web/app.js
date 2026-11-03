@@ -20,7 +20,7 @@
   const FOLLOW_THRESHOLD = 24;
 
   // One weave of the running-step mark (app.css .weave, sg-weave-*), in milliseconds; every running mark shares its phase
-  const WEAVE_PERIOD_MS = 1200;
+  const WEAVE_PERIOD_MS = 2000;
 
   // Kinds of call a process line names before it only counts the rest
   const PROCESS_KINDS_SHOWN = 4;
@@ -589,7 +589,7 @@
   }
 
   /** A tool call as an event row: state icon, name and summary; a failure adds its reason underneath. Clicking opens its details. */
-  /** The running-step mark: the logo with its shuttle weaving in from the left and beating down, in phase with every other. */
+  /** The running-step mark: the logo with its shuttle weaving in from the left, beating down and flying out to the right, in phase with every other. */
   function weaveIcon() {
     return '<span class="weave" style="--weave-delay:-' + (Date.now() % WEAVE_PERIOD_MS) + 'ms">' + markPlayer.markup() + '</span>';
   }

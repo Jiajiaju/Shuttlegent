@@ -6,13 +6,29 @@ window.ShuttlegentBrandGeometry = {
     344,
     224
   ],
-  "thread": {
-    "$comment": "Two warp threads with round ends, centred at x = -centerX and x = +centerX",
-    "centerX": 48,
-    "width": 32,
-    "top": -92,
-    "height": 184
-  },
+  "threads": [
+    {
+      "x": -62,
+      "width": 28,
+      "top": -37,
+      "height": 132,
+      "front": false
+    },
+    {
+      "x": 0,
+      "width": 36,
+      "top": -92,
+      "height": 184,
+      "front": true
+    },
+    {
+      "x": 62,
+      "width": 28,
+      "top": -95,
+      "height": 132,
+      "front": false
+    }
+  ],
   "shuttle": {
     "axisDeg": -25,
     "halfLength": 154,

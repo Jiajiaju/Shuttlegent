@@ -1,19 +1,17 @@
 {
   "$comment": "Single source of the Shuttlegent mark. ExportBrand.ps1 renders every mark, lockup and icon from it and writes Resources/Web/brand-geometry.js for the panel's animated marks.",
   "viewBox": [-172, -112, 344, 224],
-  "thread": {
-    "$comment": "Two warp threads with round ends, centred at x = -centerX and x = +centerX",
-    "centerX": 48,
-    "width": 32,
-    "top": -92,
-    "height": 184
-  },
+  "threads": [
+    { "$comment": "Warp threads with round ends, left to right; the side threads are centred on the shuttle's axis line, the middle one is the tallest and the only one in front", "x": -62, "width": 28, "top": -37, "height": 132, "front": false },
+    { "x": 0, "width": 36, "top": -92, "height": 184, "front": true },
+    { "x": 62, "width": 28, "top": -95, "height": 132, "front": false }
+  ],
   "shuttle": {
     "$comment": "Silhouette along axisDeg; profile rows are [distance from centre along the axis, half thickness], joined by a closed Catmull-Rom spline",
     "axisDeg": -25,
     "profile": [[0, 32], [10, 31.91], [20, 31.49], [30, 30.89], [40, 30.23], [50, 29.25], [60, 27.88], [70, 26.71], [80, 25.04], [90, 23.42], [100, 21.4], [110, 19.26], [120, 16.71], [130, 14.07], [140, 10.73], [150, 6.43], [154, 0]]
   },
-  "$commentWeave": "Depth order back to front: left thread, shuttle, right thread",
+  "$commentWeave": "Depth order back to front: threads without front, shuttle, threads with front",
   "knockoutGap": 10,
   "colors": { "ivory": "#E8DFCF", "red": "#A94743", "ink": "#302D2A" },
   "palettes": {

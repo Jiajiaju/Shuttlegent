@@ -187,19 +187,25 @@ button.event:hover{color:var(--text)}
 .event-divider>span{display:inline-flex;align-items:center;gap:var(--s-1-5)}
 .event-divider.is-danger{color:var(--danger)}
 .event-divider.running .sg-icon{animation:sg-rotate 1.2s linear infinite;transform-origin:center}
-/* Running step mark (app.js weaveIcon): the logo's shuttle slides in along its own axis from the lower left between the threads, then drives straight down out of the mark, as a weft beaten in on a loom.
+/* Running step mark (app.js weaveIcon): the logo's shuttle shoots in along its own axis from the lower left between the threads, overshoots and settles,
+   beats down to the bottom of the mark and springs back as a weft beaten in on a loom, rests, then draws back and flies out to the upper right.
+   A small mark (mark.js) plays the same weave while working through .is-weaving.
    Units are the mark's view box (344 × 224); every running mark shares one phase through --weave-delay */
 .weave{display:inline-block;flex-shrink:0;width:24px;aspect-ratio:344/224}
 .weave svg{display:block;width:100%;height:100%;overflow:hidden}
-.weave .mark-shuttle{animation:sg-weave-shuttle 1200ms var(--weave-delay,0ms) infinite}
-.weave .mark-left,.weave .mark-right{animation:sg-weave-thread 1200ms var(--weave-delay,0ms) infinite}
+.weave .mark-shuttle,.mark.is-weaving .mark-shuttle{animation:sg-weave-shuttle 2000ms var(--weave-delay,0ms) infinite}
+.weave .mark-thread,.mark.is-weaving .mark-thread{animation:sg-weave-thread 2000ms var(--weave-delay,0ms) infinite}
 @keyframes sg-weave-shuttle{
-  0%{transform:translate(-381px,177px);animation-timing-function:cubic-bezier(.2,.8,.3,1)}
-  38%,50%{transform:none;animation-timing-function:cubic-bezier(.6,0,1,.5)}
-  62%{transform:translateY(300px)}
-  62.1%,100%{transform:translate(-381px,177px)}
+  0%{transform:translate(-381px,177px);animation-timing-function:cubic-bezier(.05,.85,.15,1)}
+  13%{transform:translate(9px,-4px);animation-timing-function:cubic-bezier(.3,0,.3,1)}
+  19%{transform:none;animation-timing-function:cubic-bezier(.6,0,1,.6)}
+  27%{transform:translateY(46px);animation-timing-function:cubic-bezier(.2,.9,.3,1.2)}
+  39%{transform:translateY(-6px);animation-timing-function:ease-in-out}
+  45%,66%{transform:none;animation-timing-function:cubic-bezier(.2,0,.3,1)}
+  74%{transform:translate(-13px,6px);animation-timing-function:cubic-bezier(.75,0,1,.4)}
+  86%,100%{transform:translate(381px,-177px)}
 }
-@keyframes sg-weave-thread{0%,52%{transform:none}57%{transform:scaleY(.94)}64%,100%{transform:none}}
+@keyframes sg-weave-thread{0%,25%{transform:none}28%{transform:scaleY(.92)}35%,100%{transform:none}}
 html.motion-off .weave *{animation:none}
 /* The run's current call reads in the text colour, the rest stays muted; an opened run lists its calls indented under the line */
 .event .ev-current{color:var(--text)}

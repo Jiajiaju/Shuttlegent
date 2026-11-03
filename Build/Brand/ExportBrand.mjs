@@ -42,9 +42,13 @@ function shuttlePathData(profile) {
   return d + " Z";
 }
 
-function threadRect(geometry, side, extra = "") {
-  const t = geometry.thread;
-  return `<rect x="${side * t.centerX - t.width / 2}" y="${t.top}" width="${t.width}" height="${t.height}" rx="${t.width / 2}"${extra}/>`;
+function threadRect(t, extra = "") {
+  return `<rect x="${t.x - t.width / 2}" y="${t.top}" width="${t.width}" height="${t.height}" rx="${t.width / 2}"${extra}/>`;
+}
+
+// Threads behind the shuttle (front false) or in front of it (front true)
+function threadRects(geometry, front, extra) {
+  return geometry.threads.filter(t => Boolean(t.front) === front).map(t => threadRect(t, extra)).join("");
 }
 
 // Mark shapes in the mark's own view box; idPrefix keeps mask ids unique when several marks share a page
@@ -54,22 +58,22 @@ function markShapes(geometry, shuttleD, paletteName, idPrefix) {
   const shuttleFill = geometry.colors[palette.shuttle];
   const rotate = `rotate(${geometry.shuttle.axisDeg})`;
   if (!palette.knockout) {
-    return threadRect(geometry, -1, ` fill="${thread}"`)
+    return threadRects(geometry, false, ` fill="${thread}"`)
       + `<path d="${shuttleD}" transform="${rotate}" fill="${shuttleFill}"/>`
-      + threadRect(geometry, 1, ` fill="${thread}"`);
+      + threadRects(geometry, true, ` fill="${thread}"`);
   }
-  // One colour: the shuttle cuts a gap into the left thread, the right thread cuts a gap into the shuttle
+  // One colour: the shuttle cuts a gap into the threads behind it, the threads in front cut a gap into the shuttle
   const [x, y, w, h] = geometry.viewBox;
   const gap = geometry.knockoutGap * 2;
   const field = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff"/>`;
   const cut = `fill="#000" stroke="#000" stroke-width="${gap}" stroke-linejoin="round"`;
   return `<defs>`
-    + `<mask id="${idPrefix}-left" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">${field}<path d="${shuttleD}" transform="${rotate}" ${cut}/></mask>`
-    + `<mask id="${idPrefix}-shuttle" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">${field}${threadRect(geometry, 1, ` ${cut}`)}</mask>`
+    + `<mask id="${idPrefix}-back" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">${field}<path d="${shuttleD}" transform="${rotate}" ${cut}/></mask>`
+    + `<mask id="${idPrefix}-shuttle" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${h}">${field}${threadRects(geometry, true, ` ${cut}`)}</mask>`
     + `</defs>`
-    + `<g mask="url(#${idPrefix}-left)">${threadRect(geometry, -1, ` fill="${thread}"`)}</g>`
+    + `<g mask="url(#${idPrefix}-back)">${threadRects(geometry, false, ` fill="${thread}"`)}</g>`
     + `<g mask="url(#${idPrefix}-shuttle)"><path d="${shuttleD}" transform="${rotate}" fill="${shuttleFill}"/></g>`
-    + threadRect(geometry, 1, ` fill="${thread}"`);
+    + threadRects(geometry, true, ` fill="${thread}"`);
 }
 
 function markSvg(geometry, shuttleD, paletteName, size) {
@@ -108,7 +112,7 @@ function readWordPath(svgFile) {
 function webGeometry(geometry, shuttleD) {
   const data = {
     viewBox: geometry.viewBox,
-    thread: geometry.thread,
+    threads: geometry.threads.map(({ x, width, top, height, front }) => ({ x, width, top, height, front: Boolean(front) })),
     shuttle: { axisDeg: geometry.shuttle.axisDeg, halfLength: geometry.shuttle.profile.at(-1)[0], halfThickness: geometry.shuttle.profile[0][1], profile: geometry.shuttle.profile, d: shuttleD },
     colors: geometry.colors,
   };

@@ -11,7 +11,7 @@
 | `Resources/svg/`、`Resources/png/` | 图标与标志；标志、组合标志和插件图标由 `Build/Brand/` 生成，不手改 |
 | `Config/` | 插件默认的项目设置 `DefaultShuttlegent.ini` |
 | `Runtime/` | 运行时的 profile 补丁；构建出的 `shuttlegent-runtime.exe` 也放在这里，不进版本库 |
-| `Build/` | 运行时构建脚本、回归脚本（`Probe/`）、标志生成（`Brand/`：唯一几何源 `brand-geometry.json`，运行 `ExportBrand.ps1` 重新生成全部标志 SVG/PNG 与面板动画用的 `Resources/Web/brand-geometry.js`） |
+| `Build/` | 运行时构建脚本、回归脚本（`Probe/`）、标志生成（`Brand/`：唯一几何源 `brand-geometry.json`，三条经线逐条给出位置、粗细、长短与 `front`（在梭子前或后），运行 `ExportBrand.ps1` 重新生成全部标志 SVG/PNG、插件图标与面板动画用的 `Resources/Web/brand-geometry.js`，需要 Node 22+ 与 Chrome 或 Edge） |
 | `Build/Editor/` | 输入框编辑器 Tiptap 的打包工程：版本固定在 `package.json` 与 `package-lock.json`；升级或增减扩展时在该目录运行 `npm ci`、`npm run build`，提交新的 `Resources/Web/vendor/tiptap.js`；`node_modules/` 不进版本库，插件使用者不需要 Node |
 | `Samples/` | 示例项目接入 |
 | `ThirdParty/deepseek-harness/` | DeepSeek Harness 子模块 |

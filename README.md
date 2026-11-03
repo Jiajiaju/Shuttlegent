@@ -52,14 +52,15 @@
 
 ### 3. 配置密钥
 
-在 **编辑器偏好设置 > Shuttlegent > General > Providers** 中填写 DeepSeek Api Key。其他供应商的配置见 [Docs/Configuration.md](Docs/Configuration.md)。
+在 **编辑器偏好设置 > Shuttlegent > General > Models** 中给默认模型填写 Api Key（内置的两个 DeepSeek 模型共用一个密钥），填好后可点该模型的“检测连接”确认。添加其他模型、选择默认模型与 Agent 见 [Docs/Configuration.md](Docs/Configuration.md)。
 
 ### 4. 开始对话
 
 通过 **窗口 > Shuttlegent** 打开面板，输入任务后按 Enter 发送。
 
-- 输入 `@`、按 Ctrl+Space，或从内容浏览器、大纲视图拖入，可引用 Actor 与资产。
-- 输入 `/` 可选择项目提供的模板。
+- 输入框下方可选择 Agent、模型与推理强度、模式；Agent 在发出第一条消息后锁定。
+- 输入 `@`、按 Ctrl+Space，或从内容浏览器、大纲视图拖入，可引用 Actor 与资产；可粘贴截图或拖入图片。
+- 输入 `/` 可选择模板，或执行 `/compact`（压缩上下文）、`/plan`（计划模式）、`/undo`（回退本轮）、`/clear`（新对话）。
 - 回合进行中发送的消息进入队列；当前回合可随时停止。
 
 ### 5. 启用引擎 Toolset（可选）
@@ -78,22 +79,23 @@
 
 | 类别 | 内容 |
 |---|---|
-| 对话面板 | 多会话并行、会话搜索与归档、消息队列、思考过程折叠、用量显示、模型与思考强度切换；检视窗格分上下文、MCP、工具详情、日志四张卡片 |
-| 内置工具 | 关卡、资产、反射、诊断、交互、编辑、材质、节点图排版、关卡搭建、数据表导出、撤销重做、界面指路，共 26 个，见 [Docs/Tools.md §2](Docs/Tools.md#2-内置工具) |
+| 对话面板 | 多会话并行、会话搜索与归档、消息队列、处理过程收为一行摘要、计划模式与写入模式、回到某条消息之前与分支、选择卡、回答中的对象链接与图片、图片输入、个人记忆；检视窗格分上下文、记忆、MCP、工具详情、日志五张卡片 |
+| 内置工具 | 关卡、资产、反射、诊断、交互、编辑、材质、节点图排版、关卡搭建、数据表导出、撤销重做、界面指路，共 28 个，见 [Docs/Tools.md §2](Docs/Tools.md#2-内置工具) |
 | 引擎 Toolset | 通过 `list_toolsets`、`describe_toolset`、`call_toolset_tool` 使用已启用的 Toolset，见 [Docs/Tools.md §3](Docs/Tools.md#3-引擎-toolset) |
-| 模型 | DeepSeek（默认）、OpenAI 协议、Anthropic 协议、OpenAI 兼容端点 |
+| 模型与 Agent | 模型与 Agent 分开设置、按会话组合：DeepSeek（默认）、OpenAI 协议、Anthropic 协议、OpenAI 兼容端点；设置页可检测连接，见 [Docs/Configuration.md](Docs/Configuration.md) |
 | 项目扩展 | 项目提示词、技能、斜杠模板、界面指路、外部 MCP 服务、自定义工具，见 [Docs/Extending.md](Docs/Extending.md) |
 
 ## 文档
 
 | 文档 | 内容 |
 |---|---|
-| [Configuration.md](Docs/Configuration.md) | 模型与密钥、权限、工具开关、项目设置 |
+| [Configuration.md](Docs/Configuration.md) | 模型、Agent 与默认值，权限、工具开关、项目设置 |
 | [Tools.md](Docs/Tools.md) | 写操作确认与撤销、内置工具、引擎 Toolset |
 | [Extending.md](Docs/Extending.md) | 项目提示词、技能、模板、界面指路、外部 MCP、自定义工具 |
 | [Architecture.md](Docs/Architecture.md) | 模块组成、运行时与 ACP、MCP 端点、对话面板 |
 | [Development.md](Docs/Development.md) | 仓库结构、构建运行时、编译、回归测试、排查 |
 | [FAQ.md](Docs/FAQ.md) | 常见问题 |
+| [Design.pdf](Docs/Design.pdf) | UI 交互设计指南：品牌、视觉基础、组件、交互模式与新界面检查清单 |
 
 ## 架构概览
 

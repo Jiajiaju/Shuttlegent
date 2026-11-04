@@ -1,10 +1,13 @@
 # 项目扩展
 
+本文讲项目怎么接入自己的规则、流程、知识与工具，给项目负责人和技术美术看。
+
 Shuttlegent 本身不绑定任何项目。项目可以把自己的规则、做事步骤、知识与工具接进来，让 Agent 更懂这个项目：
 
 | 想做什么 | 用什么 | 在哪配置 | 要写代码吗 |
 |---|---|---|---|
 | 让 Agent 每次都遵守项目规则 | 项目提示词（§1） | 项目根目录 `SHUTTLEGENT.md` | 否 |
+| 让 Agent 记住个人习惯 | 个人记忆（§1） | 对话里直接说“记住……” | 否 |
 | 让 Agent 按固定步骤做某类事 | 技能（§2） | 项目设置 Integration > Skill Dirs | 否 |
 | 把常用提问存起来，一键填入 | 斜杠模板（§3） | 项目设置 Integration > Template Dirs | 否 |
 | 用户问“在哪里改”时直接打开对应位置 | 界面指路（§4） | 项目设置 Integration > Ui Guides | 否 |
@@ -13,7 +16,7 @@ Shuttlegent 本身不绑定任何项目。项目可以把自己的规则、做�
 
 项目设置都保存在项目的 `Config/DefaultShuttlegent.ini`，随项目进版本库，全团队生效。`Samples/ShuttlegentSample` 是覆盖上面全部扩展点的示例，启用方法见 [Samples/ShuttlegentSample/README.md](../Samples/ShuttlegentSample/README.md)。
 
-## 1. 项目提示词
+## 1. 提示词与记忆
 
 - `SHUTTLEGENT.md`：团队共享的项目规则，放在项目根目录，提交到版本库。
 - `SHUTTLEGENT.local.md`：个人补充，放在 `Saved/Shuttlegent/`，不进版本库。
@@ -112,7 +115,7 @@ Template Dirs 里的所有 `.md` 文件（包括子目录）都会读取；同�
 | Name | 服务名；不能用 `ue`，那是编辑器自己的名字 |
 | Type | `Http` 或 `Stdio` |
 | Url | Http：完整地址 |
-| Headers | Http：请求头。密钥不写在项目配置里，只写变量名，由每个人在 **编辑器偏好设置 > Shuttlegent > Credentials > Mcp Header Values** 里填写 |
+| Headers | Http：请求头。密钥不写在项目配置里，只写变量名，由每个人在 **编辑器偏好设置 > Shuttlegent > General > Credentials > Mcp Header Values** 里填写 |
 | Command / Arguments | Stdio：可执行文件的绝对路径与参数 |
 
 配置不完整的条目会被跳过（缺名称、Http 缺地址、Stdio 命令不是绝对路径、请求头变量没有值），因为任何一个服务启动失败，整个会话都会开不起来。被跳过的条目和原因可以在面板检视窗格的 MCP 卡片里查看。
@@ -124,7 +127,7 @@ Template Dirs 里的所有 `.md` 文件（包括子目录）都会读取；同�
 
 ## 6. 自定义工具
 
-需要 C++。项目或插件可以提供自己的编辑器工具，和内置工具走同一套确认与撤销，见 [Tools.md §1](Tools.md#1-写操作确认与撤销)。
+需要 C++。项目或插件可以提供自己的编辑器工具，和内置工具走同一套确认与撤销，见 [Tools.md §1](Tools.md#1-改动的确认与撤销)。
 
 1. 模块依赖 `ShuttlegentMcpServer`。
 2. 实现 `IShuttlegentTool`：

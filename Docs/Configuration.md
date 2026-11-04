@@ -1,6 +1,8 @@
 # 配置
 
-Shuttlegent 的设置分两处：
+本文讲 Shuttlegent 的各项设置，给使用者和项目负责人看。项目规则、技能等扩展的写法见 [Extending.md](Extending.md)。
+
+设置分两处：
 
 | 位置 | 谁来改 | 存在哪 |
 |---|---|---|
@@ -13,8 +15,8 @@ Shuttlegent 的设置分两处：
 
 | 文件或目录 | 内容 |
 |---|---|
-| `SHUTTLEGENT.local.md` | 个人提示词，见 [Extending.md §1](Extending.md#1-项目提示词) |
-| `MEMORY.md` | 个人记忆，见 [Extending.md §1](Extending.md#1-项目提示词) |
+| `SHUTTLEGENT.local.md` | 个人提示词，见 [Extending.md §1](Extending.md#1-提示词与记忆) |
+| `MEMORY.md` | 个人记忆，见 [Extending.md §1](Extending.md#1-提示词与记忆) |
 | `Sessions/` | 会话记录、会话列表、草稿与排队消息、发过的图片 |
 | `Captures/`、`Exports/` | Agent 的截图、数据表导出 |
 
@@ -55,7 +57,7 @@ Shuttlegent 的设置分两处：
 
 ## 2. 权限（个人）
 
-这些开关管的是**运行时自己的能力**（读写文件、执行命令行）。编辑器里的改动（改属性、生成 Actor 等）不受它们影响，始终按会话的模式确认，见 [Tools.md §1](Tools.md#1-写操作确认与撤销)。
+这些开关管的是**运行时自己的能力**（读写文件、执行命令行）。编辑器里的改动（改属性、生成 Actor 等）不受它们影响，始终按会话的模式确认，见 [Tools.md §1](Tools.md#1-改动的确认与撤销)。
 
 | 字段 | 默认值 | 说明 |
 |---|---|---|

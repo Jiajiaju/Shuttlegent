@@ -1,12 +1,14 @@
 # 工具
 
+本文讲 Agent 能用哪些工具、改动怎么确认和撤销，给使用者看。各项开关的位置见 [Configuration.md](Configuration.md)。
+
 Agent 通过工具查看和改动编辑器。工具有三类：
 
 - **内置工具**：Shuttlegent 自带，覆盖关卡、资产、属性、材质、摆放等常用操作（§2）。
 - **引擎 Toolset**：UE 5.8 各系统自带的 AI 工具，如 UMG、Niagara、PCG（§3）。
 - **自定义工具**：项目自己写的工具，见 [Extending.md §6](Extending.md#6-自定义工具)。
 
-## 1. 写操作确认与撤销
+## 1. 改动的确认与撤销
 
 所有会改动编辑器的工具，都按同一套流程执行：
 
@@ -57,7 +59,7 @@ Agent 通过工具查看和改动编辑器。工具有三类：
 |---|---|
 | `ask_user` | 请求有歧义时弹出选项让你选（2～6 项，可另填或跳过）；55 秒内没回答，Agent 改用文字提问 |
 | `ask_choices` | 在对话里放一张选择卡（2～24 项，可带图、多选、写评语），适合挑图、配色、选材质、对比方案；提交后作为下一条消息发出 |
-| `remember` / `forget` | 记下或删除一条个人记忆，见 [Extending.md §1](Extending.md#1-项目提示词)；不弹确认卡，对话里可撤销 |
+| `remember` / `forget` | 记下或删除一条个人记忆，见 [Extending.md §1](Extending.md#1-提示词与记忆)；不弹确认卡，对话里可撤销 |
 | `show_editor_ui` | 帮你打开项目配置的编辑器位置，见 [Extending.md §4](Extending.md#4-界面指路) |
 
 **改动（先确认）**
@@ -116,13 +118,13 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 - 引擎记录了改动的，可以撤销；
 - 没有记录的（如新建资产、保存文件），标为不可撤销；
 - 结果异步返回的，标为“仍在后台执行”；
-- 列在 **项目设置 > Engine Toolsets > Non Undoable Tools** 里的，不记入事务，标为不可撤销。默认包括 DataTableTools 的 `add_rows`、`set_rows`、`rename_rows`：它们会重建整张表，撤销重建会销毁表对象。
+- 列在 **项目设置 > Shuttlegent > General > Engine Toolsets > Non Undoable Tools** 里的，不记入事务，标为不可撤销。默认包括 DataTableTools 的 `add_rows`、`set_rows`、`rename_rows`：它们会重建整张表，撤销重建会销毁表对象。
 
 工具返回 `{"returnValue": false}` 时按失败处理。
 
 ### 3.4 屏蔽
 
-**项目设置 > Blocked Toolset Names** 对全团队屏蔽 Toolset 或单个工具：按名称包含匹配（不分大小写），用 `/.../` 包起来时按正则匹配；匹配对象是 Toolset 名或 `Toolset.工具` 全名。个人也可以在 **编辑器偏好设置 > Shuttlegent > General > Engine Toolsets** 里关掉单个 Toolset。
+**项目设置 > Shuttlegent > General > Engine Toolsets > Blocked Toolset Names** 对全团队屏蔽 Toolset 或单个工具：按名称包含匹配（不分大小写），用 `/.../` 包起来时按正则匹配；匹配对象是 Toolset 名或 `Toolset.工具` 全名。个人也可以在 **编辑器偏好设置 > Shuttlegent > General > Engine Toolsets** 里关掉单个 Toolset。
 
 插件默认屏蔽：
 
@@ -146,4 +148,4 @@ EditorToolset、UMGToolSet、MVVMToolset、NiagaraToolsets、PCGToolset、Gamepl
 
 ### 3.6 破坏性操作
 
-名字以 **项目设置 > Engine Toolsets > Destructive Tool Prefixes** 里某个词开头的引擎工具（默认 `Delete`、`Remove`、`Destroy`、`Move`、`Rename`），以及内置的 `delete_actors`，确认卡顶部会显示醒目提示，提醒你逐个核对对象。
+名字以 **项目设置 > Shuttlegent > General > Engine Toolsets > Destructive Tool Prefixes** 里某个词开头的引擎工具（默认 `Delete`、`Remove`、`Destroy`、`Move`、`Rename`），以及内置的 `delete_actors`，确认卡顶部会显示醒目提示，提醒你逐个核对对象。

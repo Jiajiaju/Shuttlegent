@@ -1,6 +1,6 @@
 # 开发
 
-本文面向修改 Shuttlegent 本身的开发者。架构见 [Architecture.md](Architecture.md)。
+本文讲怎么构建、编译、测试和排查 Shuttlegent，给修改插件的开发者看。架构见 [Architecture.md](Architecture.md)。
 
 ## 1. 仓库结构
 

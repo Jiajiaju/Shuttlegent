@@ -1,6 +1,6 @@
 # 架构
 
-本文说明 Shuttlegent 的组成、各部分的职责与主要流程。文中路径相对插件根目录。
+本文讲 Shuttlegent 的组成、各部分的职责与主要流程，给修改插件的开发者看。构建与调试见 [Development.md](Development.md)。文中路径相对插件根目录。
 
 ## 1. 总览
 
@@ -216,8 +216,15 @@ flowchart TB
 
 本节只记实现。界面规范（令牌、组件、文案、新界面检查清单）见 [Design.pdf](Design.pdf)。
 
+### 4.1 面板与协议
+
 - 面板是一个 Dock 页签（`ShuttlegentChat`），页面在 CEF 中加载。模块生命周期内只有一个面板，页签关闭后再打开显示同一页面、状态保留。面板底层垫页面底色、浏览器开透明，拖动改变窗口大小时 CEF 晚几帧重画的区域不显示黑色。
 - `FShuttlegentWebProtocol`：页面就绪时推送完整快照，此后只推增量；同一帧内的变化合并成一条消息，条目按指纹只在变化时重发。
+- `SShuttlegentWebPanel` 负责 CEF 管不了的部分：编辑器拖放、面板快捷键、面板自带的内容浏览器抽屉，以及用系统浏览器打开外部链接（只有 `http(s)` 链接交给系统浏览器，对象链接由页面拦截后经桥接处理）。
+- 标志与动效：`mark.js` 按 `brand-geometry.js`（`Build/Brand/` 导出）以内联 SVG 绘制标志，背景经线为 `warp.js`；运行行的织动动画为 `app.css` 的 `sg-weave-*`，全部共用一个相位。Animate Mark 关闭、系统要求减少动态效果或页签不可见时全部静止。
+
+### 4.2 消息与回合
+
 - 用户消息的操作行：复制、回到这里、分支。
   - **分支**（`FShuttlegentChatModel::BranchFrom`）：运行时把会话截在该消息这一轮结束之后另存为新会话；面板会话记录复制到同一处，标题加“（分支）”并打开新会话。原会话与编辑器状态不变。
   - **回到这里**（`FShuttlegentChatModel::RewindTo`，页面先弹确认框，列出将撤销与不可撤销的修改数、将移除的消息数）：先确认这条消息之后可撤销写入的事务恰好依次占据撤销栈顶（`FShuttlegentWriteGate::AreOnUndoTop`），中间夹着用户自己的编辑时整体拒绝；再由运行时把会话截在该消息之前另存为新会话，成功后按倒序撤销这些写入，原会话归档，打开新会话并把消息原文放回输入框。不可撤销的写入（数据表加行、存盘等）保留在编辑器中。截断第一条消息时不需要运行时，撤销写入后开始新对话。
@@ -226,7 +233,11 @@ flowchart TB
 - 排队：`FShuttlegentPromptQueue`，入队时固定文字、引用、模型与推理强度（`FShuttlegentQueuedPrompt`），发出前若引用的对象已失效则暂停；停止、被拒绝的权限、失败的回合或运行时丢失都会暂停队列，只能由用户继续。
 - 任务清单：session tap 插件转来的 `todo/write`，每次替换整份列表；用户发出新提示时清空。只在内存中，不写入会话记录。
 - 输入框：`Resources/Web/composer-editor.js`，基于打包进插件的 Tiptap（`Build/Editor/` 打包为 `Resources/Web/vendor/tiptap.js`）。草稿、发送内容与历史记录都是 Markdown，由它自行导出，文字原样输出、不加转义（如 `BP_Door_01`）。Ctrl+B、Ctrl+I 等面板快捷键由 `SShuttlegentWebPanel::OnPreviewKeyDown` 先截获，转成页面命令。
-- 模式：手动、自动接受编辑、自动三项是 `EShuttlegentWriteMode`，按对话记在 `FShuttlegentConversation::WriteMode`，并写入会话索引（`writeMode`），重新打开、分支都沿用；只决定编辑器写入是否弹确认卡，从下一次写入起算，规则见 [Tools.md §1](Tools.md#1-写操作确认与撤销)。
+- 图片输入：粘贴由页面处理剪贴板，选图走编辑器原生文件对话框（`SShuttlegentWebPanel::HandlePickImages`），拖入文件走 Slate 的 `FExternalDragOperation`；页面把最长边缩到 2,048 像素、PNG 超过 4 MB 时转 JPEG，一条消息最多 6 张。运行时只在 `initialize` 中按默认模型声明一次图片能力（`promptCapabilities.image`），会话换过模型时编辑器经 session control 的 `imageInput` 逐个确认（按模型路由缓存，运行时重启后清空）。带图片的消息只在空闲时发送，不进队列，也不进挂起提示。图片以 ACP `image` 块发出，并按内容哈希保存到 `Saved/Shuttlegent/Sessions/Images/`，会话记录只记路径；中断后“重试”时从这里读回。
+
+### 4.3 模式、计划与命令
+
+- 模式：手动、自动接受编辑、自动三项是 `EShuttlegentWriteMode`，按对话记在 `FShuttlegentConversation::WriteMode`，并写入会话索引（`writeMode`），重新打开、分支都沿用；只决定编辑器写入是否弹确认卡，从下一次写入起算，规则见 [Tools.md §1](Tools.md#1-改动的确认与撤销)。
 - 计划模式：经 session control 插件的 `planMode` 进入或退出，会话创建前打开时先记下、会话就绪后先应用再发送第一条提示；恢复会话时查询运行时记录的状态。Harness 的计划模式只改提示词、不限制工具，只读由写入门保证：发起写入的对话处于计划模式时一律拒绝。`exit_plan_mode` 交出的计划经 `shuttlegent/planReview` 到达，审批结果经 `answerPlanReview` 答复；“批准并执行”把对话的写入方式改为自动接受编辑，“批准，逐项确认”改为手动，在 Agent 开始写入之前生效。计划与审批结果（`EShuttlegentChatEntryKind::Plan`）在审批结束时写入会话记录（`plan`）；回合取消或运行时退出时，等待中的审批标为已取消。计划模式提示词由插件补丁改成编辑器场景的说法，提问改用 `ask_user`。
 - 上下文压缩：`compaction/*` 事件在对话中显示为一条分隔行（`EShuttlegentChatEntryKind::Compaction`），结束时用插件报来的压缩后用量更新上下文卡片，并把结果写入会话记录（`compaction`）。手动压缩为 `FShuttlegentChatModel::CompactContext`，经 `RunCommand` 执行 `/compact`，条件与“回到这里”相同。
 - 内置斜杠命令：整段输入以下列命令开头时，由页面在编辑器侧执行，不发给模型（`Resources/Web/app.js` 的 `runSlashCommand`）；ACP 的 `session/prompt` 不解析斜杠命令，需要运行时执行的经 session control 的 `command`。其他以 `/` 开头的文字照常作为消息发送：
@@ -239,8 +250,13 @@ flowchart TB
   | `/clear` | 开始新对话，当前对话留在侧栏 | 新对话 | 始终可用 |
 
   命令不可用或参数不对时不执行，输入保留并显示原因。`/plan <消息>`：计划模式走控制端口、提示走 ACP，两者没有先后保证，会话已打开时提示先挂起（对话随之忙碌，新草稿排队），运行时确认计划模式已开后再发出，切换失败则放回队列首位并暂停；会话未创建时沿用“就绪后先应用计划模式再发送”；回合进行中时计划模式在下一步生效，消息照常排队。
-- 图片输入：粘贴由页面处理剪贴板，选图走编辑器原生文件对话框（`SShuttlegentWebPanel::HandlePickImages`），拖入文件走 Slate 的 `FExternalDragOperation`；页面把最长边缩到 2,048 像素、PNG 超过 4 MB 时转 JPEG，一条消息最多 6 张。运行时只在 `initialize` 中按默认模型声明一次图片能力（`promptCapabilities.image`），会话换过模型时编辑器经 session control 的 `imageInput` 逐个确认（按模型路由缓存，运行时重启后清空）。带图片的消息只在空闲时发送，不进队列，也不进挂起提示。图片以 ACP `image` 块发出，并按内容哈希保存到 `Saved/Shuttlegent/Sessions/Images/`，会话记录只记路径；中断后“重试”时从这里读回。
-- 提醒：等待输入（写入确认、提问、计划审批、选择卡、运行时权限请求）为黄，一轮结束而用户没在看（`FShuttlegentConversation::bUnseenFinish`，用户自己停止的除外）为蓝，黄优先。页签用引擎原生色条（`SDockTab` 的 `TabColorScale`）表示：引擎没有给单个页签叠加角标的接口（图标是 `SDockTab` 内部私有的 `SImage`）。主页签取 `FShuttlegentChatModel::GetAttentionOutside`（当前对话与没有页签显示的对话），会话页签取 `FShuttlegentChatView::GetTabAttention`（只看自己的对话）；会话列表行的圆点为会话字段 `attention`。编辑器模块每 0.25 秒把各页签是否在前台告诉各自的视图（`FShuttlegentChatView::SetVisible`），对话在前台视图中即清除蓝色提醒。
+
+### 4.4 提醒
+
+等待输入（写入确认、提问、计划审批、选择卡、运行时权限请求）为黄，一轮结束而用户没在看（`FShuttlegentConversation::bUnseenFinish`，用户自己停止的除外）为蓝，黄优先。页签用引擎原生色条（`SDockTab` 的 `TabColorScale`）表示：引擎没有给单个页签叠加角标的接口（图标是 `SDockTab` 内部私有的 `SImage`）。主页签取 `FShuttlegentChatModel::GetAttentionOutside`（当前对话与没有页签显示的对话），会话页签取 `FShuttlegentChatView::GetTabAttention`（只看自己的对话）；会话列表行的圆点为会话字段 `attention`。编辑器模块每 0.25 秒把各页签是否在前台告诉各自的视图（`FShuttlegentChatView::SetVisible`），对话在前台视图中即清除蓝色提醒。
+
+### 4.5 回答中的链接与图片
+
 - 回答中的对象链接：运行时提示词（`Runtime/profile/shuttlegent.patch.yml`）要求 Agent 把已知路径的资产写成 `[名称](ue-asset:<对象路径>)`、Actor 写成 `[Actor 标签](ue-actor:<对象路径>)`；行内代码若是完整的 `/Game/...` 路径，也渲染成资产链接。包路径（无 `.`）补上对象名，同一资产的链接路径一致。
   - 单击：资产在内容浏览器中定位，Actor 在关卡中单独选中并把关卡编辑器页签切到前台、视口获得键盘焦点；双击：打开资产编辑器，或让视口镜头移到 Actor（`FShuttlegentReferenceNavigator`，经 `UShuttlegentWebBridge::RevealObject`）。只改选中与焦点，不产生事务，不影响“回到这里”。
   - 拖入输入框：按住链接移动超过 5 像素即开始拖动，松开在输入框上时成为草稿引用标签，与 `@` 或从内容浏览器拖入的引用相同。CEF 不运行 HTML 原生拖放，页面用鼠标事件实现；松开后经 `UShuttlegentWebBridge::AddObjectReference` 交编辑器按路径补全类与名称（`FShuttlegentReferenceFinder::TryResolve`），再经 `onDrop` 加入草稿，对象已不存在时不加。拖动不触发单击定位。
@@ -253,13 +269,19 @@ flowchart TB
   - 网络图片：`http(s)://`，带 `referrerpolicy="no-referrer"` 与 `loading="lazy"` 直接加载（面板没有 CSP，`SShuttlegentWebPanel` 只拦截整页跳转）。加载失败显示“图片加载失败”与原链接，点击链接用系统浏览器打开。
   - 缩略图按需抓取：页面渲染后把还没有取过的资产路径经 `UShuttlegentWebBridge::RequestThumbnails`（JSON 数组，每次最多 24 个）交给编辑器。`FShuttlegentAssetThumbnails` 排队，每个 Core Ticker tick 取一张，按顺序尝试 `ThumbnailTools::FindCachedThumbnail`（内存）→ `LoadThumbnailFromPackage`（读 .uasset，不加载资产）→ `RenderThumbnail`（同步加载后以 256 像素现渲染，`NeverFlush`，不等待流送与着色器编译）。现渲染前先经 `UThumbnailManager::GetRenderingInfo` 问渲染器 `CanVisualizeAsset`，画不出的资产（没有可见组件的蓝图、没捕获缩略图的 Niagara 系统）按取不到处理，否则只会得到清屏的纯黑图。取到的图补成不透明，编成 PNG data URL，经 `onThumbnails({ 路径: dataUrl | null })` 逐张回传。Output Log 的 `Shuttlegent thumbnail:` 行写明每张的来源。
   - 页面按路径缓存缩略图，回答流式重绘时直接用缓存，不会闪烁；打开会话（完整快照）时清空，重新抓取。取不到时显示“无缩略图”。
+
+### 4.6 选择卡与记忆
+
 - 选择卡（`ask_choices`）：Agent 需要用户挑图、配色、选材质、对比方案或逐条批注时调用。
   - 运行时对编辑器工具调用固定 60 秒超时（Harness `mcp-client` 的 `DEFAULT_TOOL_CALL_TIMEOUT_MS`，ACP 声明服务器时不能改），写评语不够用，所以选择卡不等待作答：工具把卡片交给 `FShuttlegentQuestionGate::PresentChoice` 后立即返回，提示 Agent 结束本轮；没有面板时返回失败说明，Agent 改在回复里列出选项。
   - 对话模型把卡片放进正在运行回合的对话（当前对话优先），条目类型 `EShuttlegentChatEntryKind::Choice`，同一对话只保留一张等待中的卡片。卡片内容与提交结果按 `FShuttlegentChoiceJson` 的形状写进会话记录（`choice`，出现与结束各记一条，回放以最后一条为准），重开会话后照样显示；重开时仍在等待的卡片已没有回合在等它，标为“未作答”。
   - 提交经 `UShuttlegentWebBridge::SubmitChoice` 交给 `FShuttlegentChatModel::SubmitChoice`：卡片标为已提交，选择整理成一条用户消息走 `SubmitDraft` 发出，本轮仍在运行时进入队列；被拒绝时经 `onChoiceRejected` 把原因显示在卡片上。卡片上的草稿按条目保存在页面，重绘不丢。
   - 用户直接发了别的消息，卡片标为“未作答”；交出卡片的回合被停止，卡片标为“已取消”。页面把选择卡挪到所在一轮的末尾，这一轮的处理过程不被卡片切开。
-- 标志与动效：`mark.js` 按 `brand-geometry.js`（`Build/Brand/` 导出）以内联 SVG 绘制标志，背景经线为 `warp.js`；运行行的织动动画为 `app.css` 的 `sg-weave-*`，全部共用一个相位。Animate Mark 关闭、系统要求减少动态效果或页签不可见时全部静止。
-- 检视窗格的数据来源：
+- 记忆：`remember`、`forget` 的调用不显示为工具行，改为一行可撤销的提示（`FShuttlegentMemoryStore::Revert`，记忆已被别处改动时说明原因）；这些提示不写入会话记录。
+
+### 4.7 检视窗格
+
+数据来源：
 
   | 卡片 | 数据 |
   |---|---|
@@ -269,14 +291,13 @@ flowchart TB
   | 工具详情 | 对话条目 |
   | 日志 | `runLog` |
 
-- 记忆：`remember`、`forget` 的调用不显示为工具行，改为一行可撤销的提示（`FShuttlegentMemoryStore::Revert`，记忆已被别处改动时说明原因）；这些提示不写入会话记录。
-- 会话页签：
-  - 视图与对话：每个页签（主页签与各会话页签）一个 `FShuttlegentChatView`，持有它显示的对话，把面板的读取与操作转给 `FShuttlegentChatModel`；模型同时持有多个对话，没有视图显示且空闲的对话被释放。写入确认、提问与选择卡按会话声明的 `X-Shuttlegent-Conversation` 请求头归属发起它的对话。
-  - 拖出：只能从主页签会话列表按住一行拖出（`UShuttlegentWebBridge::BeginSessionDrag`）。`FShuttlegentSessionTabRegistry` 在关卡编辑器的页签管理器中注册类型名为 `ShuttlegentSession.<ViewId>` 的 `PanelTab`，开一个藏在光标外的浮动窗口，等页签排版完成后交给引擎原生的页签拖拽，因此能与 Details、Outliner、视口互相停靠与叠放，进不了顶部大页签栏。一个会话只在一处显示，列表点击已在页签中的会话即跳到该页签。前台是会话页签的浮动窗口以会话标题为窗口标题。
-  - 重启恢复：页签位置随关卡编辑器布局保存；`ViewId` 与会话的绑定、主页签当前会话存在个人配置（节 `ShuttlegentPanel`，键 `SessionTabs`、`HubSessionId`），关卡编辑器恢复布局前（`OnRegisterTabs`）按绑定注册 Spawner 接回。恢复出的会话只回放记录，第一次到前台或发送时才 `session/resume`。
-  - 草稿与队列：`FShuttlegentDraftStore` 把每个会话的草稿（页面经 `SaveDraft` 交来的文字、引用、图片）与排队消息存到 `Saved/Shuttlegent/Sessions/Drafts/<SessionId>.json`，新对话的草稿按视图存在 `Drafts/Views/`。切换会话、会话移进页签、页面重新载入时由协议的 `draft` 字段放回；排队消息在打开会话时放回并暂停，不自动发送。删除会话时一并删除。
-  - 中断：关闭编辑器时有回合在进行，先弹确认并列出会话（`IMainFrameModule::RegisterCanCloseEditor`），确认后等待中的计划记为已取消、选择卡记为未作答、权限请求记为拒绝。回放会话记录时，只有 `prompt` 而没有 `turn_end` 的一轮显示“这一轮没有正常结束”；是最后一轮时提供“重试”，原消息的图片从会话图片目录读回。
-- `SShuttlegentWebPanel` 负责 CEF 管不了的部分：编辑器拖放、面板快捷键、面板自带的内容浏览器抽屉，以及用系统浏览器打开外部链接（只有 `http(s)` 链接交给系统浏览器，对象链接由页面拦截后经桥接处理）。
+### 4.8 会话页签、草稿与中断
+
+- 视图与对话：每个页签（主页签与各会话页签）一个 `FShuttlegentChatView`，持有它显示的对话，把面板的读取与操作转给 `FShuttlegentChatModel`；模型同时持有多个对话，没有视图显示且空闲的对话被释放。写入确认、提问与选择卡按会话声明的 `X-Shuttlegent-Conversation` 请求头归属发起它的对话。
+- 拖出：只能从主页签会话列表按住一行拖出（`UShuttlegentWebBridge::BeginSessionDrag`）。`FShuttlegentSessionTabRegistry` 在关卡编辑器的页签管理器中注册类型名为 `ShuttlegentSession.<ViewId>` 的 `PanelTab`，开一个藏在光标外的浮动窗口，等页签排版完成后交给引擎原生的页签拖拽，因此能与 Details、Outliner、视口互相停靠与叠放，进不了顶部大页签栏。一个会话只在一处显示，列表点击已在页签中的会话即跳到该页签。前台是会话页签的浮动窗口以会话标题为窗口标题。
+- 重启恢复：页签位置随关卡编辑器布局保存；`ViewId` 与会话的绑定、主页签当前会话存在个人配置（节 `ShuttlegentPanel`，键 `SessionTabs`、`HubSessionId`），关卡编辑器恢复布局前（`OnRegisterTabs`）按绑定注册 Spawner 接回。恢复出的会话只回放记录，第一次到前台或发送时才 `session/resume`。
+- 草稿与队列：`FShuttlegentDraftStore` 把每个会话的草稿（页面经 `SaveDraft` 交来的文字、引用、图片）与排队消息存到 `Saved/Shuttlegent/Sessions/Drafts/<SessionId>.json`，新对话的草稿按视图存在 `Drafts/Views/`。切换会话、会话移进页签、页面重新载入时由协议的 `draft` 字段放回；排队消息在打开会话时放回并暂停，不自动发送。删除会话时一并删除。
+- 中断：关闭编辑器时有回合在进行，先弹确认并列出会话（`IMainFrameModule::RegisterCanCloseEditor`），确认后等待中的计划记为已取消、选择卡记为未作答、权限请求记为拒绝。回放会话记录时，只有 `prompt` 而没有 `turn_end` 的一轮显示“这一轮没有正常结束”；是最后一轮时提供“重试”，原消息的图片从会话图片目录读回。
 
 ## 5. 类清单
 

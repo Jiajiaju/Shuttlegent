@@ -11,7 +11,7 @@ struct SHUTTLEGENTCORE_API FShuttlegentProjectConfig
 	/** 新会话默认模型所在的路由；没有可用的模型时为内置 DeepSeek 路由。 */
 	static FString GetDefaultRoute();
 
-	/** 默认模型所在路由的密钥变量，与默认模型的名称；用于启动检查与缺少密钥的引导卡。 */
+	/** 默认模型所在路由的密钥变量与默认模型 ID；没有已连通的连接时模型为空。用于启动检查与缺少连接的引导卡。 */
 	static void GetDefaultProviderKey(FString& OutKeyVariable, FString& OutProviderName);
 
 	/** 运行时可能需要的所有变量：内置 DeepSeek 密钥（网页搜索也会用到）与各路由的密钥。 */

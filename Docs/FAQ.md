@@ -4,9 +4,10 @@
 
 ## 1. 安装与连接
 
-### 1.1 面板提示“缺少密钥”或“鉴权失败”
+### 1.1 面板提示“还没有可用的模型连接”或“鉴权失败”
 
-- **缺少密钥**：在 **编辑器偏好设置 > Shuttlegent > General > Models** 给默认模型填写 Api Key（内置的两个 DeepSeek 模型共用一个密钥），再点该模型的“检测连接”确认。
+- **还没有可用的模型连接**：在 **编辑器偏好设置 > Shuttlegent > General > Models** 至少让一条连接显示 Connected：给内置 DeepSeek 连接填密钥，或添加一条连接填 Base Url 和 Api Key。
+- **显示 Failed**：在 Output Log 里搜 `Connection test`，看是哪一步失败（地址不通、密钥被拒、没有模型列表）。
 - **鉴权失败**：检查密钥是否填错、是否过期，以及 Base Url 和密钥是否属于同一个服务。
 
 改完后在面板点“重试”。
@@ -17,17 +18,13 @@
 
 ### 1.3 改了模型设置没生效
 
-模型、默认值和权限开关在运行时重启后才生效：在面板点“重试”，或重启编辑器。工具开关和 Toolset 开关立即生效。
+模型连接和权限开关在运行时重启后才生效：在面板点“重试”，或重启编辑器。工具开关和 Toolset 开关立即生效。
 
 ### 1.4 能不能用其他模型
 
-可以。在 **编辑器偏好设置 > Shuttlegent > General > Models** 添加一条，填名称、模型 ID、地址、协议和密钥。协议支持：
+可以。在 **编辑器偏好设置 > Shuttlegent > General > Models** 添加一条连接，只填 Base Url（如 `https://api.openai.com/v1`）和 Api Key。插件自动识别协议（OpenAI Responses、OpenAI Chat Completions、Anthropic Messages，含兼容这些协议的团队网关、本地模型服务），并列出这个密钥能用的全部模型，都会出现在面板的模型菜单里。
 
-- OpenAI Chat Completions（含兼容它的服务，如团队网关、本地模型服务）；
-- OpenAI Responses；
-- Anthropic Messages。
-
-协议必须和地址实际提供的接口一致，填好后点条目末尾的“检测连接”确认。然后在 **编辑器偏好设置 > Shuttlegent > General > Defaults > Default Model Name** 把它设为新会话的默认模型，或在面板的模型菜单里切换。详见 [Configuration.md §1](Configuration.md#1-模型agent-与默认值个人)。
+新会话默认用第一条已连通的连接中的第一个模型；内置 DeepSeek 连接没填密钥时会被跳过。详见 [Configuration.md §1](Configuration.md#1-模型agent-与默认值个人)。
 
 ### 1.5 密钥存在哪里，会不会进版本库
 

@@ -223,11 +223,31 @@ namespace ShuttlegentProbeConstant
 	inline const TCHAR* HtmlContentType = TEXT("text/html");
 	inline const TCHAR* HtmlLeadingChar = TEXT("<");
 
-	// 400 的错误内容含此词（不区分大小写）时判为模型 ID 不对；DeepSeek 原文为 The supported API model names are ...
-	inline const TCHAR* ModelKeyword = TEXT("model");
+	// 列出模型的接口：OpenAI 及兼容服务为 {地址}/models（Bearer），Anthropic 为 {地址}/v1/models（x-api-key）
+	inline const TCHAR* OpenAiModelsPath = TEXT("/models");
+	inline const TCHAR* AnthropicModelsPath = TEXT("/v1/models");
+	inline const TCHAR* VerbGet = TEXT("GET");
 
-	// 保留的响应正文长度，单位字符
-	inline constexpr int32 DetailMaxChars = 200;
+	// 模型列表响应字段：data[] 中每项的 id，OpenAI 的 created（Unix 秒），Anthropic 的 created_at（ISO 8601）
+	inline const TCHAR* FieldData = TEXT("data");
+	inline const TCHAR* FieldId = TEXT("id");
+	inline const TCHAR* FieldCreated = TEXT("created");
+	inline const TCHAR* FieldCreatedAt = TEXT("created_at");
+
+	// 新的 OpenAI 模型不接受 max_tokens；报错正文含此字段名时改用它重试
+	inline const TCHAR* FieldMaxCompletionTokens = TEXT("max_completion_tokens");
+
+	// 识别协议时试发的输出上限，单位 token
+	inline constexpr int32 DetectOutputTokens = 16;
+
+	// 模型 ID 含这些词（不区分大小写）的不能用于对话，不列入连接的模型
+	inline const TCHAR* NonChatModelKeywords[] = {
+		TEXT("embed"), TEXT("tts"), TEXT("whisper"), TEXT("transcribe"), TEXT("dall-e"), TEXT("image"),
+		TEXT("moderation"), TEXT("audio"), TEXT("realtime"), TEXT("search"), TEXT("sora"), TEXT("davinci"),
+		TEXT("babbage"), TEXT("computer-use"), TEXT("rerank") };
+
+	// 写进日志的响应正文长度，单位字符；正文不含密钥
+	inline constexpr int32 DetailMaxChars = 300;
 
 	// 秒转毫秒
 	inline constexpr double MillisecondsPerSecond = 1000.0;
@@ -365,31 +385,6 @@ namespace ShuttlegentAgentConstant
 	inline const TCHAR* FieldEntry = TEXT("entry");
 }
 
-/** 旧模型设置的一次性迁移。 */
-namespace ShuttlegentMigrationConstant
-{
-	// 旧版个人设置中的键
-	inline const TCHAR* KeyDeepSeekBaseUrl = TEXT("DeepSeekBaseUrl");
-	inline const TCHAR* KeyDeepSeekApiKey = TEXT("DeepSeekApiKey");
-	inline const TCHAR* KeyProviders = TEXT("Providers");
-	inline const TCHAR* KeyDefaultProvider = TEXT("DefaultProvider");
-	inline const TCHAR* KeyDefaultModel = TEXT("DefaultModel");
-
-	// 迁移前的备份：相对项目 Saved 目录的目录，文件名为前缀 + 时间戳 + 扩展名
-	inline const TCHAR* BackupDir = TEXT("Shuttlegent/Backup");
-	inline const TCHAR* BackupPrefix = TEXT("EditorPerProjectUserSettings-");
-	inline const TCHAR* BackupExtension = TEXT(".ini");
-	inline const TCHAR* BackupTimeFormat = TEXT("%Y%m%d-%H%M%S");
-
-	// ini 节标题的括号与键值分隔符
-	inline const TCHAR* SectionOpen = TEXT("[");
-	inline const TCHAR* SectionClose = TEXT("]");
-	inline const TCHAR* KeyValueSeparator = TEXT("=");
-
-	// 迁移来的模型与已有名称重名时，名称后加“ (旧路由名)”
-	inline const TCHAR* DuplicateNameOpen = TEXT(" (");
-	inline const TCHAR* DuplicateNameClose = TEXT(")");
-}
 
 /** 个人记忆与本地目录（<Project>/Saved/Shuttlegent，不进版本库）。 */
 namespace ShuttlegentMemoryConstant

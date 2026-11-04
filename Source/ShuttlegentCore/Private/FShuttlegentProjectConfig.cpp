@@ -41,19 +41,17 @@ namespace FShuttlegentProjectConfigPrivate
 		return Dirs;
 	}
 
-	/** 默认模型所在的路由、其密钥变量与默认模型的名称；找不到可用的默认模型时不改动输出。 */
+	/** 默认模型所在的路由、其密钥变量与默认模型 ID；没有已连通的连接时不改动输出。 */
 	bool FindDefaultRoute(FString& OutRoute, FString& OutKeyVariable, FString& OutModelName)
 	{
 		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
-		if (!IsValid(Settings)) return false;
-
-		const int32 ModelIndex = FShuttlegentModelRoutes::FindDefaultModel(*Settings);
 		FShuttlegentModelRoute Route;
-		if (!FShuttlegentModelRoutes::FindRoute(FShuttlegentModelRoutes::Build(*Settings), ModelIndex, Route)) return false;
+		FString ModelId;
+		if (!IsValid(Settings) || !FShuttlegentModelRoutes::FindDefaultModel(*Settings, Route, ModelId)) return false;
 
 		OutRoute = Route.Route;
 		OutKeyVariable = Route.KeyVariable;
-		OutModelName = Settings->Models[ModelIndex].Name;
+		OutModelName = ModelId;
 		return true;
 	}
 }
@@ -77,7 +75,7 @@ void FShuttlegentProjectConfig::GetDefaultProviderKey(FString& OutKeyVariable, F
 {
 	FString Route;
 	OutKeyVariable = ShuttlegentEnvVar::ProviderKey;
-	OutProviderName = ShuttlegentEnvVar::ProviderName;
+	OutProviderName.Reset();
 	FShuttlegentProjectConfigPrivate::FindDefaultRoute(Route, OutKeyVariable, OutProviderName);
 }
 

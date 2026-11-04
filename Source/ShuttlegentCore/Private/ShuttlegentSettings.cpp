@@ -1,6 +1,8 @@
 #include "ShuttlegentSettings.h"
 
 #include "FShuttlegentAgentCatalog.h"
+#include "FShuttlegentConnectionTester.h"
+#include "FShuttlegentModelRoutes.h"
 
 namespace ShuttlegentSettingsPrivate
 {
@@ -12,31 +14,33 @@ namespace ShuttlegentSettingsPrivate
 
 void UShuttlegentSettings::EnsureBuiltins()
 {
-	// 补回的内置条目沿用现有内置条目的连接；全部被删时用编辑前记下的值
-	const FShuttlegentModelEntry* ExistingBuiltin = Models.FindByPredicate([](const FShuttlegentModelEntry& Entry) { return Entry.bBuiltin; });
-	const FString FallbackBaseUrl = BuiltinBaseUrlBeforeEdit.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : BuiltinBaseUrlBeforeEdit;
-	const FString BaseUrl = ExistingBuiltin != nullptr ? ExistingBuiltin->BaseUrl : FallbackBaseUrl;
-	const FString ApiKey = ExistingBuiltin != nullptr ? ExistingBuiltin->ApiKey : BuiltinApiKeyBeforeEdit;
-
-	for (int32 BuiltinIndex = 0; BuiltinIndex < UE_ARRAY_COUNT(ShuttlegentBuiltinModel::Ids); ++BuiltinIndex)
+	// 只留一条内置连接，放在最前；被删时用编辑前记下的密钥加回
+	int32 BuiltinIndex = Connections.IndexOfByPredicate([](const FShuttlegentConnection& Connection) { return Connection.bBuiltin; });
+	for (int32 Index = Connections.Num() - 1; Index > BuiltinIndex && BuiltinIndex != INDEX_NONE; --Index)
 	{
-		const FString ModelId = ShuttlegentBuiltinModel::Ids[BuiltinIndex];
-		int32 EntryIndex = Models.IndexOfByPredicate([&ModelId](const FShuttlegentModelEntry& Entry) { return Entry.bBuiltin && Entry.ModelId == ModelId; });
-		if (EntryIndex == INDEX_NONE)
-		{
-			FShuttlegentModelEntry Added;
-			Added.bBuiltin = true;
-			Added.BaseUrl = BaseUrl;
-			Added.ApiKey = ApiKey;
-			EntryIndex = FMath::Min(BuiltinIndex, Models.Num());
-			Models.Insert(Added, EntryIndex);
-		}
+		if (Connections[Index].bBuiltin) Connections.RemoveAt(Index);
+	}
+	if (BuiltinIndex == INDEX_NONE)
+	{
+		FShuttlegentConnection Added;
+		Added.bBuiltin = true;
+		Added.ApiKey = BuiltinApiKeyBeforeEdit;
+		Connections.Insert(Added, 0);
+	}
+	else if (BuiltinIndex != 0)
+	{
+		const FShuttlegentConnection Moved = Connections[BuiltinIndex];
+		Connections.RemoveAt(BuiltinIndex);
+		Connections.Insert(Moved, 0);
+	}
 
-		FShuttlegentModelEntry& Entry = Models[EntryIndex];
-		Entry.Name = ShuttlegentBuiltinModel::Names[BuiltinIndex];
-		Entry.ModelId = ModelId;
-		Entry.Api = EShuttlegentProviderApi::AnthropicMessages;
-		Entry.LegacyRoute.Reset();
+	FShuttlegentConnection& Builtin = Connections[0];
+	Builtin.BaseUrl = ShuttlegentProviderConstant::DeepSeekBaseUrl;
+	Builtin.Api = EShuttlegentProviderApi::AnthropicMessages;
+	Builtin.ModelIds.Reset();
+	for (const TCHAR* ModelId : ShuttlegentBuiltinModel::Ids)
+	{
+		Builtin.ModelIds.Add(ModelId);
 	}
 
 	// Agent 列表与目录对齐：按目录顺序，已有的个人设置保留，新出现的以建议模型为默认模型，目录中已没有的移除
@@ -55,40 +59,28 @@ void UShuttlegentSettings::EnsureBuiltins()
 	if (!bDefaultUsable) DefaultAgent = ShuttlegentAgentConstant::DefaultAgentId;
 }
 
-void UShuttlegentSettings::SyncBuiltinConnection(int32 SourceIndex)
-{
-	if (!Models.IsValidIndex(SourceIndex) || !Models[SourceIndex].bBuiltin) return;
-
-	const FString BaseUrl = Models[SourceIndex].BaseUrl;
-	const FString ApiKey = Models[SourceIndex].ApiKey;
-	for (FShuttlegentModelEntry& Entry : Models)
-	{
-		if (!Entry.bBuiltin) continue;
-
-		Entry.BaseUrl = BaseUrl;
-		Entry.ApiKey = ApiKey;
-	}
-}
-
 #if WITH_EDITOR
 void UShuttlegentSettings::PreEditChange(FProperty* PropertyAboutToChange)
 {
 	Super::PreEditChange(PropertyAboutToChange);
 
-	const FShuttlegentModelEntry* Builtin = Models.FindByPredicate([](const FShuttlegentModelEntry& Entry) { return Entry.bBuiltin; });
-	if (Builtin == nullptr) return;
-
-	BuiltinBaseUrlBeforeEdit = Builtin->BaseUrl;
-	BuiltinApiKeyBeforeEdit = Builtin->ApiKey;
+	const FShuttlegentConnection* Builtin = Connections.FindByPredicate([](const FShuttlegentConnection& Connection) { return Connection.bBuiltin; });
+	if (Builtin != nullptr) BuiltinApiKeyBeforeEdit = Builtin->ApiKey;
 }
 
 void UShuttlegentSettings::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent)
 {
-	// 改的是某个内置模型的地址或密钥时同步到另一个；再补回被删除的内置条目与默认 Agent
-	SyncBuiltinConnection(PropertyChangedEvent.GetArrayIndex(GET_MEMBER_NAME_STRING_CHECKED(UShuttlegentSettings, Models)));
 	EnsureBuiltins();
-
 	Super::PostEditChangeChainProperty(PropertyChangedEvent);
+
+	// 地址或密钥改过的连接自动重新检测；检测结果写回本设置并存盘
+	for (int32 Index = 0; Index < Connections.Num(); ++Index)
+	{
+		const FShuttlegentConnection& Connection = Connections[Index];
+		if (Connection.Status == EShuttlegentConnectionStatus::Testing || Connection.TestedFingerprint == FShuttlegentModelRoutes::MakeFingerprint(Connection)) continue;
+
+		FShuttlegentConnectionTester::Test(Index);
+	}
 }
 #endif // WITH_EDITOR
 

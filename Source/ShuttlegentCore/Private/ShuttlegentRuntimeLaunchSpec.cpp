@@ -96,13 +96,14 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 		if (FShuttlegentSecrets::Resolve(Variable, Value)) OutSpec.Environment.Add(Variable, Value);
 	}
 
+	// 没有已连通的模型连接就不启动：新会话没有可用的默认模型
 	FString KeyVariable;
-	FString ProviderName;
-	FShuttlegentProjectConfig::GetDefaultProviderKey(KeyVariable, ProviderName);
-	if (!OutSpec.Environment.Contains(KeyVariable))
+	FString DefaultModel;
+	FShuttlegentProjectConfig::GetDefaultProviderKey(KeyVariable, DefaultModel);
+	if (DefaultModel.IsEmpty() || !OutSpec.Environment.Contains(KeyVariable))
 	{
 		OutIssue = EShuttlegentStartIssue::MissingKey;
-		OutError = FString::Printf(TEXT("%s has no API key in Editor Preferences > Shuttlegent > General > Models."), *ProviderName);
+		OutError = TEXT("No model connection is connected. Add a URL and API key in Editor Preferences > Shuttlegent > General > Models and test it.");
 		return false;
 	}
 

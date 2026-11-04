@@ -514,6 +514,9 @@ private:
 	/** 发送等待会话就绪的提示（如有）。 */
 	void SendPendingPrompt(FShuttlegentConversation& Conversation);
 
+	/** 会话当前的模型所在连接已不可用时换成默认模型，并记一条运行日志；模型可用或没有默认模型时不动。 */
+	void ReplaceUnusableModel(FShuttlegentConversation& Conversation);
+
 	void HandlePlanReview(const FShuttlegentPlanReview& Review);
 	void HandlePlanReviewClosed(const FString& SessionId, const FString& ReviewId);
 

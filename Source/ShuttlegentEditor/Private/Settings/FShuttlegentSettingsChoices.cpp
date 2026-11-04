@@ -5,6 +5,7 @@
 #include "PropertyHandle.h"
 
 #include "FShuttlegentAgentCatalog.h"
+#include "FShuttlegentModelRoutes.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentSettings.h"
 
@@ -12,18 +13,11 @@
 
 namespace FShuttlegentSettingsChoicesPrivate
 {
-	/** 可选的模型名称：名称与模型 ID 都已填写，重名的只列一次。 */
+	/** 可选的模型：已连通的连接检测出的模型 ID，按连接顺序，重复的只列一次。 */
 	TArray<FString> ModelNames()
 	{
-		TArray<FString> Names;
 		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
-		if (!IsValid(Settings)) return Names;
-
-		for (const FShuttlegentModelEntry& Entry : Settings->Models)
-		{
-			if (!Entry.Name.TrimStartAndEnd().IsEmpty() && !Entry.ModelId.TrimStartAndEnd().IsEmpty()) Names.AddUnique(Entry.Name);
-		}
-		return Names;
+		return IsValid(Settings) ? FShuttlegentModelRoutes::GetModelIds(*Settings) : TArray<FString>();
 	}
 
 	/** 已启用的 Agent 标识，按设置中的顺序。 */

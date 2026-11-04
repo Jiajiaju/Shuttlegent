@@ -4,39 +4,25 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SCompoundWidget.h"
 
-#include "FShuttlegentModelProbeTarget.h"
-
-class SVerticalBox;
-struct FShuttlegentModelProbeResult;
-
 /**
- * 设置页的“检测连接”行：点击后依次检测各个模型，每个模型一行结论；结论之下给出实际请求地址，
- * 失败时附服务方的错误说明。检测期间按钮不可用。
+ * 设置页一条模型连接的检测行：一个图标按钮，旁边一个圆点与一个词表示结论（Untested / Testing / Connected / Failed）。
+ * 结论读自设置中该连接的状态，地址或密钥改动后的自动检测也会反映在这里；详细过程只写 Output Log。
  */
 class SShuttlegentProbeRow : public SCompoundWidget
 {
 public:
-	DECLARE_DELEGATE_RetVal(TArray<FShuttlegentModelProbeTarget>, FOnGetTargets);
-
 	SLATE_BEGIN_ARGS(SShuttlegentProbeRow) {}
-		/** 点击时取检测对象，取当前设置值，因此改完设置不用刷新页面。 */
-		SLATE_EVENT(FOnGetTargets, OnGetTargets)
+		/** 连接在 UShuttlegentSettings::Connections 中的下标；数组增删后跟着变，所以按属性取。 */
+		SLATE_ATTRIBUTE(int32, ConnectionIndex)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
 
 private:
-	FOnGetTargets OnGetTargets;
+	TAttribute<int32> ConnectionIndex;
 
-	/** 尚未检测的对象，按顺序逐个发出。 */
-	TArray<FShuttlegentModelProbeTarget> Pending;
-
-	TSharedPtr<SVerticalBox> ResultBox;
-
-	bool bProbing = false;
-
-	FReply HandleClicked();
-	void ProbeNext();
-	void HandleProbeDone(const FShuttlegentModelProbeResult& Result);
-	void AddResultLines(const FShuttlegentModelProbeResult& Result);
+	FReply HandleClicked() const;
+	bool IsTesting() const;
+	FText GetStatusText() const;
+	FSlateColor GetStatusColor() const;
 };

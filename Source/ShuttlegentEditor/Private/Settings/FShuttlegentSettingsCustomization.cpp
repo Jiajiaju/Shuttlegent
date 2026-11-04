@@ -148,12 +148,10 @@ void FShuttlegentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder& D
 
 void FShuttlegentSettingsCustomization::CustomizeDefaults(IDetailLayoutBuilder& DetailBuilder)
 {
-	// 默认 Agent 与默认模型都从下拉中选，不手填
+	// 默认 Agent 从下拉中选，不手填；默认模型自动取第一条已连通的连接中的第一个模型，不设选项
 	const TSharedRef<IPropertyHandle> Agent = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DefaultAgent));
-	const TSharedRef<IPropertyHandle> Model = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, DefaultModelName));
 	const TPair<TSharedRef<IPropertyHandle>, TSharedRef<SWidget>> Rows[] = {
 		{ Agent, FShuttlegentSettingsChoices::MakeAgentCombo(Agent) },
-		{ Model, FShuttlegentSettingsChoices::MakeModelCombo(Model, LOCTEXT("FirstBuiltin", "第一个内置模型")) },
 	};
 	for (const TPair<TSharedRef<IPropertyHandle>, TSharedRef<SWidget>>& Row : Rows)
 	{

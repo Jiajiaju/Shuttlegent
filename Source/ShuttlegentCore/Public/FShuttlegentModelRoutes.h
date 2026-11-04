@@ -5,36 +5,37 @@
 #include "FShuttlegentModelRoute.h"
 
 class UShuttlegentSettings;
+struct FShuttlegentConnection;
 
 /**
- * 由个人设置中的模型推出运行时路由。路由对用户不可见；
- * 生成补丁、密钥解析、默认路由与启动检查都从这里取，规则只在一处。仅限游戏线程。
+ * 由个人设置中的模型连接推出运行时路由。路由对用户不可见；
+ * 生成补丁、密钥解析、默认模型与启动检查都从这里取，规则只在一处。仅限游戏线程。
  */
 struct SHUTTLEGENTCORE_API FShuttlegentModelRoutes
 {
 	/**
-	 * 按“地址 + 协议 + 密钥 + 迁移来的路由名”分组；名称或模型 ID 为空的模型不进路由。
-	 * 同一组设置多次调用得到同样的路由名。
+	 * 每条可用的连接一个路由，按设置中的顺序：内置 DeepSeek 连接填了密钥即可用；
+	 * 其余连接须已检测连通、有模型。同一组设置多次调用得到同样的路由名。
 	 */
 	static TArray<FShuttlegentModelRoute> Build(const UShuttlegentSettings& Settings);
 
-	/**
-	 * 模型实际使用的密钥：自己的；留空时沿用地址与协议相同、排在最前且有密钥的模型的。
-	 * OutSourceIndex 为提供密钥的模型下标，没有密钥时为 INDEX_NONE。
-	 */
-	static FString ResolveKey(const UShuttlegentSettings& Settings, int32 ModelIndex, int32& OutSourceIndex);
+	/** 新会话的默认模型：第一条已连通的连接中的第一个模型。没有已连通的连接时返回 false。 */
+	static bool FindDefaultModel(const UShuttlegentSettings& Settings, FShuttlegentModelRoute& OutRoute, FString& OutModelId);
 
-	/** 按名称找模型，大小写敏感；找不到时返回 INDEX_NONE。 */
-	static int32 FindModel(const UShuttlegentSettings& Settings, const FString& Name);
+	/** 按模型 ID（内置模型也可用其显示名）找所在的第一个已连通路由；找不到时返回 false。 */
+	static bool FindModel(const UShuttlegentSettings& Settings, const FString& Model, FShuttlegentModelRoute& OutRoute, FString& OutModelId);
 
-	/** 新会话的默认模型：默认值中的模型名称；为空或找不到时为第一个内置模型。 */
-	static int32 FindDefaultModel(const UShuttlegentSettings& Settings);
+	/** 路由名与模型 ID 指向的模型现在可用：所在连接已连通且列出了该模型。 */
+	static bool IsUsable(const UShuttlegentSettings& Settings, const FString& Route, const FString& ModelId);
 
-	/** 模型所在的路由；模型不在任何路由中时返回 false。 */
-	static bool FindRoute(const TArray<FShuttlegentModelRoute>& Routes, int32 ModelIndex, FShuttlegentModelRoute& OutRoute);
+	/** 已连通的连接提供的全部模型 ID，按连接顺序，重复的只列一次。 */
+	static TArray<FString> GetModelIds(const UShuttlegentSettings& Settings);
 
-	/** 地址与协议是否相同：去掉首尾空白与末尾斜杠后不区分大小写比较。 */
-	static bool IsSameEndpoint(const FString& LeftUrl, EShuttlegentProviderApi LeftApi, const FString& RightUrl, EShuttlegentProviderApi RightApi);
+	/** 连接的地址与密钥指纹（CRC），用于判断检测后是否改过；不含密钥原文。 */
+	static FString MakeFingerprint(const FShuttlegentConnection& Connection);
+
+	/** 去掉首尾空白与末尾斜杠的地址，大小写不变。 */
+	static FString TrimBaseUrl(const FString& BaseUrl);
 
 	/** 运行时 llm-pi-ai 的 api 取值。 */
 	static const TCHAR* GetApiName(EShuttlegentProviderApi Api);

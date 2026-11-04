@@ -1226,7 +1226,7 @@
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
       case 'missingKey':
-        return { tone: '', icon: 'key', title: '没有找到 ' + esc(issue.provider) + ' 密钥', body: '在偏好设置 › Shuttlegent › Models 填写该模型的密钥和地址后重试。', settings: true };
+        return { tone: '', icon: 'key', title: '还没有可用的模型连接', body: '在偏好设置 › Shuttlegent › Models 填写地址和密钥，显示 Connected 后点重试。', settings: true };
       case 'authFailed':
         return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Models 改正后重试，运行时会重新启动并读取新设置。', settings: true };
       case 'missingRuntime':

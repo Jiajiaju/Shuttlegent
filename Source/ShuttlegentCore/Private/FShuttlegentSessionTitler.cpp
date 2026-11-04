@@ -18,31 +18,34 @@
 
 namespace FShuttlegentSessionTitlerPrivate
 {
-	/** 会话 "model" 取值（["路由", "模型 ID"]）对应的模型下标；对不上时为默认模型。 */
-	int32 FindModelIndex(const UShuttlegentSettings& Settings, const FString& ModelValue)
+	/** 会话 "model" 取值（["路由", "模型 ID"]）对应的路由与模型；对不上时为默认模型。没有已连通的连接时返回 false。 */
+	bool FindModel(const UShuttlegentSettings& Settings, const FString& ModelValue, FShuttlegentModelRoute& OutRoute, FString& OutModelId)
 	{
 		TArray<TSharedPtr<FJsonValue>> Parts;
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ModelValue);
-		const bool bParsed = FJsonSerializer::Deserialize(Reader, Parts) && Parts.Num() >= 2 && Parts[0].IsValid() && Parts[1].IsValid();
-		if (!bParsed) return FShuttlegentModelRoutes::FindDefaultModel(Settings);
-
-		const FString RouteName = Parts[0]->AsString();
-		const FString ModelId = Parts[1]->AsString();
-		const TArray<FShuttlegentModelRoute> Routes = FShuttlegentModelRoutes::Build(Settings);
-		for (int32 ModelIndex = 0; ModelIndex < Settings.Models.Num(); ++ModelIndex)
+		if (FJsonSerializer::Deserialize(Reader, Parts) && Parts.Num() >= 2 && Parts[0].IsValid() && Parts[1].IsValid())
 		{
-			FShuttlegentModelRoute Route;
-			if (FShuttlegentModelRoutes::FindRoute(Routes, ModelIndex, Route) && Route.Route == RouteName && Settings.Models[ModelIndex].ModelId.TrimStartAndEnd() == ModelId) return ModelIndex;
+			const FString RouteName = Parts[0]->AsString();
+			const FString ModelId = Parts[1]->AsString();
+			for (const FShuttlegentModelRoute& Route : FShuttlegentModelRoutes::Build(Settings))
+			{
+				if (Route.Route != RouteName || !Route.ModelIds.Contains(ModelId)) continue;
+
+				OutRoute = Route;
+				OutModelId = ModelId;
+				return true;
+			}
 		}
-		return FShuttlegentModelRoutes::FindDefaultModel(Settings);
+		return FShuttlegentModelRoutes::FindDefaultModel(Settings, OutRoute, OutModelId);
 	}
 
-	FString MakeBody(const FShuttlegentModelProbeTarget& Target, const FString& Prompt)
+	/** 请求体。Chat Completions 不设输出上限：新的 OpenAI 模型不接受 max_tokens，兼容服务又未必认 max_completion_tokens，提示词已要求不超过 16 字。 */
+	FString MakeBody(const FShuttlegentModelRoute& Target, const FString& ModelId, const FString& Prompt)
 	{
 		const TSharedRef<FJsonObject> Body = MakeShared<FJsonObject>();
-		Body->SetStringField(ShuttlegentProbeConstant::FieldModel, Target.ModelId);
+		Body->SetStringField(ShuttlegentProbeConstant::FieldModel, ModelId);
 
-		if (!Target.bBuiltinDeepSeek && Target.Api == EShuttlegentProviderApi::OpenAiResponses)
+		if (!Target.bBuiltin && Target.Api == EShuttlegentProviderApi::OpenAiResponses)
 		{
 			Body->SetNumberField(ShuttlegentProbeConstant::FieldMaxOutputTokens, ShuttlegentTitleConstant::MaxOutputTokens);
 			Body->SetStringField(ShuttlegentProbeConstant::FieldInput, Prompt);
@@ -52,7 +55,7 @@ namespace FShuttlegentSessionTitlerPrivate
 			const TSharedRef<FJsonObject> Message = MakeShared<FJsonObject>();
 			Message->SetStringField(ShuttlegentProbeConstant::FieldRole, ShuttlegentProbeConstant::RoleUser);
 			Message->SetStringField(ShuttlegentProbeConstant::FieldContent, Prompt);
-			Body->SetNumberField(ShuttlegentProbeConstant::FieldMaxTokens, ShuttlegentTitleConstant::MaxOutputTokens);
+			if (Target.bBuiltin || Target.Api == EShuttlegentProviderApi::AnthropicMessages) Body->SetNumberField(ShuttlegentProbeConstant::FieldMaxTokens, ShuttlegentTitleConstant::MaxOutputTokens);
 			Body->SetArrayField(ShuttlegentProbeConstant::FieldMessages, { MakeShared<FJsonValueObject>(Message) });
 		}
 
@@ -138,11 +141,13 @@ void FShuttlegentSessionTitler::Generate(const FString& ModelValue, const FStrin
 		return;
 	}
 
-	const FShuttlegentModelProbeTarget Target = FShuttlegentModelProbe::MakeTarget(*Settings, FShuttlegentSessionTitlerPrivate::FindModelIndex(*Settings, ModelValue));
-	const FString Url = FShuttlegentModelProbe::GetRequestUrl(Target);
-	if (Url.IsEmpty() || Target.ApiKey.IsEmpty() || Target.ModelId.IsEmpty())
+	FShuttlegentModelRoute Target;
+	FString ModelId;
+	const bool bFound = FShuttlegentSessionTitlerPrivate::FindModel(*Settings, ModelValue, Target, ModelId);
+	const FString Url = bFound ? FShuttlegentModelProbe::GetChatUrl(Target.BaseUrl, Target.Api, Target.bBuiltin) : FString();
+	if (Url.IsEmpty() || Target.ApiKey.IsEmpty() || ModelId.IsEmpty())
 	{
-		UE_LOG(LogShuttlegent, Warning, TEXT("Session title: no model address, key or model id; the title stays as it is."));
+		UE_LOG(LogShuttlegent, Warning, TEXT("Session title: no connected model; the title stays as it is."));
 		OnDone.ExecuteIfBound(FString());
 		return;
 	}
@@ -153,7 +158,7 @@ void FShuttlegentSessionTitler::Generate(const FString& ModelValue, const FStrin
 	Request->SetVerb(ShuttlegentProbeConstant::Verb);
 	Request->SetTimeout(ShuttlegentTitleConstant::TimeoutSeconds);
 	Request->SetHeader(ShuttlegentProbeConstant::HeaderContentType, ShuttlegentProbeConstant::ContentTypeJson);
-	if (Target.bBuiltinDeepSeek || Target.Api == EShuttlegentProviderApi::AnthropicMessages)
+	if (Target.bBuiltin || Target.Api == EShuttlegentProviderApi::AnthropicMessages)
 	{
 		Request->SetHeader(ShuttlegentProbeConstant::HeaderAnthropicKey, Target.ApiKey);
 		Request->SetHeader(ShuttlegentProbeConstant::HeaderAnthropicVersion, ShuttlegentProbeConstant::AnthropicVersion);
@@ -162,7 +167,7 @@ void FShuttlegentSessionTitler::Generate(const FString& ModelValue, const FStrin
 	{
 		Request->SetHeader(ShuttlegentProbeConstant::HeaderAuthorization, FString(ShuttlegentProbeConstant::BearerPrefix) + Target.ApiKey);
 	}
-	Request->SetContentAsString(FShuttlegentSessionTitlerPrivate::MakeBody(Target, Prompt));
+	Request->SetContentAsString(FShuttlegentSessionTitlerPrivate::MakeBody(Target, ModelId, Prompt));
 
 	const double StartSeconds = FPlatformTime::Seconds();
 	Request->OnProcessRequestComplete().BindLambda([Url, OnDone, StartSeconds](FHttpRequestPtr CompletedRequest, FHttpResponsePtr Response, bool bConnected)

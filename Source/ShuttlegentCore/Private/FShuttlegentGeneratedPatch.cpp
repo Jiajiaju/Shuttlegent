@@ -23,16 +23,15 @@ namespace FShuttlegentGeneratedPatchPrivate
 		return Row;
 	}
 
-	/** llm-pi-ai 的一个路由：显示名用路由名（面板只显示模型名），模型取自组内各模型条目。 */
-	TSharedRef<FJsonObject> MakeProvider(const FShuttlegentModelRoute& Route, const UShuttlegentSettings& Settings)
+	/** llm-pi-ai 的一个路由：显示名用路由名（面板只显示模型名），模型取自连接检测出的模型，名称即模型 ID。 */
+	TSharedRef<FJsonObject> MakeProvider(const FShuttlegentModelRoute& Route)
 	{
 		TArray<TSharedPtr<FJsonValue>> Models;
-		for (const int32 ModelIndex : Route.ModelIndices)
+		for (const FString& ModelId : Route.ModelIds)
 		{
-			const FShuttlegentModelEntry& Model = Settings.Models[ModelIndex];
 			const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
-			Item->SetStringField(ShuttlegentProviderConstant::FieldModelId, Model.ModelId.TrimStartAndEnd());
-			Item->SetStringField(ShuttlegentProviderConstant::FieldModelName, Model.Name.TrimStartAndEnd());
+			Item->SetStringField(ShuttlegentProviderConstant::FieldModelId, ModelId);
+			Item->SetStringField(ShuttlegentProviderConstant::FieldModelName, ModelId);
 			Models.Add(MakeShared<FJsonValueObject>(Item));
 		}
 
@@ -76,7 +75,7 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	TArray<TSharedPtr<FJsonValue>> Rows;
 
-	// 模型按地址、协议、密钥分组为路由（FShuttlegentModelRoutes）；内置 DeepSeek 路由由 llm-deepseek 提供
+	// 每条可用的模型连接一个路由（FShuttlegentModelRoutes）；内置 DeepSeek 路由由 llm-deepseek 提供
 	const TArray<FShuttlegentModelRoute> Routes = IsValid(Settings) ? FShuttlegentModelRoutes::Build(*Settings) : TArray<FShuttlegentModelRoute>();
 	const FShuttlegentModelRoute* Builtin = Routes.FindByPredicate([](const FShuttlegentModelRoute& Route) { return Route.bBuiltin; });
 	const TSharedRef<FJsonObject> DeepSeekConfig = MakeShared<FJsonObject>();
@@ -87,7 +86,7 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 	const TSharedRef<FJsonObject> Providers = MakeShared<FJsonObject>();
 	for (const FShuttlegentModelRoute& Route : Routes)
 	{
-		if (!Route.bBuiltin) Providers->SetObjectField(Route.Route, FShuttlegentGeneratedPatchPrivate::MakeProvider(Route, *Settings));
+		if (!Route.bBuiltin) Providers->SetObjectField(Route.Route, FShuttlegentGeneratedPatchPrivate::MakeProvider(Route));
 	}
 	if (!Providers->Values.IsEmpty())
 	{
@@ -96,14 +95,14 @@ bool FShuttlegentGeneratedPatch::Write(const FString& DshHome, const FString& Pl
 		Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowLlmPiAi, Config)));
 	}
 
-	// 新会话的默认模型
+	// 新会话的默认模型：第一条已连通的连接中的第一个模型
 	FShuttlegentModelRoute DefaultRoute;
-	const int32 DefaultModel = IsValid(Settings) ? FShuttlegentModelRoutes::FindDefaultModel(*Settings) : INDEX_NONE;
-	if (FShuttlegentModelRoutes::FindRoute(Routes, DefaultModel, DefaultRoute))
+	FString DefaultModelId;
+	if (IsValid(Settings) && FShuttlegentModelRoutes::FindDefaultModel(*Settings, DefaultRoute, DefaultModelId))
 	{
 		const TSharedRef<FJsonObject> Config = MakeShared<FJsonObject>();
 		Config->SetStringField(ShuttlegentProviderConstant::FieldProvider, DefaultRoute.Route);
-		Config->SetStringField(ShuttlegentProviderConstant::FieldModel, Settings->Models[DefaultModel].ModelId.TrimStartAndEnd());
+		Config->SetStringField(ShuttlegentProviderConstant::FieldModel, DefaultModelId);
 		Rows.Add(MakeShared<FJsonValueObject>(FShuttlegentGeneratedPatchPrivate::MakeRow(ShuttlegentProviderConstant::RowAcp, Config)));
 	}
 

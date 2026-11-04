@@ -16,9 +16,9 @@
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentCoreModule.h"
 #include "FShuttlegentAgentEntry.h"
-#include "FShuttlegentModelEntry.h"
+#include "FShuttlegentConnection.h"
 #include "Settings/FShuttlegentAgentEntryCustomization.h"
-#include "Settings/FShuttlegentModelEntryCustomization.h"
+#include "Settings/FShuttlegentConnectionCustomization.h"
 #include "Settings/FShuttlegentSettingsCustomization.h"
 #include "Tabs/FShuttlegentSessionTabRegistry.h"
 #include "ShuttlegentEditorConstants.h"
@@ -36,7 +36,7 @@ void FShuttlegentEditorModule::StartupModule()
 
 	FPropertyEditorModule& PropertyEditor = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(ShuttlegentEditorSettingsUi::PropertyEditorModule);
 	PropertyEditor.RegisterCustomClassLayout(UShuttlegentSettings::StaticClass()->GetFName(), FOnGetDetailCustomizationInstance::CreateStatic(&FShuttlegentSettingsCustomization::MakeInstance));
-	PropertyEditor.RegisterCustomPropertyTypeLayout(FShuttlegentModelEntry::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FShuttlegentModelEntryCustomization::MakeInstance));
+	PropertyEditor.RegisterCustomPropertyTypeLayout(FShuttlegentConnection::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FShuttlegentConnectionCustomization::MakeInstance));
 	PropertyEditor.RegisterCustomPropertyTypeLayout(FShuttlegentAgentEntry::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FShuttlegentAgentEntryCustomization::MakeInstance));
 
 	ChatModel = MakeShared<FShuttlegentChatModel>();
@@ -66,7 +66,7 @@ void FShuttlegentEditorModule::ShutdownModule()
 	if (PropertyEditor != nullptr)
 	{
 		PropertyEditor->UnregisterCustomClassLayout(UShuttlegentSettings::StaticClass()->GetFName());
-		PropertyEditor->UnregisterCustomPropertyTypeLayout(FShuttlegentModelEntry::StaticStruct()->GetFName());
+		PropertyEditor->UnregisterCustomPropertyTypeLayout(FShuttlegentConnection::StaticStruct()->GetFName());
 		PropertyEditor->UnregisterCustomPropertyTypeLayout(FShuttlegentAgentEntry::StaticStruct()->GetFName());
 	}
 

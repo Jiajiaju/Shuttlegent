@@ -2,10 +2,12 @@
 
 #include "Modules/ModuleManager.h"
 
+#include "FShuttlegentConnectionTester.h"
 #include "FShuttlegentMemoryStore.h"
-#include "FShuttlegentSettingsMigration.h"
+#include "FShuttlegentModelRoutes.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentConsoleCommands.h"
+#include "ShuttlegentSettings.h"
 
 namespace ShuttlegentCoreModulePrivate
 {
@@ -23,8 +25,16 @@ FShuttlegentCoreModule& FShuttlegentCoreModule::Get()
 
 void FShuttlegentCoreModule::StartupModule()
 {
-	// 旧版供应商设置迁移到模型、Agent、默认值；须在运行时生成补丁之前
-	FShuttlegentSettingsMigration::MigrateIfNeeded();
+	// 补齐内置连接；上次退出时还在检测的连接视为未检测，填了密钥却未检测的连接现在检测
+	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
+	Settings->EnsureBuiltins();
+	for (int32 Index = 0; Index < Settings->Connections.Num(); ++Index)
+	{
+		FShuttlegentConnection& Connection = Settings->Connections[Index];
+		if (Connection.Status == EShuttlegentConnectionStatus::Testing) Connection.Status = EShuttlegentConnectionStatus::Untested;
+		const bool bStale = Connection.Status == EShuttlegentConnectionStatus::Untested || Connection.TestedFingerprint != FShuttlegentModelRoutes::MakeFingerprint(Connection);
+		if (bStale && !Connection.ApiKey.TrimStartAndEnd().IsEmpty()) FShuttlegentConnectionTester::Test(Index);
+	}
 
 	AgentService = MakeShared<FShuttlegentAgentService>();
 	ConsoleCommands = MakeUnique<FShuttlegentConsoleCommands>(AgentService.ToSharedRef());

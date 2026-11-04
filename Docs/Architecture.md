@@ -103,7 +103,7 @@ sequenceDiagram
   - `SHUTTLEGENT_EDITOR_ENDPOINT`、`SHUTTLEGENT_EDITOR_TOKEN`：编辑器端点的 URL 与本次启动新生成的 token，只供插件自带的运行时插件使用（`FShuttlegentAgentService::RuntimeEnvironmentProvider`，由 `ShuttlegentMcpServer` 在启动前填入；token 每次启动运行时轮换）。
 - **补丁**：
   - `Runtime/profile/shuttlegent.patch.yml`：固定的插件补丁。关闭 Shell、后台作业工具（`tool-jobs`，随 Shell 开关由生成的补丁一同打开）、切换工作目录工具（`tool-working-directory`，会把文件工具带出项目）、子任务工具（`tool-subagent`、`tool-subagent-fork`、`tool-subagent-control`、`tool-subagent-list-agents`：ACP 按会话声明编辑器端点，子会话拿不到编辑器工具，派出去的编辑器任务只会失败；回归场景 `s17_subagent`）、workflow、遥测；项目提示词只读 `SHUTTLEGENT.md`；技能只来自配置的目录；人设改为“UE 编辑器内助手”。
-  - `generated.patch.yml`：每次启动前写入 `DSH_HOME`，包含内置模型的端点、由模型自动分组的路由（`FShuttlegentModelRoutes`）、默认模型、项目技能目录、Shell 开关，以及以绝对路径插入的插件自带运行时插件（见下）；Agent 分发插件存在时停用基础补丁的 `agent-loop` 行。补丁里不写密钥。
+  - `generated.patch.yml`：每次启动前写入 `DSH_HOME`，包含内置模型的端点、每条已连通的模型连接一个路由（`FShuttlegentModelRoutes`，协议与模型由 `FShuttlegentModelProbe` 检测得出）、默认模型、项目技能目录、Shell 开关，以及以绝对路径插入的插件自带运行时插件（见下）；Agent 分发插件存在时停用基础补丁的 `agent-loop` 行。补丁里不写密钥。
 - **插件自带的运行时插件**（`Runtime/plugins/`，不改 Harness 源码）：
   - `shuttlegent-context-tap.mjs`：每条助手消息之后（与 `usage_update` 同一时机）读取 Harness 的 `contextBreakdown` 投影（系统提示、工具定义、消息三项估算），以 JSON-RPC 通知 `shuttlegent/contextBreakdown` 发到编辑器端点；端点交给 `FShuttlegentMcpServerModule::OnContextBreakdown()`，对话模型按会话保存后推给面板。发送失败只记一次警告，不影响对话。⚠️ 依赖 Harness 的 `session/event` 事件与 `sessionProjections` 服务，二者不是稳定接口，升级 Harness 后需用回归场景 `s14_context` 复查。
   - `shuttlegent-session-control.mjs`：供“回到这里”和“分支”截断会话。ACP 没有截断或分叉会话的方法，插件在本机开一个只认当前 token 的端口，加载后以通知 `shuttlegent/runtimeControl` 把 URL 报给编辑器端点（`FShuttlegentMcpServerModule::CanForkSessions()`）。编辑器调用其 `fork`（会话 ID、第几条用户消息、截在该消息之前或该轮结束之后），插件把源会话的事件截到该处，经 `sessionPersistence` 另存为一个**不带 `parentSession` 的普通会话**（Harness 自带的 `Sessions.fork` 会写入 `parentSession`，ACP 的 `session/resume` 拒绝这类会话），编辑器再用 `session/resume` 接入。用户消息只数 `source.kind` 为 `user` 的 `user/message`（运行时自己注入的运行时上下文、system-reminder 也记为 `user/message`，来源不同），与面板的用户条目一一对应；截在某条消息之前时，连同把它放进收件箱的 `agent/inbox/spliced` 一起排除，否则接入后会重新执行这条消息。复制的 `session-log-deepseek/delivery-accepted` 标记记着源会话 ID，原样复制会被存储校验判为损坏（“current-generation delivery marker names the wrong Session”），因此改标为旧格式代次，校验与 DeepSeek 投递都忽略它，新会话首次请求时重新投递完整记录。⚠️ 依赖 Harness 的 `sessions`、`sessionPersistence` 服务与事件类型名，升级后需用回归场景 `s15_fork` 复查。
@@ -311,10 +311,9 @@ flowchart TB
 | Core | `FShuttlegentRuntimeLaunchSpec` | 组装启动所需的可执行文件、参数、环境与密钥 |
 | Core | `FShuttlegentGeneratedPatch` | 每次启动前写入的第二个补丁 |
 | Core | `FShuttlegentProjectConfig` / `FShuttlegentSecrets` | 读出生效配置 / 从偏好设置解析密钥 |
-| Core | `FShuttlegentModelRoutes` | 由模型推出运行时路由：分组、路由名、密钥沿用、默认模型 |
-| Core | `FShuttlegentModelProbe` | 检测连接：按协议发最小请求并分类结果 |
+| Core | `FShuttlegentModelRoutes` | 由模型连接推出运行时路由：每条已连通的连接一个路由、路由名、默认模型 |
+| Core | `FShuttlegentModelProbe` / `FShuttlegentConnectionTester` | 检测一条模型连接：识别协议、列出模型 / 检测并把结果写回设置 |
 | Core | `FShuttlegentAgentCatalog` | 可用 Agent 的目录：默认循环与 `Runtime/plugins/agents/<id>/agent.json` 声明的循环插件 |
-| Core | `FShuttlegentSettingsMigration` | 旧版供应商设置一次性迁移到模型、Agent、默认值 |
 | Core | `FShuttlegentSessionStore` | 会话索引与 JSONL 记录 |
 | Core | `FShuttlegentConsoleCommands` | `Shuttlegent.*` 控制台命令 |
 | Core | `UShuttlegentSettings` / `UShuttlegentProjectSettings` | 个人设置 / 项目设置 |
@@ -334,4 +333,4 @@ flowchart TB
 | Editor | `FShuttlegentReferenceNavigator` | 回答中对象链接的点击：在内容浏览器定位或打开资产，在关卡中选中 Actor 或让视口移到它 |
 | Editor | `FShuttlegentTemplateLibrary` | 读取斜杠模板 |
 | Editor | `FShuttlegentSettingsCustomization` | 偏好设置中的工具与 Toolset 开关、默认 Agent 与默认模型下拉 |
-| Editor | `FShuttlegentModelEntryCustomization` / `FShuttlegentAgentEntryCustomization` / `SShuttlegentProbeRow` | 模型条目 / Agent 条目的设置页显示 / 检测连接行 |
+| Editor | `FShuttlegentConnectionCustomization` / `FShuttlegentAgentEntryCustomization` / `SShuttlegentProbeRow` | 模型连接 / Agent 条目的设置页显示 / 连接的检测行 |

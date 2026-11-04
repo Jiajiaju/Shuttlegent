@@ -2,28 +2,12 @@
 
 #include "Misc/Crc.h"
 
+#include "FShuttlegentConnection.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentSettings.h"
 
 namespace FShuttlegentModelRoutesPrivate
 {
-	/** 用于比较的地址：去掉首尾空白与末尾斜杠，转小写。 */
-	FString NormalizeUrl(const FString& BaseUrl)
-	{
-		FString Url = BaseUrl.TrimStartAndEnd().ToLower();
-		while (Url.EndsWith(ShuttlegentProbeConstant::UrlSlash))
-		{
-			Url.LeftChopInline(FCString::Strlen(ShuttlegentProbeConstant::UrlSlash));
-		}
-		return Url;
-	}
-
-	/** 名称与模型 ID 都填写了的模型才进路由。 */
-	bool IsUsable(const FShuttlegentModelEntry& Entry)
-	{
-		return !Entry.Name.TrimStartAndEnd().IsEmpty() && !Entry.ModelId.TrimStartAndEnd().IsEmpty();
-	}
-
 	/** 路由的密钥变量：SHUTTLEGENT_<ROUTE>_API_KEY，连字符换成下划线。 */
 	FString MakeKeyVariable(const FString& Route)
 	{
@@ -31,139 +15,147 @@ namespace FShuttlegentModelRoutesPrivate
 		return FString(ShuttlegentProviderConstant::KeyVariablePrefix) + Upper + ShuttlegentProviderConstant::KeyVariableSuffix;
 	}
 
-	/** 未迁移来的路由名：前缀 + “地址 + 协议”的 CRC；不含密钥，改密钥不改路由名。 */
+	/** 路由名：前缀 + “地址 + 协议”的 CRC；不含密钥，改密钥不改路由名，会话记录中的模型因此仍然有效。 */
 	FString MakeGeneratedRoute(const FString& BaseUrl, EShuttlegentProviderApi Api)
 	{
-		const FString Key = NormalizeUrl(BaseUrl) + ShuttlegentProviderConstant::RouteKeySeparator + FShuttlegentModelRoutes::GetApiName(Api);
+		const FString Key = FShuttlegentModelRoutes::TrimBaseUrl(BaseUrl).ToLower() + ShuttlegentProviderConstant::RouteKeySeparator + FShuttlegentModelRoutes::GetApiName(Api);
 		return FString(ShuttlegentProviderConstant::GeneratedRoutePrefix) + FString::Printf(TEXT("%08x"), FCrc::StrCrc32(*Key));
+	}
+
+	/** 内置模型的显示名对应的模型 ID；不是内置模型的显示名时原样返回。 */
+	FString ResolveBuiltinName(const FString& Model)
+	{
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(ShuttlegentBuiltinModel::Names); ++Index)
+		{
+			if (Model == ShuttlegentBuiltinModel::Names[Index]) return ShuttlegentBuiltinModel::Ids[Index];
+		}
+		return Model;
+	}
+
+	bool IsConnected(const UShuttlegentSettings& Settings, const FShuttlegentModelRoute& Route)
+	{
+		return Settings.Connections.IsValidIndex(Route.ConnectionIndex) && Settings.Connections[Route.ConnectionIndex].Status == EShuttlegentConnectionStatus::Connected && !Route.ModelIds.IsEmpty();
 	}
 }
 
 TArray<FShuttlegentModelRoute> FShuttlegentModelRoutes::Build(const UShuttlegentSettings& Settings)
 {
-	FShuttlegentModelRoute Builtin;
-	Builtin.Route = ShuttlegentProviderConstant::BuiltinRoute;
-	Builtin.Api = EShuttlegentProviderApi::AnthropicMessages;
-	Builtin.KeyVariable = ShuttlegentEnvVar::ProviderKey;
-	Builtin.bBuiltin = true;
-
-	// 其余模型按“地址 + 协议 + 密钥 + 迁移来的路由名”分组，组的顺序即设置中首次出现的顺序
-	TArray<FShuttlegentModelRoute> Groups;
-	TArray<FString> GroupLegacyRoutes;
-	TMap<FString, int32> GroupByKey;
-	for (int32 ModelIndex = 0; ModelIndex < Settings.Models.Num(); ++ModelIndex)
-	{
-		const FShuttlegentModelEntry& Entry = Settings.Models[ModelIndex];
-		if (!FShuttlegentModelRoutesPrivate::IsUsable(Entry)) continue;
-
-		int32 SourceIndex = INDEX_NONE;
-		const FString ApiKey = ResolveKey(Settings, ModelIndex, SourceIndex);
-		if (Entry.bBuiltin)
-		{
-			if (Builtin.ModelIndices.IsEmpty())
-			{
-				const FString BaseUrl = Entry.BaseUrl.TrimStartAndEnd();
-				Builtin.BaseUrl = BaseUrl.IsEmpty() ? FString(ShuttlegentProviderConstant::DeepSeekBaseUrl) : BaseUrl;
-				Builtin.ApiKey = ApiKey;
-			}
-			Builtin.ModelIndices.Add(ModelIndex);
-			continue;
-		}
-
-		const FString GroupKey = FString::Join(TArray<FString> { FShuttlegentModelRoutesPrivate::NormalizeUrl(Entry.BaseUrl), GetApiName(Entry.Api), ApiKey, Entry.LegacyRoute }, ShuttlegentProviderConstant::RouteKeySeparator);
-		const int32* Found = GroupByKey.Find(GroupKey);
-		if (Found != nullptr)
-		{
-			Groups[*Found].ModelIndices.Add(ModelIndex);
-			continue;
-		}
-
-		FShuttlegentModelRoute& Group = Groups.AddDefaulted_GetRef();
-		Group.Api = Entry.Api;
-		Group.BaseUrl = Entry.BaseUrl.TrimStartAndEnd();
-		Group.ApiKey = ApiKey;
-		Group.ModelIndices.Add(ModelIndex);
-		GroupLegacyRoutes.Add(Entry.LegacyRoute);
-		GroupByKey.Add(GroupKey, Groups.Num() - 1);
-	}
-
-	// 路由名：迁移来的沿用旧名，其余按地址与协议生成；重名的依次加 -2、-3
-	TSet<FString> Used { Builtin.Route };
-	for (int32 GroupIndex = 0; GroupIndex < Groups.Num(); ++GroupIndex)
-	{
-		FShuttlegentModelRoute& Group = Groups[GroupIndex];
-		const FString Base = GroupLegacyRoutes[GroupIndex].IsEmpty() ? FShuttlegentModelRoutesPrivate::MakeGeneratedRoute(Group.BaseUrl, Group.Api) : GroupLegacyRoutes[GroupIndex];
-		FString Route = Base;
-		for (int32 Suffix = 2; Used.Contains(Route); ++Suffix)
-		{
-			Route = Base + ShuttlegentProviderConstant::RouteSeparator + FString::FromInt(Suffix);
-		}
-
-		Used.Add(Route);
-		Group.Route = Route;
-		Group.KeyVariable = FShuttlegentModelRoutesPrivate::MakeKeyVariable(Route);
-	}
-
 	TArray<FShuttlegentModelRoute> Routes;
-	if (!Builtin.ModelIndices.IsEmpty()) Routes.Add(MoveTemp(Builtin));
-	Routes.Append(MoveTemp(Groups));
+	TSet<FString> Used { ShuttlegentProviderConstant::BuiltinRoute };
+	for (int32 Index = 0; Index < Settings.Connections.Num(); ++Index)
+	{
+		const FShuttlegentConnection& Connection = Settings.Connections[Index];
+		const FString ApiKey = Connection.ApiKey.TrimStartAndEnd();
+		if (ApiKey.IsEmpty()) continue;
+
+		FShuttlegentModelRoute Route;
+		Route.ApiKey = ApiKey;
+		Route.ConnectionIndex = Index;
+		if (Connection.bBuiltin)
+		{
+			// 内置连接填了密钥即交给运行时；是否作为默认模型仍看检测结论
+			Route.Route = ShuttlegentProviderConstant::BuiltinRoute;
+			Route.Api = EShuttlegentProviderApi::AnthropicMessages;
+			Route.BaseUrl = ShuttlegentProviderConstant::DeepSeekBaseUrl;
+			Route.KeyVariable = ShuttlegentEnvVar::ProviderKey;
+			Route.bBuiltin = true;
+			for (const TCHAR* ModelId : ShuttlegentBuiltinModel::Ids)
+			{
+				Route.ModelIds.Add(ModelId);
+			}
+			Routes.Add(MoveTemp(Route));
+			continue;
+		}
+
+		const FString BaseUrl = TrimBaseUrl(Connection.BaseUrl);
+		if (BaseUrl.IsEmpty() || Connection.Status != EShuttlegentConnectionStatus::Connected || Connection.ModelIds.IsEmpty()) continue;
+
+		// 重名（同一地址与协议配了两次）依次加 -2、-3
+		const FString Base = FShuttlegentModelRoutesPrivate::MakeGeneratedRoute(BaseUrl, Connection.Api);
+		FString Name = Base;
+		for (int32 Suffix = 2; Used.Contains(Name); ++Suffix)
+		{
+			Name = Base + ShuttlegentProviderConstant::RouteSeparator + FString::FromInt(Suffix);
+		}
+		Used.Add(Name);
+
+		Route.Route = Name;
+		Route.Api = Connection.Api;
+		Route.BaseUrl = BaseUrl;
+		Route.KeyVariable = FShuttlegentModelRoutesPrivate::MakeKeyVariable(Name);
+		Route.ModelIds = Connection.ModelIds;
+		Routes.Add(MoveTemp(Route));
+	}
 	return Routes;
 }
 
-FString FShuttlegentModelRoutes::ResolveKey(const UShuttlegentSettings& Settings, int32 ModelIndex, int32& OutSourceIndex)
+bool FShuttlegentModelRoutes::FindDefaultModel(const UShuttlegentSettings& Settings, FShuttlegentModelRoute& OutRoute, FString& OutModelId)
 {
-	OutSourceIndex = INDEX_NONE;
-	if (!Settings.Models.IsValidIndex(ModelIndex)) return FString();
-
-	const FShuttlegentModelEntry& Entry = Settings.Models[ModelIndex];
-	const FString Own = Entry.ApiKey.TrimStartAndEnd();
-	if (!Own.IsEmpty())
+	for (const FShuttlegentModelRoute& Route : Build(Settings))
 	{
-		OutSourceIndex = ModelIndex;
-		return Own;
-	}
+		if (!FShuttlegentModelRoutesPrivate::IsConnected(Settings, Route)) continue;
 
-	for (int32 OtherIndex = 0; OtherIndex < Settings.Models.Num(); ++OtherIndex)
+		OutRoute = Route;
+		OutModelId = Route.ModelIds[0];
+		return true;
+	}
+	return false;
+}
+
+bool FShuttlegentModelRoutes::FindModel(const UShuttlegentSettings& Settings, const FString& Model, FShuttlegentModelRoute& OutRoute, FString& OutModelId)
+{
+	const FString ModelId = FShuttlegentModelRoutesPrivate::ResolveBuiltinName(Model.TrimStartAndEnd());
+	if (ModelId.IsEmpty()) return false;
+
+	for (const FShuttlegentModelRoute& Route : Build(Settings))
 	{
-		const FShuttlegentModelEntry& Other = Settings.Models[OtherIndex];
-		const FString OtherKey = Other.ApiKey.TrimStartAndEnd();
-		if (OtherIndex == ModelIndex || OtherKey.IsEmpty() || Other.bBuiltin != Entry.bBuiltin) continue;
-		if (!IsSameEndpoint(Entry.BaseUrl, Entry.Api, Other.BaseUrl, Other.Api)) continue;
+		if (!FShuttlegentModelRoutesPrivate::IsConnected(Settings, Route) || !Route.ModelIds.Contains(ModelId)) continue;
 
-		OutSourceIndex = OtherIndex;
-		return OtherKey;
+		OutRoute = Route;
+		OutModelId = ModelId;
+		return true;
 	}
-	return FString();
+	return false;
 }
 
-int32 FShuttlegentModelRoutes::FindModel(const UShuttlegentSettings& Settings, const FString& Name)
+bool FShuttlegentModelRoutes::IsUsable(const UShuttlegentSettings& Settings, const FString& Route, const FString& ModelId)
 {
-	if (Name.IsEmpty()) return INDEX_NONE;
-
-	return Settings.Models.IndexOfByPredicate([&Name](const FShuttlegentModelEntry& Entry) { return Entry.Name == Name && FShuttlegentModelRoutesPrivate::IsUsable(Entry); });
+	for (const FShuttlegentModelRoute& Item : Build(Settings))
+	{
+		if (Item.Route == Route) return FShuttlegentModelRoutesPrivate::IsConnected(Settings, Item) && Item.ModelIds.Contains(ModelId);
+	}
+	return false;
 }
 
-int32 FShuttlegentModelRoutes::FindDefaultModel(const UShuttlegentSettings& Settings)
+TArray<FString> FShuttlegentModelRoutes::GetModelIds(const UShuttlegentSettings& Settings)
 {
-	const int32 Named = FindModel(Settings, Settings.DefaultModelName);
-	if (Named != INDEX_NONE) return Named;
+	TArray<FString> ModelIds;
+	for (const FShuttlegentModelRoute& Route : Build(Settings))
+	{
+		if (!FShuttlegentModelRoutesPrivate::IsConnected(Settings, Route)) continue;
 
-	const FString FirstBuiltinId = ShuttlegentBuiltinModel::Ids[0];
-	return Settings.Models.IndexOfByPredicate([&FirstBuiltinId](const FShuttlegentModelEntry& Entry) { return Entry.bBuiltin && Entry.ModelId == FirstBuiltinId; });
+		for (const FString& ModelId : Route.ModelIds)
+		{
+			ModelIds.AddUnique(ModelId);
+		}
+	}
+	return ModelIds;
 }
 
-bool FShuttlegentModelRoutes::FindRoute(const TArray<FShuttlegentModelRoute>& Routes, int32 ModelIndex, FShuttlegentModelRoute& OutRoute)
+FString FShuttlegentModelRoutes::MakeFingerprint(const FShuttlegentConnection& Connection)
 {
-	const FShuttlegentModelRoute* Found = Routes.FindByPredicate([ModelIndex](const FShuttlegentModelRoute& Route) { return Route.ModelIndices.Contains(ModelIndex); });
-	if (Found == nullptr) return false;
-
-	OutRoute = *Found;
-	return true;
+	const FString Key = TrimBaseUrl(Connection.BaseUrl).ToLower() + ShuttlegentProviderConstant::RouteKeySeparator + Connection.ApiKey.TrimStartAndEnd();
+	return FString::Printf(TEXT("%08x"), FCrc::StrCrc32(*Key));
 }
 
-bool FShuttlegentModelRoutes::IsSameEndpoint(const FString& LeftUrl, EShuttlegentProviderApi LeftApi, const FString& RightUrl, EShuttlegentProviderApi RightApi)
+FString FShuttlegentModelRoutes::TrimBaseUrl(const FString& BaseUrl)
 {
-	return LeftApi == RightApi && FShuttlegentModelRoutesPrivate::NormalizeUrl(LeftUrl) == FShuttlegentModelRoutesPrivate::NormalizeUrl(RightUrl);
+	FString Url = BaseUrl.TrimStartAndEnd();
+	while (Url.EndsWith(ShuttlegentProbeConstant::UrlSlash))
+	{
+		Url.LeftChopInline(FCString::Strlen(ShuttlegentProbeConstant::UrlSlash));
+	}
+	return Url;
 }
 
 const TCHAR* FShuttlegentModelRoutes::GetApiName(EShuttlegentProviderApi Api)

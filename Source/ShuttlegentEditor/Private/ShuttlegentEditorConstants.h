@@ -184,13 +184,19 @@ namespace ShuttlegentEditorSettingsUi
 	// 注册细节面板定制的模块
 	inline const TCHAR* PropertyEditorModule = TEXT("PropertyEditor");
 
-	// 检测连接行（SShuttlegentProbeRow）：值区域最小宽度，按钮与提示文字之间、结果各行之间的间距，单位为 Slate 单位
+	// 检测行（SShuttlegentProbeRow）：值区域最小宽度，按钮与圆点、圆点与结论之间的间距，单位为 Slate 单位
 	inline constexpr float ProbeValueMinWidth = 260.0f;
 	inline constexpr float ProbeButtonGap = 8.0f;
-	inline constexpr float ProbeLineGap = 2.0f;
+	inline constexpr float ProbeLineGap = 4.0f;
 
-	// 检测连接结果中连接各段的分隔符
+	// 检测按钮的样式与图标（引擎样式），结论前的圆点
+	inline const FName ProbeButtonStyle = TEXT("SimpleButton");
+	inline const FName ProbeIcon = TEXT("Icons.Refresh");
+	inline const TCHAR* ProbeStatusDot = TEXT("●");
+
+	// 连接标题行各段的分隔符，以及 Models 一行中模型之间的分隔符
 	inline const TCHAR* ProbeFieldSeparator = TEXT(" · ");
+	inline const TCHAR* ModelListSeparator = TEXT(", ");
 
 	// 字体输入框（SShuttlegentFontField）：下拉列表最大高度、框右端为下拉箭头留出的宽度与箭头边长、列表行与分组标题的内边距，单位为 Slate 单位
 	inline constexpr float FontListMaxHeight = 320.0f;

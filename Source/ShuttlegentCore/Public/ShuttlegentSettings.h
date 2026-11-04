@@ -5,7 +5,7 @@
 
 #include "EShuttlegentWriteMode.h"
 #include "FShuttlegentAgentEntry.h"
-#include "FShuttlegentModelEntry.h"
+#include "FShuttlegentConnection.h"
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentPermissionPolicy.h"
 
@@ -18,8 +18,7 @@ class SHUTTLEGENTCORE_API UShuttlegentSettings : public UDeveloperSettings
 	GENERATED_BODY()
 
 private:
-	/** 编辑前内置模型的地址与密钥；内置条目被误删后按它加回，密钥不丢失。 */
-	FString BuiltinBaseUrlBeforeEdit;
+	/** 编辑前内置连接的密钥；内置连接被误删后按它加回，密钥不丢失。 */
 	FString BuiltinApiKeyBeforeEdit;
 
 public:
@@ -31,9 +30,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Runtime")
 	bool bPrewarmRuntime = true;
 
-	/** 可在会话中选用的模型；内置 DeepSeek 的两个模型预装且不可删除。下次启动运行时生效。 */
+	/**
+	 * 模型连接：每条只填地址与密钥，协议与可用模型自动检测；第一条已连通的连接中的第一个模型为新会话的默认模型。
+	 * 内置 DeepSeek 连接预装且不可删除。下次启动运行时生效。
+	 */
 	UPROPERTY(Config, EditAnywhere, Category = "Models")
-	TArray<FShuttlegentModelEntry> Models;
+	TArray<FShuttlegentConnection> Connections;
 
 	/** 插件提供的 Agent：启用后出现在会话的 Agent 选择器中，可各自指定默认模型。 */
 	UPROPERTY(Config, EditAnywhere, EditFixedSize, Category = "Agents")
@@ -42,14 +44,6 @@ public:
 	/** 新会话默认使用的 Agent。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Defaults")
 	FString DefaultAgent = ShuttlegentAgentConstant::DefaultAgentId;
-
-	/** 新会话默认使用的模型，按模型名称选择；留空使用第一个内置模型。下次启动运行时生效。 */
-	UPROPERTY(Config, EditAnywhere, Category = "Defaults")
-	FString DefaultModelName;
-
-	/** 旧版供应商设置已迁移到 Models（FShuttlegentSettingsMigration）。 */
-	UPROPERTY(Config)
-	bool bModelsMigrated = false;
 
 	/** 允许运行时的文件工具不经询问写入项目目录；关闭时每次写入都需提权。下次启动运行时生效。 */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
@@ -108,7 +102,7 @@ public:
 	FString CodeFontFamily;
 
 	/**
-	 * 补齐内置模型：缺少的按预装顺序加回，名称、模型 ID 与协议恢复为预装值，地址与密钥保持一致。
+	 * 补齐内置 DeepSeek 连接：缺少时插到最前，地址、协议与模型恢复为预装值，密钥保持。
 	 * Agent 列表与 FShuttlegentAgentCatalog 对齐，默认 Agent 不可用时改回默认循环。
 	 */
 	void EnsureBuiltins();
@@ -125,8 +119,4 @@ public:
 	virtual FName GetCategoryName() const override;
 	virtual FName GetSectionName() const override;
 	//~ End UDeveloperSettings Interface.
-
-private:
-	/** 内置模型的地址与密钥统一为 SourceIndex 处内置模型的值（llm-deepseek 只有一个端点和一个密钥）。 */
-	void SyncBuiltinConnection(int32 SourceIndex);
 };

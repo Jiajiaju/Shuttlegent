@@ -34,6 +34,9 @@ private:
 	/** 定时把主页签与各会话页签是否在前台告诉各自的视图（Slate 没有页签转入后台的通知）。 */
 	FTSTicker::FDelegateHandle TabForegroundHandle;
 
+	/** 关闭编辑器前的确认（IMainFrameModule::RegisterCanCloseEditor）：有回合在进行时先问用户。 */
+	FDelegateHandle CanCloseEditorHandle;
+
 public:
 	//~ Begin IModuleInterface Interface.
 	virtual void StartupModule() override;
@@ -48,4 +51,7 @@ private:
 	/** 页签色条：不在前台时按对话模型的提醒为蓝（完成未看）或黄（等待输入），否则透明不显示。 */
 	FLinearColor GetChatTabColor() const;
 	bool HandleTabForegroundCheck(float DeltaTime);
+
+	/** 有回合在进行时列出会被中断的会话请用户确认；确认后把等待中的计划、选择卡与权限请求记为已结束（设计文档 §10.3）。 */
+	bool HandleCanCloseEditor();
 };

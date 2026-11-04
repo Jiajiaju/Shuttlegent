@@ -2,7 +2,9 @@
 
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
+#include "Interfaces/IMainFrameModule.h"
 #include "Misc/CoreDelegates.h"
+#include "Misc/MessageDialog.h"
 #include "PropertyEditorModule.h"
 #include "Modules/ModuleManager.h"
 #include "Textures/SlateIcon.h"
@@ -69,6 +71,9 @@ void FShuttlegentEditorModule::ShutdownModule()
 	}
 
 	FCoreDelegates::OnFEngineLoopInitComplete.RemoveAll(this);
+	IMainFrameModule* MainFrame = FModuleManager::GetModulePtr<IMainFrameModule>(ShuttlegentEditorRuntime::MainFrameModule);
+	if (MainFrame != nullptr && CanCloseEditorHandle.IsValid()) MainFrame->UnregisterCanCloseEditor(CanCloseEditorHandle);
+	CanCloseEditorHandle.Reset();
 	FTSTicker::GetCoreTicker().RemoveTicker(PrewarmHandle);
 	PrewarmHandle.Reset();
 	FTSTicker::GetCoreTicker().RemoveTicker(TabForegroundHandle);
@@ -148,8 +153,31 @@ bool FShuttlegentEditorModule::HandleTabForegroundCheck(float DeltaTime)
 	return true;
 }
 
+bool FShuttlegentEditorModule::HandleCanCloseEditor()
+{
+	if (!ChatModel.IsValid()) return true;
+
+	const TArray<FString> Titles = ChatModel->GetBusyTitles();
+	if (Titles.IsEmpty()) return true;
+
+	FString List;
+	for (const FString& Title : Titles)
+	{
+		List += FString::Printf(TEXT("\n  · %s"), *Title);
+	}
+	const FText Message = FText::Format(LOCTEXT("CloseDuringTurn", "以下会话的回合仍在进行，关闭编辑器会中断它们：{0}\n\n未确认的写入、权限请求与提问将作废；重新打开后可在对话末尾点“重试”。仍要关闭吗？"), FText::FromString(List));
+	if (FMessageDialog::Open(EAppMsgType::YesNo, EAppReturnType::No, Message, LOCTEXT("CloseDuringTurnTitle", "Shuttlegent 回合进行中")) != EAppReturnType::Yes) return false;
+
+	ChatModel->SettleBeforeExit();
+	return true;
+}
+
 void FShuttlegentEditorModule::HandleEngineInitComplete()
 {
+	// 主框架此时已加载；关闭编辑器前有回合在进行时先确认（设计文档 §10.3）
+	IMainFrameModule* MainFrame = FModuleManager::GetModulePtr<IMainFrameModule>(ShuttlegentEditorRuntime::MainFrameModule);
+	if (MainFrame != nullptr) CanCloseEditorHandle = MainFrame->RegisterCanCloseEditor(IMainFrameModule::FMainFrameCanCloseEditor::CreateRaw(this, &FShuttlegentEditorModule::HandleCanCloseEditor));
+
 	// 稍作等待，让编辑器自身的启动工作先行；延迟结束时才读取该设置
 	const TWeakPtr<FShuttlegentChatModel> WeakModel = ChatModel;
 	PrewarmHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([WeakModel](float DeltaTime)

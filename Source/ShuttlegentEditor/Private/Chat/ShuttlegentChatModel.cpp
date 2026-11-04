@@ -9,6 +9,9 @@
 #include "Chat/FShuttlegentToolPresentation.h"
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
+#include "Misc/Base64.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "Endpoint/FShuttlegentContextBreakdown.h"
 #include "Endpoint/FShuttlegentSessionEvent.h"
@@ -303,6 +306,33 @@ namespace ShuttlegentChatModelPrivate
 	{
 		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 		return IsValid(Settings) ? Settings->DefaultWriteMode : EShuttlegentWriteMode::Manual;
+	}
+
+	/** 会话记录里提问所附图片的文件（按内容保存在会话图片目录）读回成可重发的图片；读不到或类型不认识的跳过，bOutAll 随之为 false。 */
+	TArray<FShuttlegentPromptImage> LoadPromptImages(const TArray<FString>& Files, bool& bOutAll)
+	{
+		static const TMap<FString, FString> MimeByExtension = {
+			{ TEXT("png"), TEXT("image/png") }, { TEXT("jpg"), TEXT("image/jpeg") }, { TEXT("jpeg"), TEXT("image/jpeg") },
+			{ TEXT("webp"), TEXT("image/webp") }, { TEXT("gif"), TEXT("image/gif") } };
+
+		bOutAll = true;
+		TArray<FShuttlegentPromptImage> Images;
+		for (const FString& File : Files)
+		{
+			const FString* MimeType = MimeByExtension.Find(FPaths::GetExtension(File).ToLower());
+			TArray<uint8> Bytes;
+			if (MimeType == nullptr || !FFileHelper::LoadFileToArray(Bytes, *File) || Bytes.IsEmpty())
+			{
+				bOutAll = false;
+				continue;
+			}
+
+			FShuttlegentPromptImage Image;
+			Image.MimeType = *MimeType;
+			Image.Data = FBase64::Encode(Bytes);
+			Images.Add(MoveTemp(Image));
+		}
+		return Images;
 	}
 
 	/** 这条消息之后仍可撤销的写入（同步事务、尚未撤销、确有执行），按发生顺序。 */
@@ -1114,6 +1144,31 @@ bool FShuttlegentChatModel::HasSessionRecord(const FString& SessionId) const
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	return Pinned.IsValid() && !SessionId.IsEmpty() && Pinned->GetSessionStore().FindRecord(SessionId) != nullptr;
+}
+
+TArray<FString> FShuttlegentChatModel::GetBusyTitles() const
+{
+	TArray<FString> Titles;
+	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
+	{
+		// 只算真正会丢失的回合：正在回答，或已交出、等会话就绪才发的提问；运行时启动中本身不算
+		if (!IsPrompting(*Conversation) && Conversation->PendingPrompt.IsEmpty()) continue;
+
+		const FString Title = GetTitle(*Conversation);
+		Titles.Add(Title.IsEmpty() ? LOCTEXT("BusyUntitled", "新对话").ToString() : Title);
+	}
+	return Titles;
+}
+
+void FShuttlegentChatModel::SettleBeforeExit()
+{
+	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
+	{
+		if (!Conversation->PendingPlanReview.ReviewId.IsEmpty()) SettlePlanReview(*Conversation, ShuttlegentEditorWebField::PlanCancelled, FString());
+		SettleChoice(*Conversation, ShuttlegentEditorWebField::ChoiceUnanswered, FShuttlegentChoiceAnswer());
+		RejectPendingPermissions(*Conversation);
+	}
+	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent: the editor is closing during a turn; pending plans, choices and permission requests were settled."));
 }
 
 void FShuttlegentChatModel::ReleaseConversation(FShuttlegentConversation& Conversation)
@@ -2449,6 +2504,8 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return;
 
+	// 记下提问而没有记下回合结束的一轮没有正常结束：编辑器在回合中关闭，或运行时在回合中退出（设计文档 §10.3）
+	TSharedPtr<FShuttlegentChatEntry> OpenPrompt;
 	for (const TSharedPtr<FJsonObject>& Item : Pinned->GetSessionStore().LoadTranscript(Conversation.SessionId))
 	{
 		FString Kind;
@@ -2457,6 +2514,8 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 
 		if (Kind == ShuttlegentChatModelPrivate::TranscriptPrompt)
 		{
+			if (OpenPrompt.IsValid()) AddInterruptedNotice(Conversation);
+
 			FString Text;
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldText, Text);
 			const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(Conversation, EShuttlegentChatEntryKind::User, Text);
@@ -2465,6 +2524,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			FString Time;
 			FDateTime At;
 			if (Item->TryGetStringField(ShuttlegentChatModelPrivate::FieldTime, Time) && FDateTime::ParseIso8601(*Time, At)) Entry->TimeUtc = At;
+			OpenPrompt = Entry;
 		}
 		else if (Kind == ShuttlegentChatModelPrivate::TranscriptUpdate)
 		{
@@ -2480,6 +2540,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldStopReason, StopReason);
 			(*Data)->TryGetStringField(ShuttlegentChatModelPrivate::FieldError, Error);
 			ApplyTurnEnd(Conversation, StopReason, Error);
+			OpenPrompt.Reset();
 		}
 		else if (Kind == ShuttlegentChatModelPrivate::TranscriptPermission)
 		{
@@ -2528,7 +2589,34 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 			Conversation.ChoiceEntryId = Status == ShuttlegentEditorWebField::ChoicePending ? Entry->Id : 0;
 		}
 	}
+
+	// 刚打开的对话没有人在等作答：记录里仍在等待的选择卡已经作废
+	if (Conversation.ChoiceEntryId != 0)
+	{
+		for (const TSharedPtr<FShuttlegentChatEntry>& Entry : Conversation.Entries)
+		{
+			if (Entry->Id == Conversation.ChoiceEntryId) Entry->Status = ShuttlegentEditorWebField::ChoiceUnanswered;
+		}
+		Conversation.ChoiceEntryId = 0;
+	}
+
+	// 最后一轮被中断：可以“重试”，重新发送那条提问
+	if (OpenPrompt.IsValid())
+	{
+		AddInterruptedNotice(Conversation);
+		bool bAllImages = true;
+		Conversation.LastSentPrompt = OpenPrompt->Text;
+		Conversation.LastSentImages = ShuttlegentChatModelPrivate::LoadPromptImages(OpenPrompt->Images, bAllImages);
+		Conversation.LastOutcome = EShuttlegentTurnOutcome::Failed;
+		if (!bAllImages) AddNotice(Conversation, LOCTEXT("InterruptedImagesMissing", "这条消息所附的图片有的已找不到，重试时只发送找得到的；需要的话请重新添加。"), false);
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: the last turn did not end (editor closed or runtime lost during the turn); retry is offered."), *Conversation.SessionId);
+	}
 	NotifyStructure(Conversation);
+}
+
+void FShuttlegentChatModel::AddInterruptedNotice(FShuttlegentConversation& Conversation)
+{
+	AddNotice(Conversation, LOCTEXT("TurnInterrupted", "这一轮没有正常结束（编辑器在回合中关闭，或运行时中途退出）；当时未确认的写入、权限请求与提问均已作废。"), true);
 }
 
 void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)

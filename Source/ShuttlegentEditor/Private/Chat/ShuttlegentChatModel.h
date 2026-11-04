@@ -182,6 +182,15 @@ public:
 	/** 会话索引中有该会话（含已归档的）。 */
 	bool HasSessionRecord(const FString& SessionId) const;
 
+	/** 回合正在进行的对话的标题（新对话为“新对话”）；关闭编辑器前据此提示会被中断的会话。 */
+	TArray<FString> GetBusyTitles() const;
+
+	/**
+	 * 用户确认在回合中关闭编辑器：等待中的计划记为已取消、选择卡记为未作答、权限请求记为拒绝，均写入会话记录，
+	 * 重启后对话中能看到它们如何结束（设计文档 §10.3）。
+	 */
+	void SettleBeforeExit();
+
 	/** 草稿与排队提示的存盘；视图读写草稿、页签关闭时删去其新对话草稿。 */
 	FShuttlegentDraftStore& GetDrafts() { return Drafts; }
 
@@ -466,6 +475,9 @@ private:
 	bool ApplyUpdate(FShuttlegentConversation& Conversation, const TSharedPtr<FJsonObject>& Update, const FDateTime& At);
 	void ApplyTurnEnd(FShuttlegentConversation& Conversation, const FString& StopReason, const FString& ErrorMessage);
 	void ReplayTranscript(FShuttlegentConversation& Conversation);
+
+	/** 回放时某一轮只有提问、没有回合结束：在此处加一条“这一轮没有正常结束”的提示（设计文档 §10.3）。 */
+	void AddInterruptedNotice(FShuttlegentConversation& Conversation);
 
 	/** 条目在对话中的位置，以及它是第几条用户消息（从 0 计，与运行时的 user/message 计数一致）；不是用户消息时返回 false。 */
 	bool FindUserMessage(const FShuttlegentConversation& Conversation, int32 EntryId, int32& OutIndex, int32& OutOrdinal) const;

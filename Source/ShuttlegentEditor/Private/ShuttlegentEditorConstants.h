@@ -242,6 +242,9 @@ namespace ShuttlegentEditorRuntime
 
 	// 检查 Shuttlegent 页签是否在前台（据此清除“完成未看”提醒）的间隔，单位为秒
 	inline constexpr float TabForegroundCheckSeconds = 0.25f;
+
+	// 注册关闭编辑器前确认（RegisterCanCloseEditor）的模块
+	inline const TCHAR* MainFrameModule = TEXT("MainFrame");
 }
 
 /** 会话页签（工作区 Doc/ShuttlegentSessionTabs_Design.md §9）。 */

@@ -15,6 +15,7 @@
 #include "ShuttlegentSessionRecord.h"
 #include "ShuttlegentStartIssue.h"
 
+class FJsonObject;
 class FShuttlegentChatModel;
 struct FShuttlegentQuestion;
 struct FShuttlegentWriteRequest;
@@ -67,11 +68,26 @@ private:
 
 	EShuttlegentViewMode Mode = EShuttlegentViewMode::Hub;
 
+	/** 新对话草稿的存放键（FShuttlegentDraftStore::MakeViewKey 之前）：主页签为 Hub，会话页签为其 ViewId。 */
+	FString DraftViewKey;
+
+	/** 显示时尚无会话 id 的当前对话；它有了 id 时，视图下的草稿归到该会话名下。 */
+	TWeakPtr<FShuttlegentConversation> NewDraftConversation;
+
 public:
 	/** 新建一个空对话并显示它，开始转发模型事件。 */
 	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, EShuttlegentViewMode InMode);
 
 	EShuttlegentViewMode GetMode() const { return Mode; }
+
+	/** 会话页签在 Initialize 之前给出其 ViewId 作为新对话草稿的存放键；不调用时为主页签的键。 */
+	void SetDraftViewKey(const FString& InViewKey) { DraftViewKey = InViewKey; }
+
+	/** 当前对话存下的草稿（页面原样交来的对象）；没有时为空。 */
+	TSharedPtr<FJsonObject> GetDraft() const;
+
+	/** 页面交来某会话的草稿；会话 id 为空表示本视图的新对话，Json 为空表示草稿已清空。 */
+	void SaveDraft(const FString& SessionId, const FString& Json);
 
 	/** 停止转发并交还当前对话。 */
 	void Shutdown();
@@ -174,6 +190,12 @@ private:
 	void BroadcastAll();
 
 	bool IsCurrent(const FShuttlegentConversation& Conversation) const { return Current.Get() == &Conversation; }
+
+	/** 会话 id 为空时为本视图的新对话键，否则为会话 id。 */
+	FString MakeDraftKey(const FString& SessionId) const;
+
+	/** 显示时尚无会话 id 的当前对话有了 id：视图下的草稿归到该会话名下。 */
+	void AdoptNewDraft();
 
 	void HandleStructureChanged(const FShuttlegentConversation& Conversation);
 	void HandleContentChanged(const FShuttlegentConversation& Conversation);

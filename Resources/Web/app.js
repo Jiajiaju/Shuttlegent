@@ -140,6 +140,11 @@
   const MAX_PNG_BYTES = 4 * 1024 * 1024;
   const JPEG_QUALITY = 0.9;
 
+  // Pause in typing after which the draft goes to the editor to be saved, in milliseconds; a draft image read back from disk must look like this
+  const DRAFT_SAVE_MS = 1000;
+  const DRAFT_IMAGE_TYPE = /^image\/(png|jpeg|gif|webp)$/;
+  const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
   // Where the editor's result text names a screenshot it saved (FShuttlegentToolsetImages.cpp writes "saved to <path>]")
   const SAVED_IMAGE_PATTERN = /saved to ([^\]\r\n]+?\.png)\]/g;
 
@@ -298,9 +303,12 @@
     menuSessionId: '',
     targetSessionId: '',
 
-    // Drafts kept per session: switching sessions neither moves nor clears them (interaction spec section 4.3)
-    drafts: new Map(),
+    // Drafts are kept per session by the editor, on disk (session tabs design section 10.2): switching sessions neither moves nor clears them
     switchingSession: false,
+
+    // The pending save of the draft, and the last draft handed to the editor per session ('' is the new conversation)
+    draftSaveTimer: 0,
+    savedDrafts: new Map(),
     sessionView: false,
 
     // Countdown of the write confirmation card
@@ -1155,20 +1163,63 @@
     draftInput.focus();
   }
 
-  /** Each session keeps its own draft; a session the page did not switch to (a new one just created) keeps the current draft. */
-  function switchDraft(previousId, nextId) {
-    if (!view.switchingSession) return;
+  /**
+   * Each session keeps its own draft. Leaving a session always swaps drafts (the user switched, or the session moved into a tab);
+   * a new conversation that just got its session id, without the user switching, keeps the current draft.
+   */
+  function switchDraft(previousId, saved) {
+    const switching = view.switchingSession || previousId !== '';
     view.switchingSession = false;
+    if (!switching) return;
 
-    view.drafts.set(previousId, { text: draftInput.value, refs: draftState.refs });
-    const saved = view.drafts.get(nextId) || { text: '', refs: [] };
-    view.drafts.delete(nextId);
-    draftState.refs = saved.refs;
-    draftState.historyIndex = -1;
-    setDraft(saved.text);
-    renderReferences();
-    watchReferences();
+    saveDraftNow(previousId);
+    loadDraft(saved);
     closeMenu();
+  }
+
+  /** The draft as the editor stores it: text, chips and images; '' when there is nothing to keep. */
+  function draftJson() {
+    const text = draftInput.value;
+    if (!text.trim() && !draftState.refs.length && !draftState.images.length) return '';
+    return JSON.stringify({
+      text: text,
+      refs: draftState.refs.map((ref) => ({ kind: ref.kind, path: ref.path, name: ref.name, cls: ref.cls })),
+      images: draftState.images.map((image) => ({ mimeType: image.mimeType, data: image.data }))
+    });
+  }
+
+  /** Hands the draft to the editor once typing pauses; a draft that has not changed since the last save is not sent again. */
+  function scheduleDraftSave() {
+    if (!draftInput) return;
+    window.clearTimeout(view.draftSaveTimer);
+    view.draftSaveTimer = window.setTimeout(() => saveDraftNow(state.currentSessionId), DRAFT_SAVE_MS);
+  }
+
+  function saveDraftNow(sessionId) {
+    window.clearTimeout(view.draftSaveTimer);
+    view.draftSaveTimer = 0;
+    const json = draftJson();
+    if ((view.savedDrafts.get(sessionId) || '') === json) return;
+    view.savedDrafts.set(sessionId, json);
+    call('savedraft', sessionId, json);
+  }
+
+  /** Puts a draft the editor stored back into the input; images that do not look like a draft image are dropped. */
+  function loadDraft(saved) {
+    const draft = saved && typeof saved === 'object' ? saved : {};
+    const refs = Array.isArray(draft.refs) ? draft.refs : [];
+    const images = Array.isArray(draft.images) ? draft.images : [];
+    draftState.refs = refs.filter((ref) => ref && typeof ref.path === 'string' && ref.path)
+      .map((ref) => ({ kind: ref.kind === 'actor' ? 'actor' : 'asset', path: ref.path, name: String(ref.name || ''), cls: String(ref.cls || ''), valid: true }));
+    draftState.images = images.filter((image) => image && DRAFT_IMAGE_TYPE.test(image.mimeType) && typeof image.data === 'string' && BASE64.test(image.data))
+      .slice(0, MAX_DRAFT_IMAGES)
+      .map((image) => ({ mimeType: image.mimeType, data: image.data, url: 'data:' + image.mimeType + ';base64,' + image.data }));
+    draftState.historyIndex = -1;
+    setDraft(typeof draft.text === 'string' ? draft.text : '');
+    renderReferences();
+    renderAttachments();
+    watchReferences();
+    view.savedDrafts.set(state.currentSessionId, draftJson());
   }
 
   /** Start guide card (interaction spec section 5.3): what blocks the runtime and where to fix it; never a key value. */
@@ -1759,6 +1810,7 @@
   function setDraft(text) {
     draftInput.value = text;
     growDraft();
+    scheduleDraftSave();
   }
 
   /** Sends the draft with a frozen copy of its chips; the draft clears only once the editor accepted it. */
@@ -1875,6 +1927,7 @@
     const box = $('attachments');
     box.hidden = !draftState.images.length;
     box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="移除" aria-label="移除图片">' + icons.svg('close', 12) + '</button></div>').join('');
+    scheduleDraftSave();
   }
 
   function renderImageButton() {
@@ -2044,6 +2097,7 @@
       return '<span class="ref' + (invalid ? ' invalid' : '') + '" title="' + esc(title) + '">' + lead + '<span class="ref-name">' + esc(ref.name) + '</span>' + cls + '<button data-remove-ref="' + index + '" title="移除" aria-label="移除引用 ' + esc(ref.name) + '">' + icons.svg('close', 12) + '</button></span>';
     }).join('');
     updateSendButton();
+    scheduleDraftSave();
   }
 
   /** Tells the editor which chips and reply object links to keep checking; validity comes back through onReferenceValidity. */
@@ -3009,8 +3063,11 @@
     if (switchedSession) {
       expandedTools.clear();
       view.selectedTool = null;
-      if (!reset) switchDraft(previousSessionId, state.currentSessionId);
+      if (!reset) switchDraft(previousSessionId, message.draft);
     }
+
+    // The page (re)loaded, for example a session moved into a tab: the draft the editor kept for this session comes back
+    if (reset && 'draft' in message) loadDraft(message.draft);
 
     let toolsChanged = false;
     for (const entry of message.entries || []) {
@@ -3184,12 +3241,14 @@
         draftState.historyIndex = -1;
         hideCommandNote();
         updateMenu();
+        scheduleDraftSave();
       },
       selection: () => {
         if (!draftInput.composing) updateMenu();
       },
       blur: () => window.setTimeout(() => {
         if (!draftInput.hasFocus()) closeMenu();
+        saveDraftNow(state.currentSessionId);
       }, 0),
       paste: pasteImages
     });

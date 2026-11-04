@@ -40,6 +40,9 @@ private:
 	FString PendingDraft;
 	bool bDraftPending = false;
 
+	/** 最近一次随消息发送存盘草稿时的当前会话；当前会话改变时再发一次，页面切换会话时据此放回草稿。 */
+	FString SentDraftSessionId;
+
 	bool bPageReady = false;
 	bool bResetPending = false;
 	bool bStatusDirty = false;

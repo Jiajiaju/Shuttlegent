@@ -80,6 +80,11 @@ void UShuttlegentWebBridge::SetPaneWidths(int32 SidebarWidth, int32 InspectorWid
 	if (OnSetPaneWidths) OnSetPaneWidths(SidebarWidth, InspectorWidth);
 }
 
+void UShuttlegentWebBridge::SaveDraft(const FString& SessionId, const FString& DraftJson)
+{
+	if (OnSaveDraft) OnSaveDraft(SessionId, DraftJson);
+}
+
 void UShuttlegentWebBridge::AnswerPermission(int32 EntryId, bool bAllow)
 {
 	if (OnAnswerPermission) OnAnswerPermission(EntryId, bAllow);

@@ -33,11 +33,15 @@ TArray<TSharedPtr<FJsonValue>> FShuttlegentWebJson::MakeReferences(const TArray<
 
 TArray<FShuttlegentReference> FShuttlegentWebJson::ParseReferences(const FString& Json)
 {
-	TArray<FShuttlegentReference> References;
 	TArray<TSharedPtr<FJsonValue>> Values;
 	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
-	if (!FJsonSerializer::Deserialize(Reader, Values)) return References;
+	if (!FJsonSerializer::Deserialize(Reader, Values)) return TArray<FShuttlegentReference>();
+	return ParseReferenceValues(Values);
+}
 
+TArray<FShuttlegentReference> FShuttlegentWebJson::ParseReferenceValues(const TArray<TSharedPtr<FJsonValue>>& Values)
+{
+	TArray<FShuttlegentReference> References;
 	for (const TSharedPtr<FJsonValue>& Value : Values)
 	{
 		const TSharedPtr<FJsonObject> Item = Value.IsValid() ? Value->AsObject() : nullptr;

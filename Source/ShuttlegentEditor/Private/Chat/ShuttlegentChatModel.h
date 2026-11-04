@@ -9,6 +9,7 @@
 #include "Chat/FShuttlegentChatEntry.h"
 #include "Chat/FShuttlegentConfigChoice.h"
 #include "Chat/FShuttlegentConversation.h"
+#include "Chat/FShuttlegentDraftStore.h"
 #include "Chat/FShuttlegentPromptQueue.h"
 #include "Chat/FShuttlegentRunLogEntry.h"
 #include "ShuttlegentAgentState.h"
@@ -153,6 +154,9 @@ private:
 	FDelegateHandle UndoBufferHandle;
 	FDelegateHandle PostUndoRedoHandle;
 
+	/** 各会话与新对话视图的草稿、各会话的排队提示，存盘以便重启后放回（设计文档 §10.2）。 */
+	FShuttlegentDraftStore Drafts;
+
 public:
 	void Initialize(const TSharedRef<FShuttlegentAgentService>& InService);
 	void Shutdown();
@@ -174,6 +178,12 @@ public:
 
 	/** 会话索引中有该会话且未归档（重启后恢复页签前据此判断会话是否已被删除或归档）。 */
 	bool IsSessionAvailable(const FString& SessionId) const;
+
+	/** 会话索引中有该会话（含已归档的）。 */
+	bool HasSessionRecord(const FString& SessionId) const;
+
+	/** 草稿与排队提示的存盘；视图读写草稿、页签关闭时删去其新对话草稿。 */
+	FShuttlegentDraftStore& GetDrafts() { return Drafts; }
 
 	/** 视图不再显示该对话：没有视图显示且空闲的对话被丢弃并关闭其会话，忙碌的对话继续运行。 */
 	void ReleaseConversation(FShuttlegentConversation& Conversation);

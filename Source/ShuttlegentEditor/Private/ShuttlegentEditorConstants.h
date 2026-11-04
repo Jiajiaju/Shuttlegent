@@ -250,14 +250,17 @@ namespace ShuttlegentEditorSessionTab
 	// 会话页签类型名的前缀，后接页签的 ViewId；布局按类型名保存，不能与主页签同名
 	inline const TCHAR* TabTypePrefix = TEXT("ShuttlegentSession.");
 
-	// 插入会话页签后等待它取得几何信息、再交给原生拖拽的最多帧数
-	inline constexpr int32 MaxDragWaitFrames = 10;
+	// 插入会话页签后等待它完成排版、再交给原生拖拽的最多帧数
+	inline constexpr int32 MaxDragWaitFrames = 30;
 
 	// 新会话窗口的客户区大小，单位 Slate 单位
 	inline const FVector2D WindowSize = FVector2D(520.0, 720.0);
 
-	// 新会话窗口相对光标的偏移，使光标落在页签头上，单位 Slate 单位
+	// 新会话窗口相对光标的偏移，使光标落在页签头上，单位 Slate 单位；拖拽没能开始时窗口按此显示
 	inline const FVector2D WindowGrabOffset = FVector2D(60.0, 14.0);
+
+	// 拖出时新会话窗口先藏在光标右下方，光标不在其上，拖拽一开始页签即离开它，单位 Slate 单位
+	inline const FVector2D HiddenWindowOffset = FVector2D(40.0, 40.0);
 
 	// 会话页签注册到其页签管理器的模块
 	inline const FName LevelEditorModule = TEXT("LevelEditor");
@@ -267,6 +270,27 @@ namespace ShuttlegentEditorSessionTab
 	inline const TCHAR* ConfigKeySessionTabs = TEXT("SessionTabs");
 	inline const TCHAR* ConfigKeyHubSession = TEXT("HubSessionId");
 	inline const TCHAR* BindingSeparator = TEXT("|");
+}
+
+/** 草稿与排队提示的存盘（FShuttlegentDraftStore；会话页签设计文档 §10.2）。 */
+namespace ShuttlegentEditorDraft
+{
+	// 每个会话一个文件 <SessionId>.json，相对会话目录（ShuttlegentPath::SessionsDir）；新对话的草稿按视图存在 Views 子目录
+	inline const TCHAR* DraftsDir = TEXT("Drafts");
+	inline const TCHAR* ViewsDir = TEXT("Views");
+	inline const TCHAR* FileExtension = TEXT(".json");
+
+	// 主页签新对话的草稿键；会话页签用其 ViewId
+	inline const TCHAR* HubKey = TEXT("Hub");
+
+	// 文件字段：页面原样交来的草稿对象（文字、引用、图片），以及排队的提示（文字、引用、模型、推理强度）
+	inline const TCHAR* FieldDraft = TEXT("draft");
+	inline const TCHAR* FieldQueue = TEXT("queue");
+	inline const TCHAR* FieldModel = TEXT("model");
+	inline const TCHAR* FieldReasoning = TEXT("reasoning");
+
+	// 页面交来的草稿 JSON 的长度上限（字符），容得下 6 张缩放后的图片（每张编码后至多约 4 MB、Base64 后约 5.4M 字符）；超出时不保存
+	inline constexpr int32 MaxDraftJsonChars = 48 * 1024 * 1024;
 }
 
 namespace ShuttlegentEditorWebField
@@ -596,6 +620,9 @@ namespace ShuttlegentEditorWebField
 
 	// 回到某条消息后要放回输入框的原文（一次性）
 	inline const TCHAR* RestoreDraft = TEXT("restoreDraft");
+
+	// 当前会话存下的草稿（文字、引用、图片）；页面载入与当前会话改变时发送，没有草稿时为 null
+	inline const TCHAR* Draft = TEXT("draft");
 
 	// 当前对话能否回到某条消息或从它分支，以及不能时的原因
 	inline const TCHAR* CanEditHistory = TEXT("canEditHistory");

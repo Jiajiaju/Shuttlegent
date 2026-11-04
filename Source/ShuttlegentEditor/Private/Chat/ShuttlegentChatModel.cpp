@@ -1066,6 +1066,20 @@ TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::HoldConversation(con
 	Opened->AgentId = Record != nullptr && !Record->AgentId.IsEmpty() ? Record->AgentId : FString(ShuttlegentAgentConstant::DefaultAgentId);
 	Conversations.Add(Opened);
 	ReplayTranscript(*Opened);
+
+	// 上次关闭编辑器时没发出的排队提示：放回队列并暂停，由用户点“继续”，重启后不自动发送
+	for (FShuttlegentQueuedPrompt& Item : Drafts.GetQueue(SessionId))
+	{
+		Item.Id = NextQueueId++;
+		Opened->Queue.Items.Add(MoveTemp(Item));
+	}
+	if (!Opened->Queue.Items.IsEmpty())
+	{
+		Opened->Queue.bPaused = true;
+		AddRunLog(*Opened, FText::Format(LOCTEXT("LogQueueRestored", "放回上次未发出的 {0} 条排队消息，队列已暂停"), FText::AsNumber(Opened->Queue.Items.Num())), false);
+		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: %d queued prompt(s) restored, queue paused."), *SessionId, Opened->Queue.Items.Num());
+	}
+
 	if (bDeferResume)
 	{
 		Opened->bResumeDeferred = true;
@@ -1094,6 +1108,12 @@ bool FShuttlegentChatModel::IsSessionAvailable(const FString& SessionId) const
 
 	const FShuttlegentSessionRecord* Record = Pinned->GetSessionStore().FindRecord(SessionId);
 	return Record != nullptr && !Record->bArchived;
+}
+
+bool FShuttlegentChatModel::HasSessionRecord(const FString& SessionId) const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	return Pinned.IsValid() && !SessionId.IsEmpty() && Pinned->GetSessionStore().FindRecord(SessionId) != nullptr;
 }
 
 void FShuttlegentChatModel::ReleaseConversation(FShuttlegentConversation& Conversation)
@@ -1415,6 +1435,7 @@ bool FShuttlegentChatModel::DeleteSession(const FString& SessionId)
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid() || !CanArchive(SessionId) || !Pinned->GetSessionStore().DeleteRecord(SessionId)) return false;
 
+	Drafts.Remove(SessionId);
 	OnSessionClosed.Broadcast(SessionId);
 	const TSharedPtr<FShuttlegentConversation> Held = FindConversation(SessionId);
 	if (Held.IsValid()) DropConversation(*Held);
@@ -2094,6 +2115,9 @@ void FShuttlegentChatModel::NotifyStatus(const FShuttlegentConversation& Convers
 
 void FShuttlegentChatModel::NotifyQueue(const FShuttlegentConversation& Conversation)
 {
+	// 队列每次变化即写盘，重启后放回（设计文档 §10.2）；尚无会话 id 的新对话等有了 id 后的下一次变化再写
+	if (!Conversation.SessionId.IsEmpty()) Drafts.SetQueue(Conversation.SessionId, Conversation.Queue.Items);
+
 	OnQueueChanged.Broadcast(Conversation);
 
 	// 会话列表显示每个已持有对话的排队数量
@@ -2558,6 +2582,9 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 
 	// 新会话记下发出第一条消息前选好的写入方式；恢复的会话取自记录，不变
 	RecordWriteMode(*Conversation);
+
+	// 等待会话 id 期间排进队列的提示此时才有地方存
+	if (!Conversation->Queue.Items.IsEmpty()) Drafts.SetQueue(SessionId, Conversation->Queue.Items);
 
 	const TMap<FString, FString> PendingConfig = MoveTemp(Conversation->PendingConfig);
 	Conversation->PendingConfig.Reset();

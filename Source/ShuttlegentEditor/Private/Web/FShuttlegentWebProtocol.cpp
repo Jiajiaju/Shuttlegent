@@ -506,6 +506,16 @@ void FShuttlegentWebProtocol::Flush()
 		Root->SetArrayField(ShuttlegentEditorWebField::Events, Events);
 	}
 
+	// 存盘的草稿随页面载入与当前会话改变发送（设计文档 §10.2）；页面只在载入或用户切换会话时采用
+	const FString& CurrentSessionId = View->GetCurrentSessionId();
+	if (bReset || CurrentSessionId != SentDraftSessionId)
+	{
+		const TSharedPtr<FJsonObject> Draft = View->GetDraft();
+		if (Draft.IsValid()) Root->SetObjectField(ShuttlegentEditorWebField::Draft, Draft);
+		else Root->SetField(ShuttlegentEditorWebField::Draft, MakeShared<FJsonValueNull>());
+		SentDraftSessionId = CurrentSessionId;
+	}
+
 	// 放在会话切换的同一条消息里，页面先切换会话再填入原文
 	if (bDraftPending) Root->SetStringField(ShuttlegentEditorWebField::RestoreDraft, PendingDraft);
 

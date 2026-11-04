@@ -16,6 +16,7 @@ struct FShuttlegentWebJson
 
 	/** 页面以 JSON 数组发送的引用；跳过没有路径的条目。 */
 	static TArray<FShuttlegentReference> ParseReferences(const FString& Json);
+	static TArray<FShuttlegentReference> ParseReferenceValues(const TArray<TSharedPtr<FJsonValue>>& Values);
 
 	/** 页面以 JSON 数组发送的草稿图片 { mimeType, data }；跳过缺少任一字段的条目。 */
 	static TArray<FShuttlegentPromptImage> ParseImages(const FString& Json);

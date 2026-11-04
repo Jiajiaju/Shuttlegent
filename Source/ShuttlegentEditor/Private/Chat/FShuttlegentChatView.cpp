@@ -1,12 +1,16 @@
 #include "Chat/FShuttlegentChatView.h"
 
 #include "Chat/ShuttlegentChatModel.h"
+#include "ShuttlegentEditorConstants.h"
+#include "ShuttlegentLog.h"
 
 void FShuttlegentChatView::Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, EShuttlegentViewMode InMode)
 {
 	Model = InModel;
 	Mode = InMode;
+	if (DraftViewKey.IsEmpty()) DraftViewKey = ShuttlegentEditorDraft::HubKey;
 	Current = Model->CreateConversation();
+	NewDraftConversation = Current;
 	Model->SetDisplayed(*Current, true, bVisible);
 	Model->SetFocused(*Current);
 
@@ -84,6 +88,7 @@ void FShuttlegentChatView::Show(const TSharedRef<FShuttlegentConversation>& Next
 
 	const TSharedPtr<FShuttlegentConversation> Previous = Current;
 	Current = Next;
+	NewDraftConversation = Next->SessionId.IsEmpty() ? TWeakPtr<FShuttlegentConversation>(Next) : nullptr;
 	Model->SetDisplayed(*Next, true, bVisible);
 	Model->SetFocused(*Next);
 	if (bVisible) Model->ResumeDeferred(*Next);
@@ -394,7 +399,10 @@ void FShuttlegentChatView::HandleContentChanged(const FShuttlegentConversation& 
 
 void FShuttlegentChatView::HandleStatusChanged(const FShuttlegentConversation& Conversation)
 {
-	if (IsCurrent(Conversation)) OnStatusChanged.Broadcast();
+	if (!IsCurrent(Conversation)) return;
+
+	AdoptNewDraft();
+	OnStatusChanged.Broadcast();
 }
 
 void FShuttlegentChatView::HandleTurnFinished(const FShuttlegentConversation& Conversation, bool bCompleted)
@@ -404,7 +412,38 @@ void FShuttlegentChatView::HandleTurnFinished(const FShuttlegentConversation& Co
 
 void FShuttlegentChatView::HandleSessionsChanged()
 {
+	AdoptNewDraft();
 	OnSessionsChanged.Broadcast();
+}
+
+TSharedPtr<FJsonObject> FShuttlegentChatView::GetDraft() const
+{
+	return Model->GetDrafts().GetDraft(MakeDraftKey(Current->SessionId));
+}
+
+void FShuttlegentChatView::SaveDraft(const FString& SessionId, const FString& Json)
+{
+	// 删除会话后页面离开它时还会交来一次草稿，不能让已删除会话的文件重新出现
+	if (!SessionId.IsEmpty() && !Model->HasSessionRecord(SessionId)) return;
+
+	if (!Model->GetDrafts().SetDraftJson(MakeDraftKey(SessionId), Json))
+	{
+		UE_LOG(LogShuttlegent, Warning, TEXT("Draft store: the page's draft for '%s' was refused (invalid key or content, %d characters)."), *SessionId, Json.Len());
+	}
+}
+
+FString FShuttlegentChatView::MakeDraftKey(const FString& SessionId) const
+{
+	return SessionId.IsEmpty() ? FShuttlegentDraftStore::MakeViewKey(DraftViewKey) : SessionId;
+}
+
+void FShuttlegentChatView::AdoptNewDraft()
+{
+	const TSharedPtr<FShuttlegentConversation> Pending = NewDraftConversation.Pin();
+	if (!Pending.IsValid() || Pending != Current || Current->SessionId.IsEmpty()) return;
+
+	NewDraftConversation.Reset();
+	Model->GetDrafts().MoveDraft(FShuttlegentDraftStore::MakeViewKey(DraftViewKey), Current->SessionId);
 }
 
 void FShuttlegentChatView::HandleRunLogChanged(const FShuttlegentConversation& Conversation)

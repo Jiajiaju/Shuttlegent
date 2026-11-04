@@ -175,6 +175,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnRestoreSession = nullptr;
 	Bridge->OnDeleteSession = nullptr;
 	Bridge->OnSetPaneWidths = nullptr;
+	Bridge->OnSaveDraft = nullptr;
 	Bridge->OnAnswerPermission = nullptr;
 	Bridge->OnOpenSettings = nullptr;
 	Bridge->OnQueryReferences = nullptr;
@@ -611,6 +612,11 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		GConfig->SetInt(ShuttlegentEditorWeb::ConfigSection, ShuttlegentEditorWeb::ConfigKeySidebarWidth, SidebarWidth, GEditorPerProjectIni);
 		GConfig->SetInt(ShuttlegentEditorWeb::ConfigSection, ShuttlegentEditorWeb::ConfigKeyInspectorWidth, InspectorWidth, GEditorPerProjectIni);
+	};
+	Bridge->OnSaveDraft = [WeakView](const FString& SessionId, const FString& DraftJson)
+	{
+		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
+		if (Pinned.IsValid()) Pinned->SaveDraft(SessionId, DraftJson);
 	};
 	Bridge->OnAnswerPermission = [WeakView](int32 EntryId, bool bAllow)
 	{

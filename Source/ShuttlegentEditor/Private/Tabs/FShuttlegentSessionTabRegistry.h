@@ -118,6 +118,8 @@ private:
 	void SaveBindings();
 
 	FText GetTabLabel(const FGuid& ViewId) const;
+	/** 页签在前台且位于浮动窗口时，让窗口标题（任务栏上的名字）跟随页签名。 */
+	void SyncWindowTitle(const FGuid& ViewId, const TSharedRef<SDockTab>& Tab) const;
 	FLinearColor GetTabColor(const FGuid& ViewId) const;
 	void HandleTabClosed(const FGuid& ViewId, const TSharedRef<SDockTab>& ClosedTab);
 };

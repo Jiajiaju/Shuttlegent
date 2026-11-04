@@ -46,6 +46,7 @@ public:
 	TFunction<void(const FString&)> OnDeleteSession;
 
 	TFunction<void(int32, int32)> OnSetPaneWidths;
+	TFunction<void(const FString&, const FString&)> OnSaveDraft;
 
 	TFunction<void(int32, bool)> OnAnswerPermission;
 
@@ -167,6 +168,10 @@ public:
 	/** 停靠窗格的尺寸已调整：以 CSS 像素记录侧栏与检视器的宽度，供下次页面加载使用。 */
 	UFUNCTION()
 	void SetPaneWidths(int32 SidebarWidth, int32 InspectorWidth);
+
+	/** 某会话的草稿（文字、引用、图片的 JSON 对象）有变化：输入停顿后与切换会话时发来；会话 id 为空表示新对话，Json 为空表示已清空。 */
+	UFUNCTION()
+	void SaveDraft(const FString& SessionId, const FString& DraftJson);
 
 	/** 答复决策卡片所显示的运行时权限请求。 */
 	UFUNCTION()

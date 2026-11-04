@@ -10,6 +10,7 @@
 #include "Modules/ModuleManager.h"
 #include "Textures/SlateIcon.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/SWindow.h"
 
 #include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
@@ -21,8 +22,18 @@
 
 namespace FShuttlegentSessionTabRegistryPrivate
 {
+	/** 拖拽没能开始：把为拖出而藏起的新会话窗口显示出来，放到光标处（光标落在页签头上）。 */
+	void RevealWindow(const TSharedRef<SDockTab>& Tab)
+	{
+		const TSharedPtr<SWindow> Window = Tab->GetParentWindow();
+		if (!Window.IsValid() || Window->GetOpacity() >= 1.0f) return;
+
+		Window->SetOpacity(1.0f);
+		Window->MoveWindowTo(FSlateApplication::Get().GetCursorPos() - ShuttlegentEditorSessionTab::WindowGrabOffset);
+	}
+
 	/**
-	 * 页签取得控件路径后交给原生页签拖拽；返回 false 表示下一帧再试。从页面之外发起拖拽须补齐引擎在正常输入分发中
+	 * 页签完成排版后交给原生页签拖拽；返回 false 表示下一帧再试。从页面之外发起拖拽须补齐引擎在正常输入分发中
 	 * 自动准备的三项状态，缺一项即崩溃（设计文档 §17.1）：事件路径、带指针位置的路径、与拖拽起点成对的进出事件。
 	 */
 	bool TryStartDrag(const TWeakPtr<SDockTab>& WeakTab, int32& FramesLeft)
@@ -34,21 +45,26 @@ namespace FShuttlegentSessionTabRegistryPrivate
 		if (!Slate.GetPressedMouseButtons().Contains(EKeys::LeftMouseButton))
 		{
 			UE_LOG(LogShuttlegent, Log, TEXT("Session tab drag: the left mouse button was released before the drag started; the tab stays where it is."));
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 		if (Slate.IsDragDropping())
 		{
 			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: another drag and drop is in progress."));
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 
+		// 跟随光标的预览窗口取页签所在区域此刻的尺寸（FDockingDragOperation 的 LastContentSize）；新窗口还没排版时为 0，预览窗口看不见
 		FWidgetPath FoundPath;
-		if (!Slate.FindPathToWidget(Tab.ToSharedRef(), FoundPath))
+		const FVector2D TabSize = Tab->GetTickSpaceGeometry().GetLocalSize();
+		if (TabSize.X <= 0.0 || TabSize.Y <= 0.0 || !Slate.FindPathToWidget(Tab.ToSharedRef(), FoundPath))
 		{
 			--FramesLeft;
 			if (FramesLeft > 0) return false;
 
-			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: the tab has no widget path after %d frames."), ShuttlegentEditorSessionTab::MaxDragWaitFrames);
+			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: the tab was not laid out after %d frames."), ShuttlegentEditorSessionTab::MaxDragWaitFrames);
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 
@@ -61,15 +77,21 @@ namespace FShuttlegentSessionTabRegistryPrivate
 		if (!TabPath.IsValid())
 		{
 			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: the tab path could not be rebuilt."));
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 
-		// 页签栏开始拖拽时要沿事件路径找自己的几何信息；自己构造的事件没有路径，须补上
+		// 页签栏开始拖拽时要沿事件路径找自己的几何信息；自己构造的事件没有路径，须补上。
+		// 抓取点按页签头的中心算（引擎把抓取点限制在页签内，SDockTab.cpp:92）：光标不在藏起的新窗口上，预览窗口仍让光标落在页签头中央
 		PointerEvent.SetEventPath(TabPath);
-		const FReply Reply = Tab->OnDragDetected(TabPath.Widgets.Last().Geometry, PointerEvent);
+		const FGeometry& TabGeometry = TabPath.Widgets.Last().Geometry;
+		FPointerEvent GrabEvent(FSlateApplicationBase::CursorPointerIndex, TabGeometry.GetAbsolutePositionAtCoordinates(FVector2D(0.5, 0.5)), Slate.GetLastCursorPos(), Slate.GetPressedMouseButtons(), EKeys::LeftMouseButton, 0.0f, Slate.GetModifierKeys());
+		GrabEvent.SetEventPath(TabPath);
+		const FReply Reply = Tab->OnDragDetected(TabGeometry, GrabEvent);
 		if (!Reply.GetDragDropContent().IsValid())
 		{
 			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: the tab well did not start a docking drag (the tab cannot leave its well, or its tab manager does not allow dragging)."));
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 
@@ -77,6 +99,7 @@ namespace FShuttlegentSessionTabRegistryPrivate
 		if (!UnderCursor.IsValid())
 		{
 			UE_LOG(LogShuttlegent, Warning, TEXT("Session tab drag: no window under the cursor; the docking drag cannot start."));
+			RevealWindow(Tab.ToSharedRef());
 			return true;
 		}
 
@@ -84,7 +107,8 @@ namespace FShuttlegentSessionTabRegistryPrivate
 
 		// ProcessReply 让页签路径上的控件收到 OnDragEnter；引擎原生检测拖拽时会把“上一帧光标下的控件”设为这条路径，
 		// 下一次移动便给其中已不在光标下的控件发 OnDragLeave（SlateApplication.cpp:5714、:5752-5796）。
-		// 这里光标下的是页面，引擎不会补发，页签栏会收到第二次 OnDragEnter 而把同一页签加两遍；故在此按原生顺序补齐
+		// 这里光标下的是页面，引擎不会补发，页签栏会收到第二次 OnDragEnter 而把同一页签加两遍；故在此按原生顺序补齐。
+		// 新会话窗口放在光标之外，其页签栏随即收到 OnDragLeave：页签离开页签栏，空窗口关闭，跟随光标的预览窗口出现（SDockingTabWell.cpp:538）
 		const FDragDropEvent DragDropEvent(PointerEvent, Reply.GetDragDropContent());
 		for (int32 Index = TabPath.Widgets.Num() - 1; Index >= 0; --Index)
 		{
@@ -99,7 +123,7 @@ namespace FShuttlegentSessionTabRegistryPrivate
 			if (!TabPath.ContainsWidget(&Arranged.Widget.Get())) Arranged.Widget->OnDragEnter(Arranged.Geometry, DragDropEvent);
 		}
 
-		UE_LOG(LogShuttlegent, Log, TEXT("Session tab drag: docking drag started."));
+		UE_LOG(LogShuttlegent, Log, TEXT("Session tab drag: docking drag started (content %.0fx%.0f)."), TabSize.X, TabSize.Y);
 		return true;
 	}
 }
@@ -174,7 +198,9 @@ void FShuttlegentSessionTabRegistry::UpdateVisibility()
 	for (const FShuttlegentSessionTab& Entry : Tabs)
 	{
 		const TSharedPtr<SDockTab> Tab = Entry.Tab.Pin();
-		if (Entry.View.IsValid()) Entry.View->SetVisible(Tab.IsValid() && Tab->IsForeground());
+		const bool bForeground = Tab.IsValid() && Tab->IsForeground();
+		if (Entry.View.IsValid()) Entry.View->SetVisible(bForeground);
+		if (bForeground) SyncWindowTitle(Entry.ViewId, Tab.ToSharedRef());
 	}
 	SaveBindings();
 }
@@ -247,6 +273,14 @@ void FShuttlegentSessionTabRegistry::FinishRestore()
 	PendingTabManager.Reset();
 	bRestored = true;
 	SaveBindings();
+
+	// 已不存在的会话页签留下的新对话草稿在此清理；关闭页签时不删，编辑器退出时页签同样会被关闭
+	TSet<FString> KeepViewKeys;
+	for (const FShuttlegentSessionTab& Entry : Tabs)
+	{
+		KeepViewKeys.Add(Entry.ViewId.ToString(EGuidFormats::Digits));
+	}
+	if (Model.IsValid()) Model->GetDrafts().RemoveViewsExcept(KeepViewKeys);
 }
 
 FLinearColor FShuttlegentSessionTabRegistry::GetAttentionColor(EShuttlegentAttention Attention)
@@ -321,6 +355,7 @@ TSharedRef<SDockTab> FShuttlegentSessionTabRegistry::BuildTab(const FGuid& ViewI
 	Entry.TabType = MakeTabType(ViewId);
 	Entry.TabManager = TabManager;
 	Entry.View = MakeShared<FShuttlegentChatView>();
+	Entry.View->SetDraftViewKey(ViewId.ToString(EGuidFormats::Digits));
 	Entry.View->Initialize(Model.ToSharedRef(), EShuttlegentViewMode::Session);
 	Entry.View->OpenSession(SessionId, bDeferResume);
 
@@ -383,9 +418,13 @@ TSharedPtr<SDockTab> FShuttlegentSessionTabRegistry::CreateTab(const FString& Se
 	FTabManager::RegisterDefaultTabWindowSize(FTabId(TabType), ShuttlegentEditorSessionTab::WindowSize);
 	TabManager->TryInvokeTab(FTabId(TabType));
 
-	// 新窗口放到光标处，光标落在页签头上，接着由原生拖拽带走
+	// 新窗口只是拖拽的起点：藏起并放在光标之外，拖拽一开始页签就离开它，由跟随光标的预览窗口接手；拖拽没能开始时再显示（RevealWindow）
 	const TSharedPtr<SWindow> Window = Tab->GetParentWindow();
-	if (Window.IsValid()) Window->MoveWindowTo(FSlateApplication::Get().GetCursorPos() - ShuttlegentEditorSessionTab::WindowGrabOffset);
+	if (Window.IsValid())
+	{
+		Window->SetOpacity(0.0f);
+		Window->MoveWindowTo(FSlateApplication::Get().GetCursorPos() + ShuttlegentEditorSessionTab::HiddenWindowOffset);
+	}
 	UE_LOG(LogShuttlegent, Log, TEXT("Session tab %s opened for session %s."), *TabType.ToString(), *SessionId);
 	return Tab;
 }
@@ -442,6 +481,16 @@ FText FShuttlegentSessionTabRegistry::GetTabLabel(const FGuid& ViewId) const
 	const FShuttlegentSessionTab* Entry = FindByView(ViewId);
 	const FString Title = Entry != nullptr && Entry->View.IsValid() ? Entry->View->GetCurrentTitle() : FString();
 	return Title.IsEmpty() ? LOCTEXT("NewConversationLabel", "新对话") : FText::FromString(Title);
+}
+
+void FShuttlegentSessionTabRegistry::SyncWindowTitle(const FGuid& ViewId, const TSharedRef<SDockTab>& Tab) const
+{
+	// 引擎只在切换前台页签等少数时机把页签名写成浮动窗口标题，拖出的窗口常留空标题，任务栏上没有名字；主窗口标题归引擎
+	const TSharedPtr<SWindow> Window = Tab->GetParentWindow();
+	if (!Window.IsValid() || Window == FGlobalTabmanager::Get()->GetRootWindow()) return;
+
+	const FText Label = GetTabLabel(ViewId);
+	if (!Window->GetTitle().EqualTo(Label)) Window->SetTitle(Label);
 }
 
 FLinearColor FShuttlegentSessionTabRegistry::GetTabColor(const FGuid& ViewId) const

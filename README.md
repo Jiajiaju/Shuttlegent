@@ -61,21 +61,39 @@ Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美�
 - **能力**：写代码、开关插件、模拟界面点击等引擎 Toolset 默认屏蔽；每个工具和 Toolset 都可以单独关闭。
 - **密钥**：密钥保存在本机的编辑器偏好设置中，不进版本库。
 
-## 文档
-
-| 文档 | 给谁看 | 内容 |
-|---|---|---|
-| [Configuration.md](Docs/Configuration.md) | 使用者、项目负责人 | 模型、Agent、权限、工具开关、项目设置 |
-| [Tools.md](Docs/Tools.md) | 使用者 | Agent 能用哪些工具，改动怎么确认和撤销，引擎 Toolset 怎么启用 |
-| [Extending.md](Docs/Extending.md) | 项目负责人、技术美术 | 项目提示词、技能、模板、界面指路、外部服务、自定义工具 |
-| [FAQ.md](Docs/FAQ.md) | 使用者 | 常见问题 |
-| [Architecture.md](Docs/Architecture.md) | 开发者 | 模块组成、运行时与协议、编辑器工具端点、面板实现 |
-| [Development.md](Docs/Development.md) | 开发者 | 仓库结构、构建运行时、编译、回归测试、排查 |
-| [Design.pdf](Docs/Design.pdf) | 设计、开发者 | 界面设计规范：品牌、视觉、组件、交互模式与新界面检查清单 |
-
 ## 工作原理
 
-面板里的对话由一个后台运行时（基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)）驱动，它负责与模型对话、规划步骤。编辑器通过 [ACP](https://github.com/agentclientprotocol/agent-client-protocol) 与运行时通信；运行时需要查看或改动编辑器时，通过 [MCP](https://modelcontextprotocol.io/) 调用编辑器里只对本机开放的工具，改动回到编辑器确认后才执行。详见 [Docs/Architecture.md](Docs/Architecture.md)。
+Shuttlegent 由编辑器里的插件和一个后台运行时组成：
+
+- **插件**：提供对话面板，管理会话，执行编辑器工具；所有改动都先经确认卡，确认后在编辑器事务里执行。
+- **运行时**：基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)，随插件一起提供，负责与模型对话、规划步骤、决定调用哪个工具。
+
+两者之间有两条通道：编辑器通过 [ACP](https://github.com/agentclientprotocol/agent-client-protocol) 驱动运行时；运行时通过 [MCP](https://modelcontextprotocol.io/) 调用编辑器里只对本机开放的工具。
+
+```mermaid
+flowchart LR
+    User(["设计师 / 美术"])
+
+    subgraph Editor["Unreal Editor · Shuttlegent 插件"]
+        Panel["对话面板"]
+        Tools["编辑器工具<br/>内置工具 · 引擎 Toolset"]
+        Gate["确认卡<br/>改动先确认，可撤销"]
+    end
+
+    Runtime["运行时<br/>DeepSeek Harness"]
+    Model["模型服务<br/>DeepSeek 等"]
+    Ext["外部服务（可选）<br/>知识库、术语表等"]
+
+    User -- "提需求、确认改动" --> Panel
+    Panel -- "ACP" --> Runtime
+    Runtime -- "调用模型" --> Model
+    Runtime -- "MCP" --> Tools
+    Tools -- "改动" --> Gate
+    Gate -. "确认卡" .-> Panel
+    Runtime -.-> Ext
+```
+
+详见 [Docs/Architecture.md](Docs/Architecture.md)。
 
 ## 许可
 

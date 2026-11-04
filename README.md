@@ -16,52 +16,38 @@
 
 <p align="center"><img src="Docs/Images/panel.png" alt="Shuttlegent 对话面板" width="900"></p>
 
-在编辑器内完成关卡、Actor、资产和设置上的操作：查询、修改、摆放、整理。Agent 的每一项改动均先向用户展示，经确认后执行，执行后可撤销。
+Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美术。
 
-- **编辑器内集成**：面板停靠于编辑器，可直接引用选中的 Actor，或从内容浏览器将资产拖入对话。
-- **改动需确认**：每次写操作先弹出确认卡，列出对象、字段、当前值与计划值；确认后在编辑器事务中执行，可撤销。
-- **模型可选**：默认使用 DeepSeek，亦可接入 OpenAI 协议、Anthropic 协议、团队网关或本地模型服务。
-- **接入引擎 AI 工具**：通过 UE 5.8 的 Toolset Registry 使用 UMG、Niagara、PCG、GameplayTags、StateTree 等系统的工具。
-
-名称取自织机上的梭子（shuttle）：梭子携纬线在经线之间往返穿梭，Shuttlegent 在编辑器与 Agent 之间往返传递请求、工具调用与结果。
-
-## 使用示例
-
-| 用户请求 | 执行过程 |
-|---|---|
-| 将选中灯光的强度统一调整为 5000 | 读取各灯光的当前强度，在确认卡中列出修改前后的值，确认后一次完成 |
-| 列出关卡中仍使用默认名称的 Actor | 列出标签仍为默认名称的 Actor，不做修改 |
-| 查询引用 Hero 角色资产的位置 | 列出引用该资产的资产与关卡 |
-| 在玩家出生点附近放置一个点光源 | 定位出生点，生成点光源，执行前确认 |
-| 项目的抗锯齿方法在何处设置 | 给出当前设置，并打开对应的设置页 |
-| 为当前界面添加一个确认按钮 | 通过 UMG Toolset 修改控件蓝图，执行前确认（需启用 UMGToolSet） |
-| 撤销上一步操作 | 列出将撤销的步骤，确认后撤销 |
+- **模式**：每次要改东西，先列出对象和改前改后的值，你确认后才执行，执行后可以撤销。
+- **Unreal Engine Editor**：可以直接引用选中的 Actor，或把资产从内容浏览器拖进对话；回答里的对象名点一下就能定位。
+- **多会话**：多个会话同时进行，每个会话都能拖成独立窗口，和 Details、Outliner 一样停靠。
+- **模型**：默认使用 DeepSeek，也可以接入 OpenAI 协议、Anthropic 协议的模型，或团队网关、本地模型服务。
+- **引擎工具**：通过 UE 5.8 的 Toolset Registry 使用 UMG、Niagara、PCG、GameplayTags、StateTree 等系统的工具。
 
 ## 快速开始
 
-### 1. 环境要求
+### 1. 准备
 
-- Unreal Engine 5.8，Windows
-- 模型 API 密钥，默认使用 [DeepSeek](https://platform.deepseek.com/)
+- Windows 上的 Unreal Engine 5.8。
+- 一个模型 API 密钥，默认使用 [DeepSeek](https://platform.deepseek.com/)。
 
 ### 2. 安装插件
 
-1. 将本仓库放入项目的 `Plugins/Shuttlegent` 目录。
-2. 准备运行时 `Runtime/shuttlegent-runtime.exe`。预编译版本尚未发布，目前需自行构建，见 [Docs/Development.md §2](Docs/Development.md#2-构建运行时)。
+1. 把本仓库放进项目的 `Plugins/Shuttlegent` 目录。
+2. 准备运行时 `Runtime/shuttlegent-runtime.exe`。预编译版本尚未发布，目前需要自行构建，见 [Docs/Development.md §2](Docs/Development.md#2-构建运行时)。
 3. 在项目的 `.uproject` 中启用 `Shuttlegent` 插件（默认不启用），重新生成工程文件并编译编辑器。
 
-### 3. 配置密钥
+### 3. 填写密钥
 
-在 **编辑器偏好设置 > Shuttlegent > General > Models** 中给默认模型填写 Api Key（内置的两个 DeepSeek 模型共用一个密钥），填好后可点该模型的“检测连接”确认。添加其他模型、选择默认模型与 Agent 见 [Docs/Configuration.md](Docs/Configuration.md)。
+打开 **编辑器偏好设置 > Shuttlegent > General > Models**，给默认模型填写 Api Key（内置的两个 DeepSeek 模型共用一个密钥），再点该模型的“检测连接”确认能连通。添加其他模型、更换默认模型见 [Docs/Configuration.md](Docs/Configuration.md)。
 
 ### 4. 开始对话
 
-通过 **窗口 > Shuttlegent** 打开面板，输入任务后按 Enter 发送。
+菜单 **窗口 > Shuttlegent** 打开面板，输入要做的事，按 Enter 发送。
 
-- 输入框下方可选择 Agent、模型与推理强度、模式；Agent 在发出第一条消息后锁定。
-- 输入 `@`、按 Ctrl+Space，或从内容浏览器、大纲视图拖入，可引用 Actor 与资产；可粘贴截图或拖入图片。
-- 输入 `/` 可选择模板，或执行 `/compact`（压缩上下文）、`/plan`（计划模式）、`/undo`（回退本轮）、`/clear`（新对话）。
-- 回合进行中发送的消息进入队列；当前回合可随时停止。
+- 输入 `@` 可以引用 Actor 和资产，也可以从内容浏览器、大纲视图直接拖进输入框；截图可以直接粘贴。
+- 回合进行中继续发的消息会排队，本轮结束后发出；当前回合随时可以停止。
+- 想先看方案再动手，在输入框下方的模式按钮里切到“计划”。
 
 ### 5. 启用引擎 Toolset（可选）
 
@@ -69,43 +55,26 @@
 
 ## 安全与控制
 
-- **写操作逐次确认**：面板未打开时，写请求直接拒绝；确认卡 55 秒内未确认视为放弃。
-- **可撤销**：写操作在编辑器事务中执行，任一对象失败时整批回滚；不可撤销的操作（如保存）在确认卡中标明。
-- **运行时默认只读**：Agent 的文件与命令行能力默认关闭或受限，仅能通过编辑器工具改动项目。
-- **高风险能力默认屏蔽**：写代码、开关插件、模拟界面点击等引擎 Toolset 默认屏蔽；每个工具与 Toolset 均可单独关闭。
-- **密钥仅存本机**：密钥保存在本机的编辑器偏好设置中，不进入版本库，不写入补丁文件。
-
-## 功能
-
-| 类别 | 内容 |
-|---|---|
-| 对话面板 | 多会话并行、会话搜索与归档、消息队列、处理过程收为一行摘要、计划模式与写入模式、回到某条消息之前与分支、选择卡、回答中的对象链接与图片、图片输入、个人记忆；检视窗格分上下文、记忆、MCP、工具详情、日志五张卡片 |
-| 内置工具 | 关卡、资产、反射、诊断、交互、编辑、材质、节点图排版、关卡搭建、数据表导出、撤销重做、界面指路，共 28 个，见 [Docs/Tools.md §2](Docs/Tools.md#2-内置工具) |
-| 引擎 Toolset | 通过 `list_toolsets`、`describe_toolset`、`call_toolset_tool` 使用已启用的 Toolset，见 [Docs/Tools.md §3](Docs/Tools.md#3-引擎-toolset) |
-| 模型与 Agent | 模型与 Agent 分开设置、按会话组合：DeepSeek（默认）、OpenAI 协议、Anthropic 协议、OpenAI 兼容端点；设置页可检测连接，见 [Docs/Configuration.md](Docs/Configuration.md) |
-| 项目扩展 | 项目提示词、技能、斜杠模板、界面指路、外部 MCP 服务、自定义工具，见 [Docs/Extending.md](Docs/Extending.md) |
+- **改动**：确认卡 55 秒内没有确认视为放弃；面板没打开时，改动请求直接被拒绝。也可以按会话切换为“自动接受编辑”等模式，见 [Docs/Tools.md §1](Docs/Tools.md#1-写操作确认与撤销)。
+- **撤销**：改动在编辑器事务中执行，任一对象失败就整批回滚；存盘等不能撤销的操作会在确认卡上标明。
+- **能力**：写代码、开关插件、模拟界面点击等引擎 Toolset 默认屏蔽；每个工具和 Toolset 都可以单独关闭。
+- **密钥**：密钥保存在本机的编辑器偏好设置中，不进版本库。
 
 ## 文档
 
-| 文档 | 内容 |
-|---|---|
-| [Configuration.md](Docs/Configuration.md) | 模型、Agent 与默认值，权限、工具开关、项目设置 |
-| [Tools.md](Docs/Tools.md) | 写操作确认与撤销、内置工具、引擎 Toolset |
-| [Extending.md](Docs/Extending.md) | 项目提示词、技能、模板、界面指路、外部 MCP、自定义工具 |
-| [Architecture.md](Docs/Architecture.md) | 模块组成、运行时与 ACP、MCP 端点、对话面板 |
-| [Development.md](Docs/Development.md) | 仓库结构、构建运行时、编译、回归测试、排查 |
-| [FAQ.md](Docs/FAQ.md) | 常见问题 |
-| [Design.pdf](Docs/Design.pdf) | UI 交互设计指南：品牌、视觉基础、组件、交互模式与新界面检查清单 |
+| 文档 | 给谁看 | 内容 |
+|---|---|---|
+| [Configuration.md](Docs/Configuration.md) | 使用者、项目负责人 | 模型、Agent、权限、工具开关、项目设置 |
+| [Tools.md](Docs/Tools.md) | 使用者 | Agent 能用哪些工具，改动怎么确认和撤销，引擎 Toolset 怎么启用 |
+| [Extending.md](Docs/Extending.md) | 项目负责人、技术美术 | 项目提示词、技能、模板、界面指路、外部服务、自定义工具 |
+| [FAQ.md](Docs/FAQ.md) | 使用者 | 常见问题 |
+| [Architecture.md](Docs/Architecture.md) | 开发者 | 模块组成、运行时与协议、编辑器工具端点、面板实现 |
+| [Development.md](Docs/Development.md) | 开发者 | 仓库结构、构建运行时、编译、回归测试、排查 |
+| [Design.pdf](Docs/Design.pdf) | 设计、开发者 | 界面设计规范：品牌、视觉、组件、交互模式与新界面检查清单 |
 
-## 架构概览
+## 工作原理
 
-Shuttlegent 由编辑器内的五个模块与一个运行时子进程组成：
-
-- **Agent 底座**：[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)，以子进程方式运行，负责 Agent 循环、上下文管理与模型调用。
-- **编辑器与 Agent**：编辑器通过 [ACP](https://github.com/agentclientprotocol/agent-client-protocol)（Agent Client Protocol）驱动 Agent。
-- **Agent 与编辑器工具**：Agent 通过 MCP 调用编辑器内仅限本机访问的端点；写操作回到编辑器确认后执行。
-
-详见 [Docs/Architecture.md](Docs/Architecture.md)。
+面板里的对话由一个后台运行时（基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)）驱动，它负责与模型对话、规划步骤。编辑器通过 [ACP](https://github.com/agentclientprotocol/agent-client-protocol) 与运行时通信；运行时需要查看或改动编辑器时，通过 [MCP](https://modelcontextprotocol.io/) 调用编辑器里只对本机开放的工具，改动回到编辑器确认后才执行。详见 [Docs/Architecture.md](Docs/Architecture.md)。
 
 ## 许可
 

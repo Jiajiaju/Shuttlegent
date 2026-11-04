@@ -5,7 +5,7 @@
 
 /**
  * Editor Preferences > Shuttlegent > General > Agents 中每个 Agent：标题行显示名称，其下为能力、启用开关（默认 Agent 锁定为开）
- * 与默认模型下拉（ShuttlegentAgentModel_Design.md 第 6.2 节）。
+ * 与默认模型下拉。
  */
 class FShuttlegentAgentEntryCustomization : public IPropertyTypeCustomization
 {

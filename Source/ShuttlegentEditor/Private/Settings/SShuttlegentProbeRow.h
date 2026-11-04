@@ -11,7 +11,7 @@ struct FShuttlegentModelProbeResult;
 
 /**
  * 设置页的“检测连接”行：点击后依次检测各个模型，每个模型一行结论；结论之下给出实际请求地址，
- * 失败时附服务方的错误说明（ShuttlegentAgentModel_Design.md 第 8 节）。检测期间按钮不可用。
+ * 失败时附服务方的错误说明。检测期间按钮不可用。
  */
 class SShuttlegentProbeRow : public SCompoundWidget
 {

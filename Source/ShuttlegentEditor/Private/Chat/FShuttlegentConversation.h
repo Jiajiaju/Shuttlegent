@@ -15,7 +15,7 @@
 
 /**
  * 面板持有的一个对话：某会话的条目、运行日志、队列与回合状态。
- * 多个对话可同时运行；面板只显示其中一个（Shuttlegent.md 第 14.3.7 节）。
+ * 多个对话可同时运行；面板只显示其中一个。
  */
 struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversation>
 {
@@ -47,7 +47,7 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 会话未打开期间选择的配置值，按配置 id 索引；会话打开后应用。 */
 	TMap<FString, FString> PendingConfig;
 
-	/** 运行该对话的 Agent；发出第一条消息后锁定（ShuttlegentAgentModel_Design.md 第 10 节）。 */
+	/** 运行该对话的 Agent；发出第一条消息后锁定。 */
 	FString AgentId;
 
 	int64 UsedTokens = 0;

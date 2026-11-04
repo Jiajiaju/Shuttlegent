@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 面板标题栏为当前对话报告的状态（Shuttlegent UI 交互规范第 3 节）。 */
+/** 面板标题栏为当前对话报告的状态。 */
 enum class EShuttlegentChatStatus : uint8
 {
 	// 尚无运行时进程

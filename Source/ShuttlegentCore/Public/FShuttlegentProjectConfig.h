@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 从项目设置与个人设置中读取实际生效的配置（Shuttlegent.md 第 11 节）。仅限游戏线程。 */
+/** 从项目设置与个人设置中读取实际生效的配置。仅限游戏线程。 */
 struct SHUTTLEGENTCORE_API FShuttlegentProjectConfig
 {
 	/** 个人设置中某个编辑器工具是否处于开启状态。 */

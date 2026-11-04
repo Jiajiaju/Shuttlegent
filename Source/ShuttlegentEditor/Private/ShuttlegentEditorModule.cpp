@@ -46,7 +46,7 @@ void FShuttlegentEditorModule::StartupModule()
 	HubView->Initialize(ChatModel.ToSharedRef(), EShuttlegentViewMode::Hub);
 	SessionTabs = MakeShared<FShuttlegentSessionTabRegistry>();
 	SessionTabs->Initialize(ChatModel.ToSharedRef(), HubView.ToSharedRef());
-	// 主页签显示上次的当前会话；会话页签由关卡编辑器恢复布局时接回（设计文档 §10.1）
+	// 主页签显示上次的当前会话；会话页签由关卡编辑器恢复布局时接回
 	SessionTabs->RestoreHub();
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId, FOnSpawnTab::CreateRaw(this, &FShuttlegentEditorModule::SpawnChatTab))
@@ -174,7 +174,7 @@ bool FShuttlegentEditorModule::HandleCanCloseEditor()
 
 void FShuttlegentEditorModule::HandleEngineInitComplete()
 {
-	// 主框架此时已加载；关闭编辑器前有回合在进行时先确认（设计文档 §10.3）
+	// 主框架此时已加载；关闭编辑器前有回合在进行时先确认
 	IMainFrameModule* MainFrame = FModuleManager::GetModulePtr<IMainFrameModule>(ShuttlegentEditorRuntime::MainFrameModule);
 	if (MainFrame != nullptr) CanCloseEditorHandle = MainFrame->RegisterCanCloseEditor(IMainFrameModule::FMainFrameCanCloseEditor::CreateRaw(this, &FShuttlegentEditorModule::HandleCanCloseEditor));
 

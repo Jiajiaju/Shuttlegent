@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 一个可用的 Agent：默认循环，或插件目录下由说明文件声明的循环插件（ShuttlegentAgentModel_Design.md 第 9.1 节）。 */
+/** 一个可用的 Agent：默认循环，或插件目录下由说明文件声明的循环插件。 */
 struct FShuttlegentAgentManifest
 {
 	/** Agent 的标识，各 Agent 之间唯一。 */

@@ -4,7 +4,7 @@
 
 #include "Chat/FShuttlegentQueuedPrompt.h"
 
-/** 某会话在回合运行期间所发送提示的 FIFO 队列。暂停的队列等待“继续队列”（Shuttlegent UI 交互规范第 4.3 节）。 */
+/** 某会话在回合运行期间所发送提示的 FIFO 队列。暂停的队列等待“继续队列”。 */
 struct FShuttlegentPromptQueue
 {
 	TArray<FShuttlegentQueuedPrompt> Items;

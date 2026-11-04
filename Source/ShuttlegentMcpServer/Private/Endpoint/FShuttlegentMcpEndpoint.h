@@ -13,7 +13,7 @@ struct FShuttlegentPlanReview;
 struct FShuttlegentSessionEvent;
 
 /**
- * 编辑器的 MCP 端点（Shuttlegent.md 第 10.1 节）：localhost 上的 Streamable HTTP，以纯 JSON 答复，不使用 SSE。
+ * 编辑器的 MCP 端点：localhost 上的 Streamable HTTP，以纯 JSON 答复，不使用 SSE。
  *
  * 监听从 47800 起的第一个空闲端口，只接受携带当前 bearer token 的请求；token 在每次运行时启动时更换，并经由
  * ACP mcpServers 声明传给运行时。处理 initialize、tools/list、tools/call 与 ping；其他方法一律答复

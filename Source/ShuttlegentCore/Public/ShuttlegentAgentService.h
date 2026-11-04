@@ -39,7 +39,7 @@ struct FShuttlegentOpenSession
  * 持有 Agent 运行时及其打开的 ACP 会话。
  *
  * 生命周期：Start -> (NewSession | ResumeSession)* -> 各会话 Prompt / Cancel ... -> Stop。
- * 可以同时打开并提问多个会话，运行时分别调度各会话（Shuttlegent.md 第 14.3.7 节）。全部在游戏线程运行。
+ * 可以同时打开并提问多个会话，运行时分别调度各会话。全部在游戏线程运行。
  * 会话中已结束（取消或完成）的回合的更新会被丢弃，迟到的片段不会混入下一回合。每个事件都注明所属会话。
  */
 class SHUTTLEGENTCORE_API FShuttlegentAgentService : public TSharedFromThis<FShuttlegentAgentService>

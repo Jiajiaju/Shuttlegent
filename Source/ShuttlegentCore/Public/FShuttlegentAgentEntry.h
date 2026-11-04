@@ -4,7 +4,7 @@
 
 #include "FShuttlegentAgentEntry.generated.h"
 
-/** 一个 Agent 的个人设置（ShuttlegentAgentModel_Design.md 第 6.2 节）；Agent 本身由插件提供，不手填。 */
+/** 一个 Agent 的个人设置；Agent 本身由插件提供，不手填。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentAgentEntry
 {

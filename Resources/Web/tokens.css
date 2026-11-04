@@ -1,4 +1,4 @@
-/* Design tokens of the panel (Shuttlegent panel design spec 1.0). app.css reads colours, sizes and type only from here; brand colours are fixed. */
+/* Design tokens of the panel. app.css reads colours, sizes and type only from here; brand colours are fixed. */
 :root{
   color-scheme:dark;
 

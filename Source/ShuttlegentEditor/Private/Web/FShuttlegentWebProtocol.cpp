@@ -506,7 +506,7 @@ void FShuttlegentWebProtocol::Flush()
 		Root->SetArrayField(ShuttlegentEditorWebField::Events, Events);
 	}
 
-	// 存盘的草稿随页面载入与当前会话改变发送（设计文档 §10.2）；页面只在载入或用户切换会话时采用
+	// 存盘的草稿随页面载入与当前会话改变发送；页面只在载入或用户切换会话时采用
 	const FString& CurrentSessionId = View->GetCurrentSessionId();
 	if (bReset || CurrentSessionId != SentDraftSessionId)
 	{

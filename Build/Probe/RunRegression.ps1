@@ -237,7 +237,7 @@ try {
 
         Invoke-Scenario -Name 's09_gateway' -HomeName 'gateway' -Prompts @('Call the ue_read_probe tool, then tell me its result in one sentence.') -Key $ApiKey -ExtraPatches @($GatewayOverlay)
 
-        # M3.7 precondition: two sessions of one runtime prompted at the same time (Shuttlegent.md section 14.3.7)
+        # M3.7 precondition: two sessions of one runtime prompted at the same time
         $LongPrompt = 'Without using any tool, write the numbers from 1 to 120 in English words, one per line.'
         Invoke-Scenario -Name 's10_parallel' -HomeName 'parallel' -ParallelPrompts @($LongPrompt, $LongPrompt) -Key $ApiKey
 

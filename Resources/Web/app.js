@@ -1,6 +1,5 @@
 /*
- * Shuttlegent panel page (W1 shell, W2 structure, W3 input and references, M3.5 queue, M3.6 write confirmation and results;
- * Shuttlegent.md sections 14.3.0, 14.3.3–14.3.6).
+ * Shuttlegent panel page (W1 shell, W2 structure, W3 input and references, M3.5 queue, M3.6 write confirmation and results).
  *
  * The editor pushes state through window.Shuttlegent.apply(message): a full snapshot (reset) after the page calls
  * bridge.ready(), then per-frame deltas (FShuttlegentWebProtocol, field names in ShuttlegentEditorWebField). The page
@@ -31,7 +30,7 @@
   // How often the page looks for the editor binding before calling ready, in milliseconds
   const BRIDGE_POLL_MS = 50;
 
-  // Panel widths where the layout changes (Shuttlegent UI interaction spec section 2)
+  // Panel widths where the layout changes
   const BREAKPOINT_MEDIUM = 560;
   const BREAKPOINT_WIDE = 900;
   const BREAKPOINT_FULL = 1180;
@@ -193,7 +192,7 @@
     startBlocked: { tone: 'danger', text: '运行时无法启动' }
   };
 
-  // Background sessions in the sidebar: running ones, ones waiting for a confirmation (Shuttlegent.md section 14.3.7)
+  // Background sessions in the sidebar: running ones, ones waiting for a confirmation
   const RUNNING_STATUSES = new Set(['connecting', 'querying', 'writing', 'stopping', 'resuming']);
   const CONFIRM_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite']);
 
@@ -303,7 +302,7 @@
     menuSessionId: '',
     targetSessionId: '',
 
-    // Drafts are kept per session by the editor, on disk (session tabs design section 10.2): switching sessions neither moves nor clears them
+    // Drafts are kept per session by the editor, on disk: switching sessions neither moves nor clears them
     switchingSession: false,
 
     // The pending save of the draft, and the last draft handed to the editor per session ('' is the new conversation)
@@ -739,7 +738,7 @@
     return '<li><span class="st' + (cls ? ' ' + cls : '') + '">' + icons.svg(icon, 12) + label + '</span><span class="nm" title="' + esc(object.path) + '">' + esc(object.name) + '</span><span class="ch">' + change + message + '</span></li>';
   }
 
-  /** Result card of an editor write (interaction spec sections 5.2, 5.4): real per-object outcome, undo only while its transaction is on top. */
+  /** Result card of an editor write: real per-object outcome, undo only while its transaction is on top. */
   function renderWriteResult(entry) {
     const objects = entry.objects || [];
     const completed = objects.filter((object) => object.status === 'completed').length;
@@ -769,7 +768,7 @@
     return '<article class="card result"><div class="card-head">' + icon + '<span class="card-title' + (entry.undone ? ' is-quiet' : '') + '">' + title + '</span>' + auto + '</div><div class="card-desc">' + esc(entry.action) + '</div>' + list + foot + '</article>';
   }
 
-  /** A confirmed write whose result never arrived (interaction spec section 5.3): what was confirmed, verified by the user before sending again. */
+  /** A confirmed write whose result never arrived: what was confirmed, verified by the user before sending again. */
   function renderWriteUnknown(entry) {
     const objects = entry.objects || [];
     const rows = objects.map((object) => objectRow(object, 'unknown')).join('');
@@ -1222,7 +1221,7 @@
     view.savedDrafts.set(state.currentSessionId, draftJson());
   }
 
-  /** Start guide card (interaction spec section 5.3): what blocks the runtime and where to fix it; never a key value. */
+  /** Start guide card: what blocks the runtime and where to fix it; never a key value. */
   function startGuide(issue) {
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
@@ -1631,14 +1630,14 @@
     }
   }
 
-  /** Editor write card (interaction spec section 5.1): action, objects with current and planned values, level, undo, raw arguments. */
+  /** Editor write card: action, objects with current and planned values, level, undo, raw arguments. */
   /** Head row of a decision card: icon, the title that takes focus, and an optional chip. */
   function decisionHead(icon, tone, title, chip) {
     const svg = icons.svg(icon, 16).replace('class="sg-icon"', 'class="sg-icon' + (tone ? ' tone-' + tone : '') + '"');
     return '<div class="card-head">' + svg + '<h3 class="card-title" id="decision-title" tabindex="-1">' + title + '</h3>' + (chip || '') + '</div>';
   }
 
-  /** Editor write card (interaction spec section 5.1): action, objects with current and planned values, level, undo, raw arguments. */
+  /** Editor write card: action, objects with current and planned values, level, undo, raw arguments. */
   function writeCardHtml(request) {
     const plannedClass = request.destructive ? 'planned is-danger' : 'planned';
     const rows = request.objects.map((object) => '<tr><td title="' + esc(object.path) + '">' + esc(object.name) + '</td><td title="' + esc(object.field) + '">' + esc(object.field) + '</td><td title="' + esc(object.current) + '">' + esc(object.current) + '</td><td class="' + plannedClass + '" title="' + esc(object.planned) + '">' + esc(object.planned) + '</td></tr>').join('');
@@ -3787,7 +3786,7 @@
   decorateIcons();
   warpPlayer.attach($('chat'));
 
-  // Whether CEF reports a hidden panel tab decides if the shell must pause the mark itself (Shuttlegent.md section 14.3.8)
+  // Whether CEF reports a hidden panel tab decides if the shell must pause the mark itself
   document.addEventListener('visibilitychange', () => console.log('Shuttlegent page visibility: ' + document.visibilityState));
   bindComposer();
   bindConversation();

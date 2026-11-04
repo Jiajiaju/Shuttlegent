@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
 
-/** tools/list 向模型说明的单个编辑器工具信息（Shuttlegent.md 第 10.2 节）。 */
+/** tools/list 向模型说明的单个编辑器工具信息。 */
 struct FShuttlegentToolDefinition
 {
 	/** 模型调用时使用的名称；由小写字母、数字与下划线组成，在所有工具提供者之间唯一。 */

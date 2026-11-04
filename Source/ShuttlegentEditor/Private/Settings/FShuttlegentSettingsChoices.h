@@ -17,6 +17,6 @@ struct FShuttlegentSettingsChoices
 	/** Agent 在设置页与面板中显示的名称。 */
 	static FText GetAgentLabel(const FString& AgentId);
 
-	/** Agent 声明的能力，一行文字（ShuttlegentAgentModel_Design.md 第 9.4 节）。 */
+	/** Agent 声明的能力，一行文字。 */
 	static FText GetAgentCapabilities(const FString& AgentId);
 };

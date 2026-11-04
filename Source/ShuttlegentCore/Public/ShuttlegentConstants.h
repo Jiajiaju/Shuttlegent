@@ -76,7 +76,7 @@ namespace ShuttlegentEnvVar
 	};
 }
 
-/** 模型供应商与生成的运行时补丁（Shuttlegent.md 第 8.2、9 节）。 */
+/** 模型供应商与生成的运行时补丁。 */
 namespace ShuttlegentProviderConstant
 {
 	// 运行时内置的 DeepSeek 路由，未指定默认供应商时使用
@@ -145,7 +145,7 @@ namespace ShuttlegentProviderConstant
 	// 插入记忆插件的行，按绝对路径加载
 	inline const TCHAR* RowMemory = TEXT("shuttlegent-memory");
 
-	// 默认循环所在的基础补丁行；分发插件接管工厂槽位时停用（ShuttlegentAgentModel_Design.md 第 9.2 节）
+	// 默认循环所在的基础补丁行；分发插件接管工厂槽位时停用
 	inline const TCHAR* RowAgentLoop = TEXT("agent-loop");
 
 	// 插入 Agent 分发插件的行，按绝对路径加载；配置 agents 为各第三方循环的 id 与入口模块绝对路径
@@ -158,7 +158,7 @@ namespace ShuttlegentProviderConstant
 }
 
 /**
- * 检测连接的请求（ShuttlegentAgentModel_Design.md 第 8.1 节）。路径与运行时同源，出处相对 ThirdParty/deepseek-harness：
+ * 检测连接的请求。路径与运行时同源，出处相对 ThirdParty/deepseek-harness：
  * 内置 DeepSeek 见 packages/llm/llm-deepseek/src/messages-api.ts；其余三种协议由 pi-ai 交给官方 SDK，
  * 见 node_modules/.pnpm 下 @anthropic-ai/sdk 0.129.0 的 resources/messages/messages.js 与 openai 7.19.0 的
  * resources/chat/completions/completions.js、resources/responses/responses.js；SDK 把地址去掉末尾斜杠后直接拼接路径。
@@ -233,7 +233,7 @@ namespace ShuttlegentProbeConstant
 	inline constexpr double MillisecondsPerSecond = 1000.0;
 }
 
-/** 会话的概括标题：第一轮回答结束后向会话所用的模型要一个短标题（工作区 Doc/ShuttlegentSessionTabs_Design.md §6.5）。 */
+/** 会话的概括标题：第一轮回答结束后向会话所用的模型要一个短标题。 */
 namespace ShuttlegentTitleConstant
 {
 	// 发给模型的要求，{0} 为用户的第一条消息，{1} 为第一段回答
@@ -328,7 +328,7 @@ namespace ShuttlegentSessionConstant
 	// 由首条提问整理出的临时标题、以及模型生成的概括标题的最大长度，单位字符
 	inline constexpr int32 TitleMaxChars = 24;
 
-	// 用户重命名时标题的最大长度，单位字符（Shuttlegent 界面交互规范第 6 节）
+	// 用户重命名时标题的最大长度，单位字符
 	inline constexpr int32 RenameMaxChars = 60;
 }
 
@@ -340,13 +340,13 @@ namespace ShuttlegentBuiltinModel
 	inline const TCHAR* Names[] = { TEXT("DeepSeek-V4.1-Flash"), TEXT("DeepSeek-V4-Pro") };
 }
 
-/** Agent 的提供与选择（ShuttlegentAgentModel_Design.md 第 9 节）。 */
+/** Agent 的提供与选择。 */
 namespace ShuttlegentAgentConstant
 {
 	// 默认循环 dsh-agent-loop 的 AgentId；始终存在、不可停用
 	inline const TCHAR* DefaultAgentId = TEXT("default");
 
-	// 默认循环声明的能力：全部能力项（第 9.4 节）
+	// 默认循环声明的能力：全部能力项
 	inline const TCHAR* AllCapabilities[] = { TEXT("rewind"), TEXT("slashCommands"), TEXT("planMode"), TEXT("todo"), TEXT("contextUsage"), TEXT("memory"), TEXT("modelSwitch"), TEXT("imageInput") };
 
 	// 插件自带 Agent 的目录（相对插件目录），每个 Agent 一个子目录，内含说明文件
@@ -365,7 +365,7 @@ namespace ShuttlegentAgentConstant
 	inline const TCHAR* FieldEntry = TEXT("entry");
 }
 
-/** 旧模型设置的一次性迁移（ShuttlegentAgentModel_Design.md 第 11 节）。 */
+/** 旧模型设置的一次性迁移。 */
 namespace ShuttlegentMigrationConstant
 {
 	// 旧版个人设置中的键

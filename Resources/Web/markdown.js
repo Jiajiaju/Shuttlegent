@@ -4,7 +4,6 @@
  * Inline: code, bold, italic, links (http(s) open in the system browser; ue-asset:/ue-actor: and `/Game/...` code become editor object links),
  * images ![caption](src) from three sources only: ue-asset: thumbnails, local images under Saved/Shuttlegent/, and http(s); any other src stays as text.
  * A paragraph holding nothing but images lays them out in a wrapping row. Tolerates unclosed structures while a reply streams.
- * Rules follow Shuttlegent.md section 14.3.2.
  */
 (function () {
   'use strict';

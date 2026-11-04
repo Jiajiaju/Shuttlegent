@@ -112,7 +112,7 @@ public:
 	void QueryImageInput(const FString& ModelValue, TFunction<void(TOptional<bool> /*bImage*/)> OnDone) const;
 
 	/**
-	 * 指定下一个新会话使用的 Agent（ACP 的 session/new 带不了 Agent，ShuttlegentAgentModel_Design.md 第 4.7 节）；
+	 * 指定下一个新会话使用的 Agent（ACP 的 session/new 带不了 Agent）；
 	 * 须在发 session/new 之前完成。OnDone 在游戏线程收到错误原因，成功时为空；Agent 未安装时失败。
 	 */
 	void SetNextAgent(const FString& AgentId, TFunction<void(const FString& /*Error*/)> OnDone) const;

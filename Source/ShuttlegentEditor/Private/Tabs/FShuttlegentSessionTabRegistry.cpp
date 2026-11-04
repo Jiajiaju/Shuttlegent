@@ -34,7 +34,7 @@ namespace FShuttlegentSessionTabRegistryPrivate
 
 	/**
 	 * 页签完成排版后交给原生页签拖拽；返回 false 表示下一帧再试。从页面之外发起拖拽须补齐引擎在正常输入分发中
-	 * 自动准备的三项状态，缺一项即崩溃（设计文档 §17.1）：事件路径、带指针位置的路径、与拖拽起点成对的进出事件。
+	 * 自动准备的三项状态，缺一项即崩溃：事件路径、带指针位置的路径、与拖拽起点成对的进出事件。
 	 */
 	bool TryStartDrag(const TWeakPtr<SDockTab>& WeakTab, int32& FramesLeft)
 	{

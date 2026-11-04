@@ -16,7 +16,7 @@ void FShuttlegentPanelCommands::RegisterCommands()
 	UI_COMMAND(NewSession, "新会话", "开始一个新会话", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::N));
 	UI_COMMAND(SearchSessions, "搜索会话", "打开会话侧栏并聚焦搜索框", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::K));
 	UI_COMMAND(FocusInput, "聚焦输入框", "把键盘焦点移到输入框", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::L));
-	UI_COMMAND(ReloadPage, "刷新面板页面", "从磁盘重新加载面板页面；对话、会话与队列不受影响，未发送的草稿会清空", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::R));
+	UI_COMMAND(ReloadPage, "刷新面板页面", "从磁盘重新加载面板页面；对话、会话、队列与已保存的草稿不受影响（草稿在输入停顿约 1 秒后保存）", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::R));
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -8,7 +8,7 @@
 class UShuttlegentSettings;
 
 /**
- * 检测连接：编辑器直接向模型服务发一次最小请求并分类结果，不依赖运行时（ShuttlegentAgentModel_Design.md 第 8 节）。
+ * 检测连接：编辑器直接向模型服务发一次最小请求并分类结果，不依赖运行时。
  * 请求路径与运行时一致；日志只记录地址、状态码与耗时，绝不记录密钥与响应正文。仅限游戏线程。
  */
 struct SHUTTLEGENTCORE_API FShuttlegentModelProbe

@@ -61,7 +61,7 @@ void FShuttlegentChatView::SetVisible(bool bInVisible)
 	if (!bVisible) return;
 
 	Model->SetFocused(*Current);
-	// 重启后恢复的页签第一次到前台时才恢复会话（设计文档 §10.4）
+	// 重启后恢复的页签第一次到前台时才恢复会话
 	Model->ResumeDeferred(*Current);
 }
 

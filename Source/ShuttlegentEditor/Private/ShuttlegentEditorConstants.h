@@ -46,7 +46,7 @@ namespace ShuttlegentEditorMetric
 	// 编辑器要求的标签页图标尺寸
 	inline constexpr float TabIconSize = 16.0f;
 
-	// 加载占位的品牌标志（空状态标志尺寸，Shuttlegent UI 交互规范第 14.3.3 节）
+	// 加载占位的品牌标志（与面板空状态的标志同尺寸）
 	inline constexpr float MarkSizePlaceholder = 64.0f;
 
 	// 占位标志与其说明文字之间的间距
@@ -134,7 +134,7 @@ namespace ShuttlegentEditorWeb
 	inline constexpr float DrawerHeightShare = 0.5f;
 	inline constexpr float DrawerMinHeight = 240.0f;
 
-	// 抽屉最大高度占面板的比例（Shuttlegent UI 交互规范第 4.2 节）
+	// 抽屉最大高度占面板的比例
 	inline constexpr float DrawerMaxShare = 0.9f;
 
 	// 抽屉顶边调整尺寸手柄的高度
@@ -215,7 +215,7 @@ namespace ShuttlegentEditorSettingsUi
 	inline const TCHAR* GenericFontFamilies[] = { TEXT("serif"), TEXT("sans-serif"), TEXT("monospace"), TEXT("system-ui"), TEXT("cursive"), TEXT("fantasy") };
 }
 
-/** 斜杠模板（Shuttlegent.md 第 11 节）。 */
+/** 斜杠模板。 */
 namespace ShuttlegentEditorTemplate
 {
 	// 模板目录中的模板文件
@@ -247,7 +247,7 @@ namespace ShuttlegentEditorRuntime
 	inline const TCHAR* MainFrameModule = TEXT("MainFrame");
 }
 
-/** 会话页签（工作区 Doc/ShuttlegentSessionTabs_Design.md §9）。 */
+/** 会话页签。 */
 namespace ShuttlegentEditorSessionTab
 {
 	// 会话页签类型名的前缀，后接页签的 ViewId；布局按类型名保存，不能与主页签同名
@@ -269,13 +269,13 @@ namespace ShuttlegentEditorSessionTab
 	inline const FName LevelEditorModule = TEXT("LevelEditor");
 
 	// 按用户配置（GEditorPerProjectIni，节 ShuttlegentEditorWeb::ConfigSection）中的绑定：每个会话页签一项 <ViewId>|<SessionId>，
-	// 新对话的 SessionId 为空；主页签当前的会话单独一个键（设计文档 §10.1）
+	// 新对话的 SessionId 为空；主页签当前的会话单独一个键
 	inline const TCHAR* ConfigKeySessionTabs = TEXT("SessionTabs");
 	inline const TCHAR* ConfigKeyHubSession = TEXT("HubSessionId");
 	inline const TCHAR* BindingSeparator = TEXT("|");
 }
 
-/** 草稿与排队提示的存盘（FShuttlegentDraftStore；会话页签设计文档 §10.2）。 */
+/** 草稿与排队提示的存盘（FShuttlegentDraftStore）。 */
 namespace ShuttlegentEditorDraft
 {
 	// 每个会话一个文件 <SessionId>.json，相对会话目录（ShuttlegentPath::SessionsDir）；新对话的草稿按视图存在 Views 子目录
@@ -647,7 +647,7 @@ namespace ShuttlegentEditorWebField
 	inline constexpr int64 MillisecondsPerSecond = 1000;
 }
 
-/** 草稿引用（FShuttlegentReferenceFinder、FShuttlegentReferencePrompt；Shuttlegent UI 交互规范第 4.2 节）。 */
+/** 草稿引用（FShuttlegentReferenceFinder、FShuttlegentReferencePrompt）。 */
 namespace ShuttlegentEditorReference
 {
 	// 拥有资产注册表的模块

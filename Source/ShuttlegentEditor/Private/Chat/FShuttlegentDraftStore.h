@@ -8,7 +8,7 @@ class FJsonObject;
 class FJsonValue;
 
 /**
- * 草稿与排队提示的存盘（会话页签设计文档 §10.2）：每个会话一个文件 Saved/Shuttlegent/Sessions/Drafts/<SessionId>.json，
+ * 草稿与排队提示的存盘：每个会话一个文件 Saved/Shuttlegent/Sessions/Drafts/<SessionId>.json，
  * 新对话的草稿按视图存在 Drafts/Views/<视图键>.json。草稿是页面原样交来的对象，编辑器不解读；排队的提示由编辑器写入。
  * 读过的文件留在内存里，写入即落盘，草稿与队列都为空时删除文件。仅限游戏线程。
  */

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Dom/JsonObject.h"
 
-/** 按默认值读取工具调用参数，并对列表结果分页（Shuttlegent.md 第 10.2 节）。 */
+/** 按默认值读取工具调用参数，并对列表结果分页。 */
 struct SHUTTLEGENTMCPSERVER_API FShuttlegentToolArguments
 {
 	static FString GetString(const TSharedRef<FJsonObject>& Arguments, const FString& Name, const FString& Default = FString());

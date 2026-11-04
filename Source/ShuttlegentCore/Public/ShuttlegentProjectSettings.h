@@ -9,7 +9,7 @@
 #include "ShuttlegentProjectSettings.generated.h"
 
 /**
- * 项目经版本控制共享的设置（项目设置 > Shuttlegent > General，Shuttlegent.md 第 11 节）。
+ * 项目经版本控制共享的设置（项目设置 > Shuttlegent > General）。
  * 插件默认值来自插件的 Config/DefaultShuttlegent.ini，项目在自己的 Config/DefaultShuttlegent.ini 中覆盖。
  * 个人选项（包括模型供应商及其密钥）在 UShuttlegentSettings 中。
  */

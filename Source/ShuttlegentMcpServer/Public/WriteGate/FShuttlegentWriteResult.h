@@ -5,7 +5,7 @@
 
 #include "WriteGate/FShuttlegentWriteObject.h"
 
-/** 已批准的编辑器写入的实际执行结果，按对象逐一列出，由工具上报（Shuttlegent UI 交互规范第 5.2、5.4 节）。 */
+/** 已批准的编辑器写入的实际执行结果，按对象逐一列出，由工具上报。 */
 struct FShuttlegentWriteResult
 {
 	int32 RequestId = 0;

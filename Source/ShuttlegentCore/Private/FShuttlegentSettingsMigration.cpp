@@ -119,7 +119,7 @@ namespace FShuttlegentSettingsMigrationPrivate
 		return Name;
 	}
 
-	/** 按第 11 节换算：DeepSeek 的地址与密钥给内置模型；每个有路由名的供应商条目的每个模型一条；默认供应商与模型换成默认模型名称。 */
+	/** 换算规则：DeepSeek 的地址与密钥给内置模型；每个有路由名的供应商条目的每个模型一条；默认供应商与模型换成默认模型名称。 */
 	void Apply(const FLegacySettings& Legacy, const FDefaultSelection& Default, UShuttlegentSettings& Settings)
 	{
 		const FString BuiltinUrl = Legacy.DeepSeekBaseUrl.TrimStartAndEnd();

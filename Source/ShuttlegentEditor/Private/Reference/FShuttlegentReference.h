@@ -4,7 +4,7 @@
 
 #include "Reference/EShuttlegentReferenceKind.h"
 
-/** 草稿中的一个引用标签（Shuttlegent UI 交互规范第 4.2 节）。Path 是稳定标识；Name 仅用于显示。 */
+/** 草稿中的一个引用标签。Path 是稳定标识；Name 仅用于显示。 */
 struct FShuttlegentReference
 {
 	EShuttlegentReferenceKind Kind = EShuttlegentReferenceKind::Asset;

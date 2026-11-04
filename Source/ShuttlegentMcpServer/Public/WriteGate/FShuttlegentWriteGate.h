@@ -13,7 +13,7 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentWriteClosed, int32 /*RequestI
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnShuttlegentWriteFinished, const FShuttlegentWriteResult& /*Result*/);
 
 /**
- * 编辑器写入工具的权限门（Shuttlegent.md 第 10.3 节）：每次写入在运行前都须在此请求。
+ * 编辑器写入工具的权限门：每次写入在运行前都须在此请求。
  *
  * 请求一直等待，直到确认 UI 对其答复一次（批准或拒绝）、请求过期（关卡切换，或运行时丢失、本轮结束时由所有者
  * 令全部请求过期），或无人作答而超时。未挂接确认 UI 时，请求立即被拒绝：未经确认不写入任何内容。批准的写入完成后，

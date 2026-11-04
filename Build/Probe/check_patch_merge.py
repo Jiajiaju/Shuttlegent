@@ -1,4 +1,4 @@
-"""Checks that the runtime merges a patch shaped like the editor's generated.patch.yml (Shuttlegent.md section 14.5).
+"""Checks that the runtime merges a patch shaped like the editor's generated.patch.yml.
 
 Usage: python -I check_patch_merge.py <runtime exe> <plugin patch> <work dir>
 Writes a JSON patch with a provider route, a default route, a skill folder and the Shell switch on, runs the runtime

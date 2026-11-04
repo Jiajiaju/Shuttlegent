@@ -2170,7 +2170,7 @@ void FShuttlegentChatModel::NotifyStatus(const FShuttlegentConversation& Convers
 
 void FShuttlegentChatModel::NotifyQueue(const FShuttlegentConversation& Conversation)
 {
-	// 队列每次变化即写盘，重启后放回（设计文档 §10.2）；尚无会话 id 的新对话等有了 id 后的下一次变化再写
+	// 队列每次变化即写盘，重启后放回；尚无会话 id 的新对话等有了 id 后的下一次变化再写
 	if (!Conversation.SessionId.IsEmpty()) Drafts.SetQueue(Conversation.SessionId, Conversation.Queue.Items);
 
 	OnQueueChanged.Broadcast(Conversation);
@@ -2504,7 +2504,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return;
 
-	// 记下提问而没有记下回合结束的一轮没有正常结束：编辑器在回合中关闭，或运行时在回合中退出（设计文档 §10.3）
+	// 记下提问而没有记下回合结束的一轮没有正常结束：编辑器在回合中关闭，或运行时在回合中退出
 	TSharedPtr<FShuttlegentChatEntry> OpenPrompt;
 	for (const TSharedPtr<FJsonObject>& Item : Pinned->GetSessionStore().LoadTranscript(Conversation.SessionId))
 	{
@@ -2964,7 +2964,7 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 		Entry->Detail = Source->Detail;
 	}
 
-	// 关闭权限提升时，请求立即得到答复并留下可读记录（交互规范第 3 节）
+	// 关闭权限提升时，请求立即得到答复并留下可读记录
 	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 	if (IsValid(Settings) && !Settings->bAllowElevation)
 	{
@@ -3065,7 +3065,7 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 	Entry->WriteResult = Result;
 	Entry->bAutoApproved = ApprovedWrite.RequestId == Result.RequestId && ApprovedWrite.bAutoApproved;
 
-	// 未完成全部对象的批次会使队列停止（交互规范第 4.3 节）
+	// 未完成全部对象的批次会使队列停止
 	const bool bAllCompleted = !Result.Objects.ContainsByPredicate([](const FShuttlegentWriteObject& Object) { return Object.Status != EShuttlegentWriteObjectStatus::Completed; });
 	AddRunLog(*Owner, bAllCompleted ? LOCTEXT("LogWriteCompleted", "编辑器写入完成") : LOCTEXT("LogWritePartial", "编辑器写入未全部完成"), !bAllCompleted);
 	if (!bAllCompleted) PauseQueue(*Owner);

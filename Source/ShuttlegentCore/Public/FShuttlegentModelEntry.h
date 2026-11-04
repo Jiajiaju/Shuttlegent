@@ -8,7 +8,7 @@
 #include "FShuttlegentModelEntry.generated.h"
 
 /**
- * 个人设置中的一个模型（ShuttlegentAgentModel_Design.md 第 6.1 节）：自带地址、协议与密钥。
+ * 个人设置中的一个模型：自带地址、协议与密钥。
  * 生成运行时补丁时，地址、协议、密钥相同的模型归为一个路由，路由对用户不可见。
  */
 USTRUCT()

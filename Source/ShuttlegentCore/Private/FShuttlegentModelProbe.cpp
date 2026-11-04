@@ -58,7 +58,7 @@ namespace FShuttlegentModelProbePrivate
 		return Target.bBuiltinDeepSeek || Target.Api == EShuttlegentProviderApi::AnthropicMessages;
 	}
 
-	/** 按第 8.2 节由状态码与响应分类。 */
+	/** 由状态码与响应分类。 */
 	EShuttlegentModelProbeOutcome Classify(int32 StatusCode, const FString& ContentType, const FString& Body)
 	{
 		if (StatusCode >= ShuttlegentProbeConstant::StatusOkMin && StatusCode <= ShuttlegentProbeConstant::StatusOkMax) return EShuttlegentModelProbeOutcome::Connected;

@@ -7,7 +7,7 @@
 
 #include "FShuttlegentExternalMcpServer.generated.h"
 
-/** 项目在每个会话中声明给运行时的知识或工具服务（Shuttlegent.md 第 11 节）。 */
+/** 项目在每个会话中声明给运行时的知识或工具服务。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentExternalMcpServer
 {

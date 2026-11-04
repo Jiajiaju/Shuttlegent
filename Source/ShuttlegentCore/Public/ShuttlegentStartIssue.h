@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 运行时无法处理提问的原因，由面板的启动引导卡展示（Shuttlegent.md 第 14.3.8 节）。 */
+/** 运行时无法处理提问的原因，由面板的启动引导卡展示。 */
 enum class EShuttlegentStartIssue : uint8
 {
 	// 没有已知问题

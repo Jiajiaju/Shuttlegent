@@ -6,7 +6,7 @@
 
 #include "FShuttlegentUiGuide.generated.h"
 
-/** 助手可以为用户打开的一个编辑器位置，附一句在那里做什么的说明（Shuttlegent.md 第 11 节）。 */
+/** 助手可以为用户打开的一个编辑器位置，附一句在那里做什么的说明。 */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentUiGuide
 {

@@ -37,7 +37,7 @@ struct FShuttlegentSessionBinding
 };
 
 /**
- * 会话窗口（工作区 Doc/ShuttlegentSessionTabs_Design.md §6、§9、§10）：从主页签会话列表拖出的会话各自成为一个页签，有自己的视图、面板与 CEF 页面。
+ * 会话窗口：从主页签会话列表拖出的会话各自成为一个页签，有自己的视图、面板与 CEF 页面。
  * 会话页签是关卡编辑器页签管理器里的 PanelTab，与 Details、Outliner、视口同级：可以单独浮出、互相组合，也能与这些面板叠放、分割，
  * 但进不了编辑器顶部归全局管理器的大页签栏。拖出时先在光标处开一个会话窗口，再借用 SDockTab::OnDragDetected 交给引擎原生的页签拖拽。
  * 一个会话只在一处显示：拖已在窗口中的会话即拖那个页签。

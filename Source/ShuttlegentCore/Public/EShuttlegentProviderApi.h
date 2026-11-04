@@ -4,7 +4,7 @@
 
 #include "EShuttlegentProviderApi.generated.h"
 
-/** 经 llm-pi-ai 接入的模型供应商路由所用的接口协议（Shuttlegent.md 第 9.1 节）。 */
+/** 经 llm-pi-ai 接入的模型供应商路由所用的接口协议。 */
 UENUM()
 enum class EShuttlegentProviderApi : uint8
 {

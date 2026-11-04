@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 编辑器写入门的计时参数（Shuttlegent.md 第 10.3 节）。 */
+/** 编辑器写入门的计时参数。 */
 namespace ShuttlegentWriteGateConstant
 {
 	// 请求等待确认的时长；低于运行时 60 s 的 MCP 工具调用超时，确保写入门先给出答复
@@ -12,7 +12,7 @@ namespace ShuttlegentWriteGateConstant
 	inline constexpr float TimeoutCheckSeconds = 0.5f;
 }
 
-/** Shuttlegent.WriteProbe：经由写入门执行的一次编辑器写入，用于 MCP 端点就绪前的验收（Shuttlegent.md 第 14.3.6 节）。 */
+/** Shuttlegent.WriteProbe：经由写入门执行的一次编辑器写入，用于 MCP 端点就绪前的验收。 */
 namespace ShuttlegentWriteProbe
 {
 	inline const TCHAR* CommandName = TEXT("Shuttlegent.WriteProbe");
@@ -40,7 +40,7 @@ namespace ShuttlegentWriteProbe
 	inline constexpr int32 ValueFractionalDigits = 1;
 }
 
-/** 工具参数、schema 与输出上限（Shuttlegent.md 第 10.2 节）。 */
+/** 工具参数、schema 与输出上限。 */
 namespace ShuttlegentMcpTool
 {
 	// 列表类工具的分页参数及其上下限
@@ -80,7 +80,7 @@ namespace ShuttlegentMcpTool
 	inline const TCHAR* ProviderFeatureName = TEXT("ShuttlegentToolProvider");
 }
 
-/** 编辑器 MCP 端点（Shuttlegent.md 第 10.1 节）。 */
+/** 编辑器 MCP 端点。 */
 namespace ShuttlegentMcpEndpointConstant
 {
 	// 从 FirstPort 起依次探测以寻找空闲端口的端口范围

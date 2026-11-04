@@ -7,7 +7,7 @@
 class UShuttlegentSettings;
 
 /**
- * 由个人设置中的模型推出运行时路由（ShuttlegentAgentModel_Design.md 第 4.1、7 节）。路由对用户不可见；
+ * 由个人设置中的模型推出运行时路由。路由对用户不可见；
  * 生成补丁、密钥解析、默认路由与启动检查都从这里取，规则只在一处。仅限游戏线程。
  */
 struct SHUTTLEGENTCORE_API FShuttlegentModelRoutes

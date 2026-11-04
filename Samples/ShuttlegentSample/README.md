@@ -1,6 +1,6 @@
 # Shuttlegent Sample
 
-Shuttlegent 的示例项目接入，覆盖 Shuttlegent.md 第 11 节的全部扩展点：
+Shuttlegent 的示例项目接入，覆盖项目接入的全部扩展点：
 
 | 扩展点 | 示例 |
 |---|---|

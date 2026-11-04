@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 一次检测连接的结论（ShuttlegentAgentModel_Design.md 第 8.2 节）。 */
+/** 一次检测连接的结论。 */
 enum class EShuttlegentModelProbeOutcome : uint8
 {
 	// 2xx：地址、协议、密钥与模型 ID 都正确

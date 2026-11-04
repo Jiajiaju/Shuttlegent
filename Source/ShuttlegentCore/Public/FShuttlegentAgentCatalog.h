@@ -5,8 +5,8 @@
 #include "FShuttlegentAgentManifest.h"
 
 /**
- * 可用 Agent 的目录：默认循环在前，其后为插件 Runtime/plugins/agents/<id>/agent.json 声明的循环插件
- * （ShuttlegentAgentModel_Design.md 第 9.1 节）。首次使用时扫描并缓存；说明文件无效时跳过并写警告。仅限游戏线程。
+ * 可用 Agent 的目录：默认循环在前，其后为插件 Runtime/plugins/agents/<id>/agent.json 声明的循环插件。
+ * 首次使用时扫描并缓存；说明文件无效时跳过并写警告。仅限游戏线程。
  */
 struct SHUTTLEGENTCORE_API FShuttlegentAgentCatalog
 {

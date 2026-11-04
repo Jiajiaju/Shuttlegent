@@ -44,14 +44,14 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShuttlegentChatForkAdopted, const FStrin
  *
  * 位于编辑器模块中，因此对话在面板关闭并重新打开后依然保留。
  * 用户每个正在运行、排队或显示中的会话对应一个 FShuttlegentConversation；
- * 页签经 FShuttlegentChatView 显示其中一个，其余对话在后台继续运行并接收更新
- * （Shuttlegent.md 第 14.3.7 节）。没有页签显示、且空闲的对话被释放时关闭其会话并将其丢弃；
+ * 页签经 FShuttlegentChatView 显示其中一个，其余对话在后台继续运行并接收更新。
+ * 没有页签显示、且空闲的对话被释放时关闭其会话并将其丢弃；
  * 再次打开时重放其对话记录。
  *
  * 将 session/update 分块合并为条目（每个助手消息 id 一条，每次工具调用一条），
  * 并将对话的第一条提示暂存至运行时及其会话就绪。回合运行期间发送的草稿进入该对话的
  * FIFO 队列，在回合正常结束时逐条发送；停止、被拒绝的权限、失败的回合或丢失的运行时
- * 会暂停队列，直至用户继续（Shuttlegent UI 交互规范第 4.3 节）。接口按对话调用，事件带上所属对话，
+ * 会暂停队列，直至用户继续。接口按对话调用，事件带上所属对话，
  * 由视图挑出自己显示的那个；任一持有对话的状态或队列变化时另触发 OnSessionsChanged。仅限游戏线程。
  */
 class FShuttlegentChatModel : public TSharedFromThis<FShuttlegentChatModel>
@@ -154,7 +154,7 @@ private:
 	FDelegateHandle UndoBufferHandle;
 	FDelegateHandle PostUndoRedoHandle;
 
-	/** 各会话与新对话视图的草稿、各会话的排队提示，存盘以便重启后放回（设计文档 §10.2）。 */
+	/** 各会话与新对话视图的草稿、各会话的排队提示，存盘以便重启后放回。 */
 	FShuttlegentDraftStore Drafts;
 
 public:
@@ -169,7 +169,7 @@ public:
 
 	/**
 	 * 已持有的会话按原样返回；否则显示其已存储的对话记录并在运行时中恢复。会话 id 为空时返回 nullptr。
-	 * bDeferResume 为 true 时只回放记录、暂不恢复（重启后恢复页签用，设计文档 §10.4），由 ResumeDeferred 或发送时补做。
+	 * bDeferResume 为 true 时只回放记录、暂不恢复（重启后恢复页签用），由 ResumeDeferred 或发送时补做。
 	 */
 	TSharedPtr<FShuttlegentConversation> HoldConversation(const FString& SessionId, bool bDeferResume);
 
@@ -187,7 +187,7 @@ public:
 
 	/**
 	 * 用户确认在回合中关闭编辑器：等待中的计划记为已取消、选择卡记为未作答、权限请求记为拒绝，均写入会话记录，
-	 * 重启后对话中能看到它们如何结束（设计文档 §10.3）。
+	 * 重启后对话中能看到它们如何结束。
 	 */
 	void SettleBeforeExit();
 
@@ -311,7 +311,7 @@ public:
 	/** 确认或拒绝编辑器写入；对同一请求的再次答复不产生任何作用。 */
 	void AnswerWrite(int32 RequestId, bool bApprove);
 
-	/** 写入结果是否仍可直接撤销，以及不可撤销时的原因（Shuttlegent UI 交互规范第 5.4 节）。 */
+	/** 写入结果是否仍可直接撤销，以及不可撤销时的原因。 */
 	bool CanUndoWrite(const FShuttlegentChatEntry& Entry, FText& OutReason) const;
 
 	/** 当写入结果的事务仍位于编辑器撤销缓冲区顶部时将其撤销。 */
@@ -476,7 +476,7 @@ private:
 	void ApplyTurnEnd(FShuttlegentConversation& Conversation, const FString& StopReason, const FString& ErrorMessage);
 	void ReplayTranscript(FShuttlegentConversation& Conversation);
 
-	/** 回放时某一轮只有提问、没有回合结束：在此处加一条“这一轮没有正常结束”的提示（设计文档 §10.3）。 */
+	/** 回放时某一轮只有提问、没有回合结束：在此处加一条“这一轮没有正常结束”的提示。 */
 	void AddInterruptedNotice(FShuttlegentConversation& Conversation);
 
 	/** 条目在对话中的位置，以及它是第几条用户消息（从 0 计，与运行时的 user/message 计数一致）；不是用户消息时返回 false。 */

@@ -99,7 +99,7 @@ FText FShuttlegentSettingsChoices::GetAgentLabel(const FString& AgentId)
 
 FText FShuttlegentSettingsChoices::GetAgentCapabilities(const FString& AgentId)
 {
-	// 能力项按第 9.4 节的顺序显示中文名；说明文件里不认识的能力项原样列出
+	// 能力项按 ShuttlegentAgentConstant::AllCapabilities 的顺序显示中文名；说明文件里不认识的能力项原样列出
 	const TPair<const TCHAR*, FText> Known[] = {
 		{ TEXT("rewind"), LOCTEXT("CapRewind", "回到这里与分支") },
 		{ TEXT("slashCommands"), LOCTEXT("CapSlashCommands", "斜杠命令") },

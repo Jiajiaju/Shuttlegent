@@ -1,5 +1,5 @@
 // Shuttlegent agent dispatch: holds the runtime's single agent factory slot and hands each session to the loop of its
-// agent, so one runtime can host several agent loops (ShuttlegentAgentModel_Design.md section 9.2). The patch the editor
+// agent, so one runtime can host several agent loops. The patch the editor
 // generates disables the agent-loop row and loads this plugin instead; the default loop (dsh-agent-loop) and every
 // installed third-party loop run below it, each in a scope whose `agents` is a stand-in that records the factory the
 // loop registers instead of taking the slot.

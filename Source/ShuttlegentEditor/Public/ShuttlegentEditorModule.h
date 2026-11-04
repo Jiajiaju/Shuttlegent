@@ -52,6 +52,6 @@ private:
 	FLinearColor GetChatTabColor() const;
 	bool HandleTabForegroundCheck(float DeltaTime);
 
-	/** 有回合在进行时列出会被中断的会话请用户确认；确认后把等待中的计划、选择卡与权限请求记为已结束（设计文档 §10.3）。 */
+	/** 有回合在进行时列出会被中断的会话请用户确认；确认后把等待中的计划、选择卡与权限请求记为已结束。 */
 	bool HandleCanCloseEditor();
 };

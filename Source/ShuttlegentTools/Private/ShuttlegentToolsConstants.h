@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-/** 内置编辑器工具共用的限制值（Shuttlegent.md 第 10.2 节）。 */
+/** 内置编辑器工具共用的限制值。 */
 namespace ShuttlegentToolsConstant
 {
 	// 每个属性显示的属性值最大长度（字符数）；超出部分以省略号结尾

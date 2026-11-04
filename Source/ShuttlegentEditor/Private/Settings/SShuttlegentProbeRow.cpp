@@ -15,7 +15,7 @@
 
 namespace SShuttlegentProbeRowPrivate
 {
-	/** 一行结论，按第 8.2 节的说法。 */
+	/** 一行结论，每种检测结果一种说法。 */
 	FText Conclusion(const FShuttlegentModelProbeResult& Result)
 	{
 		switch (Result.Outcome)

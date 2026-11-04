@@ -4,7 +4,7 @@
 
 #include "EShuttlegentProviderApi.h"
 
-/** 运行时的一个模型路由：地址、协议、密钥相同的模型归为一组（ShuttlegentAgentModel_Design.md 第 7 节）。 */
+/** 运行时的一个模型路由：地址、协议、密钥相同的模型归为一组。 */
 struct FShuttlegentModelRoute
 {
 	/** 路由名：内置为 deepseek-official；迁移来的沿用旧路由名；其余由地址与协议确定性生成。 */

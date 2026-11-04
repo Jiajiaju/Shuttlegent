@@ -233,6 +233,34 @@ namespace ShuttlegentProbeConstant
 	inline constexpr double MillisecondsPerSecond = 1000.0;
 }
 
+/** 会话的概括标题：第一轮回答结束后向会话所用的模型要一个短标题（工作区 Doc/ShuttlegentSessionTabs_Design.md §6.5）。 */
+namespace ShuttlegentTitleConstant
+{
+	// 发给模型的要求，{0} 为用户的第一条消息，{1} 为第一段回答
+	inline const TCHAR* PromptFormat = TEXT("用不超过 16 个字概括下面这段对话的主题，作为会话标题。只输出标题本身，不要引号、句号或任何解释。\n\n用户：{0}\n\n助手：{1}");
+
+	// 用户消息与回答各截到的长度，单位字符
+	inline constexpr int32 ExcerptMaxChars = 500;
+
+	// 输出上限，单位 token；Responses 接口要求 max_output_tokens 不小于 16
+	inline constexpr int32 MaxOutputTokens = 64;
+
+	// 整个请求的超时，单位秒
+	inline constexpr float TimeoutSeconds = 20.0f;
+
+	// 响应字段：Messages 的 content[].text，Chat Completions 的 choices[0].message.content，Responses 的 output[].content[].text
+	inline const TCHAR* FieldType = TEXT("type");
+	inline const TCHAR* FieldText = TEXT("text");
+	inline const TCHAR* FieldChoices = TEXT("choices");
+	inline const TCHAR* FieldMessage = TEXT("message");
+	inline const TCHAR* FieldOutput = TEXT("output");
+	inline const TCHAR* TypeText = TEXT("text");
+	inline const TCHAR* TypeOutputText = TEXT("output_text");
+
+	// 标题首尾要去掉的引号与标点
+	inline const TCHAR* TrimChars = TEXT("\"'“”‘’「」《》。．.!！?？:：");
+}
+
 /** 相对插件目录的路径与用户级路径。 */
 namespace ShuttlegentPath
 {
@@ -297,8 +325,8 @@ namespace ShuttlegentProcessConstant
 /** 会话管理。 */
 namespace ShuttlegentSessionConstant
 {
-	// 由首条提问生成的会话标题的最大长度，单位字符
-	inline constexpr int32 TitleMaxChars = 40;
+	// 由首条提问整理出的临时标题、以及模型生成的概括标题的最大长度，单位字符
+	inline constexpr int32 TitleMaxChars = 24;
 
 	// 用户重命名时标题的最大长度，单位字符（Shuttlegent 界面交互规范第 6 节）
 	inline constexpr int32 RenameMaxChars = 60;

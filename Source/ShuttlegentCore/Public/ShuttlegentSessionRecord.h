@@ -32,6 +32,9 @@ struct FShuttlegentSessionRecord
 
 	FDateTime UpdatedAt {};
 
+	/** 标题已定：用户重命名过，或已由模型生成概括标题；为 false 时第一轮回答结束后由模型生成。 */
+	bool bTitleFinal = false;
+
 	/** 恢复前不在会话列表中显示；运行时会话仍保留。 */
 	bool bArchived = false;
 };

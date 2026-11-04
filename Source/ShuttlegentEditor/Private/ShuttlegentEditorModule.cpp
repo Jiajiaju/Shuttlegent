@@ -18,6 +18,7 @@
 #include "Settings/FShuttlegentAgentEntryCustomization.h"
 #include "Settings/FShuttlegentModelEntryCustomization.h"
 #include "Settings/FShuttlegentSettingsCustomization.h"
+#include "Tabs/FShuttlegentSessionTabRegistry.h"
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentSettings.h"
 #include "ShuttlegentStyle.h"
@@ -40,7 +41,11 @@ void FShuttlegentEditorModule::StartupModule()
 	const TSharedPtr<FShuttlegentAgentService> Service = FShuttlegentCoreModule::Get().GetAgentService();
 	if (Service.IsValid()) ChatModel->Initialize(Service.ToSharedRef());
 	HubView = MakeShared<FShuttlegentChatView>();
-	HubView->Initialize(ChatModel.ToSharedRef());
+	HubView->Initialize(ChatModel.ToSharedRef(), EShuttlegentViewMode::Hub);
+	SessionTabs = MakeShared<FShuttlegentSessionTabRegistry>();
+	SessionTabs->Initialize(ChatModel.ToSharedRef(), HubView.ToSharedRef());
+	// 主页签显示上次的当前会话；会话页签由关卡编辑器恢复布局时接回（设计文档 §10.1）
+	SessionTabs->RestoreHub();
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId, FOnSpawnTab::CreateRaw(this, &FShuttlegentEditorModule::SpawnChatTab))
 		.SetDisplayName(LOCTEXT("ChatTabTitle", "Shuttlegent"))
@@ -75,6 +80,8 @@ void FShuttlegentEditorModule::ShutdownModule()
 	if (FSlateApplication::IsInitialized()) FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId);
 	Panel.Reset();
 
+	if (SessionTabs.IsValid()) SessionTabs->Shutdown();
+	SessionTabs.Reset();
 	if (HubView.IsValid()) HubView->Shutdown();
 	HubView.Reset();
 	if (ChatModel.IsValid()) ChatModel->Shutdown();
@@ -87,7 +94,23 @@ void FShuttlegentEditorModule::ShutdownModule()
 TSharedRef<SDockTab> FShuttlegentEditorModule::SpawnChatTab(const FSpawnTabArgs& Args)
 {
 	// 模块生命周期内只有一个面板：重新打开的标签页显示同一页面，而不是重新加载
-	if (!Panel.IsValid()) Panel = SNew(SShuttlegentWebPanel).View(HubView);
+	if (!Panel.IsValid())
+	{
+		const TWeakPtr<FShuttlegentSessionTabRegistry> WeakTabs = SessionTabs;
+		Panel = SNew(SShuttlegentWebPanel)
+			.View(HubView)
+			.BeginSessionDrag([WeakTabs](const TSharedPtr<SDockTab>& HostTab, const FString& SessionId)
+			{
+				const TSharedPtr<FShuttlegentSessionTabRegistry> Tabs = WeakTabs.Pin();
+				// 会话窗口开在光标处，与宿主页签所在的位置无关
+				if (Tabs.IsValid()) Tabs->BeginDrag(SessionId);
+			})
+			.FocusSession([WeakTabs](const FString& SessionId)
+			{
+				const TSharedPtr<FShuttlegentSessionTabRegistry> Tabs = WeakTabs.Pin();
+				return Tabs.IsValid() && Tabs->FocusSession(SessionId);
+			});
+	}
 	Panel->SetHostTabOpen(true);
 
 	const TWeakPtr<SShuttlegentWebPanel> WeakPanel = Panel;
@@ -112,16 +135,16 @@ FLinearColor FShuttlegentEditorModule::GetChatTabColor() const
 {
 	// 透明即不画色条（SDockTab 只在不透明度大于 0 时绘制色条）
 	const TSharedPtr<SDockTab> Tab = ChatTab.Pin();
-	const EShuttlegentAttention Attention = ChatModel.IsValid() && Tab.IsValid() && !Tab->IsForeground() ? ChatModel->GetOverallAttention() : EShuttlegentAttention::None;
-	if (Attention == EShuttlegentAttention::Input) return ShuttlegentEditorColor::AttentionInput;
-	if (Attention == EShuttlegentAttention::Done) return ShuttlegentEditorColor::AttentionDone;
-	return FLinearColor::Transparent;
+	// 会话页签里的会话由那个页签自己提醒
+	const EShuttlegentAttention Attention = HubView.IsValid() && Tab.IsValid() && !Tab->IsForeground() ? HubView->GetTabAttention() : EShuttlegentAttention::None;
+	return FShuttlegentSessionTabRegistry::GetAttentionColor(Attention);
 }
 
 bool FShuttlegentEditorModule::HandleTabForegroundCheck(float DeltaTime)
 {
 	const TSharedPtr<SDockTab> Tab = ChatTab.Pin();
 	if (HubView.IsValid()) HubView->SetVisible(Tab.IsValid() && Tab->IsForeground());
+	if (SessionTabs.IsValid()) SessionTabs->UpdateVisibility();
 	return true;
 }
 

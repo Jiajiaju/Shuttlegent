@@ -106,6 +106,9 @@ struct FShuttlegentConversation : public TSharedFromThis<FShuttlegentConversatio
 	/** 运行时就绪后需要执行 session/new 或 session/resume。 */
 	bool bWantsSession = false;
 
+	/** 打开时只回放了记录、暂缓 session/resume；首次显示在前台或发送时恢复。 */
+	bool bResumeDeferred = false;
+
 	/** 上一次 session/resume 失败；本地记录予以保留，新会话不会继承其上下文。 */
 	bool bResumeFailed = false;
 

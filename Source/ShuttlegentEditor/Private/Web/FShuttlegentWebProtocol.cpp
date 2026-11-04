@@ -374,6 +374,7 @@ namespace FShuttlegentWebProtocolPrivate
 		Item->SetStringField(ShuttlegentEditorWebField::ModelName, Record.ModelName);
 		Item->SetNumberField(ShuttlegentEditorWebField::UpdatedAt, UnixMilliseconds(Record.UpdatedAt));
 		Item->SetBoolField(ShuttlegentEditorWebField::CanArchive, View.CanArchive(Record.SessionId));
+		if (View.IsShownElsewhere(Record.SessionId)) Item->SetBoolField(ShuttlegentEditorWebField::InTab, true);
 
 		EShuttlegentChatStatus Status;
 		int32 Queued = 0;
@@ -477,6 +478,7 @@ void FShuttlegentWebProtocol::Flush()
 	if (bReset)
 	{
 		WriteTemplates(Root);
+		Root->SetStringField(ShuttlegentEditorWebField::ViewMode, View->GetMode() == EShuttlegentViewMode::Session ? ShuttlegentEditorWebField::ViewModeSession : ShuttlegentEditorWebField::ViewModeHub);
 		WritePaneWidths(Root);
 		WriteLocalImageRoot(Root);
 	}

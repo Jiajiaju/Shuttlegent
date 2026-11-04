@@ -45,7 +45,6 @@
 #include "ShuttlegentEditorConstants.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentStyle.h"
-#include "Tabs/FShuttlegentSessionDragPrototype.h"
 #include "Web/FShuttlegentAssetThumbnails.h"
 #include "Web/FShuttlegentImageFiles.h"
 #include "Web/FShuttlegentPanelCommands.h"
@@ -68,12 +67,24 @@ SShuttlegentWebPanel::SShuttlegentWebPanel() = default;
 void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 {
 	View = InArgs._View;
+	BeginSessionDrag = InArgs._BeginSessionDrag;
+	FocusSession = InArgs._FocusSession;
 	check(View.IsValid());
 
 	ChildSlot
 	[
 		SNew(SOverlay)
 		.Clipping(EWidgetClipping::ClipToBounds)
+
+		// 页面底色垫在浏览器下：拖动改变窗口大小时，引擎先放大贴图、旧画面只占左上角（CEFWebBrowserWindow.cpp:686），
+		// CEF 异步重画要晚几帧；浏览器开了透明，未画到的部分透出这层与页面同色的底色，而不是黑色
+		+ SOverlay::Slot()
+		[
+			SNew(SBorder)
+			.BorderImage(FAppStyle::Get().GetBrush(SShuttlegentWebPanelPrivate::WhiteBrush))
+			.BorderBackgroundColor(FLinearColor(ShuttlegentEditorColor::Background))
+			.Padding(0.0f)
+		]
 
 		+ SOverlay::Slot()
 		[
@@ -347,6 +358,8 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleCreateBrowser(double InCurren
 		.ShowAddressBar(false)
 		.ShowInitialThrobber(false)
 		.BackgroundColor(ShuttlegentEditorColor::Background)
+		// 页面 html、body 自带不透明底色，透明只在 CEF 尚未画到的区域起作用
+		.SupportsTransparency(true)
 		.BrowserFrameRate(ShuttlegentEditorWeb::BrowserFrameRate)
 		.OnBeforeNavigation(this, &SShuttlegentWebPanel::HandleBeforeNavigation)
 		.OnBeforePopup(this, &SShuttlegentWebPanel::HandleBeforePopup)
@@ -560,15 +573,19 @@ void SShuttlegentWebPanel::BindBridge()
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
 		if (This.IsValid()) This->HandlePageToggleDrawer();
 	};
-	Bridge->OnOpenSession = [WeakView](const FString& SessionId)
+	Bridge->OnOpenSession = [WeakThis, WeakView](const FString& SessionId)
 	{
+		// 会话已在某个会话页签里时跳到那个页签，主页签不变
+		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
+		if (This.IsValid() && This->FocusSession && This->FocusSession(SessionId)) return;
+
 		const TSharedPtr<FShuttlegentChatView> Pinned = WeakView.Pin();
 		if (Pinned.IsValid() && SessionId != Pinned->GetCurrentSessionId()) Pinned->OpenSession(SessionId);
 	};
-	Bridge->OnBeginSessionDrag = [WeakThis](const FString& SessionId, const FString& Title)
+	Bridge->OnBeginSessionDrag = [WeakThis](const FString& SessionId)
 	{
 		const TSharedPtr<SShuttlegentWebPanel> This = WeakThis.Pin();
-		if (This.IsValid()) FShuttlegentSessionDragPrototype::Begin(This->HostTab.Pin(), SessionId, Title);
+		if (This.IsValid() && This->BeginSessionDrag) This->BeginSessionDrag(This->HostTab.Pin(), SessionId);
 	};
 	Bridge->OnRenameSession = [WeakView](const FString& SessionId, const FString& Title)
 	{

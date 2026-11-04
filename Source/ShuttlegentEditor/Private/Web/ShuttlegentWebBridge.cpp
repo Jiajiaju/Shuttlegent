@@ -50,9 +50,9 @@ void UShuttlegentWebBridge::OpenSession(const FString& SessionId)
 	if (OnOpenSession) OnOpenSession(SessionId);
 }
 
-void UShuttlegentWebBridge::BeginSessionDrag(const FString& SessionId, const FString& Title)
+void UShuttlegentWebBridge::BeginSessionDrag(const FString& SessionId)
 {
-	if (OnBeginSessionDrag) OnBeginSessionDrag(SessionId, Title);
+	if (OnBeginSessionDrag) OnBeginSessionDrag(SessionId);
 }
 
 void UShuttlegentWebBridge::RenameSession(const FString& SessionId, const FString& Title)

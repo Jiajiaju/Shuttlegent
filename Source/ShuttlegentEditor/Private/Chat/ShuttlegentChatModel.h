@@ -127,6 +127,9 @@ private:
 	bool bRestartPending = false;
 	bool bPermissionHandlerAttached = false;
 
+	/** 挂接了权限请求的面板数；大于 0 时由面板答复（见 SetPermissionHandlerAttached）。 */
+	int32 PermissionHandlerCount = 0;
+
 	/** 编辑器写入门（ShuttlegentMcpServer）；面板确认其请求并显示其结果。 */
 	TWeakPtr<FShuttlegentWriteGate> WriteGate;
 
@@ -160,8 +163,17 @@ public:
 	/** 新建一个空对话并持有它；下一条提示将为它创建新会话。 */
 	TSharedRef<FShuttlegentConversation> CreateConversation();
 
-	/** 已持有的会话按原样返回；否则显示其已存储的对话记录并在运行时中恢复。会话 id 为空时返回 nullptr。 */
-	TSharedPtr<FShuttlegentConversation> HoldConversation(const FString& SessionId);
+	/**
+	 * 已持有的会话按原样返回；否则显示其已存储的对话记录并在运行时中恢复。会话 id 为空时返回 nullptr。
+	 * bDeferResume 为 true 时只回放记录、暂不恢复（重启后恢复页签用，设计文档 §10.4），由 ResumeDeferred 或发送时补做。
+	 */
+	TSharedPtr<FShuttlegentConversation> HoldConversation(const FString& SessionId, bool bDeferResume);
+
+	/** 对话打开时暂缓了恢复：现在恢复其会话。 */
+	void ResumeDeferred(FShuttlegentConversation& Conversation);
+
+	/** 会话索引中有该会话且未归档（重启后恢复页签前据此判断会话是否已被删除或归档）。 */
+	bool IsSessionAvailable(const FString& SessionId) const;
 
 	/** 视图不再显示该对话：没有视图显示且空闲的对话被丢弃并关闭其会话，忙碌的对话继续运行。 */
 	void ReleaseConversation(FShuttlegentConversation& Conversation);
@@ -192,6 +204,15 @@ public:
 
 	/** 页签上的提醒圆点：有对话等待输入时为 Input，否则有完成未看的对话时为 Done。 */
 	EShuttlegentAttention GetOverallAttention() const;
+
+	/** 主页签色条：Shown（主页签显示的对话）与没有任何页签显示的对话中，有等待输入的为 Input，否则有完成未看的为 Done。 */
+	EShuttlegentAttention GetAttentionOutside(const FShuttlegentConversation& Shown) const;
+
+	/** 对话的提醒：等待输入为 Input，完成未看为 Done。 */
+	EShuttlegentAttention GetAttention(const FShuttlegentConversation& Conversation) const;
+
+	/** 正在显示该会话的视图数；会话未被持有时为 0。 */
+	int32 GetDisplayCount(const FString& SessionId) const;
 
 	/** 对话中仍在等待答复的最早一个运行时权限请求，或 nullptr。 */
 	TSharedPtr<FShuttlegentChatEntry> GetPendingPermission(const FShuttlegentConversation& Conversation) const;
@@ -310,7 +331,10 @@ public:
 	/** 重启已丢失的运行时并恢复该对话的会话。 */
 	void Reconnect(FShuttlegentConversation& Conversation);
 
-	/** 处于挂接状态（面板打开）时，运行时权限请求会成为其所指对话中的面板条目。 */
+	/**
+	 * 面板打开（bAttached）或关闭时调用，按面板计数：还有面板开着时，运行时权限请求成为其所指对话中的面板条目，
+	 * 编辑器写入与 Agent 提问由面板确认；最后一个面板关闭时交还给偏好设置的处理方式。
+	 */
 	void SetPermissionHandlerAttached(bool bAttached);
 
 	void AnswerPermission(int32 EntryId, bool bAllow);
@@ -352,7 +376,6 @@ private:
 	 * 归属正在运行回合的对话。
 	 */
 	bool NeedsInput(const FShuttlegentConversation& Conversation) const;
-	EShuttlegentAttention GetAttention(const FShuttlegentConversation& Conversation) const;
 
 	/** 对话在前台显示时，清除它的“完成未看”；有变化时返回 true。 */
 	bool MarkSeen(FShuttlegentConversation& Conversation);
@@ -387,6 +410,9 @@ private:
 	void AddNotice(FShuttlegentConversation& Conversation, const FText& Text, bool bError);
 	void RejectPendingPermissions(FShuttlegentConversation& Conversation);
 	void AddRunLog(FShuttlegentConversation& Conversation, const FText& Text, bool bWarning);
+
+	/** 挂接或解除权限请求处理、写入确认与提问作答。 */
+	void ApplyPermissionHandler(bool bAttached);
 
 	void RecordStartIssue(EShuttlegentStartIssue Issue, const FString& Detail);
 
@@ -454,6 +480,9 @@ private:
 
 	/** session tap 插件推来的会话事件：待办清单、上下文压缩与计划模式切换（目标暂不显示）。 */
 	void HandleSessionEvent(const FShuttlegentSessionEvent& Event);
+	/** 第一轮回答正常结束后向会话所用的模型要一个概括标题，写回会话索引；用户改过名或已生成过的不再覆盖。 */
+	void RequestTitle(const FShuttlegentConversation& Conversation);
+
 	/** 把对话的写入方式记进会话索引，重新打开或重启编辑器后沿用；会话尚未建立时不记。 */
 	void RecordWriteMode(const FShuttlegentConversation& Conversation);
 

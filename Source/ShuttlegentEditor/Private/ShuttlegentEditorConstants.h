@@ -244,23 +244,40 @@ namespace ShuttlegentEditorRuntime
 	inline constexpr float TabForegroundCheckSeconds = 0.25f;
 }
 
-/** 会话页签方案 M0 的拖拽原型（工作区 Doc/ShuttlegentSessionTabs_Design.md §12）；M3 正式实现后移除。 */
-namespace ShuttlegentEditorPrototype
+/** 会话页签（工作区 Doc/ShuttlegentSessionTabs_Design.md §9）。 */
+namespace ShuttlegentEditorSessionTab
 {
-	// 打开拖拽原型的控制台变量，默认关闭
-	inline const TCHAR* SessionDragVariable = TEXT("Shuttlegent.Prototype.SessionDrag");
+	// 会话页签类型名的前缀，后接页签的 ViewId；布局按类型名保存，不能与主页签同名
+	inline const TCHAR* TabTypePrefix = TEXT("ShuttlegentSession.");
 
-	// 占位页签的类型名；不能与主页签同名，否则按类型查找主页签时会找到占位页签
-	inline const FName SessionDragTabId = TEXT("ShuttlegentSessionPrototype");
-
-	// 插入占位页签后等待它取得几何信息的最多帧数
+	// 插入会话页签后等待它取得几何信息、再交给原生拖拽的最多帧数
 	inline constexpr int32 MaxDragWaitFrames = 10;
+
+	// 新会话窗口的客户区大小，单位 Slate 单位
+	inline const FVector2D WindowSize = FVector2D(520.0, 720.0);
+
+	// 新会话窗口相对光标的偏移，使光标落在页签头上，单位 Slate 单位
+	inline const FVector2D WindowGrabOffset = FVector2D(60.0, 14.0);
+
+	// 会话页签注册到其页签管理器的模块
+	inline const FName LevelEditorModule = TEXT("LevelEditor");
+
+	// 按用户配置（GEditorPerProjectIni，节 ShuttlegentEditorWeb::ConfigSection）中的绑定：每个会话页签一项 <ViewId>|<SessionId>，
+	// 新对话的 SessionId 为空；主页签当前的会话单独一个键（设计文档 §10.1）
+	inline const TCHAR* ConfigKeySessionTabs = TEXT("SessionTabs");
+	inline const TCHAR* ConfigKeyHubSession = TEXT("HubSessionId");
+	inline const TCHAR* BindingSeparator = TEXT("|");
 }
 
 namespace ShuttlegentEditorWebField
 {
 	// 顶层：完整快照标志、状态字段、条目列表与顺序、一次性事件
 	inline const TCHAR* Reset = TEXT("reset");
+
+	// 快照：页签的视图模式，hub 为主页签（带会话列表），session 为会话页签
+	inline const TCHAR* ViewMode = TEXT("viewMode");
+	inline const TCHAR* ViewModeHub = TEXT("hub");
+	inline const TCHAR* ViewModeSession = TEXT("session");
 	inline const TCHAR* Status = TEXT("status");
 	inline const TCHAR* Connected = TEXT("connected");
 	inline const TCHAR* Prompting = TEXT("prompting");
@@ -326,6 +343,9 @@ namespace ShuttlegentEditorWebField
 
 	// 会话项：当前能否归档或删除（未在运行且未在等待确认）
 	inline const TCHAR* CanArchive = TEXT("canArchive");
+
+	// 会话列表项：该会话正显示在别的页签里
+	inline const TCHAR* InTab = TEXT("inTab");
 
 	// 运行时文件工具的沙箱（UShuttlegentSettings::bAllowWorkspaceWrite）
 	inline const TCHAR* PermissionReadOnly = TEXT("readOnly");

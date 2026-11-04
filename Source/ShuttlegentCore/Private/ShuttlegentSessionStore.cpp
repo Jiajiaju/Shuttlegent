@@ -27,6 +27,7 @@ namespace ShuttlegentSessionStorePrivate
 	inline const TCHAR* FieldModelName = TEXT("modelName");
 	inline const TCHAR* FieldAgent = TEXT("agent");
 	inline const TCHAR* FieldWriteMode = TEXT("writeMode");
+	inline const TCHAR* FieldTitleFinal = TEXT("titleFinal");
 	inline const TCHAR* FieldArchived = TEXT("archived");
 
 	// writeMode 的取值，与面板页面的写入方式取值一致
@@ -84,6 +85,7 @@ namespace ShuttlegentSessionStorePrivate
 		Object->SetStringField(FieldModelName, Record.ModelName);
 		if (!Record.AgentId.IsEmpty()) Object->SetStringField(FieldAgent, Record.AgentId);
 		if (Record.WriteMode.IsSet()) Object->SetStringField(FieldWriteMode, WriteModeName(Record.WriteMode.GetValue()));
+		if (Record.bTitleFinal) Object->SetBoolField(FieldTitleFinal, true);
 		Object->SetBoolField(FieldArchived, Record.bArchived);
 		Object->SetStringField(FieldCreatedAt, Record.CreatedAt.ToIso8601());
 		Object->SetStringField(FieldUpdatedAt, Record.UpdatedAt.ToIso8601());
@@ -100,6 +102,7 @@ namespace ShuttlegentSessionStorePrivate
 		Object->TryGetStringField(FieldModelName, OutRecord.ModelName);
 		Object->TryGetStringField(FieldAgent, OutRecord.AgentId);
 		Object->TryGetBoolField(FieldArchived, OutRecord.bArchived);
+		Object->TryGetBoolField(FieldTitleFinal, OutRecord.bTitleFinal);
 
 		FString WriteMode;
 		if (Object->TryGetStringField(FieldWriteMode, WriteMode)) OutRecord.WriteMode = ParseWriteMode(WriteMode);
@@ -204,6 +207,7 @@ bool FShuttlegentSessionStore::RenameRecord(const FString& SessionId, const FStr
 	if (Record == nullptr) return false;
 
 	Record->Title = Trimmed;
+	Record->bTitleFinal = true;
 	SaveIndex();
 	return true;
 }

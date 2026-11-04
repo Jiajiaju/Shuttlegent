@@ -301,6 +301,7 @@
     // Drafts kept per session: switching sessions neither moves nor clears them (interaction spec section 4.3)
     drafts: new Map(),
     switchingSession: false,
+    sessionView: false,
 
     // Countdown of the write confirmation card
     countdownTimer: 0,
@@ -2437,7 +2438,8 @@
       if (!current && RUNNING_STATUSES.has(session.status)) mark = '<span class="session-mark spin" role="img" aria-label="运行中">' + icons.svg('loader', 14) + '</span>';
       else if (!current && (CONFIRM_STATUSES.has(session.status) || session.attention === 'input')) mark = '<span class="session-mark" role="img" aria-label="' + (attention || '等待确认') + '"><span class="dot input"></span></span>';
       else if (attention) mark = '<span class="session-mark" role="img" aria-label="' + attention + '"><span class="dot ' + session.attention + '"></span></span>';
-      const tooltip = [title, attention || activity, (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt)].filter(Boolean).join('\n');
+      if (session.inTab) mark = '<span class="session-mark session-tab" role="img" aria-label="在独立页签中">' + icons.svg('external', 14) + '</span>' + mark;
+      const tooltip = [title, session.inTab ? '在独立页签中' : '', attention || activity, (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt)].filter(Boolean).join('\n');
       html += '<button class="session" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(tooltip) + '"><span class="session-name">' + esc(title) + '</span>' + mark + '</button>';
     }
     if (!visible.length) html = '<p class="sessions-empty">' + (query ? '没有匹配的会话' : '还没有会话') + '</p>';
@@ -2557,6 +2559,7 @@
   }
 
   function paneMode(pane) {
+    if (pane === 'sidebar' && view.sessionView) return 'hidden';
     if (pane === 'inspector' && view.empty) return 'hidden';
     if (isDocked(pane)) return view.docked[pane] ? 'docked' : 'hidden';
     return view.overlay === pane ? 'overlay' : 'hidden';
@@ -2583,6 +2586,7 @@
     $('inspector').inert = view.overlay === 'sidebar';
 
     $('toggle-sidebar').setAttribute('aria-expanded', String(paneMode('sidebar') !== 'hidden'));
+    $('toggle-sidebar').hidden = view.sessionView;
     $('toggle-inspector').hidden = view.empty;
     $('toggle-inspector').setAttribute('aria-expanded', String(paneMode('inspector') !== 'hidden'));
     applyPaneWidths();
@@ -2991,6 +2995,12 @@
       growDraft();
     }
     if ('wideLayout' in message) document.body.classList.toggle('wide-content', message.wideLayout === true);
+    if ('viewMode' in message) {
+      // A session tab shows one session: no session list, and the shortcuts that act on the list do nothing
+      view.sessionView = message.viewMode === 'session';
+      document.body.classList.toggle('session-view', view.sessionView);
+      applyLayout();
+    }
     if ('sidebarWidth' in message) {
       view.paneWidths.sidebar = message.sidebarWidth;
       view.paneWidths.inspector = message.inspectorWidth;
@@ -3085,6 +3095,8 @@
   /** Panel shortcuts, matched by the editor against their (rebindable) chords and forwarded here. */
   function runCommand(name) {
     if (document.querySelector('dialog[open]')) return;
+
+    if (view.sessionView && (name === 'toggleSidebar' || name === 'newSession' || name === 'searchSessions')) return;
 
     switch (name) {
       case 'toggleSidebar':
@@ -3456,8 +3468,8 @@
     $('open-settings').addEventListener('click', () => call('opensettings'));
     $('archived-button').addEventListener('click', () => openDialog($('archived-dialog')));
 
-    // Session tabs prototype (M0): a row pressed and moved past the threshold is handed to the editor, which starts a dock tab drag
-    // while the button is still down; the click that follows the release is swallowed
+    // A row pressed and moved past the threshold is handed to the editor, which turns it into a session tab and starts a native
+    // dock tab drag while the button is still down; the click that follows the release is swallowed
     let sessionPress = null;
     let swallowSessionClick = false;
     $('sessions').addEventListener('pointerdown', (event) => {
@@ -3472,7 +3484,7 @@
       }
       if (Math.hypot(event.clientX - sessionPress.x, event.clientY - sessionPress.y) < SESSION_DRAG_THRESHOLD) return;
 
-      call('beginsessiondrag', sessionPress.id, sessionTitle(sessionPress.id));
+      call('beginsessiondrag', sessionPress.id);
       sessionPress = null;
       swallowSessionClick = true;
     });
@@ -3486,6 +3498,14 @@
 
       const session = event.target.closest('[data-session]');
       if (!session) return;
+
+      // A session shown in a session tab stays there: the editor brings that tab to the front
+      const held = findSession(session.dataset.session);
+      if (held && held.inTab) {
+        call('opensession', session.dataset.session);
+        if (view.overlay) closeOverlay();
+        return;
+      }
 
       if (session.dataset.session !== state.currentSessionId) {
         view.switchingSession = true;

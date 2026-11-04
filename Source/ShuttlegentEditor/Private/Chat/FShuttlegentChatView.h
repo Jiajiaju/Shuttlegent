@@ -6,6 +6,7 @@
 #include "Chat/EShuttlegentChatStatus.h"
 #include "Chat/EShuttlegentSubmitResult.h"
 #include "Chat/EShuttlegentTurnOutcome.h"
+#include "Chat/EShuttlegentViewMode.h"
 #include "Chat/FShuttlegentChatEntry.h"
 #include "Chat/FShuttlegentConfigChoice.h"
 #include "Chat/FShuttlegentConversation.h"
@@ -64,9 +65,13 @@ private:
 	/** 所在页签在前台。 */
 	bool bVisible = false;
 
+	EShuttlegentViewMode Mode = EShuttlegentViewMode::Hub;
+
 public:
 	/** 新建一个空对话并显示它，开始转发模型事件。 */
-	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel);
+	void Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, EShuttlegentViewMode InMode);
+
+	EShuttlegentViewMode GetMode() const { return Mode; }
 
 	/** 停止转发并交还当前对话。 */
 	void Shutdown();
@@ -77,8 +82,11 @@ public:
 	/** 显示一个空对话；下一条提示将创建新会话。被离开的对话若处于忙碌状态则继续运行。 */
 	void NewConversation();
 
-	/** 显示一个会话：已持有的对话按原样显示，否则显示其已存储的对话记录并在运行时中恢复。 */
-	void OpenSession(const FString& SessionId);
+	/**
+	 * 显示一个会话：已持有的对话按原样显示，否则显示其已存储的对话记录并在运行时中恢复。
+	 * bDeferResume 为 true 时（重启后恢复页签）暂不恢复，等视图第一次在前台或发送时再恢复。
+	 */
+	void OpenSession(const FString& SessionId, bool bDeferResume = false);
 
 	const TArray<TSharedPtr<FShuttlegentChatEntry>>& GetEntries() const { return Current->Entries; }
 	const TArray<FShuttlegentRunLogEntry>& GetRunLog() const { return Current->RunLog; }
@@ -120,12 +128,18 @@ public:
 	TArray<FShuttlegentSessionRecord> GetSessions(bool bArchived) const;
 	bool CanArchive(const FString& SessionId) const;
 	bool GetSessionActivity(const FString& SessionId, EShuttlegentChatStatus& OutStatus, int32& OutQueued) const;
+
+	/** 该会话正显示在别的页签里（主页签列表据此显示页签图标、点击时跳到那个页签）。 */
+	bool IsShownElsewhere(const FString& SessionId) const;
+
+	/** 页签色条的提醒：主页签汇总当前对话与没有页签显示的对话，会话页签只看自己的对话。 */
+	EShuttlegentAttention GetTabAttention() const;
 	EShuttlegentAttention GetSessionAttention(const FString& SessionId) const;
 
 	void CompactContext();
 	void SetPlanMode(bool bActive);
 	void AnswerPlanReview(bool bApprove, const FString& Feedback, bool bAcceptEdits);
-	void SetWriteMode(EShuttlegentWriteMode Mode);
+	void SetWriteMode(EShuttlegentWriteMode WriteMode);
 	void EnsureRuntime();
 	void RetryStart();
 	void RetryResume();

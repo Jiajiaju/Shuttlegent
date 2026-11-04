@@ -2,9 +2,10 @@
 
 #include "Chat/ShuttlegentChatModel.h"
 
-void FShuttlegentChatView::Initialize(const TSharedRef<FShuttlegentChatModel>& InModel)
+void FShuttlegentChatView::Initialize(const TSharedRef<FShuttlegentChatModel>& InModel, EShuttlegentViewMode InMode)
 {
 	Model = InModel;
+	Mode = InMode;
 	Current = Model->CreateConversation();
 	Model->SetDisplayed(*Current, true, bVisible);
 	Model->SetFocused(*Current);
@@ -53,7 +54,11 @@ void FShuttlegentChatView::SetVisible(bool bInVisible)
 	Model->SetDisplayed(*Current, false, bVisible);
 	bVisible = bInVisible;
 	Model->SetDisplayed(*Current, true, bVisible);
-	if (bVisible) Model->SetFocused(*Current);
+	if (!bVisible) return;
+
+	Model->SetFocused(*Current);
+	// 重启后恢复的页签第一次到前台时才恢复会话（设计文档 §10.4）
+	Model->ResumeDeferred(*Current);
 }
 
 void FShuttlegentChatView::NewConversation()
@@ -61,12 +66,16 @@ void FShuttlegentChatView::NewConversation()
 	Show(Model->CreateConversation());
 }
 
-void FShuttlegentChatView::OpenSession(const FString& SessionId)
+void FShuttlegentChatView::OpenSession(const FString& SessionId, bool bDeferResume)
 {
 	if (SessionId.IsEmpty() || SessionId == Current->SessionId) return;
 
-	const TSharedPtr<FShuttlegentConversation> Held = Model->HoldConversation(SessionId);
-	if (Held.IsValid()) Show(Held.ToSharedRef());
+	const TSharedPtr<FShuttlegentConversation> Held = Model->HoldConversation(SessionId, bDeferResume);
+	if (!Held.IsValid()) return;
+
+	Show(Held.ToSharedRef());
+	// 用户主动打开的会话立即恢复，即使它此前由恢复的页签暂缓、所在页签又不在前台
+	if (!bDeferResume) Model->ResumeDeferred(*Held);
 }
 
 void FShuttlegentChatView::Show(const TSharedRef<FShuttlegentConversation>& Next)
@@ -77,6 +86,7 @@ void FShuttlegentChatView::Show(const TSharedRef<FShuttlegentConversation>& Next
 	Current = Next;
 	Model->SetDisplayed(*Next, true, bVisible);
 	Model->SetFocused(*Next);
+	if (bVisible) Model->ResumeDeferred(*Next);
 
 	if (Previous.IsValid())
 	{
@@ -215,6 +225,17 @@ EShuttlegentAttention FShuttlegentChatView::GetSessionAttention(const FString& S
 	return Model->GetSessionAttention(SessionId);
 }
 
+bool FShuttlegentChatView::IsShownElsewhere(const FString& SessionId) const
+{
+	const int32 ShownHere = SessionId == Current->SessionId ? 1 : 0;
+	return Model->GetDisplayCount(SessionId) > ShownHere;
+}
+
+EShuttlegentAttention FShuttlegentChatView::GetTabAttention() const
+{
+	return Mode == EShuttlegentViewMode::Hub ? Model->GetAttentionOutside(*Current) : Model->GetAttention(*Current);
+}
+
 void FShuttlegentChatView::CompactContext()
 {
 	Model->CompactContext(*Current);
@@ -230,9 +251,9 @@ void FShuttlegentChatView::AnswerPlanReview(bool bApprove, const FString& Feedba
 	Model->AnswerPlanReview(*Current, bApprove, Feedback, bAcceptEdits);
 }
 
-void FShuttlegentChatView::SetWriteMode(EShuttlegentWriteMode Mode)
+void FShuttlegentChatView::SetWriteMode(EShuttlegentWriteMode WriteMode)
 {
-	Model->SetWriteMode(*Current, Mode);
+	Model->SetWriteMode(*Current, WriteMode);
 }
 
 void FShuttlegentChatView::EnsureRuntime()

@@ -19,6 +19,7 @@
 #include "Reference/FShuttlegentReferencePrompt.h"
 #include "ShuttlegentEditorConstants.h"
 #include "FShuttlegentMemoryStore.h"
+#include "FShuttlegentSessionTitler.h"
 #include "ShuttlegentAgentService.h"
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSessionStore.h"
@@ -382,7 +383,8 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 
 void FShuttlegentChatModel::Shutdown()
 {
-	SetPermissionHandlerAttached(false);
+	PermissionHandlerCount = 0;
+	ApplyPermissionHandler(false);
 
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (Pinned.IsValid())
@@ -1047,7 +1049,7 @@ TSharedRef<FShuttlegentConversation> FShuttlegentChatModel::CreateConversation()
 	return Created;
 }
 
-TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::HoldConversation(const FString& SessionId)
+TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::HoldConversation(const FString& SessionId, bool bDeferResume)
 {
 	if (!Service.IsValid() || SessionId.IsEmpty()) return nullptr;
 
@@ -1064,9 +1066,34 @@ TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::HoldConversation(con
 	Opened->AgentId = Record != nullptr && !Record->AgentId.IsEmpty() ? Record->AgentId : FString(ShuttlegentAgentConstant::DefaultAgentId);
 	Conversations.Add(Opened);
 	ReplayTranscript(*Opened);
+	if (bDeferResume)
+	{
+		Opened->bResumeDeferred = true;
+		AddRunLog(*Opened, LOCTEXT("LogOpenSessionDeferred", "打开会话记录，首次显示时恢复运行时上下文"), false);
+		return Opened;
+	}
+
 	AddRunLog(*Opened, LOCTEXT("LogOpenSession", "打开会话记录，恢复运行时上下文"), false);
 	RequestSession(*Opened);
 	return Opened;
+}
+
+void FShuttlegentChatModel::ResumeDeferred(FShuttlegentConversation& Conversation)
+{
+	if (!Conversation.bResumeDeferred) return;
+
+	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: deferred resume starts."), *Conversation.SessionId);
+	RequestSession(Conversation);
+	NotifyStatus(Conversation);
+}
+
+bool FShuttlegentChatModel::IsSessionAvailable(const FString& SessionId) const
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || SessionId.IsEmpty()) return false;
+
+	const FShuttlegentSessionRecord* Record = Pinned->GetSessionStore().FindRecord(SessionId);
+	return Record != nullptr && !Record->bArchived;
 }
 
 void FShuttlegentChatModel::ReleaseConversation(FShuttlegentConversation& Conversation)
@@ -1079,8 +1106,9 @@ void FShuttlegentChatModel::SetDisplayed(FShuttlegentConversation& Conversation,
 	Conversation.DisplayCount = FMath::Max(0, Conversation.DisplayCount + (bShown ? 1 : -1));
 	if (bVisible) Conversation.VisibleCount = FMath::Max(0, Conversation.VisibleCount + (bShown ? 1 : -1));
 
-	// 切到的对话此刻就在用户眼前
-	if (MarkSeen(Conversation)) OnSessionsChanged.Broadcast();
+	// 切到的对话此刻就在用户眼前；会话列表上“在别的页签里”的标记随显示情况变化
+	MarkSeen(Conversation);
+	OnSessionsChanged.Broadcast();
 }
 
 void FShuttlegentChatModel::SetFocused(FShuttlegentConversation& Conversation)
@@ -1109,6 +1137,13 @@ void FShuttlegentChatModel::Reconnect(FShuttlegentConversation& Conversation)
 }
 
 void FShuttlegentChatModel::SetPermissionHandlerAttached(bool bAttached)
+{
+	// 每个打开的面板挂接一次；还有面板开着时仍由面板答复
+	PermissionHandlerCount = FMath::Max(0, PermissionHandlerCount + (bAttached ? 1 : -1));
+	ApplyPermissionHandler(PermissionHandlerCount > 0);
+}
+
+void FShuttlegentChatModel::ApplyPermissionHandler(bool bAttached)
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid() || bAttached == bPermissionHandlerAttached) return;
@@ -1256,6 +1291,27 @@ EShuttlegentAttention FShuttlegentChatModel::GetOverallAttention() const
 		if (Attention == EShuttlegentAttention::Done) Overall = Attention;
 	}
 	return Overall;
+}
+
+EShuttlegentAttention FShuttlegentChatModel::GetAttentionOutside(const FShuttlegentConversation& Shown) const
+{
+	EShuttlegentAttention Overall = EShuttlegentAttention::None;
+	for (const TSharedPtr<FShuttlegentConversation>& Conversation : Conversations)
+	{
+		// 别的页签显示的对话由那个页签自己提醒
+		if (Conversation.Get() != &Shown && Conversation->DisplayCount > 0) continue;
+
+		const EShuttlegentAttention Attention = GetAttention(*Conversation);
+		if (Attention == EShuttlegentAttention::Input) return Attention;
+		if (Attention == EShuttlegentAttention::Done) Overall = Attention;
+	}
+	return Overall;
+}
+
+int32 FShuttlegentChatModel::GetDisplayCount(const FString& SessionId) const
+{
+	const TSharedPtr<FShuttlegentConversation> Conversation = FindConversation(SessionId);
+	return Conversation.IsValid() ? Conversation->DisplayCount : 0;
 }
 
 bool FShuttlegentChatModel::NeedsInput(const FShuttlegentConversation& Conversation) const
@@ -1710,6 +1766,49 @@ void FShuttlegentChatModel::SetWriteMode(FShuttlegentConversation& Conversation,
 	NotifyStatus(Conversation);
 }
 
+void FShuttlegentChatModel::RequestTitle(const FShuttlegentConversation& Conversation)
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	if (!Pinned.IsValid() || Conversation.SessionId.IsEmpty()) return;
+
+	// 只在第一轮结束后取一次；用户改过名或已生成过的不再覆盖
+	const FShuttlegentSessionRecord* Record = Pinned->GetSessionStore().FindRecord(Conversation.SessionId);
+	const int32 UserMessages = Conversation.Entries.FilterByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::User; }).Num();
+	if (Record == nullptr || Record->bTitleFinal || UserMessages != 1) return;
+
+	const TSharedPtr<FShuttlegentChatEntry>* User = Conversation.Entries.FindByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::User; });
+	const TSharedPtr<FShuttlegentChatEntry>* Answer = Conversation.Entries.FindByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::Assistant && !Entry->Text.TrimStartAndEnd().IsEmpty(); });
+	if (User == nullptr || Answer == nullptr) return;
+
+	// 给模型的是用户写的原文，不含面板附带的引用块
+	FString UserText;
+	TArray<FString> ReferenceLines;
+	FShuttlegentReferencePrompt::Split((*User)->Text, UserText, ReferenceLines);
+	TArray<FShuttlegentConfigChoice> Choices;
+	FString ModelValue;
+	GetConfigChoices(Conversation, ShuttlegentEditorConfigId::Model, Choices, ModelValue);
+
+	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
+	const FString SessionId = Conversation.SessionId;
+	FShuttlegentSessionTitler::Generate(ModelValue, UserText, (*Answer)->Text, FShuttlegentSessionTitler::FOnTitled::CreateLambda([WeakThis, SessionId](const FString& Title)
+	{
+		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
+		const TSharedPtr<FShuttlegentAgentService> AgentService = This.IsValid() ? This->Service.Pin() : nullptr;
+		if (!AgentService.IsValid() || Title.IsEmpty()) return;
+
+		// 等待期间用户可能已改名
+		const FShuttlegentSessionRecord* Latest = AgentService->GetSessionStore().FindRecord(SessionId);
+		if (Latest == nullptr || Latest->bTitleFinal) return;
+
+		FShuttlegentSessionRecord Updated = *Latest;
+		Updated.Title = Title;
+		Updated.bTitleFinal = true;
+		AgentService->GetSessionStore().UpsertRecord(Updated);
+		This->NotifyAllStatus();
+		This->OnSessionsChanged.Broadcast();
+	}));
+}
+
 void FShuttlegentChatModel::RecordWriteMode(const FShuttlegentConversation& Conversation)
 {
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
@@ -2116,6 +2215,8 @@ void FShuttlegentChatModel::RequestSession(FShuttlegentConversation& Conversatio
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return;
 
+	// 任何途径请求会话（首次显示、发送、重试）都结束暂缓
+	Conversation.bResumeDeferred = false;
 	const bool bResume = !Conversation.SessionId.IsEmpty();
 	if (bResume)
 	{
@@ -2579,6 +2680,7 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 
+	if (bCompleted) RequestTitle(Conversation);
 	if (bCompleted) SendNextQueued(Conversation);
 	else PauseQueue(Conversation);
 }

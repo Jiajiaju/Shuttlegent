@@ -124,10 +124,36 @@ namespace ShuttlegentAgentServicePrivate
 		return FString();
 	}
 
+	// 临时标题：第一段与其后（如面板附带的引用块）以空行分隔；行首这些字符是 Markdown 的标题、引用、列表与代码标记
+	inline const TCHAR* ParagraphSeparator = TEXT("\n\n");
+	inline const TCHAR* CarriageReturn = TEXT("\r");
+	inline const TCHAR* MarkdownLeaders = TEXT("#>-*+`");
+	inline const TCHAR* TitleLineJoiner = TEXT(" ");
+	inline const TCHAR* TitleEllipsis = TEXT("…");
+
+	/** 第一轮回答结束、模型生成概括标题之前的临时标题：只取第一段文字，去掉行首的 Markdown 标记，各行以空格相连，超长截断。 */
 	FString MakeTitle(const FString& Prompt)
 	{
-		FString Title = Prompt.Replace(TEXT("\r"), TEXT(" ")).Replace(TEXT("\n"), TEXT(" ")).TrimStartAndEnd();
-		if (Title.Len() > ShuttlegentSessionConstant::TitleMaxChars) Title = Title.Left(ShuttlegentSessionConstant::TitleMaxChars) + TEXT("...");
+		FString Text = Prompt.Replace(CarriageReturn, TEXT(""));
+		const int32 ParagraphEnd = Text.Find(ParagraphSeparator);
+		if (ParagraphEnd != INDEX_NONE) Text = Text.Left(ParagraphEnd);
+
+		TArray<FString> Lines;
+		Text.ParseIntoArrayLines(Lines);
+		TArray<FString> Parts;
+		for (FString& Line : Lines)
+		{
+			Line.TrimStartAndEndInline();
+			while (!Line.IsEmpty() && FCString::Strchr(MarkdownLeaders, Line[0]) != nullptr)
+			{
+				Line.RightChopInline(1);
+				Line.TrimStartInline();
+			}
+			if (!Line.IsEmpty()) Parts.Add(Line);
+		}
+
+		FString Title = FString::Join(Parts, TitleLineJoiner);
+		if (Title.Len() > ShuttlegentSessionConstant::TitleMaxChars) Title = Title.Left(ShuttlegentSessionConstant::TitleMaxChars) + TitleEllipsis;
 		return Title;
 	}
 }

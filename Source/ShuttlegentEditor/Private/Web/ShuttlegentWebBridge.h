@@ -35,7 +35,7 @@ public:
 
 	TFunction<void(const FString&)> OnOpenSession;
 
-	TFunction<void(const FString&, const FString&)> OnBeginSessionDrag;
+	TFunction<void(const FString&)> OnBeginSessionDrag;
 
 	TFunction<void(const FString&, const FString&)> OnRenameSession;
 
@@ -145,9 +145,9 @@ public:
 	UFUNCTION()
 	void OpenSession(const FString& SessionId);
 
-	/** 会话列表中的一行被按住拖动（会话页签方案 M0 原型，见 FShuttlegentSessionDragPrototype）；左键仍按下时由编辑器接管拖拽。 */
+	/** 会话列表中的一行被按住拖动；左键仍按下时由编辑器把它拖成会话页签（FShuttlegentSessionTabRegistry）。 */
 	UFUNCTION()
-	void BeginSessionDrag(const FString& SessionId, const FString& Title);
+	void BeginSessionDrag(const FString& SessionId);
 
 	/** 重命名已存储的会话；编辑器会裁剪名称首尾空白，并拒绝空名称或过长的名称。 */
 	UFUNCTION()

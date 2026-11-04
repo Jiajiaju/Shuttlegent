@@ -22,24 +22,36 @@ class UShuttlegentWebBridge;
 struct FWebNavigationRequest;
 enum class EWebBrowserConsoleLogSeverity;
 
+/** 会话列表中一行被拖出：宿主页签与会话 id（FShuttlegentSessionTabRegistry::BeginDrag）。 */
+using FShuttlegentBeginSessionDrag = TFunction<void(const TSharedPtr<SDockTab>& /*HostTab*/, const FString& /*SessionId*/)>;
+
+/** 会话正显示在某个会话页签里时把那个页签切到前台并返回 true（FShuttlegentSessionTabRegistry::FocusSession）。 */
+using FShuttlegentFocusSession = TFunction<bool(const FString& /*SessionId*/)>;
+
 /**
  * Shuttlegent 面板：在 CEF 中承载 Resources/Web/index.html，并将其连接到 FShuttlegentChatView。
  *
  * 浏览器在面板首次绘制时创建，页面报告就绪前显示占位内容。宿主在页面之外承担 CEF
  * 无法处理的部分：编辑器拖放、Ctrl+Space 与 Esc、面板自有的 Content Browser 抽屉，
- * 以及 http(s) 链接（在系统浏览器中打开）。模块只保留一个实例并将其放入每个生成的标签页，
- * 因此关闭并重新打开标签页后页面得以保留。
+ * 以及 http(s) 链接（在系统浏览器中打开）。主页签的面板由模块只保留一个实例并放入每个生成的标签页，
+ * 因此关闭并重新打开标签页后页面得以保留；会话页签的面板随页签关闭一并释放。
  */
 class SShuttlegentWebPanel : public SCompoundWidget
 {
 public:
 	SLATE_BEGIN_ARGS(SShuttlegentWebPanel) {}
 		SLATE_ARGUMENT(TSharedPtr<FShuttlegentChatView>, View)
+		SLATE_ARGUMENT(FShuttlegentBeginSessionDrag, BeginSessionDrag)
+		SLATE_ARGUMENT(FShuttlegentFocusSession, FocusSession)
 	SLATE_END_ARGS()
 
 private:
 	TSharedPtr<FShuttlegentChatView> View;
 	TSharedPtr<FShuttlegentWebProtocol> Protocol;
+
+	/** 主页签才有：会话列表的拖出与跳到会话页签；会话页签不显示会话列表，为空。 */
+	FShuttlegentBeginSessionDrag BeginSessionDrag;
+	FShuttlegentFocusSession FocusSession;
 	TSharedPtr<SWebBrowser> Browser;
 	TStrongObjectPtr<UShuttlegentWebBridge> Bridge;
 	TSharedPtr<SBox> BrowserSlot;
@@ -57,7 +69,7 @@ private:
 	/** 有停靠标签页正在显示面板；仅在此时面板才答复运行时权限请求。 */
 	bool bHostTabOpen = false;
 
-	/** 最近一个显示面板的标签页；会话拖拽原型把占位页签插到它所在的栈。 */
+	/** 最近一个显示面板的标签页；拖出的会话页签插到它所在的栈。 */
 	TWeakPtr<SDockTab> HostTab;
 
 	/** Content Browser 抽屉：首次使用时创建的真实 SContentBrowser，在面板生命周期内保留。 */

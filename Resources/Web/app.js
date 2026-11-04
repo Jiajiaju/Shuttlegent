@@ -1230,7 +1230,7 @@
       case 'authFailed':
         return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Models 改正后重试，运行时会重新启动并读取新设置。', settings: true };
       case 'missingRuntime':
-        return { tone: 'danger', icon: 'alert', title: '没有找到运行时', body: '期望位置 ' + code(issue.runtimePath) + '。在插件目录运行 ' + code(issue.buildScript) + ' 构建，或在偏好设置里指定路径。', folder: true };
+        return { tone: 'danger', icon: 'alert', title: '没有找到运行时', body: '期望位置 ' + code(issue.runtimePath) + '。插件包不完整：从 <a href="' + esc(issue.releasesUrl) + '">发布页</a> 重新下载插件包解压覆盖，或在偏好设置里指定运行时路径。', folder: true };
       default:
         return { tone: 'danger', icon: 'alert', title: '运行时没能启动', body: issue.detail ? code(issue.detail) : '查看 Output Log 中的 LogShuttlegent 了解原因。', folder: false };
     }

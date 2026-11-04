@@ -234,8 +234,8 @@ namespace ShuttlegentEditorTemplate
 /** 由编辑器模块启动运行时。 */
 namespace ShuttlegentEditorRuntime
 {
-	// 缺少运行时引导卡片所指明的构建脚本，相对于插件目录
-	inline const TCHAR* BuildScript = TEXT("Build/BuildRuntime.ps1");
+	// 缺少运行时引导卡片指向的发布页：运行时随插件发布包提供，不由使用者构建
+	inline const TCHAR* ReleasesUrl = TEXT("https://github.com/Jiajiaju/Shuttlegent/releases");
 
 	// 编辑器完成启动后到预热运行时之间的延迟，使启动工作先完成，单位为秒
 	inline constexpr float PrewarmDelaySeconds = 3.0f;
@@ -601,12 +601,12 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* StatusStartBlocked = TEXT("startBlocked");
 	inline const TCHAR* StatusResumeFailed = TEXT("resumeFailed");
 
-	// 启动引导卡片（没有阻碍运行时启动的问题时为 null）：类型、启动器给出的原因、提供方、运行时路径、构建脚本
+	// 启动引导卡片（没有阻碍运行时启动的问题时为 null）：类型、启动器给出的原因、提供方、运行时路径、发布页
 	inline const TCHAR* StartIssue = TEXT("startIssue");
 	inline const TCHAR* IssueKind = TEXT("kind");
 	inline const TCHAR* IssueProvider = TEXT("provider");
 	inline const TCHAR* IssueRuntimePath = TEXT("runtimePath");
-	inline const TCHAR* IssueBuildScript = TEXT("buildScript");
+	inline const TCHAR* IssueReleasesUrl = TEXT("releasesUrl");
 
 	// 启动问题类型（EShuttlegentStartIssue）
 	inline const TCHAR* IssueMissingRuntime = TEXT("missingRuntime");

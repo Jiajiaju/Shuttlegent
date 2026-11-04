@@ -253,7 +253,7 @@ namespace FShuttlegentWebProtocolPrivate
 		Item->SetStringField(ShuttlegentEditorWebField::Detail, Detail);
 		Item->SetStringField(ShuttlegentEditorWebField::IssueProvider, ProviderName);
 		Item->SetStringField(ShuttlegentEditorWebField::IssueRuntimePath, RuntimePath);
-		Item->SetStringField(ShuttlegentEditorWebField::IssueBuildScript, FPaths::Combine(PluginDir, ShuttlegentEditorRuntime::BuildScript));
+		Item->SetStringField(ShuttlegentEditorWebField::IssueReleasesUrl, ShuttlegentEditorRuntime::ReleasesUrl);
 		return MakeShared<FJsonValueObject>(Item);
 	}
 

@@ -10,8 +10,8 @@
 | `Resources/Web/` | 对话面板页面（原生 JS，无构建步骤）；`vendor/tiptap.js` 是输入框用的 Tiptap 打包文件，由 `Build/Editor/` 生成，不手改 |
 | `Resources/svg/`、`Resources/png/` | 图标与标志；标志、组合标志和插件图标由 `Build/Brand/` 生成，不手改 |
 | `Config/` | 插件默认的项目设置 `DefaultShuttlegent.ini` |
-| `Runtime/` | 运行时的 profile 补丁；构建出的 `shuttlegent-runtime.exe` 也放在这里，不进版本库 |
-| `Build/` | 运行时构建脚本、回归脚本（`Probe/`）、标志生成（`Brand/`：唯一几何源 `brand-geometry.json`，三条经线逐条给出位置、粗细、长短与 `front`（在梭子前或后），运行 `ExportBrand.ps1` 重新生成全部标志 SVG/PNG、插件图标与面板动画用的 `Resources/Web/brand-geometry.js`，需要 Node 22+ 与 Chrome 或 Edge） |
+| `Runtime/` | 运行时的配置补丁（`profile/`）与插件自带的运行时插件（`plugins/`）；构建出的 `shuttlegent-runtime.exe` 也放在这里，不进版本库，随发布包提供（见 §7） |
+| `Build/` | 运行时构建脚本、发布打包脚本 `PackageRelease.ps1`、回归脚本（`Probe/`）、标志生成（`Brand/`：唯一几何源 `brand-geometry.json`，三条经线逐条给出位置、粗细、长短与 `front`（在梭子前或后），运行 `ExportBrand.ps1` 重新生成全部标志 SVG/PNG、插件图标与面板动画用的 `Resources/Web/brand-geometry.js`，需要 Node 22+ 与 Chrome 或 Edge） |
 | `Build/Editor/` | 输入框编辑器 Tiptap 的打包工程：版本固定在 `package.json` 与 `package-lock.json`；升级或增减扩展时在该目录运行 `npm ci`、`npm run build`，提交新的 `Resources/Web/vendor/tiptap.js`；`node_modules/` 不进版本库，插件使用者不需要 Node |
 | `Samples/` | 示例项目接入 |
 | `ThirdParty/deepseek-harness/` | DeepSeek Harness 子模块 |
@@ -21,7 +21,9 @@
 
 ## 2. 构建运行时
 
-只在构建机上需要：Node.js 22.19+ 或 24+（启用 corepack）与 git。pnpm 由 corepack 按子模块锁定的版本调用。
+使用者拿到的发布包已自带运行时，不需要构建。只有两种情况要构建：用 clone 的源码开发，`Runtime/` 下还没有运行时；或者升级了 Harness 子模块，要发布新版运行时。
+
+构建机需要：Node.js 22.19+ 或 24+（启用 corepack）与 git。pnpm 由 corepack 按子模块锁定的版本调用。
 
 先拉取子模块：
 
@@ -112,3 +114,27 @@ git submodule update --init
 | 回归脚本启动运行时报 WinError 267 | 用了 Python Install Manager 安装的 Python | 使用引擎自带的 Python，或传 `-Python` |
 | 覆盖 Harness 补丁的某一行后，其他配置字段丢失 | 补丁覆盖时整体替换 `config`，不合并 | 覆盖时写全该行的 `config` |
 | 项目设置里的读写规则或屏蔽名单失效 | 项目配置整段重写了数组 | 用 `+条目=` 追加、`-条目=` 删除 |
+
+## 7. 发布
+
+使用者从 GitHub 的 [Releases](https://github.com/Jiajiaju/Shuttlegent/releases) 下载插件包，运行时随包提供，不进仓库。每发一版：
+
+1. 改 `Shuttlegent.uplugin` 的 `VersionName`（及 `Version`），提交。
+2. 升级过 Harness 子模块时，先按 §2 重新构建运行时；没升级就沿用 `Runtime/` 下现有的。
+3. 打包：
+
+   ```powershell
+   & .\Build\PackageRelease.ps1
+   ```
+
+   产出 `Saved/Release/Shuttlegent-<VersionName>-UE5.8-win64.zip`，解压后是一个 `Shuttlegent/` 目录，包含：
+
+   | 内容 | 来源 |
+   |---|---|
+   | `Shuttlegent.uplugin`、`LICENSE`、`README.md`、`Config/`、`Resources/`、`Source/`、`Docs/`、`Samples/`、`Runtime/plugins/`、`Runtime/profile/` | git 跟踪的文件 |
+   | `Runtime/shuttlegent-runtime.exe`、`shuttlegent-runtime-rg.exe`、`runtime-version.json` | 本机构建的运行时 |
+   | `Runtime/LICENSE-deepseek-harness.txt` | Harness 的许可证（MIT，分发其程序须附带） |
+
+   不含 `Build/`、`ThirdParty/`、`Binaries/`、`Intermediate/`、`Saved/` 与 `Runtime/win-x64/`（Harness 自带的 Office 资源，编辑器用不到）。运行时缺文件，或 `runtime-version.json` 记录的 Harness 修订号与子模块不一致时，脚本停止；打包的路径里有未提交的改动时给出警告。脚本最后打印包的大小与 SHA256。
+4. 给这次提交打标签（如 `v0.1.0`）并推送。
+5. 在 GitHub 网页的 Releases 页新建发布，选中该标签，写更新说明（附上 SHA256），上传插件包。

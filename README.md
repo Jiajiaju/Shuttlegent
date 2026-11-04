@@ -33,9 +33,10 @@ Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美�
 
 ### 2. 安装插件
 
-1. 把本仓库放进项目的 `Plugins/Shuttlegent` 目录。
-2. 准备运行时 `Runtime/shuttlegent-runtime.exe`。预编译版本尚未发布，目前需要自行构建，见 [Docs/Development.md §2](Docs/Development.md#2-构建运行时)。
-3. 在项目的 `.uproject` 中启用 `Shuttlegent` 插件（默认不启用），重新生成工程文件并编译编辑器。
+1. 从 [Releases](https://github.com/Jiajiaju/Shuttlegent/releases) 下载插件包 `Shuttlegent-<版本>-UE5.8-win64.zip`，解压到项目的 `Plugins/` 目录，得到 `Plugins/Shuttlegent`。插件包已自带运行时，不需要另外构建。
+2. 在项目的 `.uproject` 中启用 `Shuttlegent` 插件（默认不启用），重新生成工程文件并编译编辑器。
+
+直接 clone 本仓库得到的是源码，不含运行时；要用 clone 的源码，需要先自行构建运行时，见 [Docs/Development.md §2](Docs/Development.md#2-构建运行时)。
 
 ### 3. 填写密钥
 

@@ -47,7 +47,7 @@ bool FShuttlegentRuntimeLaunchSpec::Build(FShuttlegentRuntimeLaunchSpec& OutSpec
 	if (!FPaths::FileExists(Executable))
 	{
 		OutIssue = EShuttlegentStartIssue::MissingRuntime;
-		OutError = FString::Printf(TEXT("Runtime executable not found: %s. Build it with Build/BuildRuntime.ps1."), *Executable);
+		OutError = FString::Printf(TEXT("Runtime executable not found: %s. The plugin package is incomplete; download it again from the Shuttlegent releases page, or set Runtime Executable Override."), *Executable);
 		return false;
 	}
 	if (!FPaths::FileExists(PatchFile))

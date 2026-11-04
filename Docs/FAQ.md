@@ -13,7 +13,7 @@
 
 ### 1.2 面板提示找不到运行时
 
-插件目录下缺少 `Runtime/shuttlegent-runtime.exe`。按 [Development.md §2](Development.md#2-构建运行时) 构建运行时，或者在 **编辑器偏好设置 > Shuttlegent > General > Runtime > Runtime Executable Override** 里指定一个已有的运行时。
+插件目录下缺少 `Runtime/shuttlegent-runtime.exe`，通常是插件包没有完整解压，或用的是 clone 下来的源码。从 [Releases](https://github.com/Jiajiaju/Shuttlegent/releases) 重新下载插件包解压覆盖；或者在 **编辑器偏好设置 > Shuttlegent > General > Runtime > Runtime Executable Override** 里指定一个已有的运行时。
 
 ### 1.3 改了模型设置没生效
 

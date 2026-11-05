@@ -19,6 +19,7 @@
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentEditorConstants.h"
 #include "FShuttlegentProjectConfig.h"
+#include "FShuttlegentModelRoutes.h"
 #include "Template/FShuttlegentTemplateLibrary.h"
 #include "ShuttlegentSettings.h"
 #include "Endpoint/FShuttlegentContextBreakdown.h"
@@ -230,6 +231,45 @@ namespace FShuttlegentWebProtocolPrivate
 				return ShuttlegentEditorWebField::IssueOther;
 			}
 		}
+	}
+
+	/**
+	 * “连接一个模型”卡片：一条已连通的连接都没有时给出阶段（还没有、检测中、失败）；已有可用模型时为 null。
+	 * 失败时只给出地址，绝不包含密钥。
+	 */
+	TSharedPtr<FJsonValue> MakeModelSetup()
+	{
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		FShuttlegentModelRoute DefaultRoute;
+		FString DefaultModel;
+		if (!IsValid(Settings) || FShuttlegentModelRoutes::FindDefaultModel(*Settings, DefaultRoute, DefaultModel)) return MakeShared<FJsonValueNull>();
+
+		const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
+		const FShuttlegentConnection* Failed = nullptr;
+		bool bTesting = false;
+		for (const FShuttlegentConnection& Connection : Settings->Connections)
+		{
+			if (Connection.ApiKey.TrimStartAndEnd().IsEmpty()) continue;
+
+			bTesting |= Connection.Status == EShuttlegentConnectionStatus::Testing;
+			if (Failed == nullptr && Connection.Status == EShuttlegentConnectionStatus::Failed) Failed = &Connection;
+		}
+
+		if (bTesting)
+		{
+			Item->SetStringField(ShuttlegentEditorWebField::SetupState, ShuttlegentEditorWebField::SetupStateTesting);
+		}
+		else if (Failed != nullptr)
+		{
+			Item->SetStringField(ShuttlegentEditorWebField::SetupState, ShuttlegentEditorWebField::SetupStateFailed);
+			Item->SetStringField(ShuttlegentEditorWebField::SetupFailedUrl, Failed->bBuiltin ? FString() : FShuttlegentModelRoutes::TrimBaseUrl(Failed->BaseUrl));
+			Item->SetBoolField(ShuttlegentEditorWebField::SetupFailedBuiltin, Failed->bBuiltin);
+		}
+		else
+		{
+			Item->SetStringField(ShuttlegentEditorWebField::SetupState, ShuttlegentEditorWebField::SetupStateNone);
+		}
+		return MakeShared<FJsonValueObject>(Item);
 	}
 
 	/** 启动引导卡片：阻碍运行时启动的原因及修复位置。只给出变量名与路径，绝不包含密钥值。 */
@@ -576,6 +616,7 @@ void FShuttlegentWebProtocol::WriteStatus(const TSharedRef<FJsonObject>& Root) c
 		Root->SetObjectField(ShuttlegentEditorWebField::ContextBreakdown, BreakdownObject);
 	}
 	Root->SetField(ShuttlegentEditorWebField::StartIssue, FShuttlegentWebProtocolPrivate::MakeStartIssue(View->GetStartIssue(), View->GetStartIssueDetail()));
+	Root->SetField(ShuttlegentEditorWebField::ModelSetup, FShuttlegentWebProtocolPrivate::MakeModelSetup());
 	Root->SetBoolField(ShuttlegentEditorWebField::ResumeFailed, View->IsResumeFailed());
 
 	FText HistoryReason;

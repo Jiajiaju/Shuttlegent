@@ -620,6 +620,15 @@ namespace ShuttlegentEditorWebField
 	inline const TCHAR* IssueAuthFailed = TEXT("authFailed");
 	inline const TCHAR* IssueOther = TEXT("other");
 
+	// “连接一个模型”卡片（已有可用模型时为 null）：所处阶段，以及检测失败的那条连接的地址（内置 DeepSeek 时为空），绝不含密钥
+	inline const TCHAR* ModelSetup = TEXT("modelSetup");
+	inline const TCHAR* SetupState = TEXT("state");
+	inline const TCHAR* SetupFailedUrl = TEXT("failedUrl");
+	inline const TCHAR* SetupFailedBuiltin = TEXT("failedBuiltin");
+	inline const TCHAR* SetupStateNone = TEXT("none");
+	inline const TCHAR* SetupStateTesting = TEXT("testing");
+	inline const TCHAR* SetupStateFailed = TEXT("failed");
+
 	// 当前会话上一次恢复失败；当前会话存在未核对的未知写入结果
 	inline const TCHAR* ResumeFailed = TEXT("resumeFailed");
 	inline const TCHAR* NeedsVerify = TEXT("needsVerify");

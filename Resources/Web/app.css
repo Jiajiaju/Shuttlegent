@@ -331,6 +331,28 @@ body.resizing iframe,body.resizing .conversation{pointer-events:none}
 .workbench.full .chat{min-width:320px}
 .banner-slot{flex-shrink:0;padding:var(--s-3) var(--gutter) 0}
 .banner-slot>.callout{max-width:var(--column-max);margin:0 auto}
+
+/* Connect-a-model card: under the banner in a conversation, centred in place of the mark on an empty page */
+.setup-slot{flex-shrink:0;padding:var(--s-3) var(--gutter) 0}
+.chat.is-empty .setup-slot{position:absolute;top:0;left:0;right:var(--inspector-space);bottom:var(--composer-height,140px);z-index:1;display:flex;align-items:center;justify-content:center;padding:var(--s-4) var(--gutter)}
+.chat.is-empty .setup-slot[hidden]{display:none}
+.chat.has-setup.is-empty .perch{visibility:hidden}
+.setup-card{width:100%;max-width:420px;margin:0 auto;gap:var(--s-3);padding:var(--s-4)}
+.chat:not(.is-empty) .setup-card{max-width:var(--column-max)}
+.setup-head{display:flex;align-items:center;gap:var(--s-2)}
+.setup-head>.sg-icon{color:var(--warning)}
+.setup-title{margin:0;font-size:var(--fs-body);font-weight:var(--fw-strong)}
+.setup-lead{margin:0;font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted)}
+.setup-kinds{display:flex;gap:var(--s-1);padding:2px;border-radius:var(--r-md);background:var(--raised);align-self:flex-start}
+.setup-kinds>button{height:var(--h-sm);padding:0 var(--s-3);border-radius:var(--r-sm);font-size:var(--fs-small);color:var(--muted);background:transparent}
+.setup-kinds>button:hover{color:var(--text)}
+.setup-kinds>button[aria-checked=true]{background:var(--selected);color:var(--text)}
+.setup-field{display:flex;flex-direction:column;gap:var(--s-1)}
+.setup-field>span{font-size:var(--fs-small);color:var(--muted)}
+.setup-foot{display:flex;align-items:center;gap:var(--s-2)}
+.setup-status{flex:1;min-width:0;font-size:var(--fs-small);line-height:var(--lh-small);color:var(--muted);overflow-wrap:anywhere}
+.setup-status.is-danger{color:var(--danger)}
+.setup-settings{align-self:flex-start;font-size:var(--fs-small)}
 .conversation{overflow:auto;flex:1;scrollbar-gutter:stable;padding:var(--s-8) var(--gutter) var(--s-6);font-family:var(--font-chat);font-size:var(--chat-font-size);line-height:var(--lh-prose)}
 .message-column,.composer-column>*{width:100%;max-width:var(--column-max);margin-left:auto;margin-right:auto}
 body.wide-content .message-column,body.wide-content .composer-column>*{max-width:none}

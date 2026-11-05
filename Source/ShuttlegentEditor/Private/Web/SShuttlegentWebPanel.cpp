@@ -37,6 +37,7 @@
 
 #include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
+#include "FShuttlegentConnectionSetup.h"
 #include "FShuttlegentMemoryStore.h"
 #include "FShuttlegentPromptImage.h"
 #include "Reference/FShuttlegentReferenceFinder.h"
@@ -178,6 +179,7 @@ SShuttlegentWebPanel::~SShuttlegentWebPanel()
 	Bridge->OnSaveDraft = nullptr;
 	Bridge->OnAnswerPermission = nullptr;
 	Bridge->OnOpenSettings = nullptr;
+	Bridge->OnConnectModel = nullptr;
 	Bridge->OnQueryReferences = nullptr;
 	Bridge->OnWatchReferences = nullptr;
 	Bridge->OnRequestThumbnails = nullptr;
@@ -627,6 +629,10 @@ void SShuttlegentWebPanel::BindBridge()
 	{
 		ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>(ShuttlegentEditorName::SettingsModule);
 		if (SettingsModule != nullptr) SettingsModule->ShowViewer(ShuttlegentEditorName::SettingsContainer, ShuttlegentEditorName::SettingsCategory, ShuttlegentEditorName::SettingsSection);
+	};
+	Bridge->OnConnectModel = [](bool bBuiltin, const FString& BaseUrl, const FString& ApiKey)
+	{
+		FShuttlegentConnectionSetup::Connect(bBuiltin, BaseUrl, ApiKey);
 	};
 }
 

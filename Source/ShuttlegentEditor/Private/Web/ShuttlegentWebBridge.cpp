@@ -95,6 +95,11 @@ void UShuttlegentWebBridge::OpenSettings()
 	if (OnOpenSettings) OnOpenSettings();
 }
 
+void UShuttlegentWebBridge::ConnectModel(bool bBuiltin, const FString& BaseUrl, const FString& ApiKey)
+{
+	if (OnConnectModel) OnConnectModel(bBuiltin, BaseUrl, ApiKey);
+}
+
 void UShuttlegentWebBridge::QueryReferences(const FString& Query)
 {
 	if (OnQueryReferences) OnQueryReferences(Query);

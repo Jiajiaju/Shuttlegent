@@ -212,6 +212,9 @@
     busy: false,
     runtimeLost: false,
     startIssue: null,
+
+    // No connected model: { state: 'none' | 'testing' | 'failed', failedUrl, failedBuiltin }; null once one connects
+    modelSetup: null,
     resumeFailed: false,
     needsVerify: false,
     animateMark: true,
@@ -1244,7 +1247,10 @@
 
   function renderBanner() {
     const banner = $('banner');
-    if (state.startIssue) {
+
+    // With no connected model the connect card already says what to do
+    const covered = state.modelSetup && state.startIssue && state.startIssue.kind === 'missingKey';
+    if (state.startIssue && !covered) {
       const guide = startGuide(state.startIssue);
       const actions = (guide.settings ? '<button class="btn btn-sm" id="open-guide-settings">打开设置</button>' : '') + (guide.folder ? '<button class="btn btn-sm" id="open-plugin-folder">打开插件目录</button>' : '') + '<button class="btn btn-sm btn-primary" id="retry-start">重试</button>';
       banner.innerHTML = calloutHtml(guide.tone, guide.icon, guide.title, guide.body, actions);
@@ -1277,6 +1283,81 @@
     }
     banner.hidden = true;
     banner.innerHTML = '';
+  }
+
+  /**
+   * The connect-a-model card, shown while no connection is connected: DeepSeek needs only a key, another service its address too.
+   * Built once and kept, so status updates never wipe what is being typed; the key goes to the editor and is cleared, never sent back.
+   */
+  function renderSetup() {
+    const slot = $('setup-slot');
+    const setup = state.modelSetup;
+    $('chat').classList.toggle('has-setup', !!setup);
+    if (!setup) {
+      slot.hidden = true;
+      return;
+    }
+
+    if (!slot.firstChild) {
+      slot.innerHTML = '<section class="card setup-card" aria-labelledby="setup-title">'
+        + '<div class="setup-head">' + icons.svg('key', 16) + '<h2 class="setup-title" id="setup-title">连接一个模型</h2></div>'
+        + '<p class="setup-lead">还没有可用的模型。填好后会自动检测，连通就能开始对话。</p>'
+        + '<div class="setup-kinds" role="radiogroup" aria-label="模型服务">'
+        + '<button role="radio" aria-checked="true" data-setup-kind="builtin">DeepSeek</button>'
+        + '<button role="radio" aria-checked="false" data-setup-kind="custom">其他服务</button></div>'
+        + '<label class="setup-field" id="setup-url-row" hidden><span>地址</span><input class="field" id="setup-url" placeholder="https://…/v1" spellcheck="false" autocomplete="off"></label>'
+        + '<label class="setup-field"><span>密钥</span><input class="field" id="setup-key" type="password" spellcheck="false" autocomplete="off"></label>'
+        + '<div class="setup-foot"><span class="setup-status" id="setup-status" role="status"></span><button class="btn btn-primary btn-sm" id="setup-connect">连接</button></div>'
+        + '<button class="btn btn-link setup-settings" id="setup-settings">在偏好设置里管理全部连接</button>'
+        + '</section>';
+
+      for (const kind of slot.querySelectorAll('[data-setup-kind]')) {
+        kind.addEventListener('click', () => {
+          for (const other of slot.querySelectorAll('[data-setup-kind]')) other.setAttribute('aria-checked', String(other === kind));
+          $('setup-url-row').hidden = kind.dataset.setupKind === 'builtin';
+          view.setupNote = '';
+          renderSetup();
+          ($('setup-url-row').hidden ? $('setup-key') : $('setup-url')).focus();
+        });
+      }
+      const submit = () => {
+        const builtin = $('setup-url-row').hidden;
+        const url = $('setup-url').value.trim();
+        const key = $('setup-key').value.trim();
+        if (!key || (!builtin && !url)) {
+          view.setupNote = builtin ? '先填写密钥' : '先填写地址和密钥';
+          renderSetup();
+          return;
+        }
+        call('connectmodel', builtin, builtin ? '' : url, key);
+        $('setup-key').value = '';
+        view.setupNote = '';
+      };
+      $('setup-connect').addEventListener('click', submit);
+      for (const id of ['setup-url', 'setup-key']) {
+        $(id).addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          submit();
+        });
+      }
+      $('setup-settings').addEventListener('click', () => call('opensettings'));
+    }
+
+    // A note about the form wins until the next attempt; then the editor's state: testing, the failure, or nothing yet
+    const status = $('setup-status');
+    const testing = setup.state === 'testing';
+    let text = view.setupNote || '';
+    let danger = !!view.setupNote;
+    if (!text && testing) text = '检测中…';
+    if (!text && setup.state === 'failed') {
+      text = (setup.failedBuiltin ? 'DeepSeek' : setup.failedUrl) + ' 没有连通，检查地址和密钥后再试；详情见 Output Log。';
+      danger = true;
+    }
+    status.textContent = text;
+    status.classList.toggle('is-danger', danger);
+    $('setup-connect').disabled = testing;
+    slot.hidden = false;
   }
 
   function configChoices(configId) {
@@ -3013,7 +3094,7 @@
 
   // ---------- Editor entry points ----------
 
-  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'writeMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason', 'memory'];
+  const STATE_KEYS = ['status', 'connected', 'prompting', 'stopping', 'busy', 'runtimeLost', 'startIssue', 'modelSetup', 'resumeFailed', 'needsVerify', 'animateMark', 'usedTokens', 'contextSize', 'contextBreakdown', 'config', 'sessions', 'archived', 'currentSessionId', 'currentTitle', 'canArchiveCurrent', 'renameMaxChars', 'permissionMode', 'shellEnabled', 'templates', 'runLog', 'pendingPermission', 'pendingWrite', 'pendingQuestion', 'queue', 'canRetry', 'mcp', 'canEditHistory', 'editHistoryReason', 'todos', 'compacting', 'canCompact', 'compactReason', 'planMode', 'writeMode', 'canSetPlanMode', 'planModeReason', 'pendingPlanReview', 'canAttachImages', 'attachImagesReason', 'memory'];
 
   function apply(message) {
     const reset = message.reset === true;
@@ -3088,9 +3169,10 @@
       changedIds = new Set();
       renderWorking();
     }
-    if ('status' in message || 'canRetry' in message || 'startIssue' in message || 'resumeFailed' in message) {
+    if ('status' in message || 'canRetry' in message || 'startIssue' in message || 'resumeFailed' in message || 'modelSetup' in message) {
       renderHeader();
       renderBanner();
+      renderSetup();
     }
     if ('queue' in message || 'busy' in message || 'runtimeLost' in message) renderQueue();
     if ('todos' in message || 'prompting' in message) renderTodos();

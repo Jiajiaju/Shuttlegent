@@ -40,7 +40,9 @@ Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美�
 
 ### 3. 填写密钥
 
-打开 **编辑器偏好设置 > Shuttlegent > General > Models**，给内置的 DeepSeek 连接填写 Api Key；要用其他服务，就添加一条连接，只填 Base Url 和 Api Key。协议和可用模型会自动检测，Status 显示 Connected 即可使用。详见 [Docs/Configuration.md](Docs/Configuration.md)。
+最简单的办法：打开面板（菜单 **窗口 > Shuttlegent**），在“连接一个模型”卡片里选 DeepSeek 填密钥，或选其他服务填地址和密钥，点“连接”。
+
+也可以打开 **编辑器偏好设置 > Shuttlegent > General > Models**，给内置的 DeepSeek 连接填写 Api Key；要用其他服务，就添加一条连接，只填 Base Url 和 Api Key。协议和可用模型会自动检测，Status 显示 Connected 即可使用。详见 [Docs/Configuration.md](Docs/Configuration.md)。
 
 ### 4. 开始对话
 

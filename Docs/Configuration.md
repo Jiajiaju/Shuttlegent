@@ -33,6 +33,7 @@
 | Defaults > Default Agent | 默认 | 新会话想默认用别的 Agent |
 | Credentials > Mcp Header Values | 空 | 项目接入的外部服务需要个人密钥时，按项目负责人给的变量名填写 |
 
+- **在面板里直接连接**：一条连通的连接都没有时，面板会显示“连接一个模型”卡片。选 DeepSeek 只填密钥，选其他服务再填地址，点“连接”后自动写进上面的 Models 并检测，连通即可开始对话；没连通会提示，改好再点一次。
 - **一条连接带出全部模型**：每条连接只填地址（如 `https://api.openai.com/v1`）和密钥。插件自动识别协议（OpenAI Responses、OpenAI Chat Completions 或 Anthropic Messages），并列出这组地址和密钥能用的全部对话模型，最新的在前；它们都会出现在面板的模型菜单里。
 - **默认模型自动选**：第一条已连通的连接中的第一个模型。想换别的模型，在面板的模型菜单里切换即可。
 - **内置 DeepSeek 连接**：地址固定，只需填密钥，提供 DeepSeek-V4.1-Flash 与 DeepSeek-V4-Pro 两个模型；不能删除。不用 DeepSeek 时留空即可，不影响其他连接。

@@ -52,6 +52,8 @@ public:
 
 	TFunction<void()> OnOpenSettings;
 
+	TFunction<void(bool, const FString&, const FString&)> OnConnectModel;
+
 	TFunction<void(const FString&)> OnQueryReferences;
 
 	TFunction<void(const FString&)> OnWatchReferences;
@@ -180,6 +182,10 @@ public:
 	/** 打开 Editor Preferences 中的 Shuttlegent 页面。 */
 	UFUNCTION()
 	void OpenSettings();
+
+	/** 面板里“连接一个模型”：把地址与密钥写进个人设置并检测；bBuiltin 时填内置 DeepSeek 连接、忽略地址。密钥不回传页面。 */
+	UFUNCTION()
+	void ConnectModel(bool bBuiltin, const FString& BaseUrl, const FString& ApiKey);
 
 	/** @ 菜单的查询已变化；候选项通过 onReferenceResults 返回。 */
 	UFUNCTION()

@@ -10,6 +10,7 @@
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
 #include "Misc/Base64.h"
+#include "Misc/Crc.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
@@ -27,7 +28,11 @@
 #include "ShuttlegentLog.h"
 #include "ShuttlegentSessionStore.h"
 #include "ShuttlegentSettings.h"
+#include "EShuttlegentConnectionStatus.h"
+#include "FShuttlegentConnection.h"
+#include "FShuttlegentConnectionTester.h"
 #include "FShuttlegentModelRoutes.h"
+#include "ShuttlegentConstants.h"
 #include "Settings/FShuttlegentSettingsChoices.h"
 
 #define LOCTEXT_NAMESPACE "ShuttlegentChatModel"
@@ -297,11 +302,80 @@ namespace ShuttlegentChatModelPrivate
 		return FString();
 	}
 
+	/** 模型选项的取值：["路由", "模型 ID"] 的 JSON 文本，与运行时上报的形状一致。 */
+	FString MakeModelValue(const FString& Route, const FString& ModelId)
+	{
+		const TArray<TSharedPtr<FJsonValue>> Parts = { MakeShared<FJsonValueString>(Route), MakeShared<FJsonValueString>(ModelId) };
+		FString Value;
+		const TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&Value);
+		FJsonSerializer::Serialize(Parts, Writer);
+		return Value;
+	}
+
+	/** 模型的显示名：内置模型用运行时目录中的显示名，其余即模型 ID。 */
+	FString GetModelName(const FShuttlegentModelRoute& Route, const FString& ModelId)
+	{
+		if (!Route.bBuiltin) return ModelId;
+
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(ShuttlegentBuiltinModel::Ids); ++Index)
+		{
+			if (ModelId == ShuttlegentBuiltinModel::Ids[Index]) return ShuttlegentBuiltinModel::Names[Index];
+		}
+		return ModelId;
+	}
+
 	/**
-	 * Agent 指定的默认模型在运行时模型选项中的取值；Agent 没有指定、模型不存在或选项中没有它时为空。
-	 * 选项的值是 ["路由", "模型 ID"] 的 JSON 文本，按路由与模型 ID 比对。
+	 * 按个人设置列出可选模型：已连通连接的全部模型，当前值为默认模型（第一条已连通连接的第一个模型）。
+	 * 会话尚未打开的对话用它显示，不必等运行时上报，设置一改就能看到。
 	 */
-	FString AgentModelValue(const FString& AgentId, const TArray<TSharedPtr<FJsonValue>>& ConfigOptions)
+	void BuildModelChoices(TArray<FShuttlegentConfigChoice>& OutChoices, FString& OutDefaultValue)
+	{
+		OutChoices.Reset();
+		OutDefaultValue.Reset();
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		if (!IsValid(Settings)) return;
+
+		for (const FShuttlegentModelRoute& Route : FShuttlegentModelRoutes::Build(*Settings))
+		{
+			const bool bConnected = Settings->Connections.IsValidIndex(Route.ConnectionIndex) && Settings->Connections[Route.ConnectionIndex].Status == EShuttlegentConnectionStatus::Connected;
+			if (!bConnected) continue;
+
+			for (const FString& ModelId : Route.ModelIds)
+			{
+				OutChoices.Add(FShuttlegentConfigChoice { MakeModelValue(Route.Route, ModelId), GetModelName(Route, ModelId) });
+			}
+		}
+
+		FShuttlegentModelRoute DefaultRoute;
+		FString DefaultModel;
+		if (FShuttlegentModelRoutes::FindDefaultModel(*Settings, DefaultRoute, DefaultModel)) OutDefaultValue = MakeModelValue(DefaultRoute.Route, DefaultModel);
+	}
+
+	/**
+	 * 运行时启动时从个人设置读到的模型配置的签名：各路由的名称、协议、地址、密钥（CRC）与模型，以及默认模型。
+	 * 签名变了说明运行时手里的路由已过时，需要重启。
+	 */
+	FString MakeModelSignature()
+	{
+		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+		if (!IsValid(Settings)) return FString();
+
+		TStringBuilder<512> Builder;
+		for (const FShuttlegentModelRoute& Route : FShuttlegentModelRoutes::Build(*Settings))
+		{
+			Builder << Route.Route << TEXT('|') << FShuttlegentModelRoutes::GetApiName(Route.Api) << TEXT('|') << Route.BaseUrl << TEXT('|');
+			Builder.Appendf(TEXT("%08x"), FCrc::StrCrc32(*Route.ApiKey));
+			Builder << TEXT('|') << FString::Join(Route.ModelIds, TEXT(",")) << TEXT(';');
+		}
+
+		FShuttlegentModelRoute DefaultRoute;
+		FString DefaultModel;
+		if (FShuttlegentModelRoutes::FindDefaultModel(*Settings, DefaultRoute, DefaultModel)) Builder << TEXT("default=") << DefaultRoute.Route << TEXT('/') << DefaultModel;
+		return Builder.ToString();
+	}
+
+	/** Agent 指定的默认模型的选项取值（见 MakeModelValue）；Agent 没有指定、或模型不在已连通的连接中时为空。 */
+	FString AgentModelValue(const FString& AgentId)
 	{
 		const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
 		if (!IsValid(Settings)) return FString();
@@ -310,11 +384,7 @@ namespace ShuttlegentChatModelPrivate
 		FShuttlegentModelRoute Route;
 		FString ModelId;
 		if (Agent == nullptr || !FShuttlegentModelRoutes::FindModel(*Settings, Agent->DefaultModel, Route, ModelId)) return FString();
-
-		TArray<FShuttlegentConfigChoice> Choices;
-		FString Current;
-		ParseConfigChoices(ConfigOptions, ShuttlegentEditorConfigId::Model, Choices, Current);
-		return FindModelChoice(Choices, Route.Route, ModelId);
+		return MakeModelValue(Route.Route, ModelId);
 	}
 
 	/** 新对话的写入确认方式，取自编辑器偏好设置。 */
@@ -410,6 +480,11 @@ void FShuttlegentChatModel::Initialize(const TSharedRef<FShuttlegentAgentService
 	}
 	FShuttlegentMemoryStore::OnChanged().AddSP(this, &FShuttlegentChatModel::HandleMemoryChanged);
 
+	// 模型连接增删、测通后，未打开会话的对话重新按设置显示模型，运行时在空闲时重启
+	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
+	if (IsValid(Settings)) SettingsChangedHandle = Settings->OnSettingChanged().AddSP(this, &FShuttlegentChatModel::HandleSettingChanged);
+	ConnectionTestedHandle = FShuttlegentConnectionTester::OnTested().AddSP(this, &FShuttlegentChatModel::HandleConnectionTested);
+
 	const TSharedPtr<FShuttlegentWriteGate> Gate = FShuttlegentMcpServerModule::Get().GetWriteGate();
 	if (!Gate.IsValid()) return;
 
@@ -473,6 +548,12 @@ void FShuttlegentChatModel::Shutdown()
 	}
 	QuestionGate.Reset();
 	FShuttlegentMemoryStore::OnChanged().RemoveAll(this);
+
+	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
+	if (IsValid(Settings) && SettingsChangedHandle.IsValid()) Settings->OnSettingChanged().Remove(SettingsChangedHandle);
+	SettingsChangedHandle.Reset();
+	FShuttlegentConnectionTester::OnTested().Remove(ConnectionTestedHandle);
+	ConnectionTestedHandle.Reset();
 
 	UTransBuffer* TransBuffer = GEditor != nullptr ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
 	if (IsValid(TransBuffer) && UndoBufferHandle.IsValid()) TransBuffer->OnUndoBufferChanged().Remove(UndoBufferHandle);
@@ -1300,7 +1381,7 @@ void FShuttlegentChatModel::SetAgent(FShuttlegentConversation& Conversation, con
 
 	// 带出 Agent 的默认模型；Agent 没有指定时新会话用运行时的默认模型，撤掉等待中的模型选择
 	Conversation.AgentId = AgentId;
-	const FString ModelValue = ShuttlegentChatModelPrivate::AgentModelValue(AgentId, LastConfigOptions);
+	const FString ModelValue = ShuttlegentChatModelPrivate::AgentModelValue(AgentId);
 	if (ModelValue.IsEmpty()) Conversation.PendingConfig.Remove(ShuttlegentEditorConfigId::Model);
 	else Conversation.PendingConfig.Add(ShuttlegentEditorConfigId::Model, ModelValue);
 }
@@ -1324,11 +1405,26 @@ bool FShuttlegentChatModel::GetConfigChoices(const FShuttlegentConversation& Con
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid()) return false;
 
-	// 没有已打开会话的对话显示最近任一会话上报的选项，以及为该对话选择的值
 	const bool bOpen = Pinned->IsSessionOpen(Conversation.SessionId);
+	const FString* Pending = Conversation.PendingConfig.Find(ConfigId);
+
+	// 没有已打开会话的对话：模型按个人设置列出（运行时上报的可能已过时），当前值为为该对话选择的模型，否则为默认模型
+	if (!bOpen && ConfigId == ShuttlegentEditorConfigId::Model)
+	{
+		ShuttlegentChatModelPrivate::BuildModelChoices(OutChoices, OutCurrentValue);
+		FString Route;
+		FString ModelId;
+		if (Pending != nullptr && ShuttlegentChatModelPrivate::ParseModelValue(*Pending, Route, ModelId))
+		{
+			const FString Matched = ShuttlegentChatModelPrivate::FindModelChoice(OutChoices, Route, ModelId);
+			if (!Matched.IsEmpty()) OutCurrentValue = Matched;
+		}
+		return !OutChoices.IsEmpty();
+	}
+
+	// 其余选项：没有已打开会话的对话显示最近任一会话上报的选项，以及为该对话选择的值
 	const bool bFound = ShuttlegentChatModelPrivate::ParseConfigChoices(bOpen ? Pinned->GetConfigOptions(Conversation.SessionId) : LastConfigOptions, ConfigId, OutChoices, OutCurrentValue);
 
-	const FString* Pending = Conversation.PendingConfig.Find(ConfigId);
 	if (bFound && Pending != nullptr) OutCurrentValue = *Pending;
 	return bFound;
 }
@@ -2637,6 +2733,9 @@ void FShuttlegentChatModel::AddInterruptedNotice(FShuttlegentConversation& Conve
 
 void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
 {
+	// 启动时的配置文件刚按当前设置写好：记下运行时读到的模型连接
+	if (NewState == EShuttlegentAgentState::Starting) LaunchedModelSignature = ShuttlegentChatModelPrivate::MakeModelSignature();
+
 	if (NewState == EShuttlegentAgentState::Ready)
 	{
 		// 已就绪的运行时已具备可执行文件与密钥；被拒绝的密钥会在下一个失败的回合再次显示
@@ -2649,6 +2748,9 @@ void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
 		{
 			if (Conversation->bWantsSession) RequestSession(*Conversation);
 		}
+
+		// 启动期间连接测完或被改动时，运行时读到的已过时
+		ApplyModelSettings();
 	}
 
 	NotifyAllStatus();
@@ -2695,7 +2797,19 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 	Conversation->PendingConfig.Reset();
 	for (const TPair<FString, FString>& Pair : PendingConfig)
 	{
-		SetConfigValue(*Conversation, Pair.Key, Pair.Value);
+		// 会话打开前的模型按个人设置列出；换成运行时选项中路由与模型 ID 相同的那一项，运行时没有它时不切换
+		FString Value = Pair.Value;
+		FString Route;
+		FString ModelId;
+		if (Pair.Key == ShuttlegentEditorConfigId::Model && ShuttlegentChatModelPrivate::ParseModelValue(Pair.Value, Route, ModelId))
+		{
+			TArray<FShuttlegentConfigChoice> Choices;
+			FString Current;
+			GetConfigChoices(*Conversation, ShuttlegentEditorConfigId::Model, Choices, Current);
+			Value = ShuttlegentChatModelPrivate::FindModelChoice(Choices, Route, ModelId);
+			if (Value.IsEmpty() || Value == Current) continue;
+		}
+		SetConfigValue(*Conversation, Pair.Key, Value);
 	}
 
 	// 恢复的会话沿用记录中的模型；那个模型的连接已不可用（没有密钥、未连通或已删除）时换成默认模型
@@ -2722,6 +2836,9 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 	{
 		SendPendingPrompt(*Conversation);
 	}
+
+	// 等会话建立期间改动的模型连接此时生效（随即要发送的提示会让它等到回合结束）
+	ApplyModelSettings();
 	NotifyAllStatus();
 	OnSessionsChanged.Broadcast();
 }
@@ -2746,6 +2863,65 @@ void FShuttlegentChatModel::ReplaceUnusableModel(FShuttlegentConversation& Conve
 	SetConfigValue(Conversation, ShuttlegentEditorConfigId::Model, Value);
 	AddRunLog(Conversation, FText::Format(LOCTEXT("LogModelReplaced", "原模型 {0} 的连接已不可用，已换成 {1}"), FText::FromString(ModelId), FText::FromString(DefaultModel)), true);
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: model %s (%s) is no longer usable; switched to %s (%s)."), *Conversation.SessionId, *ModelId, *Route, *DefaultModel, *DefaultRoute.Route);
+}
+
+void FShuttlegentChatModel::HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event)
+{
+	ApplyModelSettings();
+	NotifyAllStatus();
+}
+
+void FShuttlegentChatModel::HandleConnectionTested(int32 ConnectionIndex)
+{
+	ApplyModelSettings();
+	NotifyAllStatus();
+}
+
+void FShuttlegentChatModel::ApplyModelSettings()
+{
+	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
+	const UShuttlegentSettings* Settings = GetDefault<UShuttlegentSettings>();
+	if (!IsValid(Settings) || !Pinned.IsValid() || bRestartPending) return;
+
+	// 地址或密钥刚改、正在或即将重新检测的连接，等检测完（OnTested）再定，免得按旧结论重启一次
+	const bool bTesting = Settings->Connections.ContainsByPredicate([](const FShuttlegentConnection& Connection)
+	{
+		return !Connection.ApiKey.TrimStartAndEnd().IsEmpty() && (Connection.Status == EShuttlegentConnectionStatus::Testing || Connection.TestedFingerprint != FShuttlegentModelRoutes::MakeFingerprint(Connection));
+	});
+	if (bTesting) return;
+
+	// 因没有可用连接或密钥被拒而停下的运行时：有连通的连接后清掉启动引导卡片，再次启动并恢复获得焦点的对话的会话
+	const bool bKeyIssue = StartIssue == EShuttlegentStartIssue::MissingKey || StartIssue == EShuttlegentStartIssue::AuthFailed;
+	if (Pinned->GetState() == EShuttlegentAgentState::Stopped && bKeyIssue)
+	{
+		FShuttlegentModelRoute DefaultRoute;
+		FString DefaultModel;
+		if (!FShuttlegentModelRoutes::FindDefaultModel(*Settings, DefaultRoute, DefaultModel)) return;
+
+		UE_LOG(LogShuttlegent, Log, TEXT("A model connection is now connected; starting the runtime again."));
+		StartIssue = EShuttlegentStartIssue::None;
+		StartIssueDetail.Reset();
+		bRuntimeLost = false;
+		const TSharedPtr<FShuttlegentConversation> Focus = GetFocused();
+		if (Focus.IsValid() && !Focus->SessionId.IsEmpty()) RequestSession(*Focus);
+		else EnsureRuntime();
+		return;
+	}
+
+	if (Pinned->GetState() != EShuttlegentAgentState::Ready || ShuttlegentChatModelPrivate::MakeModelSignature() == LaunchedModelSignature) return;
+
+	// 重启会中断进行中的回合、正在建立的会话与正在执行的写入，等它们结束（回合结束、会话就绪时再来）
+	const bool bBusy = bWriting || AgentHandoff.IsValid() || !AwaitingNewSession.IsEmpty() || !WaitingForHandoff.IsEmpty()
+		|| Conversations.ContainsByPredicate([this](const TSharedPtr<FShuttlegentConversation>& Held) { return IsPrompting(*Held) || Held->bResuming || !Held->PendingPrompt.IsEmpty(); });
+	if (bBusy) return;
+
+	UE_LOG(LogShuttlegent, Log, TEXT("Model connections changed since the runtime started; restarting the runtime."));
+	const TSharedPtr<FShuttlegentConversation> Focus = GetFocused();
+	if (Focus.IsValid()) AddRunLog(*Focus, LOCTEXT("LogModelsChanged", "模型连接已变化，重启运行时"), false);
+
+	// 旧进程退出后由 HandleRuntimeExited 再次启动，并恢复获得焦点的对话的会话
+	bRestartPending = true;
+	Pinned->Stop();
 }
 
 void FShuttlegentChatModel::SendPendingPrompt(FShuttlegentConversation& Conversation)
@@ -2840,6 +3016,9 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	if (bCompleted) RequestTitle(Conversation);
 	if (bCompleted) SendNextQueued(Conversation);
 	else PauseQueue(Conversation);
+
+	// 回合进行中改动的模型连接等所有回合结束后生效；队列接着发出的提示会让它继续等
+	ApplyModelSettings();
 }
 
 void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)

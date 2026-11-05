@@ -126,6 +126,13 @@ private:
 
 	/** 重试已停止正在运行的运行时；旧进程退出后再次启动。 */
 	bool bRestartPending = false;
+
+	/** 运行时启动时读到的模型连接签名（见 ShuttlegentChatModelPrivate::MakeModelSignature）；与当前设置不同时，空闲后重启运行时。 */
+	FString LaunchedModelSignature;
+
+	/** 个人设置改动与连接检测完成的监听句柄。 */
+	FDelegateHandle SettingsChangedHandle;
+	FDelegateHandle ConnectionTestedHandle;
 	bool bPermissionHandlerAttached = false;
 
 	/** 挂接了权限请求的面板数；大于 0 时由面板答复（见 SetPermissionHandlerAttached）。 */
@@ -516,6 +523,15 @@ private:
 
 	/** 会话当前的模型所在连接已不可用时换成默认模型，并记一条运行日志；模型可用或没有默认模型时不动。 */
 	void ReplaceUnusableModel(FShuttlegentConversation& Conversation);
+
+	void HandleSettingChanged(UObject* Settings, FPropertyChangedEvent& Event);
+	void HandleConnectionTested(int32 ConnectionIndex);
+
+	/**
+	 * 模型连接与运行时启动时读到的不同时重启运行时，使增删的连接与新的默认模型生效。
+	 * 运行时未运行时不动（下次启动自然读到）；有回合进行、会话正在建立或写入正在执行时等它们结束再重启。
+	 */
+	void ApplyModelSettings();
 
 	void HandlePlanReview(const FShuttlegentPlanReview& Review);
 	void HandlePlanReviewClosed(const FString& SessionId, const FString& ReviewId);

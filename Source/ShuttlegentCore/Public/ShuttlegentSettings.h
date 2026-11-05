@@ -32,7 +32,7 @@ public:
 
 	/**
 	 * 模型连接：每条只填地址与密钥，协议与可用模型自动检测；第一条已连通的连接中的第一个模型为新会话的默认模型。
-	 * 内置 DeepSeek 连接预装且不可删除。下次启动运行时生效。
+	 * 内置 DeepSeek 连接预装且不可删除。增删连接或检测结论变化后，面板在没有回合进行时自动重启运行时使其生效。
 	 */
 	UPROPERTY(Config, EditAnywhere, Category = "Models")
 	TArray<FShuttlegentConnection> Connections;

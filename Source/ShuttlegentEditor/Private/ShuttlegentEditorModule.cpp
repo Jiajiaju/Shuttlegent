@@ -7,9 +7,14 @@
 #include "Misc/MessageDialog.h"
 #include "PropertyEditorModule.h"
 #include "Modules/ModuleManager.h"
+#include "Styling/AppStyle.h"
+#include "Styling/ToolBarStyle.h"
 #include "Textures/SlateIcon.h"
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Layout/SBox.h"
 
 #include "Chat/FShuttlegentChatView.h"
 #include "Chat/ShuttlegentChatModel.h"
@@ -192,16 +197,32 @@ void FShuttlegentEditorModule::RegisterMenus()
 {
 	FToolMenuOwnerScoped OwnerScoped(this);
 
-	UToolMenu* Menu = UToolMenus::Get()->ExtendMenu(ShuttlegentEditorName::WindowMenu);
-	if (Menu == nullptr) return;
+	// 面板的唯一入口：主工具栏播放按钮右侧的彩色标志按钮
+	UToolMenu* Toolbar = UToolMenus::Get()->ExtendMenu(ShuttlegentEditorName::LevelToolbar);
+	if (Toolbar == nullptr) return;
 
-	FToolMenuSection& Section = Menu->FindOrAddSection(ShuttlegentEditorName::WindowMenuSection);
-	Section.AddMenuEntry(
-		ShuttlegentEditorName::ChatTabId,
-		LOCTEXT("ChatMenuLabel", "Shuttlegent"),
-		LOCTEXT("ChatMenuTooltip", "打开 Shuttlegent 面板"),
-		FSlateIcon(ShuttlegentEditorName::StyleSetName, ShuttlegentEditorStyleKey::TabIcon),
-		FUIAction(FExecuteAction::CreateLambda([]() { FGlobalTabmanager::Get()->TryInvokeTab(ShuttlegentEditorName::ChatTabId); })));
+	// 标准工具栏按钮把图标定成 20×20，横长的标志会被压小；自建按钮按标志比例显示，外框与内边距沿用相邻按钮的工具栏样式
+	const FToolBarStyle& ToolbarStyle = FAppStyle::Get().GetWidgetStyle<FToolBarStyle>(ShuttlegentEditorMetric::ToolbarStyleName);
+	const TSharedRef<SWidget> Button = SNew(SButton)
+		.ButtonStyle(&ToolbarStyle.ButtonStyle)
+		.ContentPadding(ToolbarStyle.ButtonPadding)
+		.ToolTipText(LOCTEXT("ToolbarTooltip", "打开 Shuttlegent 面板"))
+		.OnClicked_Lambda([]()
+		{
+			FGlobalTabmanager::Get()->TryInvokeTab(ShuttlegentEditorName::ChatTabId);
+			return FReply::Handled();
+		})
+		[
+			SNew(SBox)
+			.Padding(ToolbarStyle.IconPadding)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SImage).Image(FShuttlegentStyle::Brush(ShuttlegentEditorStyleKey::ToolbarIcon))
+			]
+		];
+
+	FToolMenuSection& Section = Toolbar->FindOrAddSection(ShuttlegentEditorName::LevelToolbarSection);
+	Section.AddEntry(FToolMenuEntry::InitWidget(ShuttlegentEditorName::LevelToolbarButton, Button, LOCTEXT("ToolbarLabel", "Shuttlegent"), true));
 }
 
 #undef LOCTEXT_NAMESPACE

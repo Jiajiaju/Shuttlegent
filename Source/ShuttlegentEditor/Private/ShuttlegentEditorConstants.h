@@ -14,9 +14,10 @@ namespace ShuttlegentEditorName
 	// 面板快捷键的绑定上下文（FShuttlegentPanelCommands）
 	inline const FName CommandContext = TEXT("Shuttlegent");
 
-	// 扩展了 "Shuttlegent" 条目的菜单
-	inline const TCHAR* WindowMenu = TEXT("LevelEditor.MainMenu.Window");
-	inline const FName WindowMenuSection = TEXT("ShuttlegentSection");
+	// 关卡编辑器主工具栏中留给插件的区域（播放按钮右侧），放打开面板的按钮
+	inline const TCHAR* LevelToolbar = TEXT("LevelEditor.LevelEditorToolBar.User");
+	inline const FName LevelToolbarSection = TEXT("Shuttlegent");
+	inline const FName LevelToolbarButton = TEXT("OpenShuttlegent");
 
 	// 承载设置查看器的模块
 	inline const FName SettingsModule = TEXT("Settings");
@@ -46,6 +47,13 @@ namespace ShuttlegentEditorMetric
 	// 编辑器要求的标签页图标尺寸
 	inline constexpr float TabIconSize = 16.0f;
 
+	// 主工具栏按钮的标志：按标志本身 3:2 的比例，高度略低于相邻 20 px 的引擎图标
+	inline constexpr float ToolbarIconWidth = 27.0f;
+	inline constexpr float ToolbarIconHeight = 18.0f;
+
+	// 主工具栏按钮所用的引擎工具栏样式（关卡编辑器 User 区域的样式）
+	inline const TCHAR* ToolbarStyleName = TEXT("AssetEditorToolbar");
+
 	// 加载占位的品牌标志（与面板空状态的标志同尺寸）
 	inline constexpr float MarkSizePlaceholder = 64.0f;
 
@@ -68,6 +76,11 @@ namespace ShuttlegentEditorResource
 
 	// 丝质经线与红色梭子；加载占位显示它，与页面的标志一致
 	inline const TCHAR* MarkRedWhite = TEXT("mark-red-white");
+
+	// 主工具栏按钮：同一红白标志，视框裁成正方形并贴紧标志，使其与相邻图标同大
+	inline const TCHAR* SvgDir = TEXT("svg");
+	inline const TCHAR* SvgExtension = TEXT(".svg");
+	inline const TCHAR* MarkToolbar = TEXT("mark-toolbar");
 }
 
 /** 占位颜色：页面背景与说明文字（Shuttlegent UI design-tokens.css --bg、--muted）。 */
@@ -790,4 +803,7 @@ namespace ShuttlegentEditorStyleKey
 {
 	inline const FName Mark = TEXT("Shuttlegent.Mark");
 	inline const FName TabIcon = TEXT("Shuttlegent.TabIcon");
+
+	// 主工具栏按钮：红白彩色标志
+	inline const FName ToolbarIcon = TEXT("Shuttlegent.ToolbarIcon");
 }

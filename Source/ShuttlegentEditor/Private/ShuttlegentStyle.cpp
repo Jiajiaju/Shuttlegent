@@ -29,6 +29,11 @@ void FShuttlegentStyle::Register()
 	StyleSet->Set(ShuttlegentEditorStyleKey::Mark, new FSlateImageBrush(MarkPath, MarkSize));
 	StyleSet->Set(ShuttlegentEditorStyleKey::TabIcon, new FSlateImageBrush(TabIconPath, TabIconSize));
 
+	// 工具栏图标用矢量，任何缩放下都清晰
+	const FString ToolbarIconPath = FPaths::Combine(ResourcesDir, ShuttlegentEditorResource::SvgDir, FString(ShuttlegentEditorResource::MarkToolbar) + ShuttlegentEditorResource::SvgExtension);
+	const FVector2D ToolbarIconSize(ShuttlegentEditorMetric::ToolbarIconWidth, ShuttlegentEditorMetric::ToolbarIconHeight);
+	StyleSet->Set(ShuttlegentEditorStyleKey::ToolbarIcon, new FSlateVectorImageBrush(ToolbarIconPath, ToolbarIconSize));
+
 	FSlateStyleRegistry::RegisterSlateStyle(*StyleSet);
 }
 

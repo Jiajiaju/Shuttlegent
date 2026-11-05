@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="Resources/png/lockup-horizontal-red-white.png">
-    <img src="Resources/png/lockup-horizontal-color.png" alt="Shuttlegent" width="420">
+    <source media="(prefers-color-scheme: dark)" srcset="Resources/svg/lockup-name-red-white.svg">
+    <img src="Resources/svg/lockup-name-color.svg" alt="引纬 Shuttlegent" width="240">
   </picture>
 </p>
 

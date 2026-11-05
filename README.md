@@ -16,6 +16,8 @@
 
 <p align="center"><img src="Docs/Images/panel.png" alt="Shuttlegent 对话面板" width="900"></p>
 
+<p align="center"><a href="https://jiajiaju.github.io/shuttlegent-site/docs/">完整文档</a></p>
+
 Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美术。
 
 - **模式**：每次要改东西，先列出对象和改前改后的值，你确认后才执行，执行后可以撤销。
@@ -36,13 +38,13 @@ Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美�
 1. 从 [Releases](https://github.com/Jiajiaju/Shuttlegent/releases) 下载插件包 `Shuttlegent-<版本>-UE5.8-win64.zip`，解压到项目的 `Plugins/` 目录，得到 `Plugins/Shuttlegent`。插件包已自带运行时，不需要另外构建。
 2. 在项目的 `.uproject` 中启用 `Shuttlegent` 插件（默认不启用），重新生成工程文件并编译编辑器。
 
-直接 clone 本仓库得到的是源码，不含运行时；要用 clone 的源码，需要先自行构建运行时，见 [Docs/Development.md §2](Docs/Development.md#2-构建运行时)。
+直接 clone 本仓库得到的是源码，不含运行时；要用 clone 的源码，需要先自行构建运行时，见 [开发文档 §2](https://jiajiaju.github.io/shuttlegent-site/docs/?p=Development#2-构建运行时)。
 
 ### 3. 填写密钥
 
 最简单的办法：打开面板（主工具栏播放按钮右侧的 Shuttlegent 标志按钮），在“连接一个模型”卡片里选 DeepSeek 填密钥，或选其他服务填地址和密钥，点“连接”。
 
-也可以打开 **编辑器偏好设置 > Shuttlegent > General > Models**，给内置的 DeepSeek 连接填写 Api Key；要用其他服务，就添加一条连接，只填 Base Url 和 Api Key。协议和可用模型会自动检测，Status 显示 Connected 即可使用。详见 [Docs/Configuration.md](Docs/Configuration.md)。
+也可以打开 **编辑器偏好设置 > Shuttlegent > General > Models**，给内置的 DeepSeek 连接填写 Api Key；要用其他服务，就添加一条连接，只填 Base Url 和 Api Key。协议和可用模型会自动检测，Status 显示 Connected 即可使用。详见 [配置文档](https://jiajiaju.github.io/shuttlegent-site/docs/?p=Configuration)。
 
 ### 4. 开始对话
 
@@ -54,11 +56,11 @@ Shuttlegent 是停靠在 Unreal Editor 里的 AI 助手，面向设计师和美�
 
 ### 5. 启用引擎 Toolset（可选）
 
-在 **编辑 > 插件** 中搜索 Toolset，按需启用（如 EditorToolset、UMGToolSet、NiagaraToolsets、PCGToolset），然后重启编辑器。推荐清单见 [Docs/Tools.md §3.1](Docs/Tools.md#31-启用-toolset)。
+在 **编辑 > 插件** 中搜索 Toolset，按需启用（如 EditorToolset、UMGToolSet、NiagaraToolsets、PCGToolset），然后重启编辑器。推荐清单见 [工具文档 §3.1](https://jiajiaju.github.io/shuttlegent-site/docs/?p=Tools#31-启用-toolset)。
 
 ## 安全与控制
 
-- **改动**：确认卡 55 秒内没有确认视为放弃；面板没打开时，改动请求直接被拒绝。也可以按会话切换为“自动接受编辑”等模式，见 [Docs/Tools.md §1](Docs/Tools.md#1-改动的确认与撤销)。
+- **改动**：确认卡 55 秒内没有确认视为放弃；面板没打开时，改动请求直接被拒绝。也可以按会话切换为“自动接受编辑”等模式，见 [工具文档 §1](https://jiajiaju.github.io/shuttlegent-site/docs/?p=Tools#1-改动的确认与撤销)。
 - **撤销**：改动在编辑器事务中执行，任一对象失败就整批回滚；存盘等不能撤销的操作会在确认卡上标明。
 - **能力**：写代码、开关插件、模拟界面点击等引擎 Toolset 默认屏蔽；每个工具和 Toolset 都可以单独关闭。
 - **密钥**：密钥保存在本机的编辑器偏好设置中，不进版本库。
@@ -95,7 +97,7 @@ flowchart LR
     Runtime -.-> Ext
 ```
 
-详见 [Docs/Architecture.md](Docs/Architecture.md)。
+详见 [架构文档](https://jiajiaju.github.io/shuttlegent-site/docs/?p=Architecture)。
 
 ## 许可
 

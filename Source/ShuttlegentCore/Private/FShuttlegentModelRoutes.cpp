@@ -84,6 +84,10 @@ TArray<FShuttlegentModelRoute> FShuttlegentModelRoutes::Build(const UShuttlegent
 		Route.BaseUrl = BaseUrl;
 		Route.KeyVariable = FShuttlegentModelRoutesPrivate::MakeKeyVariable(Name);
 		Route.ModelIds = Connection.ModelIds;
+		for (const FShuttlegentModelEfforts& Item : Connection.ModelEfforts)
+		{
+			if (!Item.Efforts.IsEmpty() && Route.ModelIds.Contains(Item.ModelId)) Route.ModelEfforts.Add(Item.ModelId, Item.Efforts);
+		}
 		Routes.Add(MoveTemp(Route));
 	}
 	return Routes;

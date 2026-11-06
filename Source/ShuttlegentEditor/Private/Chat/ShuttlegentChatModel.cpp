@@ -365,7 +365,15 @@ namespace ShuttlegentChatModelPrivate
 		{
 			Builder << Route.Route << TEXT('|') << FShuttlegentModelRoutes::GetApiName(Route.Api) << TEXT('|') << Route.BaseUrl << TEXT('|');
 			Builder.Appendf(TEXT("%08x"), FCrc::StrCrc32(*Route.ApiKey));
-			Builder << TEXT('|') << FString::Join(Route.ModelIds, TEXT(",")) << TEXT(';');
+			Builder << TEXT('|') << FString::Join(Route.ModelIds, TEXT(","));
+
+			// 档位写在生成补丁里，变了也要重启运行时
+			for (const FString& ModelId : Route.ModelIds)
+			{
+				const TArray<FString>* Efforts = Route.ModelEfforts.Find(ModelId);
+				if (Efforts != nullptr) Builder << TEXT('|') << ModelId << TEXT('=') << FString::Join(*Efforts, TEXT(","));
+			}
+			Builder << TEXT(';');
 		}
 
 		FShuttlegentModelRoute DefaultRoute;

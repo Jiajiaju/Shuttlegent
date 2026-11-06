@@ -102,6 +102,9 @@
   const MAX_FONT_NAMES = 4;
   const EFFORT_NOTE = '推理强度越高，回答越周全，但耗时更长、用量消耗更快。';
 
+  // Chinese names for the runtime's reasoning effort values; the empty value is the provider's own default. Unknown values keep the runtime's name
+  const EFFORT_NAMES = { '': '默认', off: '关闭', minimal: '最低', low: '低', medium: '中', high: '高', xhigh: '超高', max: '最高' };
+
   // Gap between a picker and what opened it, and least distance kept from the panel edge, in CSS pixels
   const PICKER_GAP = 6;
   const PICKER_EDGE = 8;
@@ -1377,6 +1380,17 @@
     return choice ? choice.name : '';
   }
 
+  /** A reasoning effort choice reads its Chinese name; the trigger and the effort row show the current one. */
+  function effortName(choice) {
+    return Object.prototype.hasOwnProperty.call(EFFORT_NAMES, choice.value) ? EFFORT_NAMES[choice.value] : choice.name;
+  }
+
+  function currentEffortName() {
+    const { current, choices } = configChoices('reasoning_effort');
+    const choice = choices.find((item) => item.value === current);
+    return choice ? effortName(choice) : '';
+  }
+
   function hasInvalidReference() {
     return draftState.refs.some((ref) => ref.valid === false);
   }
@@ -1441,7 +1455,7 @@
 
     const models = configChoices('model');
     $('model-name').textContent = shortModelName(choiceName('model')) || '模型';
-    $('effort-name').textContent = choiceName('reasoning_effort');
+    $('effort-name').textContent = currentEffortName();
     const modelTrigger = $('model-trigger');
     modelTrigger.disabled = models.choices.length === 0 || state.prompting;
     modelTrigger.title = state.prompting ? '本轮结束后再切换模型或推理强度' : '模型与推理强度';
@@ -1473,14 +1487,14 @@
     const efforts = configChoices('reasoning_effort');
     let html = '<div class="menu-label">模型</div>' + models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
     if (efforts.choices.length) {
-      html += '<div class="menu-sep"></div><button class="menu-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span class="menu-text">推理强度</span><span class="menu-trail">' + esc(choiceName('reasoning_effort')) + icons.svg('chevron', 14) + '</span></button>';
+      html += '<div class="menu-sep"></div><button class="menu-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span class="menu-text">推理强度</span><span class="menu-trail">' + esc(currentEffortName()) + icons.svg('chevron', 14) + '</span></button>';
     }
     return html;
   }
 
   function effortMenuHtml() {
     const efforts = configChoices('reasoning_effort');
-    return '<div class="menu-note">' + EFFORT_NOTE + '</div>' + efforts.choices.map((choice) => pickerItemHtml(' data-pick-effort="' + esc(choice.value) + '"', choice.name, '', choice.value === efforts.current, false)).join('');
+    return '<div class="menu-note">' + EFFORT_NOTE + '</div>' + efforts.choices.map((choice) => pickerItemHtml(' data-pick-effort="' + esc(choice.value) + '"', effortName(choice), '',choice.value === efforts.current, false)).join('');
   }
 
   function modeMenuHtml() {

@@ -4,6 +4,7 @@
 
 #include "EShuttlegentConnectionStatus.h"
 #include "EShuttlegentProviderApi.h"
+#include "FShuttlegentModelEfforts.h"
 
 #include "FShuttlegentConnection.generated.h"
 
@@ -35,6 +36,10 @@ struct SHUTTLEGENTCORE_API FShuttlegentConnection
 	/** 检测出的可用于对话的模型 ID，最新的在前；第一个即这条连接的默认模型。 */
 	UPROPERTY(Config)
 	TArray<FString> ModelIds;
+
+	/** 检测时查得推理强度档位的模型；不在其中的模型请求不带推理参数，沿用服务方的默认行为。 */
+	UPROPERTY(Config)
+	TArray<FShuttlegentModelEfforts> ModelEfforts;
 
 	/** 最近一次检测的结论。 */
 	UPROPERTY(Config)

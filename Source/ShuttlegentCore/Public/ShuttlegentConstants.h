@@ -128,6 +128,9 @@ namespace ShuttlegentProviderConstant
 	inline const TCHAR* FieldModels = TEXT("models");
 	inline const TCHAR* FieldModelId = TEXT("id");
 	inline const TCHAR* FieldModelName = TEXT("name");
+
+	// llm-pi-ai 模型条目的推理档位声明：键为档位名，值为请求中发送的拼写（packages/llm/llm-pi-ai/src/catalog.ts 的 PiAiReasoningEfforts）
+	inline const TCHAR* FieldReasoningEfforts = TEXT("reasoningEfforts");
 	inline const TCHAR* FieldProvider = TEXT("provider");
 	inline const TCHAR* FieldModel = TEXT("model");
 	inline const TCHAR* FieldIncludeDefaultRoots = TEXT("includeDefaultRoots");
@@ -251,6 +254,47 @@ namespace ShuttlegentProbeConstant
 
 	// 秒转毫秒
 	inline constexpr double MillisecondsPerSecond = 1000.0;
+}
+
+/**
+ * 测试连接时查模型的推理强度档位：models.opencode.ai 的模型目录（即 models.dev 数据，OpenCode 同源，
+ * 见 anomalyco/opencode 的 packages/core/src/models-dev.ts）。响应为 { 服务方: { models: { 模型: { canonical_id,
+ * capabilities: { reasoning: { effort: [...] } }, api: { 协议: { base_url } } } } } }。
+ */
+namespace ShuttlegentEffortConstant
+{
+	// 模型目录（v2，只取对话模型）
+	inline const TCHAR* CatalogUrl = TEXT("https://models.opencode.ai/experimental/v2.0/api.json?type=chat");
+
+	// 下载目录的超时，单位秒；目录约 10 MB
+	inline constexpr float TimeoutSeconds = 60.0f;
+
+	// 本地缓存的目录正文与其 ETag，相对项目 Saved 目录；目录没变时服务器回 304，不再下载
+	inline const TCHAR* CacheFile = TEXT("Shuttlegent/ModelCatalog/catalog.json");
+	inline const TCHAR* EtagFile = TEXT("Shuttlegent/ModelCatalog/catalog.etag");
+
+	// 缓存相关的请求头与响应头
+	inline const TCHAR* HeaderIfNoneMatch = TEXT("If-None-Match");
+	inline const TCHAR* HeaderEtag = TEXT("ETag");
+
+	// 目录未变
+	inline constexpr int32 StatusNotModified = 304;
+
+	// 目录字段
+	inline const TCHAR* FieldModels = TEXT("models");
+	inline const TCHAR* FieldCanonicalId = TEXT("canonical_id");
+	inline const TCHAR* FieldCapabilities = TEXT("capabilities");
+	inline const TCHAR* FieldReasoning = TEXT("reasoning");
+	inline const TCHAR* FieldEffort = TEXT("effort");
+	inline const TCHAR* FieldApi = TEXT("api");
+	inline const TCHAR* FieldBaseUrl = TEXT("base_url");
+
+	// canonical_id 与网关式模型 ID 中服务方与模型名的分隔符，例如 openai/gpt-5
+	inline const TCHAR* IdSeparator = TEXT("/");
+
+	// 采用的档位，从低到高，均为运行时的档位名（packages/llm/llm-pi-ai/src/catalog.ts 的 THINKING_LEVELS 去掉 off）。
+	// 目录里的 none（关闭）不采用：运行时声明关闭档后，未选档位的请求也会发送关闭参数，不再沿用服务方的默认行为
+	inline const TCHAR* Levels[] = { TEXT("minimal"), TEXT("low"), TEXT("medium"), TEXT("high"), TEXT("xhigh"), TEXT("max") };
 }
 
 /** 会话的概括标题：第一轮回答结束后向会话所用的模型要一个短标题。 */

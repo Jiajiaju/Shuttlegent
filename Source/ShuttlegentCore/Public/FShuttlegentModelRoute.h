@@ -28,6 +28,9 @@ struct FShuttlegentModelRoute
 	/** 可用的模型 ID，最新的在前。 */
 	TArray<FString> ModelIds;
 
+	/** 查得推理强度档位的模型 ID 到其档位（从低到高）；不在其中的模型不声明档位。内置路由由运行时自带。 */
+	TMap<FString, TArray<FString>> ModelEfforts;
+
 	/** 来源连接在 UShuttlegentSettings::Connections 中的下标。 */
 	int32 ConnectionIndex = INDEX_NONE;
 };

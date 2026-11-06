@@ -23,7 +23,10 @@ namespace FShuttlegentGeneratedPatchPrivate
 		return Row;
 	}
 
-	/** llm-pi-ai 的一个路由：显示名用路由名（面板只显示模型名），模型取自连接检测出的模型，名称即模型 ID。 */
+	/**
+	 * llm-pi-ai 的一个路由：显示名用路由名（面板只显示模型名），模型取自连接检测出的模型，名称即模型 ID。
+	 * 查得档位的模型声明 reasoningEfforts，每档按档位名原样发送；不声明关闭档，未选档位的请求因此不带推理参数，沿用服务方的默认行为。
+	 */
 	TSharedRef<FJsonObject> MakeProvider(const FShuttlegentModelRoute& Route)
 	{
 		TArray<TSharedPtr<FJsonValue>> Models;
@@ -32,6 +35,17 @@ namespace FShuttlegentGeneratedPatchPrivate
 			const TSharedRef<FJsonObject> Item = MakeShared<FJsonObject>();
 			Item->SetStringField(ShuttlegentProviderConstant::FieldModelId, ModelId);
 			Item->SetStringField(ShuttlegentProviderConstant::FieldModelName, ModelId);
+
+			const TArray<FString>* Efforts = Route.ModelEfforts.Find(ModelId);
+			if (Efforts != nullptr && !Efforts->IsEmpty())
+			{
+				const TSharedRef<FJsonObject> Declared = MakeShared<FJsonObject>();
+				for (const FString& Effort : *Efforts)
+				{
+					Declared->SetStringField(Effort, Effort);
+				}
+				Item->SetObjectField(ShuttlegentProviderConstant::FieldReasoningEfforts, Declared);
+			}
 			Models.Add(MakeShared<FJsonValueObject>(Item));
 		}
 

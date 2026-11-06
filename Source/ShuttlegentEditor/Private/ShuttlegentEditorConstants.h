@@ -101,6 +101,12 @@ namespace ShuttlegentEditorWeb
 	inline const TCHAR* PageFile = TEXT("index.html");
 	inline const TCHAR* FileUrlPrefix = TEXT("file:///");
 
+	// 页面地址上告知显示语言的查询参数，取值为页面支持的语言（Resources/Web/i18n.js 的 SUPPORTED）；编辑器语言名以 zh 开头时用简体中文，其余用英文
+	inline const TCHAR* LocaleQuery = TEXT("?lang=");
+	inline const TCHAR* LocaleChinese = TEXT("zh-Hans");
+	inline const TCHAR* LocaleEnglish = TEXT("en");
+	inline const TCHAR* ChineseLanguagePrefix = TEXT("zh");
+
 	// JS 绑定名称：页面调用 window.ue.bridge.<小写函数名>
 	inline const TCHAR* BridgeName = TEXT("bridge");
 

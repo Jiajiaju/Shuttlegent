@@ -66,6 +66,10 @@ private:
 	/** 页面至少调用过一次 ready；在此之前由占位内容覆盖。 */
 	bool bPageReady = false;
 
+	/** 页面当前加载所用的显示语言；编辑器语言变化后与之不同时重新加载页面。 */
+	FString LoadedLocale;
+	FDelegateHandle CultureChangedHandle;
+
 	/** 有停靠标签页正在显示面板；仅在此时面板才答复运行时权限请求。 */
 	bool bHostTabOpen = false;
 
@@ -132,6 +136,12 @@ private:
 	void ReloadPage();
 
 	FString GetPageUrl() const;
+
+	/** 页面显示语言：编辑器当前语言为中文时是 zh-Hans，否则是 en。 */
+	FString GetPageLocale() const;
+
+	/** 编辑器语言变化：页面语言随之变化时按新语言重新加载页面，对话、会话与已保存的草稿不受影响。 */
+	void HandleCultureChanged();
 
 	/** 编辑器拖拽所携带的资产或 Actor，以 JS 引用数组表示；其他内容时为空。 */
 	FString GetDraggedItems(const FDragDropEvent& DragDropEvent) const;

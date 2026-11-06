@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,52 +9,52 @@
 </head>
 <body>
 <div class="workbench" id="workbench">
-  <button class="scrim" id="scrim" aria-label="收起覆盖面板" hidden></button>
+  <button class="scrim" id="scrim" data-i18n-aria-label="sidebar.collapseOverlay" hidden></button>
 
-  <aside class="sidebar" id="sidebar" aria-label="会话列表">
+  <aside class="sidebar" id="sidebar" data-i18n-aria-label="sidebar.label">
     <div class="brand"><img src="../png/mark-red-white.png" alt=""><strong>Shuttlegent</strong></div>
-    <button class="nav-item" id="new-session" title="开始一个新会话 · Ctrl+N"><span data-icon="plus"></span>新会话<kbd class="kbd">Ctrl N</kbd></button>
+    <button class="nav-item" id="new-session" data-i18n-title="sidebar.newSessionTitle"><span data-icon="plus"></span><span data-i18n="sidebar.newSession"></span><kbd class="kbd">Ctrl N</kbd></button>
     <div class="search-row">
-      <label class="field-search"><span data-icon="search" data-size="14"></span><input class="field" id="search" type="search" placeholder="搜索会话" aria-label="搜索会话" autocomplete="off"></label>
-      <button class="btn btn-icon" id="archived-button" title="已归档会话" aria-label="已归档会话"><span data-icon="archive"></span></button>
+      <label class="field-search"><span data-icon="search" data-size="14"></span><input class="field" id="search" type="search" data-i18n-placeholder="sidebar.search" data-i18n-aria-label="sidebar.search" autocomplete="off"></label>
+      <button class="btn btn-icon" id="archived-button" data-i18n-title="sidebar.archived" data-i18n-aria-label="sidebar.archived"><span data-icon="archive"></span></button>
     </div>
-    <nav class="sessions" id="sessions" aria-label="选择会话"></nav>
+    <nav class="sessions" id="sessions" data-i18n-aria-label="sidebar.sessions"></nav>
     <div class="sidebar-foot">
-      <span id="permission-mode" title="运行时文件与命令工具的权限；在编辑器偏好设置 → 插件 → Shuttlegent 中修改，下次启动运行时生效"></span>
-      <button class="btn btn-icon btn-sm" id="open-settings" title="设置" aria-label="设置"><span data-icon="settings" data-size="14"></span></button>
+      <span id="permission-mode" data-i18n-title="sidebar.permissionTitle"></span>
+      <button class="btn btn-icon btn-sm" id="open-settings" data-i18n-title="sidebar.settings" data-i18n-aria-label="sidebar.settings"><span data-icon="settings" data-size="14"></span></button>
     </div>
-    <div class="pane-resizer" id="sidebar-resizer" data-pane="sidebar" role="separator" aria-orientation="vertical" aria-label="调整会话侧栏宽度" title="拖动调整宽度 · 双击恢复默认" tabindex="0"></div>
+    <div class="pane-resizer" id="sidebar-resizer" data-pane="sidebar" role="separator" aria-orientation="vertical" data-i18n-aria-label="sidebar.resize" data-i18n-title="sidebar.resizeTitle" tabindex="0"></div>
   </aside>
 
   <div class="stage" id="stage">
   <header class="chat-header" id="stage-header">
-    <button class="btn btn-icon" id="toggle-sidebar" title="会话侧栏 · Ctrl+B" aria-label="切换会话侧栏"><span data-icon="sidebar"></span></button>
-    <strong class="chat-title" id="session-title">新会话</strong>
+    <button class="btn btn-icon" id="toggle-sidebar" data-i18n-title="header.toggleSidebarTitle" data-i18n-aria-label="header.toggleSidebar"><span data-icon="sidebar"></span></button>
+    <strong class="chat-title" id="session-title" data-i18n="session.untitled"></strong>
     <span id="status" class="chip chip-md" role="status" hidden></span>
     <span class="spacer"></span>
-    <button class="btn btn-icon" id="toggle-inspector" title="检视窗格 · Ctrl+I" aria-label="切换检视窗格"><span data-icon="inspector"></span></button>
+    <button class="btn btn-icon" id="toggle-inspector" data-i18n-title="header.toggleInspectorTitle" data-i18n-aria-label="header.toggleInspector"><span data-icon="inspector"></span></button>
   </header>
   <div class="stage-body">
   <main class="chat" id="chat">
     <div id="banner" class="banner-slot" hidden></div>
     <div id="setup-slot" class="setup-slot" hidden></div>
-    <div class="conversation" id="conversation" tabindex="0" aria-label="对话记录">
-      <div class="message-column"><div id="messages"></div><div id="queue" class="queue" aria-label="待发送的消息" hidden></div><div class="working" id="working" role="status" hidden></div></div>
+    <div class="conversation" id="conversation" tabindex="0" data-i18n-aria-label="chat.conversation">
+      <div class="message-column"><div id="messages"></div><div id="queue" class="queue" data-i18n-aria-label="chat.queue" hidden></div><div class="working" id="working" role="status" hidden></div></div>
     </div>
-    <button class="back-bottom" id="back-bottom" hidden title="回到底部" aria-label="回到底部"><span data-icon="arrow-down" data-size="18"></span><span class="back-bottom-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>
+    <button class="back-bottom" id="back-bottom" hidden data-i18n-title="chat.backBottom" data-i18n-aria-label="chat.backBottom"><span data-icon="arrow-down" data-size="18"></span><span class="back-bottom-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>
     <div class="composer-column">
-      <section id="todos" class="stack-card todos" aria-label="Agent 的任务清单" hidden></section>
+      <section id="todos" class="stack-card todos" data-i18n-aria-label="composer.todos" hidden></section>
       <section id="decision" class="card decision" aria-labelledby="decision-title" hidden></section>
       <div class="perch" id="perch"></div>
-      <section class="composer" id="composer" aria-label="消息编辑区">
-        <div id="suggestions" class="menu suggestions" role="listbox" aria-label="引用与模板" hidden></div>
-        <div id="references" class="composer-refs" aria-label="引用"></div>
-        <div id="attachments" class="composer-images" aria-label="图片" hidden></div>
+      <section class="composer" id="composer" data-i18n-aria-label="composer.label">
+        <div id="suggestions" class="menu suggestions" role="listbox" data-i18n-aria-label="composer.suggestions" hidden></div>
+        <div id="references" class="composer-refs" data-i18n-aria-label="composer.references"></div>
+        <div id="attachments" class="composer-images" data-i18n-aria-label="composer.images" hidden></div>
         <div class="composer-row">
-          <button class="btn btn-icon" id="add-reference" title="添加引用 · Ctrl+Space" aria-label="添加引用"><span data-icon="plus"></span></button>
-          <button class="btn btn-icon" id="add-image" title="添加图片（也可以粘贴截图或把图片文件拖进来）" aria-label="添加图片"><span data-icon="attach"></span></button>
-          <div class="composer-editor" id="draft-host" data-placeholder="描述你想在编辑器里完成的事…"></div>
-          <button id="send" class="btn btn-icon send" title="发送 · Enter" aria-label="发送消息" hidden><span data-icon="enter" data-size="18"></span></button>
+          <button class="btn btn-icon" id="add-reference" data-i18n-title="composer.addReferenceTitle" data-i18n-aria-label="composer.addReference"><span data-icon="plus"></span></button>
+          <button class="btn btn-icon" id="add-image" data-i18n-title="composer.addImageTitle" data-i18n-aria-label="composer.addImage"><span data-icon="attach"></span></button>
+          <div class="composer-editor" id="draft-host" data-placeholder=""></div>
+          <button id="send" class="btn btn-icon send" data-i18n-title="composer.sendTitle" data-i18n-aria-label="composer.send" hidden><span data-icon="enter" data-size="18"></span></button>
           <button id="stop" class="btn btn-icon send stop" hidden></button>
         </div>
       </section>
@@ -67,14 +67,14 @@
     </div>
   </main>
 
-  <aside class="inspector" id="inspector" aria-label="检视窗格">
+  <aside class="inspector" id="inspector" data-i18n-aria-label="inspector.label">
     <div class="cards" id="cards">
       <section class="icard" aria-labelledby="card-head-context">
-        <button class="icard-head" id="card-head-context" data-card="context" aria-controls="card-body-context"><span class="t">上下文</span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-context"></span></button>
+        <button class="icard-head" id="card-head-context" data-card="context" aria-controls="card-body-context"><span class="t" data-i18n="inspector.context"></span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-context"></span></button>
         <div class="icard-body" id="card-body-context" role="region" aria-labelledby="card-head-context"></div>
       </section>
       <section class="icard" aria-labelledby="card-head-memory">
-        <button class="icard-head" id="card-head-memory" data-card="memory" aria-controls="card-body-memory"><span class="t">记忆</span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-memory"></span></button>
+        <button class="icard-head" id="card-head-memory" data-card="memory" aria-controls="card-body-memory"><span class="t" data-i18n="inspector.memory"></span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-memory"></span></button>
         <div class="icard-body" id="card-body-memory" role="region" aria-labelledby="card-head-memory"></div>
       </section>
       <section class="icard" aria-labelledby="card-head-mcp">
@@ -82,11 +82,11 @@
         <div class="icard-body" id="card-body-mcp" role="region" aria-labelledby="card-head-mcp"></div>
       </section>
       <section class="icard" aria-labelledby="card-head-tools">
-        <button class="icard-head" id="card-head-tools" data-card="tools" aria-controls="card-body-tools"><span class="t">工具详情</span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-tools"></span></button>
+        <button class="icard-head" id="card-head-tools" data-card="tools" aria-controls="card-body-tools"><span class="t" data-i18n="inspector.tools"></span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-tools"></span></button>
         <div class="icard-body" id="card-body-tools" role="region" aria-labelledby="card-head-tools"></div>
       </section>
       <section class="icard" aria-labelledby="card-head-log">
-        <button class="icard-head" id="card-head-log" data-card="log" aria-controls="card-body-log"><span class="t">日志</span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-log"></span></button>
+        <button class="icard-head" id="card-head-log" data-card="log" aria-controls="card-body-log"><span class="t" data-i18n="inspector.log"></span><span data-icon="caret" data-size="14"></span><span class="s" id="card-summary-log"></span></button>
         <div class="icard-body" id="card-body-log" role="region" aria-labelledby="card-head-log"></div>
       </section>
     </div>
@@ -96,42 +96,46 @@
 </div>
 
 <dialog id="rename-dialog" class="dialog" aria-labelledby="rename-title">
-  <div class="dialog-head"><h2 class="dialog-title" id="rename-title">重命名会话</h2></div>
-  <input class="field" id="rename-input" aria-label="会话名称" autocomplete="off">
+  <div class="dialog-head"><h2 class="dialog-title" id="rename-title" data-i18n="dialog.rename.title"></h2></div>
+  <input class="field" id="rename-input" data-i18n-aria-label="dialog.rename.input" autocomplete="off">
   <p class="field-error" id="rename-error" hidden></p>
-  <div class="dialog-actions"><button class="btn" data-close>取消</button><button class="btn btn-primary" id="rename-save">保存</button></div>
+  <div class="dialog-actions"><button class="btn" data-close data-i18n="common.cancel"></button><button class="btn btn-primary" id="rename-save" data-i18n="common.save"></button></div>
 </dialog>
 <dialog id="rewind-dialog" class="dialog" aria-labelledby="rewind-title">
-  <div class="dialog-head"><h2 class="dialog-title" id="rewind-title">回到这条消息之前</h2></div>
+  <div class="dialog-head"><h2 class="dialog-title" id="rewind-title" data-i18n="dialog.rewind.title"></h2></div>
   <ul class="dialog-list" id="rewind-list"></ul>
-  <div class="dialog-actions"><button class="btn" data-close>取消</button><button class="btn btn-primary" id="rewind-confirm">回到这里</button></div>
+  <div class="dialog-actions"><button class="btn" data-close data-i18n="common.cancel"></button><button class="btn btn-primary" id="rewind-confirm" data-i18n="dialog.rewind.confirm"></button></div>
 </dialog>
 <dialog id="archive-dialog" class="dialog" aria-labelledby="archive-title">
-  <div class="dialog-head"><h2 class="dialog-title" id="archive-title">归档会话</h2></div>
-  <p class="dialog-text">从会话列表隐藏，记录保留，可在"已归档"恢复。</p>
-  <div class="dialog-actions"><button class="btn" data-close>取消</button><button class="btn btn-primary" id="archive-confirm">归档</button></div>
+  <div class="dialog-head"><h2 class="dialog-title" id="archive-title" data-i18n="dialog.archive.title"></h2></div>
+  <p class="dialog-text" data-i18n="dialog.archive.text"></p>
+  <div class="dialog-actions"><button class="btn" data-close data-i18n="common.cancel"></button><button class="btn btn-primary" id="archive-confirm" data-i18n="dialog.archive.confirm"></button></div>
 </dialog>
 <dialog id="delete-dialog" class="dialog" aria-labelledby="delete-title">
-  <div class="dialog-head"><h2 class="dialog-title" id="delete-title">删除会话</h2></div>
-  <p class="dialog-text">"<span id="delete-name"></span>"的本地记录会被永久删除，删除后无法恢复。</p>
-  <div class="dialog-actions"><button class="btn" data-close>取消</button><button class="btn btn-danger" id="delete-confirm">删除</button></div>
+  <div class="dialog-head"><h2 class="dialog-title" id="delete-title" data-i18n="dialog.delete.title"></h2></div>
+  <p class="dialog-text" id="delete-text"></p>
+  <div class="dialog-actions"><button class="btn" data-close data-i18n="common.cancel"></button><button class="btn btn-danger" id="delete-confirm" data-i18n="common.delete"></button></div>
 </dialog>
 <div class="menu picker" id="agent-menu" role="menu" aria-label="Agent" hidden></div>
-<div class="menu picker" id="model-menu" role="menu" aria-label="模型" hidden></div>
-<div class="menu picker" id="effort-menu" role="menu" aria-label="推理强度" hidden></div>
-<div class="menu picker" id="mode-menu" role="menu" aria-label="模式" hidden></div>
-<div class="menu context-menu" id="session-menu" role="menu" aria-label="会话操作" hidden>
-  <button class="menu-item" role="menuitem" data-menu-action="rename"><span data-icon="edit"></span><span class="menu-text">重命名</span></button>
-  <button class="menu-item" role="menuitem" data-menu-action="archive"><span data-icon="archive"></span><span class="menu-text">归档</span></button>
+<div class="menu picker" id="model-menu" role="menu" data-i18n-aria-label="menu.model" hidden></div>
+<div class="menu picker" id="effort-menu" role="menu" data-i18n-aria-label="menu.effort" hidden></div>
+<div class="menu picker" id="mode-menu" role="menu" data-i18n-aria-label="menu.mode" hidden></div>
+<div class="menu context-menu" id="session-menu" role="menu" data-i18n-aria-label="menu.session" hidden>
+  <button class="menu-item" role="menuitem" data-menu-action="rename"><span data-icon="edit"></span><span class="menu-text" data-i18n="menu.rename"></span></button>
+  <button class="menu-item" role="menuitem" data-menu-action="archive"><span data-icon="archive"></span><span class="menu-text" data-i18n="menu.archive"></span></button>
   <div class="menu-sep" role="separator"></div>
-  <button class="menu-item is-danger" role="menuitem" data-menu-action="delete"><span data-icon="trash"></span><span class="menu-text">删除</span></button>
+  <button class="menu-item is-danger" role="menuitem" data-menu-action="delete"><span data-icon="trash"></span><span class="menu-text" data-i18n="common.delete"></span></button>
 </div>
 <dialog id="archived-dialog" class="dialog" aria-labelledby="archived-title">
-  <div class="dialog-head"><h2 class="dialog-title" id="archived-title">已归档会话</h2><button class="btn btn-icon btn-sm" data-close aria-label="关闭" title="关闭"><span data-icon="close" data-size="14"></span></button></div>
+  <div class="dialog-head"><h2 class="dialog-title" id="archived-title" data-i18n="sidebar.archived"></h2><button class="btn btn-icon btn-sm" data-close data-i18n-aria-label="common.close" data-i18n-title="common.close"><span data-icon="close" data-size="14"></span></button></div>
   <div id="archived-list"></div>
 </dialog>
 
-<div id="image-viewer" class="image-viewer" role="dialog" aria-label="查看图片" hidden><img alt=""></div>
+<div id="image-viewer" class="image-viewer" role="dialog" data-i18n-aria-label="imageViewer.label" hidden><img alt=""></div>
+<script src="vendor/i18next.js"></script>
+<script src="i18n/en.js"></script>
+<script src="i18n/zh-Hans.js"></script>
+<script src="i18n.js"></script>
 <script src="icons.js"></script>
 <script src="markdown.js"></script>
 <script src="highlight.js"></script>

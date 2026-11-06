@@ -158,7 +158,7 @@
         Keys
       ],
       editorProps: {
-        attributes: { id: 'draft', role: 'textbox', 'aria-multiline': 'true', 'aria-label': '消息', 'aria-autocomplete': 'list', 'aria-controls': 'suggestions' },
+        attributes: { id: 'draft', role: 'textbox', 'aria-multiline': 'true', 'aria-label': window.ShuttlegentI18n.t('composer.message'), 'aria-autocomplete': 'list', 'aria-controls': 'suggestions' },
         // app.js sees every key first, except while an input method composes
         handleKeyDown: (view, event) => !view.composing && hooks.keydown(event),
         handlePaste: (view, event) => {

@@ -8,6 +8,8 @@
 (function () {
   'use strict';
 
+  const t = window.ShuttlegentI18n.t;
+
   const MAX_HEADING_LEVEL = 6;
   const MIN_RULE_MARKS = 3;
   // Deepest list nesting shown; deeper items stay at this level
@@ -24,7 +26,7 @@
   const CONTENT_PATH = /^\/Game\/[^\s'"`<>()|]+$/;
   const OBJECT_ICON = { asset: 'file', actor: 'locate' };
   const OBJECT_ICON_SIZE = 12;
-  const OBJECT_HINT = { asset: '资产 · 单击在内容浏览器中定位，双击打开', actor: 'Actor · 单击在关卡中选中，双击让视口移到它' };
+  const OBJECT_HINT = { asset: t('markdown.assetHint'), actor: t('markdown.actorHint') };
 
   // Images: asset thumbnail sides the reply may ask for (ue-asset:<path>?size=N) and the default; asset thumbnails a reply shows at
   // first and per "show more" (the rest stay object links until then)
@@ -38,7 +40,7 @@
   const FILE_URL_PREFIX = 'file:///';
   // A line made only of images (a paragraph of such lines becomes a row of figures)
   const IMAGE_ONLY_LINE = /^(\s*!\[[^\]]*\]\([^)\s]+\)\s*)+$/;
-  const IMAGE_TEXT = { loading: '正在取缩略图…', none: '无缩略图', failed: '图片加载失败' };
+  const IMAGE_TEXT = { loading: t('markdown.imageLoading'), none: t('markdown.imageNone'), failed: t('markdown.imageFailed') };
 
   // Set by the page: the file:/// URL of Saved/Shuttlegent/ (ends with /), and what it knows of an image — a src, false when it has none, undefined when not yet known
   let localImageRoot = '';
@@ -372,7 +374,7 @@
 
   function codeBlock(language, source, codeIndex) {
     const label = language ? '<span class="code-language">' + escapeHtml(language) + '</span>' : '<span></span>';
-    return '<div class="code-block"><div class="code-head">' + label + '<button class="btn btn-icon btn-sm" data-copy-code="' + codeIndex + '" title="复制代码" aria-label="复制代码">' + window.ShuttlegentIcons.svg('copy', 14) + '</button></div><pre><code>' + window.ShuttlegentHighlight.highlight(language, source) + '</code></pre></div>';
+    return '<div class="code-block"><div class="code-head">' + label + '<button class="btn btn-icon btn-sm" data-copy-code="' + codeIndex + '" title="' + t('markdown.copyCode') + '" aria-label="' + t('markdown.copyCode') + '">' + window.ShuttlegentIcons.svg('copy', 14) + '</button></div><pre><code>' + window.ShuttlegentHighlight.highlight(language, source) + '</code></pre></div>';
   }
 
   /**

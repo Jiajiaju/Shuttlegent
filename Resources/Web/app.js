@@ -15,6 +15,10 @@
   const warpPlayer = window.ShuttlegentWarp;
   const esc = markdown.escapeHtml;
 
+  // Panel text; the language is fixed for the page's lifetime (i18n.js), so constants below may translate at load
+  const i18n = window.ShuttlegentI18n;
+  const t = i18n.t;
+
   // Distance from the bottom, in CSS pixels, within which new content keeps the view pinned to the end
   const FOLLOW_THRESHOLD = 24;
 
@@ -55,8 +59,8 @@
   const USAGE_HIGH_SHARE = 0.8;
   const USAGE_FULL_SHARE = 0.95;
 
-  // Placeholder of the message input when nothing holds sending back (index.html carries the same text)
-  const DRAFT_PLACEHOLDER = '描述你想在编辑器里完成的事…';
+  // Placeholder of the message input when nothing holds sending back
+  const DRAFT_PLACEHOLDER = t('composer.placeholder');
 
   // Token counts in short form (99.3k, 1M) on the context card
   const TOKENS_PER_THOUSAND = 1000;
@@ -82,16 +86,16 @@
 
   // Modes in menu order: how editor writes are confirmed, and plan (read-only until a plan is approved)
   const MODES = [
-    { value: 'manual', label: '手动', detail: '每次修改前都先问你' },
-    { value: 'acceptEdits', label: '自动接受编辑', detail: '可撤销的修改直接执行，其余先问你' },
-    { value: 'auto', label: '自动', detail: '除删除、移动、改名外直接执行' },
-    { value: 'plan', label: '计划', detail: '先出方案，批准后再修改' }
+    { value: 'manual', label: t('mode.manual'), detail: t('mode.manualDetail') },
+    { value: 'acceptEdits', label: t('mode.acceptEdits'), detail: t('mode.acceptEditsDetail') },
+    { value: 'auto', label: t('mode.auto'), detail: t('mode.autoDetail') },
+    { value: 'plan', label: t('mode.plan'), detail: t('mode.planDetail') }
   ];
   // Share of the memory file limit at which the memory card summary warns
   const MEMORY_WARN_SHARE = 0.9;
 
   // Session list dots: what each attention value means, for the tooltip and screen readers
-  const ATTENTION_TEXT = { done: '已完成，还没查看', input: '等待你的输入' };
+  const ATTENTION_TEXT = { done: t('attention.done'), input: t('attention.input') };
 
   // Default font stacks; fonts from Editor Preferences go in front of them (tokens.css carries the same stacks)
   const FONT_UI = '"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif';
@@ -100,10 +104,10 @@
   // A font family name the page accepts from settings: letters, digits, spaces and - _ . only; at most this many names
   const FONT_NAME = /^[\p{L}\p{N} _.\-]+$/u;
   const MAX_FONT_NAMES = 4;
-  const EFFORT_NOTE = '推理强度越高，回答越周全，但耗时更长、用量消耗更快。';
+  const EFFORT_NOTE = t('effort.note');
 
-  // Chinese names for the runtime's reasoning effort values; the empty value is the provider's own default. Unknown values keep the runtime's name
-  const EFFORT_NAMES = { '': '默认', off: '关闭', minimal: '最低', low: '低', medium: '中', high: '高', xhigh: '超高', max: '最高' };
+  // Names for the runtime's reasoning effort values; the empty value is the provider's own default. Unknown values keep the runtime's name
+  const EFFORT_NAMES = { '': t('effort.default'), off: t('effort.off'), minimal: t('effort.minimal'), low: t('effort.low'), medium: t('effort.medium'), high: t('effort.high'), xhigh: t('effort.xhigh'), max: t('effort.max') };
 
   // Gap between a picker and what opened it, and least distance kept from the panel edge, in CSS pixels
   const PICKER_GAP = 6;
@@ -123,15 +127,15 @@
   // Built-in commands the editor runs itself instead of sending them to the model; they win over a template of the same name
   const COMMAND_LINE = /^\/(compact|plan|undo|clear|memory)(?:\s+([\s\S]*))?$/;
   const COMMANDS = [
-    { name: 'compact', body: '/compact', detail: '把较早的对话总结为摘要，腾出上下文空间' },
-    { name: 'plan', body: '/plan ', detail: '进入计划模式；/plan off 退出，/plan 后接消息则进入并发送' },
-    { name: 'undo', body: '/undo', detail: '回退本轮：撤销最后一条消息之后的修改，原文放回输入框' },
-    { name: 'clear', body: '/clear', detail: '开始新对话，当前对话留在侧栏' },
-    { name: 'memory', body: '/memory', detail: '打开记忆卡片，查看或删除 Agent 记住的偏好' }
+    { name: 'compact', body: '/compact', detail: t('command.compact') },
+    { name: 'plan', body: '/plan ', detail: t('command.plan') },
+    { name: 'undo', body: '/undo', detail: t('command.undo') },
+    { name: 'clear', body: '/clear', detail: t('command.clear') },
+    { name: 'memory', body: '/memory', detail: t('command.memory') }
   ];
 
   // Memory notes in the conversation: what each action says before the remembered line
-  const MEMORY_ACTION_TEXT = { added: '已记住：', updated: '已更新记忆：', removed: '已忘记：' };
+  const MEMORY_ACTION_TEXT = { added: t('memory.added'), updated: t('memory.updated'), removed: t('memory.removed') };
 
   // Editor tools that change memory; the conversation shows their memory note instead of a tool row
   const MEMORY_TOOL = /(^|__)(remember|forget)$/;
@@ -163,36 +167,36 @@
   const COUNTDOWN_INTERVAL_MS = 1000;
 
   const STATUS_TEXT = {
-    notConnected: '未连接',
-    connecting: '正在连接',
-    connected: '已连接',
-    querying: '正在查询',
-    awaitingPermission: '等待本次授权',
-    awaitingPlanReview: '等待审批计划',
-    awaitingWrite: '等待写操作确认',
-    writing: '正在修改',
-    stopping: '正在停止',
-    stopped: '已停止',
-    failed: '查询失败',
-    lost: '连接已断开',
-    resuming: '正在恢复会话',
-    startBlocked: '运行时无法启动',
-    resumeFailed: '恢复会话失败'
+    notConnected: t('status.notConnected'),
+    connecting: t('status.connecting'),
+    connected: t('status.connected'),
+    querying: t('status.querying'),
+    awaitingPermission: t('status.awaitingPermission'),
+    awaitingPlanReview: t('status.awaitingPlanReview'),
+    awaitingWrite: t('status.awaitingWrite'),
+    writing: t('status.writing'),
+    stopping: t('status.stopping'),
+    stopped: t('status.stopped'),
+    failed: t('status.failed'),
+    lost: t('status.lost'),
+    resuming: t('status.resuming'),
+    startBlocked: t('status.startBlocked'),
+    resumeFailed: t('status.resumeFailed')
   };
 
   // The header shows a status chip only while something is in progress or wrong; a running turn shows through the mark instead
   const STATUS_CHIP = {
-    notConnected: { tone: '', text: '未连接' },
-    connecting: { tone: '', text: '正在连接', spin: true },
-    resuming: { tone: '', text: '正在恢复会话', spin: true },
-    stopping: { tone: '', text: '正在停止', spin: true },
-    awaitingWrite: { tone: 'warning', text: '等待确认' },
-    awaitingPermission: { tone: 'warning', text: '等待确认' },
-    awaitingPlanReview: { tone: 'warning', text: '等待审批计划' },
-    resumeFailed: { tone: 'warning', text: '恢复失败' },
-    failed: { tone: 'danger', text: '查询失败' },
-    lost: { tone: 'danger', text: '连接已断开' },
-    startBlocked: { tone: 'danger', text: '运行时无法启动' }
+    notConnected: { tone: '', text: t('status.notConnected') },
+    connecting: { tone: '', text: t('status.connecting'), spin: true },
+    resuming: { tone: '', text: t('status.resuming'), spin: true },
+    stopping: { tone: '', text: t('status.stopping'), spin: true },
+    awaitingWrite: { tone: 'warning', text: t('status.awaitingConfirm') },
+    awaitingPermission: { tone: 'warning', text: t('status.awaitingConfirm') },
+    awaitingPlanReview: { tone: 'warning', text: t('status.awaitingPlanReview') },
+    resumeFailed: { tone: 'warning', text: t('status.resumeFailedShort') },
+    failed: { tone: 'danger', text: t('status.failed') },
+    lost: { tone: 'danger', text: t('status.lost') },
+    startBlocked: { tone: 'danger', text: t('status.startBlocked') }
   };
 
   // Background sessions in the sidebar: running ones, ones waiting for a confirmation
@@ -200,11 +204,11 @@
   const CONFIRM_STATUSES = new Set(['awaitingPermission', 'awaitingPlanReview', 'awaitingWrite']);
 
   // Plan entry review outcomes (feature plan C2), as the chip on the plan in the conversation, with the chip's tone
-  const PLAN_STATUS_TEXT = { pending: '待审批', approved: '已批准', revised: '已退回', cancelled: '已取消' };
+  const PLAN_STATUS_TEXT = { pending: t('plan.pending'), approved: t('plan.approved'), revised: t('plan.revised'), cancelled: t('plan.cancelled') };
   const PLAN_STATUS_TONE = { pending: 'warning', approved: 'success', revised: 'warning', cancelled: '' };
 
   // Choice cards (ask_choices): the chip of each state
-  const CHOICE_STATUS_TEXT = { pending: '等待你的选择', answered: '已提交', unanswered: '未作答', cancelled: '已取消' };
+  const CHOICE_STATUS_TEXT = { pending: t('choice.pending'), answered: t('choice.answered'), unanswered: t('choice.unanswered'), cancelled: t('choice.cancelled') };
   const CHOICE_STATUS_TONE = { pending: 'warning', answered: 'success', unanswered: '', cancelled: '' };
 
   const state = {
@@ -376,12 +380,12 @@
     return pad(date.getHours()) + ':' + pad(date.getMinutes()) + (seconds ? ':' + pad(date.getSeconds()) : '');
   }
 
-  /** Today: 14:05; yesterday: 昨天 14:05; earlier: 10-21. */
+  /** Today: 14:05; yesterday: Yesterday 14:05; earlier: 10-21. */
   function sessionTime(time) {
     const today = localDay(Date.now());
     const day = localDay(time);
     if (day === today) return clock(time, false);
-    if (day === today - DAY_MS) return '昨天 ' + clock(time, false);
+    if (day === today - DAY_MS) return t('time.yesterdayAt', { time: clock(time, false) });
     const date = new Date(time);
     return pad(date.getMonth() + 1) + '-' + pad(date.getDate());
   }
@@ -495,12 +499,11 @@
   /** Time of a message as Claude shows it: just now, minutes or hours ago, then the date. */
   function relativeTime(time) {
     const elapsed = Date.now() - time;
-    if (elapsed < MINUTE_MS) return '刚刚';
-    if (elapsed < HOUR_MS) return Math.floor(elapsed / MINUTE_MS) + ' 分钟前';
-    if (elapsed < DAY_MS) return Math.floor(elapsed / HOUR_MS) + ' 小时前';
-    if (elapsed < WEEK_MS) return Math.floor(elapsed / DAY_MS) + ' 天前';
-    const date = new Date(time);
-    return (date.getMonth() + 1) + ' 月 ' + date.getDate() + ' 日';
+    if (elapsed < MINUTE_MS) return t('time.justNow');
+    if (elapsed < HOUR_MS) return t('time.minutesAgo', { count: Math.floor(elapsed / MINUTE_MS) });
+    if (elapsed < DAY_MS) return t('time.hoursAgo', { count: Math.floor(elapsed / HOUR_MS) });
+    if (elapsed < WEEK_MS) return t('time.daysAgo', { count: Math.floor(elapsed / DAY_MS) });
+    return i18n.formatMonthDay(time);
   }
 
   function fullTime(time) {
@@ -514,9 +517,9 @@
     const references = entry.references && entry.references.length ? '<div class="user-references">' + entry.references.map((line) => '<div>' + esc(line) + '</div>').join('') + '</div>' : '';
     const time = entry.time ? '<time class="user-time" data-time="' + entry.time + '" title="' + fullTime(entry.time) + '">' + relativeTime(entry.time) + '</time><span class="user-dot">·</span>' : '';
     const actions = '<div class="user-actions">' + time
-      + '<button class="btn btn-icon btn-sm user-action" data-user-copy="' + entry.id + '" title="复制" aria-label="复制">' + icons.svg('copy', 14) + '</button>'
-      + '<button class="btn btn-icon btn-sm user-action history" data-user-rewind="' + entry.id + '" aria-label="回到这里">' + icons.svg('rewind', 14) + '</button>'
-      + '<button class="btn btn-icon btn-sm user-action history" data-user-branch="' + entry.id + '" aria-label="从这里分支">' + icons.svg('branch', 14) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action" data-user-copy="' + entry.id + '" title="' + t('common.copy') + '" aria-label="' + t('common.copy') + '">' + icons.svg('copy', 14) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action history" data-user-rewind="' + entry.id + '" aria-label="' + t('user.rewind') + '">' + icons.svg('rewind', 14) + '</button>'
+      + '<button class="btn btn-icon btn-sm user-action history" data-user-branch="' + entry.id + '" aria-label="' + t('user.branch') + '">' + icons.svg('branch', 14) + '</button>'
       + '</div>';
     const images = entry.images && entry.images.length ? '<div class="user-images">' + entry.images.map((url) => '<img src="' + esc(url) + '" alt="" data-view-image="' + esc(url) + '">').join('') + '</div>' : '';
 
@@ -533,8 +536,8 @@
     for (const button of document.querySelectorAll('#messages .user-action.history')) {
       button.classList.toggle('locked', locked);
       button.setAttribute('aria-disabled', String(locked));
-      const what = button.dataset.userRewind ? '回到这里：撤销之后的编辑器修改，对话截到这条消息之前，原文放回输入框' : '从这里分支：新开一个会话，保留到这一轮为止的对话';
-      button.title = locked ? what + '（' + (state.editHistoryReason || '暂不可用') + '）' : what;
+      const what = button.dataset.userRewind ? t('user.rewindTitle') : t('user.branchTitle');
+      button.title = locked ? t('user.locked', { action: what, reason: state.editHistoryReason || t('user.unavailable') }) : what;
     }
   }
 
@@ -566,10 +569,10 @@
   function openRewind(entryId, opener) {
     const summary = rewindSummary(entryId);
     const lines = [];
-    lines.push(summary.undo ? '撤销其后的 ' + summary.undo + ' 次编辑器修改' : '其后没有需要撤销的编辑器修改');
-    if (summary.kept) lines.push(summary.kept + ' 次修改不可撤销，会保留在编辑器中');
-    lines.push('移除这条及之后的 ' + summary.messages + ' 条消息；原对话归档，可从“已归档”恢复');
-    lines.push('这条消息的原文放回输入框，可修改后重新发送');
+    lines.push(summary.undo ? t('rewind.undo', { count: summary.undo }) : t('rewind.nothingToUndo'));
+    if (summary.kept) lines.push(t('rewind.kept', { count: summary.kept }));
+    lines.push(t('rewind.messages', { count: summary.messages }));
+    lines.push(t('rewind.draft'));
     $('rewind-list').innerHTML = lines.map((line) => '<li>' + esc(line) + '</li>').join('');
     view.rewindEntryId = entryId;
     openDialog($('rewind-dialog'), opener);
@@ -585,8 +588,8 @@
     const expanded = expandedThoughts.has(entry.id);
     // A reply thinking right now shows only in the running line at the end of the conversation
     if (isThinking(entry) && !inProcess) return '';
-    const label = entry.thoughtSeconds >= 0 ? '已思考 ' + entry.thoughtSeconds + ' 秒' : '思考过程';
-    const row = eventHtml({ icon: icons.svg('thought', 16), label: label, caret: true, attributes: ' data-thought="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起思考过程"' });
+    const label = entry.thoughtSeconds >= 0 ? t('thought.seconds', { count: entry.thoughtSeconds }) : t('thought.label');
+    const row = eventHtml({ icon: icons.svg('thought', 16), label: label, caret: true, attributes: ' data-thought="' + entry.id + '" aria-expanded="' + expanded + '" title="' + t('thought.toggle') + '"' });
     return row + (expanded ? '<div class="event-body">' + esc(entry.thought) + '</div>' : '');
   }
 
@@ -611,10 +614,10 @@
     return '<span class="weave" style="--weave-delay:-' + (Date.now() % WEAVE_PERIOD_MS) + 'ms">' + markPlayer.markup() + '</span>';
   }
 
-  /** " · N 秒" since a time, kept current by refreshElapsed while it shows; empty without a time. */
+  /** Seconds, or minutes and seconds, since a time, kept current by refreshElapsed while it shows. */
   function elapsedText(since) {
     const seconds = Math.max(0, Math.round((Date.now() - since) / 1000));
-    return seconds < 60 ? seconds + ' 秒' : Math.floor(seconds / 60) + ' 分 ' + (seconds % 60) + ' 秒';
+    return seconds < 60 ? t('time.seconds', { count: seconds }) : t('time.minutesSeconds', { minutes: Math.floor(seconds / 60), seconds: seconds % 60 });
   }
 
   /** Time since a moment, kept current by refreshElapsed while it shows. */
@@ -631,7 +634,7 @@
   function renderToolStep(entry) {
     const failed = entry.toolStatus === TOOL_FAILED;
     const reason = failed && entry.failureReason ? '<div class="event-body is-danger">' + esc(entry.failureReason) + '</div>' : '';
-    return eventHtml({ icon: toolIcon(entry.toolStatus, 14), label: esc(entry.displayName), detail: esc(entry.summary || ''), tone: failed ? 'danger' : '', extraClass: 'run-step', attributes: ' data-tool="' + entry.id + '" title="在检视窗格查看参数与结果"' }) + reason;
+    return eventHtml({ icon: toolIcon(entry.toolStatus, 14), label: esc(entry.displayName), detail: esc(entry.summary || ''), tone: failed ? 'danger' : '', extraClass: 'run-step', attributes: ' data-tool="' + entry.id + '" title="' + t('tool.showInInspector') + '"' }) + reason;
   }
 
   /**
@@ -645,8 +648,9 @@
   function toolSummary(tools) {
     const kinds = new Map();
     for (const entry of tools) kinds.set(entry.displayName, (kinds.get(entry.displayName) || 0) + 1);
-    const parts = Array.from(kinds, ([name, count]) => esc(name) + (count > 1 ? ' ' + count + ' 次' : ''));
-    return parts.length > PROCESS_KINDS_SHOWN ? parts.slice(0, PROCESS_KINDS_SHOWN).join('，') + ' 等 ' + parts.length + ' 类' : parts.join('，');
+    const parts = Array.from(kinds, ([name, count]) => (count > 1 ? t('tool.kindCount', { name: esc(name), count: count }) : esc(name)));
+    const separator = t('tool.kindSeparator');
+    return parts.length > PROCESS_KINDS_SHOWN ? t('tool.kindsMore', { kinds: parts.slice(0, PROCESS_KINDS_SHOWN).join(separator), count: parts.length }) : parts.join(separator);
   }
 
   /** Whether the turn is writing its reply text now: it runs and its last entry is a reply with text. */
@@ -690,18 +694,18 @@
     if (live) {
       icon = weaveIcon();
       const start = turnStart();
-      let current = '处理中';
-      if (runningTool) current = '正在执行 <span class="ev-current">' + esc(runningTool.displayName) + '</span>';
-      else if (thoughts.some(isThinking)) current = '思考中';
-      else if (replyUnderWay()) current = '回复中';
+      let current = t('work.working');
+      if (runningTool) current = t('work.running', { tool: '<span class="ev-current">' + esc(runningTool.displayName) + '</span>' });
+      else if (thoughts.some(isThinking)) current = t('work.thinking');
+      else if (replyUnderWay()) current = t('work.replying');
       label = (start ? elapsedHtml(start) + '<span class="ev-sep"> · </span>' : '') + current;
     } else {
       if (failed) icon = toolIcon(TOOL_FAILED, 16);
       label = toolSummary(tools);
     }
-    if (failed) label += '<span class="ev-failed">（' + failed + ' 次失败）</span>';
+    if (failed) label += '<span class="ev-failed">' + t('work.failures', { count: failed }) + '</span>';
 
-    const row = eventHtml({ icon: icon, label: label, caret: true, attributes: ' data-run="' + first.id + '" aria-expanded="' + expanded + '" title="展开或收起处理过程"' });
+    const row = eventHtml({ icon: icon, label: label, caret: true, attributes: ' data-run="' + first.id + '" aria-expanded="' + expanded + '" title="' + t('work.toggle') + '"' });
     const textBelow = last.kind === 'assistant' && !!last.text;
     const steps = expanded ? '<div class="run-steps">' + entries.map((entry) => entry.kind === 'assistant' ? renderWorkReply(entry, entry === last && textBelow) : renderToolStep(entry)).join('') + '</div>' : '';
     return '<div class="tool process">' + row + steps + tools.map(toolImages).join('') + '</div>';
@@ -724,19 +728,19 @@
   }
 
   function renderPermission(entry) {
-    let label = '等待授权：' + esc(entry.displayName);
-    if (entry.answered) label = entry.allowed ? '已允许' + esc(entry.displayName) + '（仅这一次）' : '已拒绝' + esc(entry.displayName);
+    let label = t('permission.waiting', { tool: esc(entry.displayName) });
+    if (entry.answered) label = entry.allowed ? t('permission.allowed', { tool: esc(entry.displayName) }) : t('permission.rejected', { tool: esc(entry.displayName) });
     return eventHtml({ icon: icons.svg('shield', 16), label: label, tone: entry.answered ? '' : 'warning', wrap: true });
   }
 
   /** One object of a write: state, name, the change and why it failed; the change reads "Field current → planned". */
   function objectRow(object, status) {
     const states = {
-      completed: ['', 'check', '已完成'],
-      failed: ['failed', 'alert', '失败'],
-      notRun: ['skipped', 'partial', '未执行'],
-      rolledBack: ['skipped', 'undo', '已回滚'],
-      unknown: ['unknown', 'alert', '未知']
+      completed: ['', 'check', t('object.completed')],
+      failed: ['failed', 'alert', t('object.failed')],
+      notRun: ['skipped', 'partial', t('object.notRun')],
+      rolledBack: ['skipped', 'undo', t('object.rolledBack')],
+      unknown: ['unknown', 'alert', t('object.unknown')]
     };
     const [cls, icon, label] = states[status] || states.completed;
     const change = object.field ? esc(object.field) + ' ' + esc(object.current) + ' → ' + esc(object.planned) : '';
@@ -749,27 +753,27 @@
     const objects = entry.objects || [];
     const completed = objects.filter((object) => object.status === 'completed').length;
     let icon = icons.svg('circle-check', 16).replace('class="sg-icon"', 'class="sg-icon tone-success"');
-    let title = '已完成 · ' + completed + ' 个对象';
+    let title = t('write.completed', { count: completed });
     const rolledBack = objects.some((object) => object.status === 'rolledBack');
     if (entry.undone) {
       icon = icons.svg('undo', 16);
-      title = '已撤销本次修改';
+      title = t('write.undone');
     } else if (rolledBack) {
       icon = icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-danger"');
-      title = '失败，已全部回滚 · ' + objects.length + ' 个对象';
+      title = t('write.rolledBack', { count: objects.length });
     } else if (completed < objects.length) {
       icon = completed > 0 ? icons.svg('partial', 16).replace('class="sg-icon"', 'class="sg-icon tone-warning"') : icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-danger"');
-      title = completed > 0 ? '部分完成 · ' + completed + ' / ' + objects.length + ' 个对象' : '未完成 · 0 / ' + objects.length + ' 个对象';
+      title = completed > 0 ? t('write.partial', { done: completed, count: objects.length }) : t('write.notDone', { count: objects.length });
     }
 
-    const auto = entry.autoApproved && !entry.undone ? '<span class="chip" title="按当前模式没有弹确认卡，直接执行">自动执行</span>' : '';
+    const auto = entry.autoApproved && !entry.undone ? '<span class="chip" title="' + t('write.autoTitle') + '">' + t('write.auto') + '</span>' : '';
     const list = entry.undone ? '' : '<ul class="obj-list">' + objects.map((object) => objectRow(object, object.status)).join('') + '</ul>';
     let foot = '';
     if (entry.undoable && !entry.undone) {
-      const undoLabel = entry.canUndo ? '撤销本次修改' : '撤销不可用';
+      const undoLabel = entry.canUndo ? t('write.undo') : t('write.undoUnavailable');
       foot = '<div class="card-foot"><span class="hint">' + esc(entry.undoReason) + '</span><button class="btn btn-sm" data-undo-write="' + entry.id + '" ' + (entry.canUndo ? '' : 'disabled') + ' title="' + esc(entry.undoReason) + '">' + undoLabel + '</button></div>';
     } else if (!entry.undoable) {
-      foot = '<div class="card-foot"><span class="hint">此操作不可撤销</span></div>';
+      foot = '<div class="card-foot"><span class="hint">' + t('write.notUndoable') + '</span></div>';
     }
     return '<article class="card result"><div class="card-head">' + icon + '<span class="card-title' + (entry.undone ? ' is-quiet' : '') + '">' + title + '</span>' + auto + '</div><div class="card-desc">' + esc(entry.action) + '</div>' + list + foot + '</article>';
   }
@@ -778,9 +782,9 @@
   function renderWriteUnknown(entry) {
     const objects = entry.objects || [];
     const rows = objects.map((object) => objectRow(object, 'unknown')).join('');
-    const button = '<button class="btn btn-sm' + (entry.answered ? '' : ' btn-primary') + '" data-ack-write="' + entry.id + '" ' + (entry.answered ? 'disabled' : '') + '>' + (entry.answered ? '已核对' : '已核对，继续') + '</button>';
-    const hint = entry.answered ? '已核对' : '运行时在写入途中断开，不知道这些对象是否已修改，也不会自动重放。在关卡中核对后再继续；核对前不能发送新消息。';
-    return '<article class="card result"><div class="card-head">' + icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-warning"') + '<span class="card-title">结果未知 · ' + objects.length + ' 个对象</span></div>'
+    const button = '<button class="btn btn-sm' + (entry.answered ? '' : ' btn-primary') + '" data-ack-write="' + entry.id + '" ' + (entry.answered ? 'disabled' : '') + '>' + (entry.answered ? t('write.checked') : t('write.checkContinue')) + '</button>';
+    const hint = entry.answered ? t('write.checked') : t('write.unknownHint');
+    return '<article class="card result"><div class="card-head">' + icons.svg('alert', 16).replace('class="sg-icon"', 'class="sg-icon tone-warning"') + '<span class="card-title">' + t('write.unknown', { count: objects.length }) + '</span></div>'
       + '<div class="card-desc">' + esc(entry.action) + '</div><ul class="obj-list">' + rows + '</ul><div class="card-desc">' + hint + '</div><div class="card-foot">' + button + '</div></article>';
   }
 
@@ -790,8 +794,8 @@
     codeSources.set(entry.id, rendered.codes);
     const status = entry.planStatus || 'pending';
     const tone = PLAN_STATUS_TONE[status] ? ' chip-' + PLAN_STATUS_TONE[status] : '';
-    const feedback = status === 'revised' && entry.feedback ? '<div class="card-desc is-warning">退回意见：' + esc(entry.feedback) + '</div>' : '';
-    return '<article class="card plan-entry ' + esc(status) + '" data-entry="' + entry.id + '"' + (status === 'cancelled' ? ' style="opacity:.7"' : '') + '><div class="card-head">' + icons.svg('plan', 16).replace('class="sg-icon"', 'class="sg-icon tone-info"') + '<span class="card-title">计划</span><span class="chip' + tone + '">' + esc(PLAN_STATUS_TEXT[status] || status) + '</span></div>'
+    const feedback = status === 'revised' && entry.feedback ? '<div class="card-desc is-warning">' + t('plan.feedback', { text: esc(entry.feedback) }) + '</div>' : '';
+    return '<article class="card plan-entry ' + esc(status) + '" data-entry="' + entry.id + '"' + (status === 'cancelled' ? ' style="opacity:.7"' : '') + '><div class="card-head">' + icons.svg('plan', 16).replace('class="sg-icon"', 'class="sg-icon tone-info"') + '<span class="card-title">' + t('plan.title') + '</span><span class="chip' + tone + '">' + esc(PLAN_STATUS_TEXT[status] || status) + '</span></div>'
       + '<div class="markdown" style="font-size:.92em">' + rendered.html + '</div>' + feedback + '</article>';
   }
 
@@ -810,8 +814,8 @@
     let noteHtml = '';
     if (choice.itemNotes && live) {
       noteHtml = draft.open.includes(option.id) || note
-        ? '<textarea class="field choice-note" data-choice-note="' + esc(option.id) + '" rows="2" placeholder="对这一项的评语" aria-label="' + esc(option.title) + ' 的评语">' + esc(note) + '</textarea>'
-        : '<button class="btn btn-ghost btn-sm choice-note-open" data-choice-note-open="' + esc(option.id) + '">' + icons.svg('edit', 12) + '写评语</button>';
+        ? '<textarea class="field choice-note" data-choice-note="' + esc(option.id) + '" rows="2" placeholder="' + t('choice.notePlaceholder') + '" aria-label="' + t('choice.noteLabel', { option: esc(option.title) }) + '">' + esc(note) + '</textarea>'
+        : '<button class="btn btn-ghost btn-sm choice-note-open" data-choice-note-open="' + esc(option.id) + '">' + icons.svg('edit', 12) + t('choice.writeNote') + '</button>';
     } else if (note) {
       noteHtml = '<div class="choice-note-text">' + esc(note) + '</div>';
     }
@@ -837,12 +841,12 @@
     const options = '<div class="choice-grid">' + (choice.options || []).map((option) => choiceOptionHtml(choice, option, draft, live)).join('') + '</div>';
 
     let overall = '';
-    if (choice.overallNote && live) overall = '<textarea class="field choice-overall" data-choice-overall="' + entry.id + '" rows="2" placeholder="整体意见（可不填）" aria-label="整体意见">' + esc(draft.overall) + '</textarea>';
-    else if (draft.overall) overall = '<div class="choice-note-text">整体意见：' + esc(draft.overall) + '</div>';
+    if (choice.overallNote && live) overall = '<textarea class="field choice-overall" data-choice-overall="' + entry.id + '" rows="2" placeholder="' + t('choice.overallPlaceholder') + '" aria-label="' + t('choice.overallLabel') + '">' + esc(draft.overall) + '</textarea>';
+    else if (draft.overall) overall = '<div class="choice-note-text">' + t('choice.overallText', { text: esc(draft.overall) }) + '</div>';
 
     const error = draft.error ? '<div class="card-desc is-danger">' + esc(draft.error) + '</div>' : '';
-    const hint = (choice.multiSelect ? '可多选' : '选一项') + ' · 双击图片放大' + (choice.itemNotes || choice.overallNote ? ' · Ctrl+Enter 提交' : '');
-    const foot = live ? '<div class="card-foot"><span class="hint">' + hint + '</span><button class="btn btn-primary" data-choice-submit="' + entry.id + '"' + (draft.submitting ? ' disabled' : '') + '>' + (draft.submitting ? '提交中…' : '提交') + '</button></div>' : '';
+    const hint = (choice.multiSelect ? t('choice.multiSelect') : t('choice.singleSelect')) + t('choice.zoomHint') + (choice.itemNotes || choice.overallNote ? t('choice.submitHint') : '');
+    const foot = live ? '<div class="card-foot"><span class="hint">' + hint + '</span><button class="btn btn-primary" data-choice-submit="' + entry.id + '"' + (draft.submitting ? ' disabled' : '') + '>' + (draft.submitting ? t('choice.submitting') : t('choice.submit')) + '</button></div>' : '';
     return '<article class="card choice-card ' + esc(status) + '" data-entry="' + entry.id + '" data-choice="' + entry.id + '">' + head + options + overall + error + foot + '</article>';
   }
 
@@ -875,7 +879,7 @@
       if (draft.notes[id].trim()) notes[id] = draft.notes[id].trim();
     }
     if (!draft.selected.length && !Object.keys(notes).length && !draft.overall.trim()) {
-      draft.error = '先选择一项或写下意见再提交';
+      draft.error = t('choice.empty');
       redrawChoice(entryId);
       return;
     }
@@ -890,27 +894,27 @@
   function onChoiceRejected(result) {
     const draft = choiceDraft(result.id);
     draft.submitting = false;
-    draft.error = result.reason || '现在不能提交';
+    draft.error = result.reason || t('choice.cannotSubmit');
     redrawChoice(result.id);
   }
 
   /** A divider row in the conversation (feature plan C7): compacting now, how much it took away, or why it failed. */
   function renderCompaction(entry) {
-    const how = entry.manual ? '手动' : '自动';
+    const manual = !!entry.manual;
     let text;
-    if (entry.compactionStatus === 'running') text = icons.svg('loader', 14) + '正在' + how + '压缩上下文…';
-    else if (entry.compactionStatus === 'failed') text = icons.svg('alert', 14) + how + '压缩失败：' + esc(entry.text);
-    else text = icons.svg('compress', 14) + '上下文已' + how + '压缩' + (entry.shadowedTokens > 0 ? ' · 约 ' + entry.shadowedTokens.toLocaleString('en-US') + ' tokens 转为摘要' : '');
+    if (entry.compactionStatus === 'running') text = icons.svg('loader', 14) + (manual ? t('compaction.runningManual') : t('compaction.runningAuto'));
+    else if (entry.compactionStatus === 'failed') text = icons.svg('alert', 14) + (manual ? t('compaction.failedManual', { error: esc(entry.text) }) : t('compaction.failedAuto', { error: esc(entry.text) }));
+    else text = icons.svg('compress', 14) + (manual ? t('compaction.doneManual') : t('compaction.doneAuto')) + (entry.shadowedTokens > 0 ? t('compaction.shadowed', { tokens: i18n.formatNumber(entry.shadowedTokens) }) : '');
     const tone = entry.compactionStatus === 'failed' ? ' is-danger' : entry.compactionStatus === 'running' ? ' running' : '';
-    return '<div class="event-divider' + tone + '" title="较早的对话已由模型总结为摘要，摘要之后的内容原样保留"><span>' + text + '</span></div>';
+    return '<div class="event-divider' + tone + '" title="' + t('compaction.title') + '"><span>' + text + '</span></div>';
   }
 
   /** One grey line: how many memories this conversation started with, or a memory the agent saved, changed or dropped (undoable). */
   function renderMemoryNote(entry) {
     if (entry.memoryAction === 'read') {
-      return eventHtml({ icon: icons.svg('memory', 16), label: '已读取 ' + esc(entry.text) + ' 条记忆', attributes: ' data-show-memory title="在检视窗格查看全部记忆"' });
+      return eventHtml({ icon: icons.svg('memory', 16), label: t('memory.read', { count: Number(entry.text) || 0 }), attributes: ' data-show-memory title="' + t('memory.showAll') + '"' });
     }
-    const after = entry.undone ? '<span class="ev-trail">已撤销</span>' : '<button class="btn btn-link" data-undo-memory="' + entry.id + '">撤销</button>';
+    const after = entry.undone ? '<span class="ev-trail">' + t('memory.undone') + '</span>' : '<button class="btn btn-link" data-undo-memory="' + entry.id + '">' + t('memory.undo') + '</button>';
     return eventHtml({ icon: icons.svg('memory', 16), label: (MEMORY_ACTION_TEXT[entry.memoryAction] || '') + esc(entry.text), wrap: true, extraClass: entry.undone ? 'is-undone' : '', after: after });
   }
 
@@ -1088,15 +1092,15 @@
 
     const start = turnStart();
     const lastEntry = state.entries.get(state.order[state.order.length - 1]);
-    let current = '处理中';
-    if (lastEntry && lastEntry.kind === 'assistant' && isThinking(lastEntry)) current = '思考中';
-    else if (replyUnderWay()) current = '回复中';
+    let current = t('work.working');
+    if (lastEntry && lastEntry.kind === 'assistant' && isThinking(lastEntry)) current = t('work.thinking');
+    else if (replyUnderWay()) current = t('work.replying');
     line.innerHTML = '<div class="event">' + weaveIcon() + '<span class="ev-label">' + (start ? elapsedHtml(start) + '<span class="ev-sep"> · </span>' : '') + current + '</span></div>';
   }
 
   function renderTitle() {
-    $('session-title').textContent = state.currentTitle || '新会话';
-    $('session-title').title = state.currentTitle || '新会话';
+    $('session-title').textContent = state.currentTitle || t('session.untitled');
+    $('session-title').title = state.currentTitle || t('session.untitled');
   }
 
   // ---------- Todo list (feature plan C1) ----------
@@ -1118,9 +1122,9 @@
     const done = todos.filter((todo) => todo.status === 'completed').length;
     const folded = view.todosFolded !== null ? view.todosFolded : (done === todos.length && !state.prompting) || currentDecision() !== null;
     const current = todos.find((todo) => todo.status === 'in_progress');
-    const summary = current ? esc(current.content) : done === todos.length ? '全部完成' : '';
+    const summary = current ? esc(current.content) : done === todos.length ? t('todos.allDone') : '';
     const header = '<button class="stack-head" data-todos-toggle aria-expanded="' + !folded + '">' + icons.svg('caret', 14)
-      + '<span class="t num">任务 ' + done + '/' + todos.length + '</span><span class="s">' + summary + '</span></button>';
+      + '<span class="t num">' + t('todos.progress', { done: done, total: todos.length }) + '</span><span class="s">' + summary + '</span></button>';
     const rows = folded ? '' : '<ol class="stack-list">' + todos.map((todo) => {
       const icon = todo.status === 'completed' ? icons.svg('check', 13) : todo.status === 'in_progress' ? icons.svg('loader', 13) : '<span class="todo-ring"></span>';
       return '<li class="todo ' + esc(todo.status) + '"><span class="todo-mark">' + icon + '</span><span class="todo-text">' + esc(todo.content) + '</span></li>';
@@ -1141,15 +1145,15 @@
     const paused = state.queue.paused;
     const canContinue = !state.busy && !state.runtimeLost;
     const note = paused
-      ? '<div class="queue-note is-paused">队列已暂停<button class="btn btn-sm" id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? '按顺序发送剩余消息' : '当前轮次结束或重新连接后才能继续') + '">继续发送</button></div>'
+      ? '<div class="queue-note is-paused">' + t('queue.paused') + '<button class="btn btn-sm" id="resume-queue" ' + (canContinue ? '' : 'disabled') + ' title="' + (canContinue ? t('queue.resumeTitle') : t('queue.resumeBlocked')) + '">' + t('queue.resume') + '</button></div>'
       : '';
     queue.innerHTML = items.map((item) => {
-      const refs = item.references && item.references.length ? '<div class="user-references">' + item.references.length + ' 个引用</div>' : '';
+      const refs = item.references && item.references.length ? '<div class="user-references">' + t('queue.references', { count: item.references.length }) + '</div>' : '';
       const rendered = markdown.render(item.text || '');
       return '<div class="user-turn is-queued"><article class="message user"><div class="markdown">' + rendered.html + '</div>' + refs + '</article>'
-        + '<div class="user-actions"><span class="queued-mark">' + (paused ? '已暂停' : '本轮结束后发送') + '</span><span class="user-dot">·</span>'
-        + '<button class="btn btn-sm btn-ghost" data-take-queued="' + item.id + '" title="取回为草稿；当前草稿会放到这一条的位置">取回</button>'
-        + '<button class="btn btn-icon btn-sm" data-remove-queued="' + item.id + '" title="移除" aria-label="移除这条待发送的消息">' + icons.svg('close', 14) + '</button></div></div>';
+        + '<div class="user-actions"><span class="queued-mark">' + (paused ? t('queue.itemPaused') : t('queue.itemWaiting')) + '</span><span class="user-dot">·</span>'
+        + '<button class="btn btn-sm btn-ghost" data-take-queued="' + item.id + '" title="' + t('queue.takeTitle') + '">' + t('queue.take') + '</button>'
+        + '<button class="btn btn-icon btn-sm" data-remove-queued="' + item.id + '" title="' + t('common.remove') + '" aria-label="' + t('queue.remove') + '">' + icons.svg('close', 14) + '</button></div></div>';
     }).join('') + note;
     if (isAtEnd()) scrollToEnd();
   }
@@ -1232,13 +1236,13 @@
     const code = (text) => '<code>' + esc(text) + '</code>';
     switch (issue.kind) {
       case 'missingKey':
-        return { tone: '', icon: 'key', title: '还没有可用的模型连接', body: '在偏好设置 › Shuttlegent › Models 填写地址和密钥，显示 Connected 后点重试。', settings: true };
+        return { tone: '', icon: 'key', title: t('start.missingKeyTitle'), body: t('start.missingKeyBody'), settings: true };
       case 'authFailed':
-        return { tone: 'danger', icon: 'key', title: esc(issue.provider) + ' 拒绝了当前密钥', body: '密钥可能有误或已失效。在偏好设置 › Shuttlegent › Models 改正后重试，运行时会重新启动并读取新设置。', settings: true };
+        return { tone: 'danger', icon: 'key', title: t('start.authFailedTitle', { provider: esc(issue.provider) }), body: t('start.authFailedBody'), settings: true };
       case 'missingRuntime':
-        return { tone: 'danger', icon: 'alert', title: '没有找到运行时', body: '期望位置 ' + code(issue.runtimePath) + '。插件包不完整：从 <a href="' + esc(issue.releasesUrl) + '">发布页</a> 重新下载插件包解压覆盖，或在偏好设置里指定运行时路径。', folder: true };
+        return { tone: 'danger', icon: 'alert', title: t('start.missingRuntimeTitle'), body: t('start.missingRuntimeBody', { path: code(issue.runtimePath), releases: '<a href="' + esc(issue.releasesUrl) + '">' + t('start.releasesPage') + '</a>' }), folder: true };
       default:
-        return { tone: 'danger', icon: 'alert', title: '运行时没能启动', body: issue.detail ? code(issue.detail) : '查看 Output Log 中的 LogShuttlegent 了解原因。', folder: false };
+        return { tone: 'danger', icon: 'alert', title: t('start.failedTitle'), body: issue.detail ? code(issue.detail) : t('start.failedBody'), folder: false };
     }
   }
 
@@ -1255,7 +1259,7 @@
     const covered = state.modelSetup && state.startIssue && state.startIssue.kind === 'missingKey';
     if (state.startIssue && !covered) {
       const guide = startGuide(state.startIssue);
-      const actions = (guide.settings ? '<button class="btn btn-sm" id="open-guide-settings">打开设置</button>' : '') + (guide.folder ? '<button class="btn btn-sm" id="open-plugin-folder">打开插件目录</button>' : '') + '<button class="btn btn-sm btn-primary" id="retry-start">重试</button>';
+      const actions = (guide.settings ? '<button class="btn btn-sm" id="open-guide-settings">' + t('banner.openSettings') + '</button>' : '') + (guide.folder ? '<button class="btn btn-sm" id="open-plugin-folder">' + t('banner.openPluginFolder') + '</button>' : '') + '<button class="btn btn-sm btn-primary" id="retry-start">' + t('common.retry') + '</button>';
       banner.innerHTML = calloutHtml(guide.tone, guide.icon, guide.title, guide.body, actions);
       banner.hidden = false;
       if (guide.settings) $('open-guide-settings').addEventListener('click', () => call('opensettings'));
@@ -1264,13 +1268,13 @@
       return;
     }
     if (state.runtimeLost) {
-      banner.innerHTML = calloutHtml('', 'unplug', '连接已中断', '草稿和待发送队列都保留着。', '<button class="btn btn-sm" id="reconnect">重新连接</button>');
+      banner.innerHTML = calloutHtml('', 'unplug', t('banner.lostTitle'), t('banner.kept'), '<button class="btn btn-sm" id="reconnect">' + t('banner.reconnect') + '</button>');
       banner.hidden = false;
       $('reconnect').addEventListener('click', () => call('reconnect'));
       return;
     }
     if (state.resumeFailed && state.status !== 'resuming') {
-      banner.innerHTML = calloutHtml('', 'alert', '没能恢复这个会话的上下文', '本地记录还在。新建会话不会带上之前的对话，当前草稿会带过去。', '<button class="btn btn-sm" id="resume-new">新建会话</button><button class="btn btn-sm" id="retry-resume">重试恢复</button>');
+      banner.innerHTML = calloutHtml('', 'alert', t('banner.resumeFailedTitle'), t('banner.resumeFailedBody'), '<button class="btn btn-sm" id="resume-new">' + t('banner.newSession') + '</button><button class="btn btn-sm" id="retry-resume">' + t('banner.retryResume') + '</button>');
       banner.hidden = false;
       $('retry-resume').addEventListener('click', () => call('retryresume'));
 
@@ -1279,7 +1283,7 @@
       return;
     }
     if (state.status === 'failed') {
-      banner.innerHTML = calloutHtml('danger', 'alert', '查询失败，没有执行任何修改', '草稿和待发送队列都保留着。', state.canRetry ? '<button class="btn btn-sm" id="retry">重试</button>' : '');
+      banner.innerHTML = calloutHtml('danger', 'alert', t('banner.failedTitle'), t('banner.kept'), state.canRetry ? '<button class="btn btn-sm" id="retry">' + t('common.retry') + '</button>' : '');
       banner.hidden = false;
       if (state.canRetry) $('retry').addEventListener('click', () => call('retry'));
       return;
@@ -1303,15 +1307,15 @@
 
     if (!slot.firstChild) {
       slot.innerHTML = '<section class="card setup-card" aria-labelledby="setup-title">'
-        + '<div class="setup-head">' + icons.svg('key', 16) + '<h2 class="setup-title" id="setup-title">连接一个模型</h2></div>'
-        + '<p class="setup-lead">还没有可用的模型。填好后会自动检测，连通就能开始对话。</p>'
-        + '<div class="setup-kinds" role="radiogroup" aria-label="模型服务">'
+        + '<div class="setup-head">' + icons.svg('key', 16) + '<h2 class="setup-title" id="setup-title">' + t('setup.title') + '</h2></div>'
+        + '<p class="setup-lead">' + t('setup.lead') + '</p>'
+        + '<div class="setup-kinds" role="radiogroup" aria-label="' + t('setup.kinds') + '">'
         + '<button role="radio" aria-checked="true" data-setup-kind="builtin">DeepSeek</button>'
-        + '<button role="radio" aria-checked="false" data-setup-kind="custom">其他服务</button></div>'
-        + '<label class="setup-field" id="setup-url-row" hidden><span>地址</span><input class="field" id="setup-url" placeholder="https://…/v1" spellcheck="false" autocomplete="off"></label>'
-        + '<label class="setup-field"><span>密钥</span><input class="field" id="setup-key" type="password" spellcheck="false" autocomplete="off"></label>'
-        + '<div class="setup-foot"><span class="setup-status" id="setup-status" role="status"></span><button class="btn btn-primary btn-sm" id="setup-connect">连接</button></div>'
-        + '<button class="btn btn-link setup-settings" id="setup-settings">在偏好设置里管理全部连接</button>'
+        + '<button role="radio" aria-checked="false" data-setup-kind="custom">' + t('setup.custom') + '</button></div>'
+        + '<label class="setup-field" id="setup-url-row" hidden><span>' + t('setup.url') + '</span><input class="field" id="setup-url" placeholder="https://…/v1" spellcheck="false" autocomplete="off"></label>'
+        + '<label class="setup-field"><span>' + t('setup.key') + '</span><input class="field" id="setup-key" type="password" spellcheck="false" autocomplete="off"></label>'
+        + '<div class="setup-foot"><span class="setup-status" id="setup-status" role="status"></span><button class="btn btn-primary btn-sm" id="setup-connect">' + t('setup.connect') + '</button></div>'
+        + '<button class="btn btn-link setup-settings" id="setup-settings">' + t('setup.manage') + '</button>'
         + '</section>';
 
       for (const kind of slot.querySelectorAll('[data-setup-kind]')) {
@@ -1328,7 +1332,7 @@
         const url = $('setup-url').value.trim();
         const key = $('setup-key').value.trim();
         if (!key || (!builtin && !url)) {
-          view.setupNote = builtin ? '先填写密钥' : '先填写地址和密钥';
+          view.setupNote = builtin ? t('setup.needKey') : t('setup.needUrlKey');
           renderSetup();
           return;
         }
@@ -1352,9 +1356,9 @@
     const testing = setup.state === 'testing';
     let text = view.setupNote || '';
     let danger = !!view.setupNote;
-    if (!text && testing) text = '检测中…';
+    if (!text && testing) text = t('setup.testing');
     if (!text && setup.state === 'failed') {
-      text = (setup.failedBuiltin ? 'DeepSeek' : setup.failedUrl) + ' 没有连通，检查地址和密钥后再试；详情见 Output Log。';
+      text = t('setup.failed', { target: setup.failedBuiltin ? 'DeepSeek' : setup.failedUrl });
       danger = true;
     }
     status.textContent = text;
@@ -1404,12 +1408,12 @@
     // As in Claude the send button shows only while there is something to send; it greys out when sending has to wait
     send.hidden = empty;
     send.disabled = empty || invalid || imagesBlocked || draftState.submitting || state.runtimeLost || !!state.startIssue || state.needsVerify;
-    if (invalid) send.title = '有引用已失效：移除或重新添加后再发送';
-    else if (imagesBlocked) send.title = state.attachImagesReason || '现在不能发送图片';
-    else if (state.startIssue) send.title = '运行时无法启动：按上方提示处理后重试';
-    else if (state.needsVerify) send.title = '有写入结果未知：核对对象并点“已核对”后再发送';
-    else if (state.runtimeLost) send.title = '连接已断开：重新连接后再发送';
-    else send.title = state.busy ? '加入队列 · Enter' : '发送 · Enter';
+    if (invalid) send.title = t('composer.invalidReference');
+    else if (imagesBlocked) send.title = state.attachImagesReason || t('composer.imagesBlocked');
+    else if (state.startIssue) send.title = t('composer.startBlocked');
+    else if (state.needsVerify) send.title = t('composer.needsVerify');
+    else if (state.runtimeLost) send.title = t('composer.lost');
+    else send.title = state.busy ? t('composer.queueTitle') : t('composer.sendTitle');
   }
 
   function renderComposer() {
@@ -1417,23 +1421,23 @@
     const stop = $('stop');
 
     // While a turn runs the same button queues the message; stop stays next to it
-    send.setAttribute('aria-label', state.busy ? '加入队列' : '发送消息');
+    send.setAttribute('aria-label', state.busy ? t('composer.queue') : t('composer.send'));
     updateSendButton();
 
     // The input's placeholder says why sending waits; there is no hint line under the composer
     let placeholder = DRAFT_PLACEHOLDER;
-    if (hasPendingChoice()) placeholder = '在上方卡片中作答，或直接输入（卡片将标为未作答）';
-    if (state.busy) placeholder = '回车加入队列，本轮结束后发送';
-    if (state.runtimeLost) placeholder = '重新连接后再发送';
-    if (state.needsVerify) placeholder = '核对写入结果后再发送';
-    if (state.startIssue) placeholder = '运行时启动后再发送';
+    if (hasPendingChoice()) placeholder = t('composer.placeholderChoice');
+    if (state.busy) placeholder = t('composer.placeholderBusy');
+    if (state.runtimeLost) placeholder = t('composer.placeholderLost');
+    if (state.needsVerify) placeholder = t('composer.placeholderVerify');
+    if (state.startIssue) placeholder = t('composer.placeholderStart');
     draftInput.placeholder = placeholder;
     stop.hidden = !state.prompting;
     stop.disabled = state.stopping;
     stop.classList.toggle('is-stopping', state.stopping);
     stop.innerHTML = state.stopping ? icons.svg('loader', 16) : icons.svg('stop', 24);
-    stop.title = state.stopping ? '正在停止，等待当前调用结束' : '停止本轮；已执行的修改不会回滚';
-    stop.setAttribute('aria-label', state.stopping ? '停止中' : '停止');
+    stop.title = state.stopping ? t('composer.stoppingTitle') : t('composer.stopTitle');
+    stop.setAttribute('aria-label', state.stopping ? t('composer.stopping') : t('composer.stop'));
     renderMetaTriggers();
     refreshOpenPicker();
     renderImageButton();
@@ -1451,20 +1455,20 @@
     const agentTrigger = $('agent-trigger');
     agentTrigger.hidden = agents.choices.length === 0;
     agentTrigger.disabled = agents.locked || state.prompting;
-    agentTrigger.title = agents.locked ? '会话历史由该 Agent 记录，换 Agent 请新建会话' : 'Agent：选中时带出它的默认模型';
+    agentTrigger.title = agents.locked ? t('meta.agentLocked') : t('meta.agentTitle');
 
     const models = configChoices('model');
-    $('model-name').textContent = shortModelName(choiceName('model')) || '模型';
+    $('model-name').textContent = shortModelName(choiceName('model')) || t('menu.model');
     $('effort-name').textContent = currentEffortName();
     const modelTrigger = $('model-trigger');
     modelTrigger.disabled = models.choices.length === 0 || state.prompting;
-    modelTrigger.title = state.prompting ? '本轮结束后再切换模型或推理强度' : '模型与推理强度';
+    modelTrigger.title = state.prompting ? t('meta.modelLocked') : t('meta.modelTitle');
 
     const mode = currentMode();
     const info = MODES.find((item) => item.value === mode);
     const modeTrigger = $('mode-trigger');
     modeTrigger.innerHTML = '<span>' + info.label + '</span>';
-    modeTrigger.title = '模式：' + info.detail;
+    modeTrigger.title = t('meta.modeTitle', { detail: info.detail });
     for (const item of MODES) {
       $('composer').classList.toggle('mode-' + item.value, item.value === mode);
       modeTrigger.classList.toggle('mode-' + item.value, item.value === mode);
@@ -1485,9 +1489,9 @@
   function modelMenuHtml() {
     const models = configChoices('model');
     const efforts = configChoices('reasoning_effort');
-    let html = '<div class="menu-label">模型</div>' + models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
+    let html = '<div class="menu-label">' + t('menu.model') + '</div>' + models.choices.map((choice) => pickerItemHtml(' data-pick-model="' + esc(choice.value) + '"', shortModelName(choice.name), '', choice.value === models.current, false)).join('');
     if (efforts.choices.length) {
-      html += '<div class="menu-sep"></div><button class="menu-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span class="menu-text">推理强度</span><span class="menu-trail">' + esc(currentEffortName()) + icons.svg('chevron', 14) + '</span></button>';
+      html += '<div class="menu-sep"></div><button class="menu-item" id="effort-row" role="menuitem" aria-haspopup="menu" aria-expanded="false"><span class="menu-text">' + t('menu.effort') + '</span><span class="menu-trail">' + esc(currentEffortName()) + icons.svg('chevron', 14) + '</span></button>';
     }
     return html;
   }
@@ -1499,7 +1503,7 @@
 
   function modeMenuHtml() {
     const mode = currentMode();
-    return '<div class="menu-label">模式</div>' + MODES.map((item) => {
+    return '<div class="menu-label">' + t('menu.mode') + '</div>' + MODES.map((item) => {
       const disabled = item.value === 'plan' && !state.canSetPlanMode && !state.planMode;
       return pickerItemHtml(' data-pick-mode="' + item.value + '"' + (disabled && state.planModeReason ? ' title="' + esc(state.planModeReason) + '"' : ''), item.label, item.detail, item.value === mode, disabled);
     }).join('');
@@ -1711,7 +1715,7 @@
     if (mode === currentMode()) return;
     if (mode === 'plan') {
       if (state.canSetPlanMode) call('setplanmode', true);
-      else showCommandNote(state.planModeReason || '现在不能切换到计划模式');
+      else showCommandNote(state.planModeReason || t('note.cannotEnterPlan'));
       return;
     }
     call('setwritemode', mode);
@@ -1736,37 +1740,37 @@
   function writeCardHtml(request) {
     const plannedClass = request.destructive ? 'planned is-danger' : 'planned';
     const rows = request.objects.map((object) => '<tr><td title="' + esc(object.path) + '">' + esc(object.name) + '</td><td title="' + esc(object.field) + '">' + esc(object.field) + '</td><td title="' + esc(object.current) + '">' + esc(object.current) + '</td><td class="' + plannedClass + '" title="' + esc(object.planned) + '">' + esc(object.planned) + '</td></tr>').join('');
-    const chip = request.undoable ? '<span class="chip chip-success">可撤销</span>' : '<span class="chip chip-danger">不可撤销</span>';
+    const chip = request.undoable ? '<span class="chip chip-success">' + t('decision.undoable') + '</span>' : '<span class="chip chip-danger">' + t('decision.notUndoable') + '</span>';
     const level = request.level ? esc(request.level) + ' · ' : '';
     // Deletes, moves and renames are called out so they are not approved in passing
-    const destructive = request.destructive ? '<div class="note-strip">' + icons.svg('alert', 14) + '<span>删除、移动、改名可能无法恢复，确认前逐个核对下方对象。</span></div>' : '';
+    const destructive = request.destructive ? '<div class="note-strip">' + icons.svg('alert', 14) + '<span>' + t('decision.destructive') + '</span></div>' : '';
     return decisionHead(request.destructive ? 'trash' : 'edit', request.destructive ? 'danger' : '', esc(request.action), chip)
       + destructive
-      + '<div class="card-desc">' + level + request.objects.length + ' 个对象 · <span class="mono">' + esc(request.tool) + '</span></div>'
-      + '<div class="mini-table"><table><thead><tr><th>对象</th><th>字段</th><th>当前</th><th>计划</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-      + '<button class="disclosure" id="decision-raw-toggle" aria-expanded="false">' + icons.svg('caret', 14) + '原始参数</button><pre class="pre" id="decision-raw" hidden>' + esc(prettyRaw(request.raw)) + '</pre>'
-      + '<div class="card-foot"><span class="hint num" title="对象、关卡或参数变化后需要重新确认">仅确认这一次<span id="decision-countdown"></span></span><button class="btn" id="decision-reject">取消</button><button class="btn ' + (request.destructive ? 'btn-danger' : 'btn-primary') + '" id="decision-allow">确认执行</button></div>';
+      + '<div class="card-desc">' + level + t('decision.objects', { count: request.objects.length }) + ' · <span class="mono">' + esc(request.tool) + '</span></div>'
+      + '<div class="mini-table"><table><thead><tr><th>' + t('decision.object') + '</th><th>' + t('decision.field') + '</th><th>' + t('decision.current') + '</th><th>' + t('decision.planned') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<button class="disclosure" id="decision-raw-toggle" aria-expanded="false">' + icons.svg('caret', 14) + t('decision.raw') + '</button><pre class="pre" id="decision-raw" hidden>' + esc(prettyRaw(request.raw)) + '</pre>'
+      + '<div class="card-foot"><span class="hint num" title="' + t('decision.onceTitle') + '">' + t('decision.once') + '<span id="decision-countdown"></span></span><button class="btn" id="decision-reject">' + t('common.cancel') + '</button><button class="btn ' + (request.destructive ? 'btn-danger' : 'btn-primary') + '" id="decision-allow">' + t('decision.confirm') + '</button></div>';
   }
 
   function permissionCardHtml(request) {
     const lines = [];
     if (request.target) lines.push('<span class="mono">' + esc(request.target) + '</span>');
-    if (request.content) lines.push('内容：' + esc(request.content));
-    if (request.detail) lines.push('说明：' + esc(request.detail));
-    return decisionHead('shield', 'warning', '运行时请求权限：' + esc(request.displayName), '<span class="chip chip-danger">不可撤销</span>')
+    if (request.content) lines.push(t('decision.content', { text: esc(request.content) }));
+    if (request.detail) lines.push(t('decision.detail', { text: esc(request.detail) }));
+    return decisionHead('shield', 'warning', t('decision.permissionTitle', { tool: esc(request.displayName) }), '<span class="chip chip-danger">' + t('decision.notUndoable') + '</span>')
       + (lines.length ? '<div class="card-desc">' + lines.join('<br>') + '</div>' : '')
-      + '<div class="card-foot"><span class="hint" title="拒绝后保留任务记录">只允许这一次，后续请求仍会询问</span><button class="btn" id="decision-reject">拒绝</button><button class="btn btn-primary" id="decision-allow">允许本次</button></div>';
+      + '<div class="card-foot"><span class="hint" title="' + t('decision.rejectTitle') + '">' + t('decision.allowOnceHint') + '</span><button class="btn" id="decision-reject">' + t('decision.reject') + '</button><button class="btn btn-primary" id="decision-allow">' + t('decision.allowOnce') + '</button></div>';
   }
 
   /** Question the agent asked (ask_user): the options as numbered buttons, an own answer when allowed, skip. */
   function questionCardHtml(request) {
     const options = request.options.map((option, index) => '<button class="option" data-question-option="' + index + '"><kbd class="kbd">' + (index + 1) + '</kbd>' + esc(option) + '</button>').join('');
     const other = request.allowOther
-      ? '<div class="option-other"><input class="field" id="question-other" placeholder="其他：写下你的回答" aria-label="其他回答" autocomplete="off"><button class="btn" id="question-other-send">回答</button></div>'
+      ? '<div class="option-other"><input class="field" id="question-other" placeholder="' + t('decision.otherPlaceholder') + '" aria-label="' + t('decision.otherLabel') + '" autocomplete="off"><button class="btn" id="question-other-send">' + t('decision.answer') + '</button></div>'
       : '';
     return decisionHead('question', 'info', esc(request.question), '')
       + '<div class="option-list">' + options + other + '</div>'
-      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">跳过</button><span class="hint num">按数字键选择 · Esc 跳过<span id="decision-countdown"></span></span></div>';
+      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">' + t('decision.skip') + '</button><span class="hint num">' + t('decision.questionHint') + '<span id="decision-countdown"></span></span></div>';
   }
 
   /** The request the card shows: an editor write first, then a runtime permission, then a question; null when nothing waits. */
@@ -1781,11 +1785,11 @@
   /** Plan the agent presented in plan mode: the plan itself, optional feedback, send back or approve. It waits without a time limit. */
   function planCardHtml(request) {
     const rendered = markdown.render(request.plan || '');
-    return decisionHead('plan', 'info', '计划待审批', '<span class="chip chip-info">计划模式</span>')
+    return decisionHead('plan', 'info', t('decision.planTitle'), '<span class="chip chip-info">' + t('decision.planMode') + '</span>')
       + '<div class="plan-box markdown">' + rendered.html + '</div>'
-      + '<textarea id="plan-feedback" class="field" rows="2" placeholder="退回时的修改意见（可选），如：只改走廊里的灯" aria-label="修改意见"></textarea>'
-      + '<div class="card-desc">批准后退出计划模式并执行。"批准并执行"按自动接受编辑处理可撤销的写入，"逐项确认"每次写入都先问你；删除、移动、改名始终要确认。</div>'
-      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">继续规划</button><button class="btn" id="decision-allow-manual">批准，逐项确认</button><button class="btn btn-primary" id="decision-allow">批准并执行</button></div>';
+      + '<textarea id="plan-feedback" class="field" rows="2" placeholder="' + t('decision.feedbackPlaceholder') + '" aria-label="' + t('decision.feedbackLabel') + '"></textarea>'
+      + '<div class="card-desc">' + t('decision.planHint') + '</div>'
+      + '<div class="card-foot"><button class="btn btn-ghost lead" id="decision-reject">' + t('decision.keepPlanning') + '</button><button class="btn" id="decision-allow-manual">' + t('decision.approveManual') + '</button><button class="btn btn-primary" id="decision-allow">' + t('decision.approve') + '</button></div>';
   }
 
   /** The decision card replaces the composer while an editor write or a runtime permission request waits for an answer. */
@@ -1843,18 +1847,18 @@
       }
     }
     view.shownDecisionKey = decision.key;
-    if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? '后改为文字提问' : '后自动取消');
+    if (decision.kind !== 'permission' && decision.kind !== 'plan') startCountdown(decision.request.expiresAt, decision.kind === 'question' ? (seconds) => t('decision.countdownQuestion', { count: seconds }) : (seconds) => t('decision.countdownCancel', { count: seconds }));
     if (focusWasOurs && document.hasFocus()) $('decision-title').focus({ preventScroll: true });
   }
 
   /** The write gate times a request out unanswered (the runtime gives up on the call soon after); the card counts down to it. */
-  function startCountdown(expiresAt, suffix) {
+  function startCountdown(expiresAt, countdownText) {
     stopCountdown();
     const tick = () => {
       const label = $('decision-countdown');
       if (!label) return;
       const seconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      label.textContent = ' · ' + seconds + ' 秒' + suffix;
+      label.textContent = ' · ' + countdownText(seconds);
     };
     tick();
     view.countdownTimer = window.setInterval(tick, COUNTDOWN_INTERVAL_MS);
@@ -1923,7 +1927,7 @@
   function sendDraft(text, enterPlanMode) {
     if ((!text.trim() && !draftState.images.length) || state.runtimeLost || draftState.submitting || hasInvalidReference()) return;
     if (draftState.images.length && !state.canAttachImages) {
-      showCommandNote(state.attachImagesReason || '现在不能发送图片');
+      showCommandNote(state.attachImagesReason || t('composer.imagesBlocked'));
       return;
     }
 
@@ -1953,7 +1957,7 @@
     if (!files.length) return false;
 
     event.preventDefault();
-    Promise.all(files.map(readImageBlob)).then(addImages, () => showCommandNote('剪贴板里的图片读不出来'));
+    Promise.all(files.map(readImageBlob)).then(addImages, () => showCommandNote(t('note.clipboardImage')));
     return true;
   }
 
@@ -2001,33 +2005,33 @@
   function addImages(images) {
     if (!images.length) return;
     if (!state.canAttachImages) {
-      showCommandNote(state.attachImagesReason || '现在不能添加图片');
+      showCommandNote(state.attachImagesReason || t('note.cannotAddImages'));
       return;
     }
 
     const room = MAX_DRAFT_IMAGES - draftState.images.length;
-    if (images.length > room) showCommandNote('一条消息最多 ' + MAX_DRAFT_IMAGES + ' 张图片');
+    if (images.length > room) showCommandNote(t('note.tooManyImages', { count: MAX_DRAFT_IMAGES }));
     for (const image of images.slice(0, Math.max(room, 0))) {
       prepareImage(image).then((prepared) => {
         if (draftState.images.length >= MAX_DRAFT_IMAGES) return;
         draftState.images.push(prepared);
         renderAttachments();
         updateSendButton();
-      }, () => showCommandNote('有一张图片读不出来，已跳过'));
+      }, () => showCommandNote(t('note.imageSkipped')));
     }
   }
 
   function renderAttachments() {
     const box = $('attachments');
     box.hidden = !draftState.images.length;
-    box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="移除" aria-label="移除图片">' + icons.svg('close', 12) + '</button></div>').join('');
+    box.innerHTML = draftState.images.map((image, index) => '<div class="attachment"><img src="' + image.url + '" alt="" data-view-image="' + index + '"><button data-remove-image="' + index + '" title="' + t('common.remove') + '" aria-label="' + t('composer.removeImage') + '">' + icons.svg('close', 12) + '</button></div>').join('');
     scheduleDraftSave();
   }
 
   function renderImageButton() {
     const button = $('add-image');
     button.classList.toggle('off', !state.canAttachImages);
-    button.title = state.canAttachImages ? '添加图片（也可以粘贴截图或把图片文件拖进来）' : (state.attachImagesReason || '现在不能添加图片');
+    button.title = state.canAttachImages ? t('composer.addImageTitle') : (state.attachImagesReason || t('note.cannotAddImages'));
   }
 
   function openImageViewer(url) {
@@ -2039,7 +2043,7 @@
   function bindImages() {
     $('add-image').addEventListener('click', () => {
       if (!state.canAttachImages) {
-        showCommandNote(state.attachImagesReason || '现在不能添加图片');
+        showCommandNote(state.attachImagesReason || t('note.cannotAddImages'));
         return;
       }
       call('pickimages');
@@ -2076,10 +2080,10 @@
 
   /** Why a built-in command cannot run now, or an empty string. */
   function commandBlocker(name) {
-    if (name === 'compact' && !state.canCompact) return state.compactReason || '现在不能压缩';
-    if (name === 'plan' && !state.canSetPlanMode) return state.planModeReason || '现在不能切换计划模式';
-    if (name === 'undo' && !lastUserEntryId()) return '还没有可回退的消息';
-    if (name === 'undo' && !state.canEditHistory) return state.editHistoryReason || '现在不能回退';
+    if (name === 'compact' && !state.canCompact) return state.compactReason || t('note.cannotCompact');
+    if (name === 'plan' && !state.canSetPlanMode) return state.planModeReason || t('note.cannotSwitchPlan');
+    if (name === 'undo' && !lastUserEntryId()) return t('note.nothingToUndo');
+    if (name === 'undo' && !state.canEditHistory) return state.editHistoryReason || t('note.cannotUndo');
     return '';
   }
 
@@ -2102,7 +2106,7 @@
     switch (name) {
       case 'compact':
         if (args) {
-          showCommandNote('/compact 不带参数');
+          showCommandNote(t('note.compactNoArgs'));
           return;
         }
         call('compactcontext');
@@ -2113,8 +2117,8 @@
           sendDraft(draftInput.value.replace(/^\s*\/plan\s+/, ''), true);
           return;
         }
-        if (args === 'off' && !state.planMode) showCommandNote('计划模式未开启');
-        else if (!args && state.planMode) showCommandNote('已在计划模式');
+        if (args === 'off' && !state.planMode) showCommandNote(t('note.planOff'));
+        else if (!args && state.planMode) showCommandNote(t('note.planOn'));
         else call('setplanmode', !args);
         break;
       case 'undo':
@@ -2184,11 +2188,11 @@
   function renderReferences() {
     $('references').innerHTML = draftState.refs.map((ref, index) => {
       const invalid = ref.valid === false;
-      const kind = ref.kind === 'actor' ? 'Actor' : '资产';
-      const title = invalid ? '对象已删除或失效：移除或重新添加后再发送' : kind + ' · ' + ref.cls + ' · ' + ref.path;
+      const kind = ref.kind === 'actor' ? 'Actor' : t('reference.asset');
+      const title = invalid ? t('reference.invalid') : kind + ' · ' + ref.cls + ' · ' + ref.path;
       const lead = icons.svg(invalid ? 'alert' : ref.kind === 'actor' ? 'locate' : 'file', 12);
       const cls = ref.cls && !invalid ? '<span class="ref-kind">' + esc(ref.cls) + '</span>' : '';
-      return '<span class="ref' + (invalid ? ' invalid' : '') + '" title="' + esc(title) + '">' + lead + '<span class="ref-name">' + esc(ref.name) + '</span>' + cls + '<button data-remove-ref="' + index + '" title="移除" aria-label="移除引用 ' + esc(ref.name) + '">' + icons.svg('close', 12) + '</button></span>';
+      return '<span class="ref' + (invalid ? ' invalid' : '') + '" title="' + esc(title) + '">' + lead + '<span class="ref-name">' + esc(ref.name) + '</span>' + cls + '<button data-remove-ref="' + index + '" title="' + t('common.remove') + '" aria-label="' + t('reference.remove', { name: esc(ref.name) }) + '">' + icons.svg('close', 12) + '</button></span>';
     }).join('');
     updateSendButton();
     scheduleDraftSave();
@@ -2226,7 +2230,7 @@
       const missing = objectValidity.get(link.dataset.objPath) === false;
       if (link.dataset.hint === undefined) link.dataset.hint = link.title;
       link.classList.toggle('missing', missing);
-      link.title = missing ? '对象已不存在\n' + link.dataset.objPath : link.dataset.hint;
+      link.title = missing ? t('reference.gone') + '\n' + link.dataset.objPath : link.dataset.hint;
       if (missing) link.setAttribute('aria-disabled', 'true');
       else link.removeAttribute('aria-disabled');
     }
@@ -2275,7 +2279,7 @@
   function moreThumbnailsHtml(entryId, hidden) {
     if (!hidden) return '';
     const next = Math.min(hidden, markdown.thumbnailPage);
-    return '<div class="md-figure-more"><span>另有 ' + hidden + ' 个资产未显示缩略图</span><button class="btn btn-sm" data-more-thumbnails="' + entryId + '">显示下 ' + next + ' 张</button></div>';
+    return '<div class="md-figure-more"><span>' + t('thumbnails.hidden', { count: hidden }) + '</span><button class="btn btn-sm" data-more-thumbnails="' + entryId + '">' + t('thumbnails.showNext', { count: next }) + '</button></div>';
   }
 
   /** "Show more" under a reply: the next page of its asset images turns from links into thumbnails. */
@@ -2463,10 +2467,10 @@
         const blocker = commandBlocker(item.name);
         return { label: '/' + item.name, detail: blocker || item.detail, body: item.body, command: true, off: !!blocker };
       });
-      const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body, tag: item.builtin ? '内置' : '' }));
-      menu.sections = [{ label: '命令', icon: 'terminal', items: commands }, { label: '模板', icon: 'file', items }];
+      const items = state.templates.filter((item) => item.name.toLowerCase().includes(wanted)).map((item) => ({ label: '/' + item.name, detail: item.description, body: item.body, tag: item.builtin ? t('suggest.builtin') : '' }));
+      menu.sections = [{ label: t('suggest.commands'), icon: 'terminal', items: commands }, { label: t('suggest.templates'), icon: 'file', items }];
       menu.items = commands.concat(items);
-      renderMenu(menu.sections, state.templates.length ? '没有匹配的命令或模板' : '没有匹配的命令；暂无可用模板（项目设置 → Shuttlegent → Template Dirs）');
+      renderMenu(menu.sections, state.templates.length ? t('suggest.noCommandOrTemplate') : t('suggest.noCommandNoTemplates'));
       return;
     }
 
@@ -2479,13 +2483,13 @@
 
     const selection = result.selection || [];
     const sections = [
-      { label: '当前选择', icon: 'selection', items: selection.length ? [{ label: '当前选择', detail: selection.length + ' 个对象（选择快照）', refs: selection }] : [] },
-      { label: '关卡 Actor', icon: 'locate', items: (result.actors || []).map((ref) => ({ label: ref.name, detail: 'Actor · ' + ref.cls, refs: [ref] })) },
-      { label: '资产', icon: 'file', items: (result.assets || []).map((ref) => ({ label: ref.name, detail: ref.cls + ' · ' + ref.path, refs: [ref] })) }
+      { label: t('suggest.selection'), icon: 'selection', items: selection.length ? [{ label: t('suggest.selection'), detail: t('suggest.selectionDetail', { count: selection.length }), refs: selection }] : [] },
+      { label: t('suggest.actors'), icon: 'locate', items: (result.actors || []).map((ref) => ({ label: ref.name, detail: 'Actor · ' + ref.cls, refs: [ref] })) },
+      { label: t('suggest.assets'), icon: 'file', items: (result.assets || []).map((ref) => ({ label: ref.name, detail: ref.cls + ' · ' + ref.path, refs: [ref] })) }
     ];
     menu.items = sections.flatMap((section) => section.items);
     menu.index = Math.min(menu.index, Math.max(0, menu.items.length - 1));
-    renderMenu(sections, '没有匹配的对象');
+    renderMenu(sections, t('suggest.noObjects'));
     menu.sections = sections;
   }
 
@@ -2550,22 +2554,22 @@
   function sessionSection(time) {
     const today = localDay(Date.now());
     const day = localDay(time);
-    if (day === today) return '今天';
-    if (day === today - DAY_MS) return '昨天';
-    return '更早';
+    if (day === today) return t('sidebar.today');
+    if (day === today - DAY_MS) return t('sidebar.yesterday');
+    return t('sidebar.earlier');
   }
 
   function backgroundActivity(session) {
     const parts = [];
-    if (RUNNING_STATUSES.has(session.status)) parts.push('运行中');
-    if (CONFIRM_STATUSES.has(session.status)) parts.push('等待确认');
-    if (session.queuedCount) parts.push('排队 ' + session.queuedCount);
+    if (RUNNING_STATUSES.has(session.status)) parts.push(t('sidebar.running'));
+    if (CONFIRM_STATUSES.has(session.status)) parts.push(t('status.awaitingConfirm'));
+    if (session.queuedCount) parts.push(t('sidebar.queued', { count: session.queuedCount }));
     return parts.join(' · ');
   }
 
   function renderSidebar() {
     const query = $('search').value.trim().toLowerCase();
-    const visible = state.sessions.filter((session) => (session.title || '新会话').toLowerCase().includes(query));
+    const visible = state.sessions.filter((session) => (session.title || t('session.untitled')).toLowerCase().includes(query));
 
     let html = '';
     let section = null;
@@ -2579,35 +2583,35 @@
       // One line per session. A background one shows a turning loader while it runs, a yellow dot while it waits for the
       // user and an accent dot when it finished unseen; the open one shows nothing. The tooltip carries the details.
       const current = session.id === state.currentSessionId;
-      const title = session.title || '新会话';
+      const title = session.title || t('session.untitled');
       const attention = current ? '' : ATTENTION_TEXT[session.attention] || '';
       const activity = current ? STATUS_TEXT[state.status] || '' : backgroundActivity(session);
       let mark = '';
-      if (!current && RUNNING_STATUSES.has(session.status)) mark = '<span class="session-mark spin" role="img" aria-label="运行中">' + icons.svg('loader', 14) + '</span>';
-      else if (!current && (CONFIRM_STATUSES.has(session.status) || session.attention === 'input')) mark = '<span class="session-mark" role="img" aria-label="' + (attention || '等待确认') + '"><span class="dot input"></span></span>';
+      if (!current && RUNNING_STATUSES.has(session.status)) mark = '<span class="session-mark spin" role="img" aria-label="' + t('sidebar.running') + '">' + icons.svg('loader', 14) + '</span>';
+      else if (!current && (CONFIRM_STATUSES.has(session.status) || session.attention === 'input')) mark = '<span class="session-mark" role="img" aria-label="' + (attention || t('status.awaitingConfirm')) + '"><span class="dot input"></span></span>';
       else if (attention) mark = '<span class="session-mark" role="img" aria-label="' + attention + '"><span class="dot ' + session.attention + '"></span></span>';
-      if (session.inTab) mark = '<span class="session-mark session-tab" role="img" aria-label="在独立页签中">' + icons.svg('external', 14) + '</span>' + mark;
-      const tooltip = [title, session.inTab ? '在独立页签中' : '', attention || activity, (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt)].filter(Boolean).join('\n');
+      if (session.inTab) mark = '<span class="session-mark session-tab" role="img" aria-label="' + t('sidebar.inTab') + '">' + icons.svg('external', 14) + '</span>' + mark;
+      const tooltip = [title, session.inTab ? t('sidebar.inTab') : '', attention || activity, (session.modelName ? session.modelName + ' · ' : '') + sessionTime(session.updatedAt)].filter(Boolean).join('\n');
       html += '<button class="session" data-session="' + esc(session.id) + '" aria-current="' + current + '" title="' + esc(tooltip) + '"><span class="session-name">' + esc(title) + '</span>' + mark + '</button>';
     }
-    if (!visible.length) html = '<p class="sessions-empty">' + (query ? '没有匹配的会话' : '还没有会话') + '</p>';
+    if (!visible.length) html = '<p class="sessions-empty">' + (query ? t('sidebar.noMatch') : t('sidebar.empty')) + '</p>';
 
     $('sessions').innerHTML = html;
-    const archived = '已归档会话（' + state.archived.length + '）';
+    const archived = t('sidebar.archivedCount', { count: state.archived.length });
     $('archived-button').title = archived;
     $('archived-button').setAttribute('aria-label', archived);
-    const sandbox = state.permissionMode === 'workspaceWrite' ? '工作区可写' : '只读';
-    $('permission-mode').textContent = sandbox + ' · Shell ' + (state.shellEnabled ? '开' : '关');
+    const sandbox = state.permissionMode === 'workspaceWrite' ? t('sidebar.workspaceWrite') : t('sidebar.readOnly');
+    $('permission-mode').textContent = t('sidebar.permissionMode', { sandbox: sandbox, shell: state.shellEnabled ? t('sidebar.on') : t('sidebar.off') });
     renderArchivedList();
   }
 
   function renderArchivedList() {
     const list = $('archived-list');
     if (!state.archived.length) {
-      list.innerHTML = '<p class="dialog-empty">没有已归档的会话</p>';
+      list.innerHTML = '<p class="dialog-empty">' + t('sidebar.noArchived') + '</p>';
       return;
     }
-    list.innerHTML = state.archived.map((session) => '<div class="dialog-row"><span title="' + esc(session.title || '新会话') + '">' + esc(session.title || '新会话') + '</span><button class="btn btn-sm" data-restore="' + esc(session.id) + '">恢复</button><button class="btn btn-sm btn-ghost is-danger" data-delete="' + esc(session.id) + '">删除</button></div>').join('');
+    list.innerHTML = state.archived.map((session) => '<div class="dialog-row"><span title="' + esc(session.title || t('session.untitled')) + '">' + esc(session.title || t('session.untitled')) + '</span><button class="btn btn-sm" data-restore="' + esc(session.id) + '">' + t('sidebar.restore') + '</button><button class="btn btn-sm btn-ghost is-danger" data-delete="' + esc(session.id) + '">' + t('common.delete') + '</button></div>').join('');
   }
 
   // ---------- Session menu ----------
@@ -2630,7 +2634,7 @@
     for (const item of menuElement.querySelectorAll('[data-menu-action]')) {
       const blocked = item.dataset.menuAction !== 'rename' && session.canArchive === false;
       item.disabled = blocked;
-      item.title = blocked ? '运行中或等待确认的会话不能归档或删除' : '';
+      item.title = blocked ? t('sidebar.cannotArchive') : '';
     }
 
     menuElement.hidden = false;
@@ -2784,9 +2788,9 @@
   // ---------- Inspector ----------
 
   function toolStateText(status) {
-    if (status === TOOL_COMPLETED) return '完成';
-    if (status === TOOL_FAILED) return '失败';
-    return '进行中';
+    if (status === TOOL_COMPLETED) return t('inspector.toolDone');
+    if (status === TOOL_FAILED) return t('inspector.toolFailed');
+    return t('inspector.toolRunning');
   }
 
   function prettyJson(text) {
@@ -2800,18 +2804,18 @@
 
   function renderToolDetails() {
     const tools = state.order.map((id) => state.entries.get(id)).filter((entry) => entry && entry.kind === 'toolCall');
-    if (!tools.length) return '<p class="empty-note">工具调用会显示在这里。</p>';
+    if (!tools.length) return '<p class="empty-note">' + t('inspector.noTools') + '</p>';
 
     return tools.map((entry) => {
       const expanded = expandedTools.has(entry.id);
-      const body = expanded ? '<div class="tool-detail-body"><h4>参数</h4><pre class="pre">' + esc(prettyJson(entry.input) || '（无参数）') + '</pre><h4>结果</h4>' + toolImages(entry) + '<pre class="pre">' + esc(entry.result || '（尚无结果）') + '</pre></div>' : '';
+      const body = expanded ? '<div class="tool-detail-body"><h4>' + t('inspector.arguments') + '</h4><pre class="pre">' + esc(prettyJson(entry.input) || t('inspector.noArguments')) + '</pre><h4>' + t('inspector.result') + '</h4>' + toolImages(entry) + '<pre class="pre">' + esc(entry.result || t('inspector.noResult')) + '</pre></div>' : '';
       const selected = view.selectedTool === entry.id ? ' selected' : '';
-      return '<div class="tool-detail' + selected + '" id="tool-detail-' + entry.id + '"><button data-expand-tool="' + entry.id + '" aria-expanded="' + expanded + '" title="展开或收起参数与结果">' + toolIcon(entry.toolStatus, 14) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><span class="tool-state">' + toolStateText(entry.toolStatus) + '</span></button>' + body + '</div>';
+      return '<div class="tool-detail' + selected + '" id="tool-detail-' + entry.id + '"><button data-expand-tool="' + entry.id + '" aria-expanded="' + expanded + '" title="' + t('inspector.toolToggle') + '">' + toolIcon(entry.toolStatus, 14) + '<span class="tool-name">' + esc(entry.displayName) + '</span><span class="tool-summary">' + esc(entry.summary) + '</span><span class="tool-state">' + toolStateText(entry.toolStatus) + '</span></button>' + body + '</div>';
     }).join('');
   }
 
   function renderRunLog() {
-    if (!state.runLog.length) return '<p class="empty-note">调用记录会显示在这里。密钥与完整环境变量不会写进日志。</p>';
+    if (!state.runLog.length) return '<p class="empty-note">' + t('inspector.noLog') + '</p>';
     return state.runLog.map((item) => '<div class="log' + (item.warning ? ' warning' : '') + '"><time>' + clock(item.time, true) + '</time>' + esc(item.text) + '</div>').join('');
   }
 
@@ -2853,14 +2857,14 @@
 
   /** Manual compaction (runtime /compact): greyed out with the reason while it cannot run. */
   function compactAction() {
-    const label = state.compacting ? '压缩中…' : '压缩上下文';
-    const title = state.canCompact ? '把较早的对话总结为摘要，腾出上下文空间' : state.compactReason;
+    const label = state.compacting ? t('inspector.compacting') : t('inspector.compact');
+    const title = state.canCompact ? t('command.compact') : state.compactReason;
     return '<div class="card-actions"><button class="btn btn-sm" data-compact' + (state.canCompact ? '' : ' disabled') + ' title="' + esc(title) + '">' + label + '</button></div>';
   }
 
   function renderContextCard() {
     const share = contextShare();
-    if (share === null) return '<div class="context-head"><span>用量未知</span></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>' + compactAction();
+    if (share === null) return '<div class="context-head"><span>' + t('inspector.usageUnknown') + '</span></div><ul class="kv-list">' + kvRow(t('menu.model'), configName('model')) + kvRow(t('menu.effort'), configName('reasoning_effort')) + '</ul>' + compactAction();
 
     const free = Math.max(state.contextSize - state.usedTokens, 0);
     const parts = contextParts();
@@ -2872,13 +2876,13 @@
     } else {
       const level = share >= USAGE_FULL_SHARE ? ' full' : share >= USAGE_HIGH_SHARE ? ' high' : '';
       meter = '<div class="meter"><span class="used' + level + '" style="width:' + share * 100 + '%"></span></div>';
-      legend = kvRow('已用', shortTokens(state.usedTokens), { swatch: 'used' + level, extra: percentText(share) });
+      legend = kvRow(t('inspector.used'), shortTokens(state.usedTokens), { swatch: 'used' + level, extra: percentText(share) });
     }
-    const note = parts ? ' title="分项按运行时估算的比例分摊实际用量"' : '';
-    return '<div class="context-head"><span>已用 ' + Math.round(share * 100) + '%</span><span class="count">' + shortTokens(state.usedTokens) + ' / ' + shortTokens(state.contextSize) + '</span></div>'
+    const note = parts ? ' title="' + t('inspector.partsTitle') + '"' : '';
+    return '<div class="context-head"><span>' + t('inspector.usedShare', { percent: Math.round(share * 100) }) + '</span><span class="count">' + shortTokens(state.usedTokens) + ' / ' + shortTokens(state.contextSize) + '</span></div>'
       + meter
-      + '<ul class="kv-list legend"' + note + '>' + legend + kvRow('剩余', shortTokens(free), { swatch: 'free', extra: percentText(1 - share) }) + '</ul>'
-      + '<div class="divider"></div><ul class="kv-list">' + kvRow('模型', configName('model')) + kvRow('推理强度', configName('reasoning_effort')) + '</ul>'
+      + '<ul class="kv-list legend"' + note + '>' + legend + kvRow(t('inspector.free'), shortTokens(free), { swatch: 'free', extra: percentText(1 - share) }) + '</ul>'
+      + '<div class="divider"></div><ul class="kv-list">' + kvRow(t('menu.model'), configName('model')) + kvRow(t('menu.effort'), configName('reasoning_effort')) + '</ul>'
       + compactAction();
   }
 
@@ -2897,18 +2901,18 @@
     const tools = Math.round(breakdown.tools * scale);
     const system = Math.round(breakdown.system * scale);
     return [
-      { key: 'messages', label: '消息', tokens: Math.max(state.usedTokens - tools - system, 0) },
-      { key: 'tools', label: '工具定义', tokens: tools },
-      { key: 'system', label: '系统提示', tokens: system }
+      { key: 'messages', label: t('inspector.messages'), tokens: Math.max(state.usedTokens - tools - system, 0) },
+      { key: 'tools', label: t('inspector.toolDefinitions'), tokens: tools },
+      { key: 'system', label: t('inspector.systemPrompts'), tokens: system }
     ];
   }
 
   function externalIssueText(server) {
-    if (server.issue === 'nameInvalid') return '名称为空或与编辑器端点重名';
-    if (server.issue === 'nameTaken') return '与另一个外部服务重名';
-    if (server.issue === 'commandNotAbsolute') return '启动命令不是绝对路径';
-    if (server.issue === 'urlMissing') return '缺少 URL';
-    if (server.issue === 'headerValueMissing') return '请求头变量 ' + server.detail + ' 没有值';
+    if (server.issue === 'nameInvalid') return t('mcp.nameInvalid');
+    if (server.issue === 'nameTaken') return t('mcp.nameTaken');
+    if (server.issue === 'commandNotAbsolute') return t('mcp.commandNotAbsolute');
+    if (server.issue === 'urlMissing') return t('mcp.urlMissing');
+    if (server.issue === 'headerValueMissing') return t('mcp.headerValueMissing', { name: server.detail });
     return '';
   }
 
@@ -2933,32 +2937,32 @@
 
   function renderMcpCard() {
     const mcp = state.mcp;
-    if (!mcp) return '<p class="empty-note">尚未收到 MCP 状态。</p>';
+    if (!mcp) return '<p class="empty-note">' + t('mcp.noStatus') + '</p>';
 
     const endpoint = mcp.endpoint || { name: '', listening: false, port: 0, tools: [] };
     const tools = endpoint.tools || [];
     const declared = mcp.servers.filter((server) => !server.issue).length;
     const skipped = mcp.servers.length - declared;
     const status = '<ul class="kv-list">'
-      + kvRow('编辑器端点 ' + endpoint.name, endpoint.listening ? '端口 ' + endpoint.port : '未启动', { icon: 'monitor', warn: !endpoint.listening })
-      + kvRow('外部服务', mcp.servers.length ? declared + ' 个已声明' + (skipped ? ' · ' + skipped + ' 个跳过' : '') : '未配置', { icon: 'globe', warn: skipped > 0 })
+      + kvRow(t('mcp.endpoint', { name: endpoint.name }), endpoint.listening ? t('mcp.port', { port: endpoint.port }) : t('mcp.notStarted'), { icon: 'monitor', warn: !endpoint.listening })
+      + kvRow(t('mcp.servers'), mcp.servers.length ? t('mcp.declared', { count: declared }) + (skipped ? t('mcp.skippedCount', { count: skipped }) : '') : t('mcp.notConfigured'), { icon: 'globe', warn: skipped > 0 })
       + '</ul>';
 
     const disabled = tools.filter((tool) => !tool.enabled).length;
-    const toolRows = tools.map((tool) => kvRow(tool.name, tool.enabled ? '' : '已关闭', { tag: tool.readOnly ? '读' : '写', mono: true })).join('');
+    const toolRows = tools.map((tool) => kvRow(tool.name, tool.enabled ? '' : t('mcp.off'), { tag: tool.readOnly ? t('mcp.read') : t('mcp.write'), mono: true })).join('');
     const toolsetRows = mcp.toolsets.map((toolset) => {
-      let value = toolset.toolCount + ' 个工具';
-      if (toolset.blocked) value = '项目已屏蔽';
-      else if (!toolset.enabled) value = '已关闭';
+      let value = t('mcp.toolCount', { count: toolset.toolCount });
+      if (toolset.blocked) value = t('mcp.blocked');
+      else if (!toolset.enabled) value = t('mcp.off');
       return kvRow(toolset.name, value, { mono: true });
     }).join('');
-    const serverRows = mcp.servers.map((server) => kvRow(server.name || '（未命名）', server.issue ? '已跳过：' + externalIssueText(server) : '已声明', { tag: server.stdio ? 'stdio' : 'http', warn: !!server.issue, mono: true })).join('');
+    const serverRows = mcp.servers.map((server) => kvRow(server.name || t('mcp.unnamed'), server.issue ? t('mcp.skipped', { reason: externalIssueText(server) }) : t('mcp.declaredOne'), { tag: server.stdio ? 'stdio' : 'http', warn: !!server.issue, mono: true })).join('');
 
     return status
-      + cardGroup('mcp-tools', '编辑器工具', tools.length + (disabled ? ' · ' + disabled + ' 关闭' : ''), toolRows, '没有注册的编辑器工具。')
-      + cardGroup('mcp-toolsets', '引擎 Toolset', mcp.toolsets.length, toolsetRows, '没有可用的引擎 Toolset。')
-      + cardGroup('mcp-servers', '外部服务', mcp.servers.length, serverRows, '项目设置中未配置外部 MCP 服务。')
-      + '<p class="fine">外部服务在新建或恢复会话时声明给运行时；运行时不回报各服务是否连上。</p>';
+      + cardGroup('mcp-tools', t('mcp.editorTools'), tools.length + (disabled ? t('mcp.disabledCount', { count: disabled }) : ''), toolRows, t('mcp.noEditorTools'))
+      + cardGroup('mcp-toolsets', t('mcp.toolsets'), mcp.toolsets.length, toolsetRows, t('mcp.noToolsets'))
+      + cardGroup('mcp-servers', t('mcp.servers'), mcp.servers.length, serverRows, t('mcp.noServers'))
+      + '<p class="fine">' + t('mcp.serversNote') + '</p>';
   }
 
   function cardSummary(card) {
@@ -2966,15 +2970,15 @@
       const share = contextShare();
       return share === null ? '—' : Math.round(share * 100) + '%';
     }
-    if (card === 'memory') return state.memory ? state.memory.items.length + ' 条 · ' + memoryKb(state.memory.bytes) + '/' + memoryKb(state.memory.maxBytes) + ' KB' : '—';
-    if (card === 'mcp') return state.mcp ? mcpServiceCount() + ' 个服务' : '—';
+    if (card === 'memory') return state.memory ? t('inspector.memorySummary', { count: state.memory.items.length, used: memoryKb(state.memory.bytes), max: memoryKb(state.memory.maxBytes) }) : '—';
+    if (card === 'mcp') return state.mcp ? t('inspector.mcpSummary', { count: mcpServiceCount() }) : '—';
     if (card === 'tools') {
       const tools = state.order.map((id) => state.entries.get(id)).filter((entry) => entry && entry.kind === 'toolCall');
       const failed = tools.filter((entry) => entry.toolStatus === TOOL_FAILED).length;
-      return tools.length + ' 次调用' + (failed ? ' · ' + failed + ' 失败' : '');
+      return t('inspector.toolsSummary', { count: tools.length }) + (failed ? t('inspector.failedSummary', { count: failed }) : '');
     }
     const warnings = state.runLog.filter((item) => item.warning).length;
-    return state.runLog.length + ' 条' + (warnings ? ' · ' + warnings + ' 警告' : '');
+    return t('inspector.logSummary', { count: state.runLog.length }) + (warnings ? t('inspector.warningSummary', { count: warnings }) : '');
   }
 
   function cardWarns(card) {
@@ -3004,9 +3008,9 @@
   function renderMemoryCard() {
     const items = state.memory ? state.memory.items : [];
     const list = items.length
-      ? '<ul class="memory-list">' + items.map((item, index) => '<li><span class="memory-text">' + esc(item.text) + (item.date ? '<small>' + esc(item.date) + '</small>' : '') + '</span><button class="btn btn-icon btn-sm memory-forget" data-forget-memory="' + index + '" title="删除这条记忆" aria-label="删除这条记忆">' + icons.svg('close', 14) + '</button></li>').join('') + '</ul>'
-      : '<p class="empty-note">你说“记住……”，或 Agent 判断以后用得上时，会记在这里。</p>';
-    return list + '<div class="memory-foot"><span>修改从下一次请求起生效</span><button class="btn btn-link" id="memory-open">打开文件</button></div>';
+      ? '<ul class="memory-list">' + items.map((item, index) => '<li><span class="memory-text">' + esc(item.text) + (item.date ? '<small>' + esc(item.date) + '</small>' : '') + '</span><button class="btn btn-icon btn-sm memory-forget" data-forget-memory="' + index + '" title="' + t('memory.forget') + '" aria-label="' + t('memory.forget') + '">' + icons.svg('close', 14) + '</button></li>').join('') + '</ul>'
+      : '<p class="empty-note">' + t('memory.empty') + '</p>';
+    return list + '<div class="memory-foot"><span>' + t('memory.nextRequest') + '</span><button class="btn btn-link" id="memory-open">' + t('memory.openFile') + '</button></div>';
   }
 
   /** Opens the inspector on the memory card. */
@@ -3067,7 +3071,7 @@
 
   function sessionTitle(id) {
     const session = findSession(id);
-    return session && session.title ? session.title : '新会话';
+    return session && session.title ? session.title : t('session.untitled');
   }
 
   function openRename(id) {
@@ -3091,14 +3095,14 @@
   /** Deleting cannot be undone, so it always asks; listed and archived sessions alike. */
   function openDelete(id) {
     view.targetSessionId = id;
-    $('delete-name').textContent = sessionTitle(id);
+    $('delete-text').textContent = t('dialog.delete.text', { name: sessionTitle(id) });
     openDialog($('delete-dialog'), sessionButton(id));
   }
 
   function saveRename() {
     const name = $('rename-input').value.trim();
     if (!name || name.length > state.renameMaxChars) {
-      $('rename-error').textContent = '名称不能为空，最多 ' + state.renameMaxChars + ' 个字符。';
+      $('rename-error').textContent = t('dialog.rename.error', { count: state.renameMaxChars });
       $('rename-error').hidden = false;
       return;
     }

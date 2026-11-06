@@ -1,7 +1,7 @@
 {
   "name": "shuttlegent-composer-editor",
   "private": true,
-  "description": "Bundles Tiptap into Resources/Web/vendor/tiptap.js for the panel's message input",
+  "description": "Bundles Tiptap into Resources/Web/vendor/tiptap.js for the panel's message input, and copies i18next to Resources/Web/vendor/i18next.js for the panel's text",
   "type": "module",
   "scripts": {
     "build": "node build.mjs"
@@ -13,6 +13,7 @@
     "@tiptap/markdown": "3.32.0",
     "@tiptap/pm": "3.32.0",
     "@tiptap/starter-kit": "3.32.0",
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "i18next": "26.5.6"
   }
 }

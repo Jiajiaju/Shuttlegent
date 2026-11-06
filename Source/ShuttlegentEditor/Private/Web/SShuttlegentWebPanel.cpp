@@ -17,6 +17,8 @@
 #include "ISettingsModule.h"
 #include "IWebBrowserWindow.h"
 #include "Interfaces/IPluginManager.h"
+#include "Internationalization/Culture.h"
+#include "Internationalization/Internationalization.h"
 #include "HAL/FileManager.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/FileHelper.h"
@@ -136,6 +138,8 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 		if (This.IsValid()) This->PushThumbnail(Path, DataUrl);
 	});
 
+	CultureChangedHandle = FInternationalization::Get().OnCultureChanged().AddSP(this, &SShuttlegentWebPanel::HandleCultureChanged);
+
 	// 活动计时器仅在控件被绘制后才运行，因此恢复在其他标签页之后的面板不会创建浏览器
 	RegisterActiveTimer(0.0f, FWidgetActiveTimerDelegate::CreateSP(this, &SShuttlegentWebPanel::HandleCreateBrowser));
 	View->EnsureRuntime();
@@ -143,6 +147,7 @@ void SShuttlegentWebPanel::Construct(const FArguments& InArgs)
 
 SShuttlegentWebPanel::~SShuttlegentWebPanel()
 {
+	if (CultureChangedHandle.IsValid()) FInternationalization::Get().OnCultureChanged().Remove(CultureChangedHandle);
 	if (DrawerFocusHandle.IsValid() && FSlateApplication::IsInitialized()) FSlateApplication::Get().OnFocusChanging().Remove(DrawerFocusHandle);
 	if (DrawerSlideTimer.IsValid()) FSlateThrottleManager::Get().LeaveResponsiveMode(DrawerSlideThrottle);
 
@@ -354,6 +359,7 @@ EActiveTimerReturnType SShuttlegentWebPanel::HandleCreateBrowser(double InCurren
 	Bridge.Reset(NewObject<UShuttlegentWebBridge>(GetTransientPackage()));
 	BindBridge();
 
+	LoadedLocale = GetPageLocale();
 	BrowserSlot->SetContent(
 		SAssignNew(Browser, SWebBrowser)
 		.InitialURL(GetPageUrl())
@@ -673,7 +679,26 @@ FString SShuttlegentWebPanel::GetPageUrl() const
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(ShuttlegentPath::PluginName);
 	const FString BaseDir = Plugin.IsValid() ? Plugin->GetBaseDir() : FString();
 	const FString PagePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(BaseDir, ShuttlegentEditorResource::ResourcesDir, ShuttlegentEditorWeb::PageDir, ShuttlegentEditorWeb::PageFile));
-	return ShuttlegentEditorWeb::FileUrlPrefix + PagePath;
+	return ShuttlegentEditorWeb::FileUrlPrefix + PagePath + ShuttlegentEditorWeb::LocaleQuery + GetPageLocale();
+}
+
+FString SShuttlegentWebPanel::GetPageLocale() const
+{
+	const FString Language = FInternationalization::Get().GetCurrentLanguage()->GetName();
+	return Language.StartsWith(ShuttlegentEditorWeb::ChineseLanguagePrefix) ? ShuttlegentEditorWeb::LocaleChinese : ShuttlegentEditorWeb::LocaleEnglish;
+}
+
+void SShuttlegentWebPanel::HandleCultureChanged()
+{
+	if (!Browser.IsValid()) return;
+
+	const FString Locale = GetPageLocale();
+	if (Locale == LoadedLocale) return;
+
+	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent panel: editor language changed, reloading the page in %s"), *Locale);
+	LoadedLocale = Locale;
+	bPageReady = false;
+	Browser->LoadURL(GetPageUrl());
 }
 
 TArray<FString> SShuttlegentWebPanel::GetDraggedImageFiles(const FDragDropEvent& DragDropEvent) const

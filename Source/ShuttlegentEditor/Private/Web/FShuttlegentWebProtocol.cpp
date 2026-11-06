@@ -463,12 +463,19 @@ void FShuttlegentWebProtocol::Shutdown()
 	FShuttlegentMemoryStore::OnChanged().Remove(MemoryChangedHandle);
 	MemoryChangedHandle.Reset();
 
-	UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
-	if (IsValid(Settings) && SettingsChangedHandle.IsValid()) Settings->OnSettingChanged().Remove(SettingsChangedHandle);
+	// 退出时引擎先拆除 UObject 系统再卸载模块，此时取默认对象会访问已销毁的类；只在对象系统仍在时解除订阅
+	if (SettingsChangedHandle.IsValid() && UObjectInitialized())
+	{
+		UShuttlegentSettings* Settings = GetMutableDefault<UShuttlegentSettings>();
+		if (IsValid(Settings)) Settings->OnSettingChanged().Remove(SettingsChangedHandle);
+	}
 	SettingsChangedHandle.Reset();
 
-	UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
-	if (IsValid(ProjectSettings) && ProjectSettingsChangedHandle.IsValid()) ProjectSettings->OnSettingChanged().Remove(ProjectSettingsChangedHandle);
+	if (ProjectSettingsChangedHandle.IsValid() && UObjectInitialized())
+	{
+		UShuttlegentProjectSettings* ProjectSettings = GetMutableDefault<UShuttlegentProjectSettings>();
+		if (IsValid(ProjectSettings)) ProjectSettings->OnSettingChanged().Remove(ProjectSettingsChangedHandle);
+	}
 	ProjectSettingsChangedHandle.Reset();
 
 	if (View.IsValid())

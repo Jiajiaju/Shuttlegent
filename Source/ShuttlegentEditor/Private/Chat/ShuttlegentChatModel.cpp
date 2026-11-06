@@ -46,8 +46,6 @@ namespace ShuttlegentChatModelPrivate
 	inline const TCHAR* FieldText = TEXT("text");
 	inline const TCHAR* FieldImages = TEXT("images");
 
-	// 只附图片、没有文字的消息发给模型时的文字
-	inline const TCHAR* ImageOnlyPrompt = TEXT("（见附图）");
 	inline const TCHAR* FieldToolCallId = TEXT("toolCallId");
 	inline const TCHAR* FieldTitle = TEXT("title");
 	inline const TCHAR* FieldStatus = TEXT("status");
@@ -120,33 +118,25 @@ namespace ShuttlegentChatModelPrivate
 	// 选择卡（ask_choices）的会话记录；内容见 FShuttlegentChoiceJson，同一张卡片可有多条，回放时以最后一条为准
 	inline const TCHAR* TranscriptChoice = TEXT("choice");
 
-	// 提交选择卡后发出的用户消息：标题行、选中项（{0} 标题、{1} id）、没有选中、逐项评语、整体意见
-	inline const TCHAR* ChoiceMessageHeader = TEXT("关于“{0}”，我的选择：");
-	inline const TCHAR* ChoiceMessageSelected = TEXT("\n- 选中：");
-	inline const TCHAR* ChoiceMessageItem = TEXT("{0}（id: {1}）");
-	inline const TCHAR* ChoiceMessageItemSeparator = TEXT("、");
-	inline const TCHAR* ChoiceMessageNoneSelected = TEXT("\n- 没有选中任何一项");
-	inline const TCHAR* ChoiceMessageNote = TEXT("\n- {0}（id: {1}）的评语：{2}");
-	inline const TCHAR* ChoiceMessageOverall = TEXT("\n- 整体意见：{0}");
-
-	/** 选择卡提交后作为用户消息发给 Agent 的文字：选中项与评语都带上选项 id。 */
+	/** 选择卡提交后作为用户消息发给 Agent 的文字：标题行、选中项、逐项评语、整体意见，选中项与评语都带上选项 id。 */
 	FString ComposeChoiceMessage(const FShuttlegentChoiceRequest& Request, const FShuttlegentChoiceAnswer& Answer)
 	{
-		FString Message = FString::Format(ChoiceMessageHeader, { Request.Question });
+		FString Message = FText::Format(LOCTEXT("ChoiceMessageHeader", "About \"{0}\", my choice:"), FText::FromString(Request.Question)).ToString();
 
 		TArray<FString> Picked;
 		for (const FShuttlegentChoiceOption& Option : Request.Options)
 		{
-			if (Answer.Selected.Contains(Option.Id)) Picked.Add(FString::Format(ChoiceMessageItem, { Option.Title, Option.Id }));
+			if (Answer.Selected.Contains(Option.Id)) Picked.Add(FText::Format(LOCTEXT("ChoiceMessageItem", "{0} (id: {1})"), FText::FromString(Option.Title), FText::FromString(Option.Id)).ToString());
 		}
-		Message += Picked.IsEmpty() ? FString(ChoiceMessageNoneSelected) : ChoiceMessageSelected + FString::Join(Picked, ChoiceMessageItemSeparator);
+		if (Picked.IsEmpty()) Message += LOCTEXT("ChoiceMessageNoneSelected", "\n- Nothing selected").ToString();
+		else Message += FText::Format(LOCTEXT("ChoiceMessageSelected", "\n- Selected: {0}"), FText::FromString(FString::Join(Picked, *LOCTEXT("ChoiceMessageItemSeparator", ", ").ToString()))).ToString();
 
 		for (const FShuttlegentChoiceOption& Option : Request.Options)
 		{
 			const FString* Note = Answer.ItemNotes.Find(Option.Id);
-			if (Note != nullptr) Message += FString::Format(ChoiceMessageNote, { Option.Title, Option.Id, *Note });
+			if (Note != nullptr) Message += FText::Format(LOCTEXT("ChoiceMessageNote", "\n- Note on {0} (id: {1}): {2}"), FText::FromString(Option.Title), FText::FromString(Option.Id), FText::FromString(*Note)).ToString();
 		}
-		if (!Answer.OverallNote.IsEmpty()) Message += FString::Format(ChoiceMessageOverall, { Answer.OverallNote });
+		if (!Answer.OverallNote.IsEmpty()) Message += FText::Format(LOCTEXT("ChoiceMessageOverall", "\n- Overall: {0}"), FText::FromString(Answer.OverallNote)).ToString();
 		return Message;
 	}
 
@@ -607,7 +597,7 @@ void FShuttlegentChatModel::RetryStart(FShuttlegentConversation& Conversation)
 
 	StartIssue = EShuttlegentStartIssue::None;
 	StartIssueDetail.Reset();
-	AddRunLog(Conversation, LOCTEXT("LogRetryStart", "重试启动运行时"), false);
+	AddRunLog(Conversation, LOCTEXT("LogRetryStart", "Retry starting the runtime"), false);
 
 	// 正在运行的运行时在启动时已读取密钥；待其退出后再次启动
 	if (Pinned->GetState() != EShuttlegentAgentState::Stopped)
@@ -629,7 +619,7 @@ void FShuttlegentChatModel::RetryResume(FShuttlegentConversation& Conversation)
 {
 	if (!Conversation.bResumeFailed || Conversation.SessionId.IsEmpty()) return;
 
-	AddRunLog(Conversation, LOCTEXT("LogRetryResume", "重试恢复会话"), false);
+	AddRunLog(Conversation, LOCTEXT("LogRetryResume", "Retry resuming the session"), false);
 	RequestSession(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -641,7 +631,7 @@ void FShuttlegentChatModel::AcknowledgeUnknownWrite(FShuttlegentConversation& Co
 
 	(*Found)->bAnswered = true;
 	Conversation.bNeedsVerify = Conversation.Entries.ContainsByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::WriteUnknown && !Entry->bAnswered; });
-	AddRunLog(Conversation, LOCTEXT("LogWriteVerified", "已核对写入结果未知的对象"), false);
+	AddRunLog(Conversation, LOCTEXT("LogWriteVerified", "Checked the objects whose write result was unknown"), false);
 	NotifyContent(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -680,14 +670,14 @@ void FShuttlegentChatModel::ParkPendingPrompt(FShuttlegentConversation& Conversa
 	if (!Conversation.PendingImages.IsEmpty())
 	{
 		Conversation.PendingImages.Reset();
-		AddNotice(Conversation, LOCTEXT("ImagesDropped", "消息未能发出，已放回队列；所附图片没有保留，请重新添加。"), true);
+		AddNotice(Conversation, LOCTEXT("ImagesDropped", "The message was not sent and is back in the queue; its attached images were not kept, so please add them again."), true);
 	}
 
 	// 文本已带有其引用块，因此该条目没有单独的引用
 	Conversation.Queue.Items.Insert(MakeQueued(Conversation, Conversation.PendingPrompt, TArray<FShuttlegentReference>()), 0);
 	Conversation.Queue.bPaused = true;
 	Conversation.PendingPrompt.Reset();
-	AddRunLog(Conversation, LOCTEXT("LogPromptParked", "消息未发出，已放回队列首位"), true);
+	AddRunLog(Conversation, LOCTEXT("LogPromptParked", "Message not sent; moved back to the front of the queue"), true);
 	NotifyQueue(Conversation);
 }
 
@@ -713,7 +703,7 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(FShuttlegentConversa
 
 	if (!IsBusy(Conversation))
 	{
-		const FString Body = Text.TrimStartAndEnd().IsEmpty() ? FString(ShuttlegentChatModelPrivate::ImageOnlyPrompt) : Text;
+		const FString Body = Text.TrimStartAndEnd().IsEmpty() ? LOCTEXT("ImageOnlyPrompt", "(see attached images)").ToString() : Text;
 		const FString Prompt = FShuttlegentReferencePrompt::Compose(Body, References);
 		if (bEnterPlanMode && !Conversation.bPlanMode) SubmitInPlanMode(Conversation.AsShared(), Prompt, Images);
 		else SubmitPrompt(Conversation, Prompt, Images);
@@ -724,7 +714,7 @@ EShuttlegentSubmitResult FShuttlegentChatModel::SubmitDraft(FShuttlegentConversa
 	if (bEnterPlanMode) SetPlanMode(Conversation, true);
 
 	Conversation.Queue.Items.Add(MakeQueued(Conversation, Text, References));
-	AddRunLog(Conversation, LOCTEXT("LogQueued", "加入队列"), false);
+	AddRunLog(Conversation, LOCTEXT("LogQueued", "Added to the queue"), false);
 	NotifyQueue(Conversation);
 	return EShuttlegentSubmitResult::Queued;
 }
@@ -734,12 +724,12 @@ bool FShuttlegentChatModel::CanAttachImages(const FShuttlegentConversation& Conv
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid() || Pinned->GetState() != EShuttlegentAgentState::Ready)
 	{
-		OutReason = LOCTEXT("ImagesNotReady", "运行时就绪后才能添加图片");
+		OutReason = LOCTEXT("ImagesNotReady", "Images can be added once the runtime is ready");
 		return false;
 	}
 	if (!Pinned->SupportsImagePrompts())
 	{
-		OutReason = LOCTEXT("ImagesUnsupported", "当前模型不支持图片；默认模型 deepseek-flash 支持，可在偏好设置中改回");
+		OutReason = LOCTEXT("ImagesUnsupported", "The current model does not support images; the default model deepseek-flash does, and you can switch back to it in Editor Preferences");
 		return false;
 	}
 
@@ -752,13 +742,13 @@ bool FShuttlegentChatModel::CanAttachImages(const FShuttlegentConversation& Conv
 	{
 		const FShuttlegentConfigChoice* Model = Models.FindByPredicate([&ModelValue](const FShuttlegentConfigChoice& Choice) { return Choice.Value == ModelValue; });
 		const FString ModelName = Model != nullptr ? Model->Name : ModelValue;
-		OutReason = FText::Format(LOCTEXT("ImagesUnsupportedBySession", "这个对话使用的模型 {0} 不支持图片；在下方切换到支持图片的模型，或新建对话"), FText::FromString(ModelName));
+		OutReason = FText::Format(LOCTEXT("ImagesUnsupportedBySession", "The model {0} used by this conversation does not support images; switch to a model that does below, or start a new conversation"), FText::FromString(ModelName));
 		return false;
 	}
 
 	if (IsBusy(Conversation))
 	{
-		OutReason = LOCTEXT("ImagesBusy", "本轮结束后再发送带图片的消息");
+		OutReason = LOCTEXT("ImagesBusy", "Send messages with images after this turn ends");
 		return false;
 	}
 	return true;
@@ -790,7 +780,7 @@ void FShuttlegentChatModel::ResumeQueue(FShuttlegentConversation& Conversation)
 	if (!Conversation.Queue.bPaused) return;
 
 	Conversation.Queue.bPaused = false;
-	AddRunLog(Conversation, LOCTEXT("LogQueueResumed", "继续队列"), false);
+	AddRunLog(Conversation, LOCTEXT("LogQueueResumed", "Queue resumed"), false);
 	NotifyQueue(Conversation);
 	SendNextQueued(Conversation);
 }
@@ -804,7 +794,7 @@ void FShuttlegentChatModel::Retry(FShuttlegentConversation& Conversation)
 {
 	if (!CanRetry(Conversation)) return;
 
-	AddRunLog(Conversation, LOCTEXT("LogRetry", "重试查询"), false);
+	AddRunLog(Conversation, LOCTEXT("LogRetry", "Retry the query"), false);
 	SubmitPrompt(Conversation, Conversation.LastSentPrompt, Conversation.LastSentImages);
 }
 
@@ -826,7 +816,7 @@ void FShuttlegentChatModel::PauseQueue(FShuttlegentConversation& Conversation)
 	if (Queue.bPaused || Queue.Items.IsEmpty()) return;
 
 	Queue.bPaused = true;
-	AddRunLog(Conversation, LOCTEXT("LogQueuePaused", "队列已暂停"), true);
+	AddRunLog(Conversation, LOCTEXT("LogQueuePaused", "Queue paused"), true);
 	NotifyQueue(Conversation);
 }
 
@@ -843,7 +833,7 @@ void FShuttlegentChatModel::SendNextQueued(FShuttlegentConversation& Conversatio
 	if (!bAllExist)
 	{
 		Queue.bPaused = true;
-		AddNotice(Conversation, LOCTEXT("QueuedReferenceGone", "队列中下一条消息引用的对象已失效，队列已暂停。取回该条，移除或重新添加引用后再继续。"), true);
+		AddNotice(Conversation, LOCTEXT("QueuedReferenceGone", "An object referenced by the next queued message is no longer valid, so the queue is paused. Take that message back, remove or re-add the reference, then continue."), true);
 		NotifyQueue(Conversation);
 		return;
 	}
@@ -860,7 +850,7 @@ void FShuttlegentChatModel::SendNextQueued(FShuttlegentConversation& Conversatio
 	if (!Item.ModelValue.IsEmpty() && Item.ModelValue != CurrentModel) SetConfigValue(Conversation, ShuttlegentEditorConfigId::Model, Item.ModelValue);
 	if (!Item.ReasoningValue.IsEmpty() && Item.ReasoningValue != CurrentReasoning) SetConfigValue(Conversation, ShuttlegentEditorConfigId::Reasoning, Item.ReasoningValue);
 
-	AddRunLog(Conversation, LOCTEXT("LogQueueNext", "发送队列中的下一条"), false);
+	AddRunLog(Conversation, LOCTEXT("LogQueueNext", "Send the next queued message"), false);
 	NotifyQueue(Conversation);
 	SubmitPrompt(Conversation, FShuttlegentReferencePrompt::Compose(Item.Text, Item.References));
 }
@@ -909,25 +899,25 @@ bool FShuttlegentChatModel::CanUndoWrite(const FShuttlegentChatEntry& Entry, FTe
 	const FShuttlegentWriteResult& Result = Entry.WriteResult;
 	if (!Result.bUndoable)
 	{
-		OutReason = LOCTEXT("UndoNotSupported", "此操作不是同步事务，不能撤销。");
+		OutReason = LOCTEXT("UndoNotSupported", "This operation was not a synchronous transaction and cannot be undone.");
 		return false;
 	}
 	if (Entry.bUndone)
 	{
-		OutReason = LOCTEXT("UndoDone", "本次修改已撤销。");
+		OutReason = LOCTEXT("UndoDone", "This change has been undone.");
 		return false;
 	}
 	if (!Result.TransactionId.IsValid())
 	{
-		OutReason = LOCTEXT("UndoNothing", "没有执行任何修改，无需撤销。");
+		OutReason = LOCTEXT("UndoNothing", "Nothing was changed, so there is nothing to undo.");
 		return false;
 	}
 	if (!FShuttlegentWriteGate::IsOnUndoTop(Result.TransactionId))
 	{
-		OutReason = LOCTEXT("UndoNotTop", "之后还有其他编辑，本次事务已不在撤销栈顶，不能直接撤销；请在编辑器撤销历史中核对。");
+		OutReason = LOCTEXT("UndoNotTop", "Other edits came after it, so this transaction is no longer at the top of the undo stack and cannot be undone directly; check the editor's undo history.");
 		return false;
 	}
-	OutReason = LOCTEXT("UndoAvailable", "本次事务在撤销栈顶，可撤销。");
+	OutReason = LOCTEXT("UndoAvailable", "This transaction is at the top of the undo stack and can be undone.");
 	return true;
 }
 
@@ -940,12 +930,12 @@ void FShuttlegentChatModel::UndoWrite(FShuttlegentConversation& Conversation, in
 	FText Reason;
 	if (!CanUndoWrite(*Entry, Reason) || !FShuttlegentWriteGate::Undo(Entry->WriteResult.TransactionId))
 	{
-		AddNotice(Conversation, FText::Format(LOCTEXT("UndoFailed", "撤销失败：{0}"), Reason), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("UndoFailed", "Undo failed: {0}"), Reason), true);
 		return;
 	}
 
 	Entry->bUndone = true;
-	AddRunLog(Conversation, LOCTEXT("LogUndoWrite", "撤销本次修改"), false);
+	AddRunLog(Conversation, LOCTEXT("LogUndoWrite", "Undo this change"), false);
 	NotifyContent(Conversation);
 }
 
@@ -958,12 +948,12 @@ void FShuttlegentChatModel::UndoMemory(FShuttlegentConversation& Conversation, i
 	FString Error;
 	if (!FShuttlegentMemoryStore::Revert(Entry->MemoryChange, Error))
 	{
-		AddNotice(Conversation, FText::Format(LOCTEXT("UndoMemoryFailed", "撤销失败：{0}"), FText::FromString(Error)), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("UndoMemoryFailed", "Undo failed: {0}"), FText::FromString(Error)), true);
 		return;
 	}
 
 	Entry->bUndone = true;
-	AddRunLog(Conversation, LOCTEXT("LogUndoMemory", "撤销记忆修改"), false);
+	AddRunLog(Conversation, LOCTEXT("LogUndoMemory", "Undo the memory change"), false);
 	NotifyContent(Conversation);
 }
 
@@ -990,22 +980,22 @@ bool FShuttlegentChatModel::CanEditHistory(const FShuttlegentConversation& Conve
 	const TSharedPtr<FShuttlegentAgentService> Pinned = Service.Pin();
 	if (!Pinned.IsValid() || Conversation.SessionId.IsEmpty())
 	{
-		OutReason = LOCTEXT("HistoryNoSession", "这段对话还没有会话。");
+		OutReason = LOCTEXT("HistoryNoSession", "This conversation has no session yet.");
 		return false;
 	}
 	if (IsBusy(Conversation) || !Conversation.Queue.Items.IsEmpty())
 	{
-		OutReason = LOCTEXT("HistoryBusy", "本轮还在进行或有排队的消息，结束后再操作。");
+		OutReason = LOCTEXT("HistoryBusy", "A turn is still running or messages are queued; try again when it is done.");
 		return false;
 	}
 	if (bRuntimeLost || GetState() != EShuttlegentAgentState::Ready || !Pinned->IsSessionOpen(Conversation.SessionId))
 	{
-		OutReason = LOCTEXT("HistoryNotOpen", "会话尚未在运行时中就绪。");
+		OutReason = LOCTEXT("HistoryNotOpen", "The session is not ready in the runtime yet.");
 		return false;
 	}
 	if (!FShuttlegentMcpServerModule::Get().CanForkSessions())
 	{
-		OutReason = LOCTEXT("HistoryNoControl", "运行时的会话控制插件不可用。");
+		OutReason = LOCTEXT("HistoryNoControl", "The runtime's session control plugin is not available.");
 		return false;
 	}
 
@@ -1022,13 +1012,13 @@ void FShuttlegentChatModel::BranchFrom(FShuttlegentConversation& Conversation, i
 	FText Reason;
 	if (!CanEditHistory(Conversation, Reason))
 	{
-		AddNotice(Conversation, FText::Format(LOCTEXT("BranchBlocked", "不能分支：{0}"), Reason), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("BranchBlocked", "Cannot branch: {0}"), Reason), true);
 		return;
 	}
 
 	const FString SourceSessionId = Conversation.SessionId;
 	const TWeakPtr<FShuttlegentChatModel> WeakThis = AsShared();
-	AddRunLog(Conversation, LOCTEXT("LogBranch", "从这条消息分支"), false);
+	AddRunLog(Conversation, LOCTEXT("LogBranch", "Branch from this message"), false);
 	FShuttlegentMcpServerModule::Get().ForkSession(SourceSessionId, Ordinal, true, [WeakThis, SourceSessionId, Ordinal](const FString& NewSessionId, const FString& Error)
 	{
 		const TSharedPtr<FShuttlegentChatModel> This = WeakThis.Pin();
@@ -1037,7 +1027,7 @@ void FShuttlegentChatModel::BranchFrom(FShuttlegentConversation& Conversation, i
 		if (NewSessionId.IsEmpty())
 		{
 			const TSharedPtr<FShuttlegentConversation> Source = This->FindConversation(SourceSessionId);
-			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("BranchFailed", "分支失败：{0}"), FText::FromString(Error)), true);
+			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("BranchFailed", "Branching failed: {0}"), FText::FromString(Error)), true);
 			return;
 		}
 		This->AdoptFork(SourceSessionId, NewSessionId, Ordinal, true, false);
@@ -1053,7 +1043,7 @@ void FShuttlegentChatModel::RewindTo(FShuttlegentConversation& Conversation, int
 	FText Reason;
 	if (!CanEditHistory(Conversation, Reason))
 	{
-		AddNotice(Conversation, FText::Format(LOCTEXT("RewindBlocked", "不能回到这里：{0}"), Reason), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("RewindBlocked", "Cannot go back here: {0}"), Reason), true);
 		return;
 	}
 
@@ -1061,7 +1051,7 @@ void FShuttlegentChatModel::RewindTo(FShuttlegentConversation& Conversation, int
 	const TArray<TSharedPtr<FShuttlegentChatEntry>> Writes = ShuttlegentChatModelPrivate::UndoableWritesAfter(Conversation, Index);
 	if (!ShuttlegentChatModelPrivate::AreWritesOnUndoTop(Writes))
 	{
-		AddNotice(Conversation, LOCTEXT("RewindNotTop", "不能回到这里：这之后编辑器里还有其他编辑，直接撤销会连带撤掉它们。未做任何改动。"), true);
+		AddNotice(Conversation, LOCTEXT("RewindNotTop", "Cannot go back here: other edits were made in the editor after this point, and undoing directly would undo them too. Nothing was changed."), true);
 		return;
 	}
 
@@ -1070,7 +1060,7 @@ void FShuttlegentChatModel::RewindTo(FShuttlegentConversation& Conversation, int
 	FString Draft;
 	TArray<FString> ReferenceLines;
 	FShuttlegentReferencePrompt::Split(Conversation.Entries[Index]->Text, Draft, ReferenceLines);
-	AddRunLog(Conversation, LOCTEXT("LogRewind", "回到这条消息之前"), false);
+	AddRunLog(Conversation, LOCTEXT("LogRewind", "Go back to before this message"), false);
 
 	// 第一条消息之前没有对话可保留：撤销写入后开始新对话
 	if (Ordinal == 0)
@@ -1091,12 +1081,12 @@ void FShuttlegentChatModel::RewindTo(FShuttlegentConversation& Conversation, int
 		const TSharedPtr<FShuttlegentConversation> Source = This->FindConversation(SourceSessionId);
 		if (NewSessionId.IsEmpty())
 		{
-			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("RewindFailed", "回退失败：{0}。未做任何改动。"), FText::FromString(Error)), true);
+			if (Source.IsValid()) This->AddNotice(*Source, FText::Format(LOCTEXT("RewindFailed", "Going back failed: {0}. Nothing was changed."), FText::FromString(Error)), true);
 			return;
 		}
 		if (!ShuttlegentChatModelPrivate::AreWritesOnUndoTop(Writes))
 		{
-			if (Source.IsValid()) This->AddNotice(*Source, LOCTEXT("RewindRaced", "不能回到这里：等待期间编辑器里又有了其他编辑。未做任何改动。"), true);
+			if (Source.IsValid()) This->AddNotice(*Source, LOCTEXT("RewindRaced", "Cannot go back here: other edits were made in the editor while waiting. Nothing was changed."), true);
 			return;
 		}
 
@@ -1156,7 +1146,7 @@ void FShuttlegentChatModel::AdoptFork(const FString& SourceSessionId, const FStr
 	if (Source != nullptr) Record = *Source;
 	Record.SessionId = NewSessionId;
 	Record.bArchived = false;
-	if (!bRewind) Record.Title = FText::Format(LOCTEXT("BranchTitle", "{0}（分支）"), FText::FromString(Record.Title)).ToString();
+	if (!bRewind) Record.Title = FText::Format(LOCTEXT("BranchTitle", "{0} (branch)"), FText::FromString(Record.Title)).ToString();
 	Store.UpsertRecord(Record);
 
 	// 显示源会话的视图改为显示新会话；回退后原会话归档保留，可从“已归档”恢复
@@ -1171,7 +1161,7 @@ void FShuttlegentChatModel::Cancel(FShuttlegentConversation& Conversation)
 
 	Conversation.bStopping = true;
 	Pinned->Cancel(Conversation.SessionId);
-	AddRunLog(Conversation, LOCTEXT("LogCancel", "发送停止请求"), true);
+	AddRunLog(Conversation, LOCTEXT("LogCancel", "Send a stop request"), true);
 	NotifyStatus(Conversation);
 }
 
@@ -1211,18 +1201,18 @@ TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::HoldConversation(con
 	if (!Opened->Queue.Items.IsEmpty())
 	{
 		Opened->Queue.bPaused = true;
-		AddRunLog(*Opened, FText::Format(LOCTEXT("LogQueueRestored", "放回上次未发出的 {0} 条排队消息，队列已暂停"), FText::AsNumber(Opened->Queue.Items.Num())), false);
+		AddRunLog(*Opened, FText::Format(LOCTEXT("LogQueueRestored", "Restored {0} queued message(s) not sent last time; the queue is paused"), FText::AsNumber(Opened->Queue.Items.Num())), false);
 		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: %d queued prompt(s) restored, queue paused."), *SessionId, Opened->Queue.Items.Num());
 	}
 
 	if (bDeferResume)
 	{
 		Opened->bResumeDeferred = true;
-		AddRunLog(*Opened, LOCTEXT("LogOpenSessionDeferred", "打开会话记录，首次显示时恢复运行时上下文"), false);
+		AddRunLog(*Opened, LOCTEXT("LogOpenSessionDeferred", "Opened the session record; the runtime context is restored when it is first shown"), false);
 		return Opened;
 	}
 
-	AddRunLog(*Opened, LOCTEXT("LogOpenSession", "打开会话记录，恢复运行时上下文"), false);
+	AddRunLog(*Opened, LOCTEXT("LogOpenSession", "Opened the session record and restored the runtime context"), false);
 	RequestSession(*Opened);
 	return Opened;
 }
@@ -1260,7 +1250,7 @@ TArray<FString> FShuttlegentChatModel::GetBusyTitles() const
 		if (!IsPrompting(*Conversation) && Conversation->PendingPrompt.IsEmpty()) continue;
 
 		const FString Title = GetTitle(*Conversation);
-		Titles.Add(Title.IsEmpty() ? LOCTEXT("BusyUntitled", "新对话").ToString() : Title);
+		Titles.Add(Title.IsEmpty() ? LOCTEXT("BusyUntitled", "New conversation").ToString() : Title);
 	}
 	return Titles;
 }
@@ -1307,7 +1297,7 @@ TSharedPtr<FShuttlegentConversation> FShuttlegentChatModel::GetFocused() const
 void FShuttlegentChatModel::Reconnect(FShuttlegentConversation& Conversation)
 {
 	bRuntimeLost = false;
-	AddRunLog(Conversation, LOCTEXT("LogReconnect", "重新连接运行时"), false);
+	AddRunLog(Conversation, LOCTEXT("LogReconnect", "Reconnect to the runtime"), false);
 
 	// 其他已持有的对话在下次发送提示时恢复其会话
 	if (!Conversation.SessionId.IsEmpty()) RequestSession(Conversation);
@@ -1372,7 +1362,7 @@ void FShuttlegentChatModel::AnswerPermission(int32 EntryId, bool bAllow)
 	}
 
 	if (Respond) Respond(bAllow);
-	AddRunLog(Conversation, bAllow ? LOCTEXT("LogPermissionAllowed", "允许本次运行时提权") : LOCTEXT("LogPermissionRejected", "拒绝运行时提权"), !bAllow);
+	AddRunLog(Conversation, bAllow ? LOCTEXT("LogPermissionAllowed", "Allowed this runtime elevation") : LOCTEXT("LogPermissionRejected", "Rejected the runtime elevation"), !bAllow);
 	if (!bAllow) PauseQueue(Conversation);
 	NotifyContent(Conversation);
 	NotifyStatus(Conversation);
@@ -1457,7 +1447,7 @@ void FShuttlegentChatModel::SetConfigValue(FShuttlegentConversation& Conversatio
 	}
 
 	FString Error;
-	if (!Pinned->SetConfigOption(Conversation.SessionId, ConfigId, Value, Error)) AddNotice(Conversation, FText::Format(LOCTEXT("ConfigFailed", "切换失败：{0}"), FText::FromString(Error)), true);
+	if (!Pinned->SetConfigOption(Conversation.SessionId, ConfigId, Value, Error)) AddNotice(Conversation, FText::Format(LOCTEXT("ConfigFailed", "Switching failed: {0}"), FText::FromString(Error)), true);
 }
 
 bool FShuttlegentChatModel::GetSessionActivity(const FString& SessionId, EShuttlegentChatStatus& OutStatus, int32& OutQueued) const
@@ -1647,7 +1637,7 @@ void FShuttlegentChatModel::HandleSessionEvent(const FShuttlegentSessionEvent& E
 		if (Conversation->bPlanMode == bActive) return;
 
 		Conversation->bPlanMode = bActive;
-		AddRunLog(*Conversation, bActive ? LOCTEXT("LogPlanOn", "进入计划模式") : LOCTEXT("LogPlanOff", "退出计划模式"), false);
+		AddRunLog(*Conversation, bActive ? LOCTEXT("LogPlanOn", "Entered plan mode") : LOCTEXT("LogPlanOff", "Left plan mode"), false);
 		NotifyStatus(*Conversation);
 	}
 }
@@ -1656,12 +1646,12 @@ bool FShuttlegentChatModel::CanSetPlanMode(const FShuttlegentConversation& Conve
 {
 	if (Conversation.bResuming)
 	{
-		OutReason = LOCTEXT("PlanResuming", "会话正在恢复。");
+		OutReason = LOCTEXT("PlanResuming", "The session is being resumed.");
 		return false;
 	}
 	if (!Conversation.PendingPlanReview.ReviewId.IsEmpty())
 	{
-		OutReason = LOCTEXT("PlanReviewing", "先审批 Agent 交出的计划。");
+		OutReason = LOCTEXT("PlanReviewing", "Review the plan from the agent first.");
 		return false;
 	}
 
@@ -1670,12 +1660,12 @@ bool FShuttlegentChatModel::CanSetPlanMode(const FShuttlegentConversation& Conve
 	const bool bOpen = Pinned.IsValid() && !Conversation.SessionId.IsEmpty() && Pinned->IsSessionOpen(Conversation.SessionId);
 	if (bOpen && !FShuttlegentMcpServerModule::Get().CanForkSessions())
 	{
-		OutReason = LOCTEXT("PlanNoControl", "运行时的会话控制插件不可用。");
+		OutReason = LOCTEXT("PlanNoControl", "The runtime's session control plugin is not available.");
 		return false;
 	}
 	if (!Conversation.SessionId.IsEmpty() && !bOpen)
 	{
-		OutReason = LOCTEXT("PlanNotOpen", "会话尚未在运行时中就绪。");
+		OutReason = LOCTEXT("PlanNotOpen", "The session is not ready in the runtime yet.");
 		return false;
 	}
 
@@ -1713,7 +1703,7 @@ void FShuttlegentChatModel::ApplyPlanMode(const TSharedPtr<FShuttlegentConversat
 		if (!Error.IsEmpty())
 		{
 			Held->bPlanMode = !bActive;
-			This->AddNotice(*Held, FText::Format(LOCTEXT("PlanSetFailed", "切换计划模式失败：{0}"), FText::FromString(Error)), true);
+			This->AddNotice(*Held, FText::Format(LOCTEXT("PlanSetFailed", "Switching plan mode failed: {0}"), FText::FromString(Error)), true);
 			This->NotifyStatus(*Held);
 		}
 		if (OnApplied) OnApplied(Error.IsEmpty());
@@ -1760,7 +1750,7 @@ void FShuttlegentChatModel::HandlePlanReview(const FShuttlegentPlanReview& Revie
 	const TSharedPtr<FShuttlegentChatEntry> Entry = AddEntry(*Conversation, EShuttlegentChatEntryKind::Plan, Review.Plan);
 	Entry->Status = ShuttlegentEditorWebField::PlanPending;
 	Conversation->PlanEntryId = Entry->Id;
-	AddRunLog(*Conversation, LOCTEXT("LogPlanReview", "Agent 交出计划，等待审批"), true);
+	AddRunLog(*Conversation, LOCTEXT("LogPlanReview", "The agent handed over a plan; waiting for review"), true);
 	NotifyStructure(*Conversation);
 	NotifyStatus(*Conversation);
 }
@@ -1797,7 +1787,7 @@ void FShuttlegentChatModel::AnswerPlanReview(FShuttlegentConversation& Target, b
 		const TSharedPtr<FShuttlegentConversation> Held = WeakConversation.Pin();
 		if (!This.IsValid() || !Held.IsValid() || Error.IsEmpty()) return;
 
-		This->AddNotice(*Held, FText::Format(LOCTEXT("PlanAnswerFailed", "审批结果未送达运行时：{0}"), FText::FromString(Error)), true);
+		This->AddNotice(*Held, FText::Format(LOCTEXT("PlanAnswerFailed", "The review result did not reach the runtime: {0}"), FText::FromString(Error)), true);
 	});
 }
 
@@ -1822,7 +1812,7 @@ void FShuttlegentChatModel::SettlePlanReview(FShuttlegentConversation& Conversat
 
 	Conversation.PendingPlanReview = FShuttlegentPlanReview();
 	Conversation.PlanEntryId = 0;
-	AddRunLog(Conversation, FText::Format(LOCTEXT("LogPlanSettled", "计划审批：{0}"), FText::FromString(Outcome)), false);
+	AddRunLog(Conversation, FText::Format(LOCTEXT("LogPlanSettled", "Plan review: {0}"), FText::FromString(Outcome)), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -1851,7 +1841,7 @@ void FShuttlegentChatModel::HandleChoicePresented(const FShuttlegentChoiceReques
 	Owner->ChoiceEntryId = Entry->Id;
 	RecordChoice(*Owner, *Entry);
 
-	AddRunLog(*Owner, FText::Format(LOCTEXT("LogChoicePresented", "Agent 交出选择卡：{0}"), FText::FromString(Request.Question)), false);
+	AddRunLog(*Owner, FText::Format(LOCTEXT("LogChoicePresented", "The agent handed over a choice card: {0}"), FText::FromString(Request.Question)), false);
 	NotifyStructure(*Owner);
 	NotifyStatus(*Owner);
 	OnSessionsChanged.Broadcast();
@@ -1862,21 +1852,21 @@ bool FShuttlegentChatModel::SubmitChoice(FShuttlegentConversation& Conversation,
 	TSharedPtr<FShuttlegentChatEntry>* Found = Conversation.Entries.FindByPredicate([EntryId](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Id == EntryId; });
 	if (Found == nullptr || Conversation.ChoiceEntryId != EntryId)
 	{
-		OutReason = LOCTEXT("ChoiceClosed", "这张选择卡已不在等待作答。");
+		OutReason = LOCTEXT("ChoiceClosed", "This choice card is no longer waiting for an answer.");
 		return false;
 	}
 
 	FShuttlegentChoiceAnswer Answer;
 	if (!FShuttlegentChoiceJson::ParseAnswer(AnswerJson, (*Found)->Choice, Answer) || (Answer.Selected.IsEmpty() && Answer.ItemNotes.IsEmpty() && Answer.OverallNote.IsEmpty()))
 	{
-		OutReason = LOCTEXT("ChoiceEmpty", "先选择一项或写下意见再提交。");
+		OutReason = LOCTEXT("ChoiceEmpty", "Select an option or write a note before submitting.");
 		return false;
 	}
 
 	// 与 SubmitDraft 的拒绝条件一致；先查，免得卡片已标为提交而消息没有发出
 	if (bRuntimeLost || StartIssue != EShuttlegentStartIssue::None || Conversation.bNeedsVerify)
 	{
-		OutReason = LOCTEXT("ChoiceBlocked", "现在不能发送消息：先处理上方的提示。");
+		OutReason = LOCTEXT("ChoiceBlocked", "Messages cannot be sent right now: handle the prompt above first.");
 		return false;
 	}
 
@@ -1901,7 +1891,7 @@ void FShuttlegentChatModel::SettleChoice(FShuttlegentConversation& Conversation,
 	(*Found)->ChoiceAnswer = Answer;
 	RecordChoice(Conversation, **Found);
 
-	AddRunLog(Conversation, FText::Format(LOCTEXT("LogChoiceSettled", "选择卡：{0}"), FText::FromString(Status)), false);
+	AddRunLog(Conversation, FText::Format(LOCTEXT("LogChoiceSettled", "Choice card: {0}"), FText::FromString(Status)), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 	OnSessionsChanged.Broadcast();
@@ -2053,7 +2043,7 @@ void FShuttlegentChatModel::ApplyCompaction(FShuttlegentConversation& Conversati
 		Entry->Title = bManual ? ShuttlegentEditorWebField::Manual : ShuttlegentChatModelPrivate::CompactionAuto;
 		Conversation.CompactionEntryId = Entry->Id;
 		Conversation.bCompactionStarted = true;
-		AddRunLog(Conversation, bManual ? LOCTEXT("LogCompactManual", "开始手动压缩上下文") : LOCTEXT("LogCompactAuto", "上下文接近上限，开始自动压缩"), false);
+		AddRunLog(Conversation, bManual ? LOCTEXT("LogCompactManual", "Started compacting the context manually") : LOCTEXT("LogCompactAuto", "The context is near its limit; started compacting automatically"), false);
 		NotifyStructure(Conversation);
 		return;
 	}
@@ -2092,7 +2082,7 @@ void FShuttlegentChatModel::ApplyCompaction(FShuttlegentConversation& Conversati
 		Pinned->GetSessionStore().AppendTranscript(Conversation.SessionId, ShuttlegentChatModelPrivate::TranscriptCompaction, Record);
 	}
 
-	AddRunLog(Conversation, Error.IsEmpty() ? LOCTEXT("LogCompactDone", "上下文压缩完成") : FText::Format(LOCTEXT("LogCompactFailed", "上下文压缩失败：{0}"), FText::FromString(Error)), !Error.IsEmpty());
+	AddRunLog(Conversation, Error.IsEmpty() ? LOCTEXT("LogCompactDone", "Context compaction finished") : FText::Format(LOCTEXT("LogCompactFailed", "Context compaction failed: {0}"), FText::FromString(Error)), !Error.IsEmpty());
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -2101,7 +2091,7 @@ bool FShuttlegentChatModel::CanCompact(const FShuttlegentConversation& Conversat
 {
 	if (Conversation.bCompacting)
 	{
-		OutReason = LOCTEXT("CompactRunning", "正在压缩。");
+		OutReason = LOCTEXT("CompactRunning", "Compaction is in progress.");
 		return false;
 	}
 	if (!CanEditHistory(Conversation, OutReason)) return false;
@@ -2133,11 +2123,11 @@ void FShuttlegentChatModel::CompactContext(FShuttlegentConversation& Target)
 		// 运行时没有报来压缩开始，说明没有可压缩的内容或命令失败；把命令的说明显示出来
 		if (!bSucceeded)
 		{
-			This->AddNotice(*Held, FText::Format(LOCTEXT("CompactFailed", "压缩失败：{0}"), FText::FromString(Text)), true);
+			This->AddNotice(*Held, FText::Format(LOCTEXT("CompactFailed", "Compaction failed: {0}"), FText::FromString(Text)), true);
 		}
 		else if (!Held->bCompactionStarted)
 		{
-			This->AddNotice(*Held, Text.IsEmpty() ? LOCTEXT("CompactNothing", "没有可压缩的内容。") : FText::FromString(Text), false);
+			This->AddNotice(*Held, Text.IsEmpty() ? LOCTEXT("CompactNothing", "There is nothing to compact.") : FText::FromString(Text), false);
 		}
 		This->NotifyStatus(*Held);
 	});
@@ -2381,7 +2371,7 @@ void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, c
 	TArray<FString> ImageFiles;
 	if (!Pinned->Prompt(Conversation.SessionId, Text, Images, ImageFiles, Error))
 	{
-		AddNotice(Conversation, FText::Format(LOCTEXT("PromptFailed", "发送失败：{0}"), FText::FromString(Error)), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("PromptFailed", "Sending failed: {0}"), FText::FromString(Error)), true);
 		return;
 	}
 
@@ -2404,7 +2394,7 @@ void FShuttlegentChatModel::SendPrompt(FShuttlegentConversation& Conversation, c
 		Notice->Status = ShuttlegentEditorWebField::MemoryRead;
 	}
 
-	AddRunLog(Conversation, LOCTEXT("LogTurnStart", "开始本轮"), false);
+	AddRunLog(Conversation, LOCTEXT("LogTurnStart", "Turn started"), false);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -2442,7 +2432,7 @@ void FShuttlegentChatModel::RequestSession(FShuttlegentConversation& Conversatio
 
 	ParkPendingPrompt(Conversation);
 	Conversation.bResumeFailed = true;
-	AddNotice(Conversation, FText::Format(LOCTEXT("ResumeFailed", "恢复会话失败：{0}"), FText::FromString(Error)), true);
+	AddNotice(Conversation, FText::Format(LOCTEXT("ResumeFailed", "Resuming the session failed: {0}"), FText::FromString(Error)), true);
 }
 
 void FShuttlegentChatModel::StartNewSession(FShuttlegentConversation& Conversation)
@@ -2466,7 +2456,7 @@ void FShuttlegentChatModel::StartNewSession(FShuttlegentConversation& Conversati
 			return;
 		}
 		ParkPendingPrompt(Conversation);
-		AddNotice(Conversation, FText::Format(LOCTEXT("AgentControlMissing", "运行时控制口未就绪，无法为新会话指定 Agent“{0}”；稍后重新发送"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId)), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("AgentControlMissing", "The runtime control channel is not ready, so agent \"{0}\" could not be set for the new session; send the message again later"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId)), true);
 		return;
 	}
 
@@ -2487,7 +2477,7 @@ void FShuttlegentChatModel::StartNewSession(FShuttlegentConversation& Conversati
 		if (!Error.IsEmpty())
 		{
 			This->ParkPendingPrompt(*Held);
-			This->AddNotice(*Held, FText::Format(LOCTEXT("AgentHandoffFailed", "无法为新会话指定 Agent“{0}”：{1}"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId), FText::FromString(Error)), true);
+			This->AddNotice(*Held, FText::Format(LOCTEXT("AgentHandoffFailed", "Could not set agent \"{0}\" for the new session: {1}"), FShuttlegentSettingsChoices::GetAgentLabel(AgentId), FText::FromString(Error)), true);
 			This->NotifyStatus(*Held);
 			This->ReleaseAgentHandoff();
 			return;
@@ -2509,7 +2499,7 @@ void FShuttlegentChatModel::SendNewSession(FShuttlegentConversation& Conversatio
 	}
 
 	ParkPendingPrompt(Conversation);
-	AddNotice(Conversation, FText::Format(LOCTEXT("NewSessionFailed", "新建会话失败：{0}"), FText::FromString(Error)), true);
+	AddNotice(Conversation, FText::Format(LOCTEXT("NewSessionFailed", "Creating the session failed: {0}"), FText::FromString(Error)), true);
 	if (AgentHandoff.Pin().Get() == &Conversation) ReleaseAgentHandoff();
 }
 
@@ -2610,12 +2600,12 @@ void FShuttlegentChatModel::ApplyTurnEnd(FShuttlegentConversation& Conversation,
 	}
 	if (StopReason == ShuttlegentChatModelPrivate::StopReasonCancelled)
 	{
-		AddEntry(Conversation, EShuttlegentChatEntryKind::TurnEnd, LOCTEXT("Cancelled", "已取消").ToString());
+		AddEntry(Conversation, EShuttlegentChatEntryKind::TurnEnd, LOCTEXT("Cancelled", "Cancelled").ToString());
 		return;
 	}
 	if (!StopReason.IsEmpty() && StopReason != ShuttlegentChatModelPrivate::StopReasonEndTurn)
 	{
-		AddEntry(Conversation, EShuttlegentChatEntryKind::TurnEnd, FText::Format(LOCTEXT("StoppedFor", "已停止：{0}"), FText::FromString(StopReason)).ToString());
+		AddEntry(Conversation, EShuttlegentChatEntryKind::TurnEnd, FText::Format(LOCTEXT("StoppedFor", "Stopped: {0}"), FText::FromString(StopReason)).ToString());
 	}
 }
 
@@ -2728,7 +2718,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 		Conversation.LastSentPrompt = OpenPrompt->Text;
 		Conversation.LastSentImages = ShuttlegentChatModelPrivate::LoadPromptImages(OpenPrompt->Images, bAllImages);
 		Conversation.LastOutcome = EShuttlegentTurnOutcome::Failed;
-		if (!bAllImages) AddNotice(Conversation, LOCTEXT("InterruptedImagesMissing", "这条消息所附的图片有的已找不到，重试时只发送找得到的；需要的话请重新添加。"), false);
+		if (!bAllImages) AddNotice(Conversation, LOCTEXT("InterruptedImagesMissing", "Some images attached to this message can no longer be found; a retry sends only the ones that still exist. Add them again if needed."), false);
 		UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: the last turn did not end (editor closed or runtime lost during the turn); retry is offered."), *Conversation.SessionId);
 	}
 	NotifyStructure(Conversation);
@@ -2736,7 +2726,7 @@ void FShuttlegentChatModel::ReplayTranscript(FShuttlegentConversation& Conversat
 
 void FShuttlegentChatModel::AddInterruptedNotice(FShuttlegentConversation& Conversation)
 {
-	AddNotice(Conversation, LOCTEXT("TurnInterrupted", "这一轮没有正常结束（编辑器在回合中关闭，或运行时中途退出）；当时未确认的写入、权限请求与提问均已作废。"), true);
+	AddNotice(Conversation, LOCTEXT("TurnInterrupted", "This turn did not end normally (the editor closed during the turn, or the runtime exited midway); writes, permission requests and questions that were waiting for confirmation have been discarded."), true);
 }
 
 void FShuttlegentChatModel::HandleStateChanged(EShuttlegentAgentState NewState)
@@ -2779,7 +2769,7 @@ void FShuttlegentChatModel::HandleSessionReady(const FString& SessionId)
 
 	if (AgentHandoff.Pin() == Conversation) ReleaseAgentHandoff();
 	const bool bResumed = Conversation->bResuming;
-	if (bResumed) AddRunLog(*Conversation, LOCTEXT("LogResumed", "会话已恢复"), false);
+	if (bResumed) AddRunLog(*Conversation, LOCTEXT("LogResumed", "Session resumed"), false);
 	Conversation->SessionId = SessionId;
 	Conversation->bResuming = false;
 	Conversation->bResumeFailed = false;
@@ -2869,7 +2859,7 @@ void FShuttlegentChatModel::ReplaceUnusableModel(FShuttlegentConversation& Conve
 	if (Value.IsEmpty()) return;
 
 	SetConfigValue(Conversation, ShuttlegentEditorConfigId::Model, Value);
-	AddRunLog(Conversation, FText::Format(LOCTEXT("LogModelReplaced", "原模型 {0} 的连接已不可用，已换成 {1}"), FText::FromString(ModelId), FText::FromString(DefaultModel)), true);
+	AddRunLog(Conversation, FText::Format(LOCTEXT("LogModelReplaced", "The connection for model {0} is no longer available; switched to {1}"), FText::FromString(ModelId), FText::FromString(DefaultModel)), true);
 	UE_LOG(LogShuttlegent, Log, TEXT("Shuttlegent session %s: model %s (%s) is no longer usable; switched to %s (%s)."), *Conversation.SessionId, *ModelId, *Route, *DefaultModel, *DefaultRoute.Route);
 }
 
@@ -2925,7 +2915,7 @@ void FShuttlegentChatModel::ApplyModelSettings()
 
 	UE_LOG(LogShuttlegent, Log, TEXT("Model connections changed since the runtime started; restarting the runtime."));
 	const TSharedPtr<FShuttlegentConversation> Focus = GetFocused();
-	if (Focus.IsValid()) AddRunLog(*Focus, LOCTEXT("LogModelsChanged", "模型连接已变化，重启运行时"), false);
+	if (Focus.IsValid()) AddRunLog(*Focus, LOCTEXT("LogModelsChanged", "Model connections changed; restarting the runtime"), false);
 
 	// 旧进程退出后由 HandleRuntimeExited 再次启动，并恢复获得焦点的对话的会话
 	bRestartPending = true;
@@ -2960,8 +2950,8 @@ void FShuttlegentChatModel::HandleSessionUpdate(const FString& SessionId, const 
 
 	// 运行日志：工具调用的首次更新及其首次失败
 	const TSharedPtr<FShuttlegentChatEntry> ToolCall = ToolCallId.IsEmpty() ? nullptr : FindToolCall(Conversation, ToolCallId);
-	if (ToolCall.IsValid() && !Existing.IsValid()) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolCall", "工具调用：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), false);
-	if (ToolCall.IsValid() && Status == ShuttlegentChatModelPrivate::ToolStatusFailed && PreviousStatus != Status) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolFailed", "工具失败：{0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), true);
+	if (ToolCall.IsValid() && !Existing.IsValid()) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolCall", "Tool call: {0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), false);
+	if (ToolCall.IsValid() && Status == ShuttlegentChatModelPrivate::ToolStatusFailed && PreviousStatus != Status) AddRunLog(Conversation, FText::Format(LOCTEXT("LogToolFailed", "Tool failed: {0}"), FShuttlegentToolPresentation::GetDisplayName(ToolCall->Title)), true);
 
 	if (bAdded)
 	{
@@ -2990,9 +2980,9 @@ void FShuttlegentChatModel::HandleTurnFinished(const FString& SessionId, const F
 	// 用户停止的回合里交出的选择卡随之取消
 	if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) SettleChoice(Conversation, ShuttlegentEditorWebField::ChoiceCancelled, FShuttlegentChoiceAnswer());
 
-	if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Completed) AddRunLog(Conversation, LOCTEXT("LogTurnCompleted", "本轮结束"), false);
-	else if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) AddRunLog(Conversation, LOCTEXT("LogTurnStopped", "本轮已停止"), true);
-	else AddRunLog(Conversation, LOCTEXT("LogTurnFailed", "本轮查询失败"), true);
+	if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Completed) AddRunLog(Conversation, LOCTEXT("LogTurnCompleted", "Turn finished"), false);
+	else if (Conversation.LastOutcome == EShuttlegentTurnOutcome::Stopped) AddRunLog(Conversation, LOCTEXT("LogTurnStopped", "Turn stopped"), true);
+	else AddRunLog(Conversation, LOCTEXT("LogTurnFailed", "Turn query failed"), true);
 
 	// 回合结束时仍处于打开状态的请求已无法再处理：带对话标识的请求随其对话的回合过期；
 	// 未带标识的请求不知属于谁，只有在不再有任何会话运行回合时才会过期。
@@ -3052,7 +3042,7 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 			Entry->WriteResult.Action = ApprovedWrite.Action;
 			Entry->WriteResult.Objects = ApprovedWrite.Objects;
 			Owner->bNeedsVerify = true;
-			AddRunLog(*Owner, LOCTEXT("LogWriteUnknown", "编辑器写入结果未知"), true);
+			AddRunLog(*Owner, LOCTEXT("LogWriteUnknown", "Editor write result unknown"), true);
 			NotifyStructure(*Owner);
 		}
 	}
@@ -3068,8 +3058,8 @@ void FShuttlegentChatModel::HandleRuntimeExited(int32 ExitCode, bool bExpected)
 		if (bExpected) continue;
 
 		if (!Conversation->Queue.Items.IsEmpty()) Conversation->Queue.bPaused = true;
-		AddRunLog(*Conversation, LOCTEXT("LogRuntimeLost", "运行时断开"), true);
-		AddNotice(*Conversation, FText::Format(LOCTEXT("RuntimeLost", "运行时意外退出（代码 {0}）。"), FText::AsNumber(ExitCode)), true);
+		AddRunLog(*Conversation, LOCTEXT("LogRuntimeLost", "Runtime disconnected"), true);
+		AddNotice(*Conversation, FText::Format(LOCTEXT("RuntimeLost", "The runtime exited unexpectedly (code {0})."), FText::AsNumber(ExitCode)), true);
 	}
 
 	const TSharedPtr<FShuttlegentWriteGate> Gate = WriteGate.Pin();
@@ -3201,8 +3191,8 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 		Entry->bAllowed = false;
 		if (Respond) Respond(false);
 
-		AddNotice(Conversation, FText::Format(LOCTEXT("ElevationAutoRejected", "设置中已关闭运行时提权，已自动拒绝：{0}"), FShuttlegentToolPresentation::GetDisplayName(Entry->Title)), false);
-		AddRunLog(Conversation, LOCTEXT("LogPermissionAutoRejected", "按设置自动拒绝运行时提权"), true);
+		AddNotice(Conversation, FText::Format(LOCTEXT("ElevationAutoRejected", "Runtime elevation is turned off in the settings, so this was rejected automatically: {0}"), FShuttlegentToolPresentation::GetDisplayName(Entry->Title)), false);
+		AddRunLog(Conversation, LOCTEXT("LogPermissionAutoRejected", "Runtime elevation rejected automatically by the settings"), true);
 		PauseQueue(Conversation);
 		NotifyStructure(Conversation);
 		NotifyStatus(Conversation);
@@ -3210,7 +3200,7 @@ void FShuttlegentChatModel::HandlePermissionRequest(const TSharedPtr<FJsonObject
 	}
 
 	Conversation.PendingPermissions.Add(Entry->Id, MoveTemp(Respond));
-	AddRunLog(Conversation, LOCTEXT("LogPermissionRequest", "运行时请求额外权限"), true);
+	AddRunLog(Conversation, LOCTEXT("LogPermissionRequest", "The runtime requested extra permissions"), true);
 	NotifyStructure(Conversation);
 	NotifyStatus(Conversation);
 }
@@ -3229,7 +3219,7 @@ void FShuttlegentChatModel::HandleWriteRequested(const FShuttlegentWriteRequest&
 
 	WriteOwners.Add(Request.RequestId, Owner);
 
-	AddRunLog(*Owner, FText::Format(LOCTEXT("LogWriteRequested", "编辑器写入请求：{0}"), FText::FromString(Request.Action)), true);
+	AddRunLog(*Owner, FText::Format(LOCTEXT("LogWriteRequested", "Editor write request: {0}"), FText::FromString(Request.Action)), true);
 	NotifyStatus(*Owner);
 }
 
@@ -3247,18 +3237,18 @@ void FShuttlegentChatModel::HandleWriteClosed(int32 RequestId, EShuttlegentWrite
 		ApprovedWrite = MoveTemp(Closed);
 		ApprovedWriteOwner = Owner;
 		bWriting = true;
-		AddRunLog(*Owner, ApprovedWrite.bAutoApproved ? LOCTEXT("LogWriteAutoApproved", "按写入模式直接执行编辑器写入") : LOCTEXT("LogWriteApproved", "确认执行编辑器写入"), false);
+		AddRunLog(*Owner, ApprovedWrite.bAutoApproved ? LOCTEXT("LogWriteAutoApproved", "Ran the editor write directly under the write mode") : LOCTEXT("LogWriteApproved", "Confirmed the editor write"), false);
 	}
 	else
 	{
 		// 未写入任何内容；与停止相同，队列等待用户处理
 		const bool bExpired = Decision == EShuttlegentWriteDecision::Expired;
 		const bool bTimedOut = Decision == EShuttlegentWriteDecision::TimedOut;
-		FText Notice = LOCTEXT("WriteRejected", "已取消本次编辑器写入，未执行修改。");
-		if (bExpired) Notice = LOCTEXT("WriteExpired", "编辑器写入请求已失效（关卡切换、连接断开或本轮结束），未执行修改。");
-		if (bTimedOut) Notice = LOCTEXT("WriteTimedOut", "编辑器写入请求超过 55 秒未确认，已失效，未执行修改。");
+		FText Notice = LOCTEXT("WriteRejected", "This editor write was cancelled; nothing was changed.");
+		if (bExpired) Notice = LOCTEXT("WriteExpired", "The editor write request expired (the level changed, the connection dropped, or the turn ended); nothing was changed.");
+		if (bTimedOut) Notice = LOCTEXT("WriteTimedOut", "The editor write request was not confirmed within 55 seconds and expired; nothing was changed.");
 		AddNotice(*Owner, Notice, false);
-		AddRunLog(*Owner, bExpired || bTimedOut ? LOCTEXT("LogWriteExpired", "编辑器写入请求失效") : LOCTEXT("LogWriteRejected", "取消编辑器写入"), true);
+		AddRunLog(*Owner, bExpired || bTimedOut ? LOCTEXT("LogWriteExpired", "Editor write request expired") : LOCTEXT("LogWriteRejected", "Editor write cancelled"), true);
 		PauseQueue(*Owner);
 	}
 	NotifyStatus(*Owner);
@@ -3277,7 +3267,7 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 		(*Unknown)->WriteResult = Result;
 		(*Unknown)->bAnswered = false;
 		Conversation->bNeedsVerify = Conversation->Entries.ContainsByPredicate([](const TSharedPtr<FShuttlegentChatEntry>& Entry) { return Entry->Kind == EShuttlegentChatEntryKind::WriteUnknown && !Entry->bAnswered; });
-		AddRunLog(*Conversation, LOCTEXT("LogWriteLateResult", "编辑器写入结果已回报"), false);
+		AddRunLog(*Conversation, LOCTEXT("LogWriteLateResult", "Editor write result reported"), false);
 		NotifyStructure(*Conversation);
 		NotifyStatus(*Conversation);
 		return;
@@ -3296,7 +3286,7 @@ void FShuttlegentChatModel::HandleWriteFinished(const FShuttlegentWriteResult& R
 
 	// 未完成全部对象的批次会使队列停止
 	const bool bAllCompleted = !Result.Objects.ContainsByPredicate([](const FShuttlegentWriteObject& Object) { return Object.Status != EShuttlegentWriteObjectStatus::Completed; });
-	AddRunLog(*Owner, bAllCompleted ? LOCTEXT("LogWriteCompleted", "编辑器写入完成") : LOCTEXT("LogWritePartial", "编辑器写入未全部完成"), !bAllCompleted);
+	AddRunLog(*Owner, bAllCompleted ? LOCTEXT("LogWriteCompleted", "Editor write completed") : LOCTEXT("LogWritePartial", "Editor write not fully completed"), !bAllCompleted);
 	if (!bAllCompleted) PauseQueue(*Owner);
 
 	NotifyStructure(*Owner);
@@ -3330,22 +3320,22 @@ void FShuttlegentChatModel::HandleQuestionClosed(const FShuttlegentQuestion& Que
 	{
 	case EShuttlegentQuestionOutcome::Answered:
 		{
-			Notice = FText::Format(LOCTEXT("QuestionAnswered", "Agent 提问：{0}　你的回答：{1}"), FText::FromString(Question.Question), FText::FromString(Answer));
+			Notice = FText::Format(LOCTEXT("QuestionAnswered", "Agent asked: {0}  Your answer: {1}"), FText::FromString(Question.Question), FText::FromString(Answer));
 			break;
 		}
 	case EShuttlegentQuestionOutcome::Skipped:
 		{
-			Notice = FText::Format(LOCTEXT("QuestionSkipped", "Agent 提问：{0}　已跳过"), FText::FromString(Question.Question));
+			Notice = FText::Format(LOCTEXT("QuestionSkipped", "Agent asked: {0}  Skipped"), FText::FromString(Question.Question));
 			break;
 		}
 	case EShuttlegentQuestionOutcome::TimedOut:
 		{
-			Notice = FText::Format(LOCTEXT("QuestionTimedOut", "Agent 提问：{0}　超过 55 秒未回答，Agent 将改用文字提问"), FText::FromString(Question.Question));
+			Notice = FText::Format(LOCTEXT("QuestionTimedOut", "Agent asked: {0}  Not answered within 55 seconds; the agent will ask in text instead"), FText::FromString(Question.Question));
 			break;
 		}
 	default:
 		{
-			Notice = FText::Format(LOCTEXT("QuestionExpired", "Agent 提问：{0}　已失效"), FText::FromString(Question.Question));
+			Notice = FText::Format(LOCTEXT("QuestionExpired", "Agent asked: {0}  Expired"), FText::FromString(Question.Question));
 			break;
 		}
 	}

@@ -4,16 +4,16 @@
 
 #include "EShuttlegentWriteMode.generated.h"
 
-/** 对话中编辑器写入的确认方式；计划模式另由运行时记录，不在此列。删除、移动、改名在任何模式下都要确认。 */
+/** How editor writes in a conversation are confirmed; plan mode is tracked by the runtime and is not listed here. Deleting, moving and renaming always need confirmation. */
 UENUM()
 enum class EShuttlegentWriteMode : uint8
 {
-	// 每次写入都弹确认卡
+	// Show a confirmation card for every write
 	Manual,
 
-	// 可撤销的写入直接执行，不可撤销的仍要确认
+	// Run undoable writes directly; writes that cannot be undone still need confirmation
 	AcceptEdits,
 
-	// 除删除、移动、改名外的写入都直接执行
+	// Run every write directly except deleting, moving and renaming
 	Auto
 };

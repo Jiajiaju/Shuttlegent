@@ -4,16 +4,16 @@
 
 #include "EShuttlegentProviderApi.generated.h"
 
-/** 经 llm-pi-ai 接入的模型供应商路由所用的接口协议。 */
+/** API protocol of a model provider route served through llm-pi-ai. */
 UENUM()
 enum class EShuttlegentProviderApi : uint8
 {
-	// OpenAI Chat Completions 及兼容端点：DashScope、Kimi、智谱、豆包、Ollama、vLLM、团队网关
+	// OpenAI Chat Completions and compatible endpoints: DashScope, Kimi, Zhipu, Doubao, Ollama, vLLM, team gateways
 	OpenAiCompletions,
 
 	// OpenAI Responses API
 	OpenAiResponses,
 
-	// Anthropic Messages API 及兼容端点
+	// Anthropic Messages API and compatible endpoints
 	AnthropicMessages
 };

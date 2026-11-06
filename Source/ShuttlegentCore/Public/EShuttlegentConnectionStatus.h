@@ -4,16 +4,16 @@
 
 #include "EShuttlegentConnectionStatus.generated.h"
 
-/** 一条模型连接最近一次检测的结论。 */
+/** Result of the latest test of a model connection. */
 UENUM()
 enum class EShuttlegentConnectionStatus : uint8
 {
-	// 还没检测过，或地址、密钥改过之后还没重新检测
+	// Not tested yet, or the address or key changed since the last test
 	Untested,
-	// 正在检测
+	// Test in progress
 	Testing,
-	// 已连通：协议与模型列表已识别
+	// Connected: the protocol and model list were detected
 	Connected,
-	// 未连通：原因写在 Output Log
+	// Not connected: see the Output Log for the reason
 	Failed
 };

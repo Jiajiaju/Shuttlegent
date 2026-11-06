@@ -51,27 +51,27 @@ namespace FShuttlegentToolPresentationPrivate
 
 FText FShuttlegentToolPresentation::GetDisplayName(const FString& ToolName)
 {
-	if (ToolName == ShuttlegentEditorTool::Read) return LOCTEXT("ToolRead", "读取文件");
-	if (ToolName == ShuttlegentEditorTool::ReadImage) return LOCTEXT("ToolReadImage", "查看图片");
-	if (ToolName == ShuttlegentEditorTool::Write) return LOCTEXT("ToolWrite", "写入文件");
-	if (ToolName == ShuttlegentEditorTool::Edit) return LOCTEXT("ToolEdit", "编辑文件");
-	if (ToolName == ShuttlegentEditorTool::Glob) return LOCTEXT("ToolGlob", "查找文件");
-	if (ToolName == ShuttlegentEditorTool::Grep) return LOCTEXT("ToolGrep", "搜索内容");
-	if (ToolName == ShuttlegentEditorTool::WebSearch) return LOCTEXT("ToolWebSearch", "网页搜索");
-	if (ToolName == ShuttlegentEditorTool::WebFetch) return LOCTEXT("ToolWebFetch", "读取网页");
-	if (ToolName == ShuttlegentEditorTool::Subagent) return LOCTEXT("ToolSubagent", "子任务");
-	if (ToolName == ShuttlegentEditorTool::ListSubagentModels) return LOCTEXT("ToolListSubagentModels", "查看子任务模型");
-	if (ToolName == ShuttlegentEditorTool::TodoWrite) return LOCTEXT("ToolTodoWrite", "更新待办");
-	if (ToolName == ShuttlegentEditorTool::CreateGoal) return LOCTEXT("ToolCreateGoal", "设定目标");
-	if (ToolName == ShuttlegentEditorTool::GetGoal) return LOCTEXT("ToolGetGoal", "查看目标");
-	if (ToolName == ShuttlegentEditorTool::UpdateGoal) return LOCTEXT("ToolUpdateGoal", "更新目标");
+	if (ToolName == ShuttlegentEditorTool::Read) return LOCTEXT("ToolRead", "Read file");
+	if (ToolName == ShuttlegentEditorTool::ReadImage) return LOCTEXT("ToolReadImage", "View image");
+	if (ToolName == ShuttlegentEditorTool::Write) return LOCTEXT("ToolWrite", "Write file");
+	if (ToolName == ShuttlegentEditorTool::Edit) return LOCTEXT("ToolEdit", "Edit file");
+	if (ToolName == ShuttlegentEditorTool::Glob) return LOCTEXT("ToolGlob", "Find files");
+	if (ToolName == ShuttlegentEditorTool::Grep) return LOCTEXT("ToolGrep", "Search content");
+	if (ToolName == ShuttlegentEditorTool::WebSearch) return LOCTEXT("ToolWebSearch", "Web search");
+	if (ToolName == ShuttlegentEditorTool::WebFetch) return LOCTEXT("ToolWebFetch", "Read web page");
+	if (ToolName == ShuttlegentEditorTool::Subagent) return LOCTEXT("ToolSubagent", "Subtask");
+	if (ToolName == ShuttlegentEditorTool::ListSubagentModels) return LOCTEXT("ToolListSubagentModels", "List subtask models");
+	if (ToolName == ShuttlegentEditorTool::TodoWrite) return LOCTEXT("ToolTodoWrite", "Update to-dos");
+	if (ToolName == ShuttlegentEditorTool::CreateGoal) return LOCTEXT("ToolCreateGoal", "Set goal");
+	if (ToolName == ShuttlegentEditorTool::GetGoal) return LOCTEXT("ToolGetGoal", "View goal");
+	if (ToolName == ShuttlegentEditorTool::UpdateGoal) return LOCTEXT("ToolUpdateGoal", "Update goal");
 
 	if (ToolName.StartsWith(ShuttlegentEditorTool::McpPrefix))
 	{
 		FString Server;
 		FString Tool;
 		const FString Rest = ToolName.RightChop(FCString::Strlen(ShuttlegentEditorTool::McpPrefix));
-		if (Rest.Split(ShuttlegentEditorTool::McpSeparator, &Server, &Tool)) return FText::Format(LOCTEXT("ToolMcp", "编辑器工具：{0}"), FText::FromString(Tool));
+		if (Rest.Split(ShuttlegentEditorTool::McpSeparator, &Server, &Tool)) return FText::Format(LOCTEXT("ToolMcp", "Editor tool: {0}"), FText::FromString(Tool));
 	}
 	return FText::FromString(ToolName);
 }
@@ -102,7 +102,7 @@ FString FShuttlegentToolPresentation::GetSummary(const FString& InputJson)
 		FString ShortToolset = Toolset;
 		Toolset.Split(ShuttlegentEditorTool::ToolsetNameSeparator, nullptr, &ShortToolset, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
 		FString Tool;
-		const FString Summary = FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::ToolKey, Tool) ? FText::Format(LOCTEXT("ToolInToolset", "{0}（{1}）"), FText::FromString(Tool), FText::FromString(ShortToolset)).ToString() : ShortToolset;
+		const FString Summary = FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::ToolKey, Tool) ? FText::Format(LOCTEXT("ToolInToolset", "{0} ({1})"), FText::FromString(Tool), FText::FromString(ShortToolset)).ToString() : ShortToolset;
 		return FShuttlegentToolPresentationPrivate::Truncate(Summary, ShuttlegentEditorTool::MaxSummaryChars);
 	}
 
@@ -119,7 +119,7 @@ FString FShuttlegentToolPresentation::GetSummary(const FString& InputJson)
 		FString SearchPath;
 		if (KeyName == ShuttlegentEditorTool::PatternKey && FShuttlegentToolPresentationPrivate::TryGetValue(Input, ShuttlegentEditorTool::SearchPathKey, SearchPath))
 		{
-			Summary = FText::Format(LOCTEXT("PatternInPath", "{0}（{1}）"), FText::FromString(Summary), FText::FromString(FShuttlegentToolPresentationPrivate::ShortenPath(SearchPath))).ToString();
+			Summary = FText::Format(LOCTEXT("PatternInPath", "{0} ({1})"), FText::FromString(Summary), FText::FromString(FShuttlegentToolPresentationPrivate::ShortenPath(SearchPath))).ToString();
 		}
 
 		TArray<FString> Lines;

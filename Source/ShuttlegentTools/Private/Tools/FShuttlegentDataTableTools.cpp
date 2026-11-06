@@ -101,15 +101,15 @@ namespace FShuttlegentDataTableToolsPrivate
 
 			const UDataTable* Table = Plan.Table.Get();
 			const bool bExists = IFileManager::Get().FileExists(*Plan.File);
-			OutRequest.Action = LOCTEXT("ExportAction", "导出数据表到文件").ToString();
+			OutRequest.Action = LOCTEXT("ExportAction", "Export DataTable to file").ToString();
 			OutRequest.bDestructive = bExists;
 
 			FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 			Item.Name = Table->GetName();
 			Item.Path = Table->GetPathName();
-			Item.Field = LOCTEXT("ExportField", "导出文件").ToString();
-			Item.CurrentValue = bExists ? LOCTEXT("FileExists", "文件已存在，将被覆盖").ToString() : LOCTEXT("NewFile", "（新建）").ToString();
-			Item.PlannedValue = FText::Format(LOCTEXT("ExportPlanned", "{0} 行 → {1}"), FText::AsNumber(Table->GetRowMap().Num()), FText::FromString(Plan.File)).ToString();
+			Item.Field = LOCTEXT("ExportField", "Export file").ToString();
+			Item.CurrentValue = bExists ? LOCTEXT("FileExists", "File exists and will be overwritten").ToString() : LOCTEXT("NewFile", "(new)").ToString();
+			Item.PlannedValue = FText::Format(LOCTEXT("ExportPlanned", "{0} row(s) → {1}"), FText::AsNumber(Table->GetRowMap().Num()), FText::FromString(Plan.File)).ToString();
 			return true;
 		}
 
@@ -124,7 +124,7 @@ namespace FShuttlegentDataTableToolsPrivate
 				if (!bPlanned || !IsValid(Table))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = Error.IsEmpty() ? LOCTEXT("TableGone", "数据表已不存在").ToString() : Error;
+					Item.Message = Error.IsEmpty() ? LOCTEXT("TableGone", "The DataTable no longer exists").ToString() : Error;
 					continue;
 				}
 
@@ -134,7 +134,7 @@ namespace FShuttlegentDataTableToolsPrivate
 				IFileManager::Get().MakeDirectory(*FPaths::GetPath(Plan.File), true);
 				const bool bSaved = FFileHelper::SaveStringToFile(Content, *Plan.File, Encoding);
 				Item.Status = bSaved ? EShuttlegentWriteObjectStatus::Completed : EShuttlegentWriteObjectStatus::Failed;
-				Item.Message = bSaved ? Plan.File : FText::Format(LOCTEXT("ExportFailed", "无法写入 {0}：文件可能被其他程序占用或只读"), FText::FromString(Plan.File)).ToString();
+				Item.Message = bSaved ? Plan.File : FText::Format(LOCTEXT("ExportFailed", "Could not write {0}: the file may be in use by another program or read-only"), FText::FromString(Plan.File)).ToString();
 			}
 		}
 	};

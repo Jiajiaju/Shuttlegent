@@ -4,13 +4,13 @@
 
 #include "ShuttlegentPermissionPolicy.generated.h"
 
-/** 没有绑定界面处理器时，如何答复运行时发来的 session/request_permission。 */
+/** How to answer session/request_permission from the runtime when no UI handler is bound. */
 UENUM()
 enum class EShuttlegentPermissionPolicy : uint8
 {
-	// 拒绝所有请求
+	// Reject every request
 	Reject,
 
-	// 每个请求都允许一次
+	// Allow each request once
 	Allow
 };

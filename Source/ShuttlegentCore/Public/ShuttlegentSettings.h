@@ -11,7 +11,7 @@
 
 #include "ShuttlegentSettings.generated.h"
 
-/** Shuttlegent 的个人设置（编辑器偏好设置 > Shuttlegent > General）。 */
+/** Personal Shuttlegent settings (Editor Preferences > Shuttlegent > General). */
 UCLASS(Config = EditorPerProjectUserSettings, meta = (DisplayName = "Shuttlegent"))
 class SHUTTLEGENTCORE_API UShuttlegentSettings : public UDeveloperSettings
 {
@@ -22,82 +22,82 @@ private:
 	FString BuiltinApiKeyBeforeEdit;
 
 public:
-	/** 代替插件自带 Runtime/shuttlegent-runtime.exe 启动的运行时可执行文件；留空使用默认值。 */
+	/** Runtime executable started instead of the plugin's Runtime/shuttlegent-runtime.exe; leave empty to use the default. */
 	UPROPERTY(Config, EditAnywhere, Category = "Runtime", meta = (FilePathFilter = "exe"))
 	FFilePath RuntimeExecutableOverride {};
 
-	/** 编辑器启动后空闲时预先启动运行时，打开面板时即已连接。 */
+	/** Start the runtime while the editor is idle after launch, so it is already connected when the panel opens. */
 	UPROPERTY(Config, EditAnywhere, Category = "Runtime")
 	bool bPrewarmRuntime = true;
 
 	/**
-	 * 模型连接：每条只填地址与密钥，协议与可用模型自动检测；第一条已连通的连接中的第一个模型为新会话的默认模型。
-	 * 内置 DeepSeek 连接预装且不可删除。增删连接或检测结论变化后，面板在没有回合进行时自动重启运行时使其生效。
+	 * Model connections: enter only an address and key for each; the protocol and available models are detected. The first model of the first connected connection is the default model for new sessions.
+	 * The built-in DeepSeek connection is preinstalled and cannot be removed. After connections are added or removed, or a test result changes, the panel restarts the runtime to apply it when no turn is running.
 	 */
 	UPROPERTY(Config, EditAnywhere, Category = "Models")
 	TArray<FShuttlegentConnection> Connections;
 
-	/** 插件提供的 Agent：启用后出现在会话的 Agent 选择器中，可各自指定默认模型。 */
+	/** Agents provided by the plugin: enabled agents appear in the session's agent picker, each with its own default model. */
 	UPROPERTY(Config, EditAnywhere, EditFixedSize, Category = "Agents")
 	TArray<FShuttlegentAgentEntry> Agents;
 
-	/** 新会话默认使用的 Agent。 */
+	/** Agent used by default in new sessions. */
 	UPROPERTY(Config, EditAnywhere, Category = "Defaults")
 	FString DefaultAgent = ShuttlegentAgentConstant::DefaultAgentId;
 
-	/** 允许运行时的文件工具不经询问写入项目目录；关闭时每次写入都需提权。下次启动运行时生效。 */
+	/** Let the runtime's file tools write to the project folder without asking; when off, every write needs elevation. Takes effect the next time the runtime starts. */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	bool bAllowWorkspaceWrite = false;
 
-	/** 为运行时提供 PowerShell 工具。下次启动运行时生效。 */
+	/** Give the runtime a PowerShell tool. Takes effect the next time the runtime starts. */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	bool bAllowShell = false;
 
-	/** 允许运行时请求让工具越出沙箱；关闭时此类请求立即拒绝，并在对话中注明。 */
+	/** Let the runtime ask to run tools outside the sandbox; when off, such requests are rejected at once and noted in the conversation. */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	bool bAllowElevation = true;
 
-	/** 不提供给模型的编辑器工具，按工具名填写；在 Editor Tools 分类下显示为开关。立即生效。 */
+	/** Editor tools not offered to the model, by tool name; shown as switches under the Editor Tools category. Takes effect immediately. */
 	UPROPERTY(Config, EditAnywhere, Category = "Editor Tools")
 	TArray<FString> DisabledTools;
 
-	/** 不提供给模型的引擎 Toolset，按 Toolset 名填写；在 Engine Toolsets 分类下显示为开关。立即生效。 */
+	/** Engine toolsets not offered to the model, by toolset name; shown as switches under the Engine Toolsets category. Takes effect immediately. */
 	UPROPERTY(Config, EditAnywhere, Category = "Engine Toolsets")
 	TArray<FString> DisabledToolsets;
 
-	/** 外部 MCP 服务请求头所引用变量的值（变量在 项目设置 > Shuttlegent > General 中命名），例如 TEAM_KB_TOKEN -> <token>；只保存在本机设置中。 */
+	/** Values of the variables referenced by external MCP server headers (the variables are named in Project Settings > Shuttlegent > General), for example TEAM_KB_TOKEN -> <token>; stored only in the settings on this machine. */
 	UPROPERTY(Config, EditAnywhere, Category = "Credentials")
 	TMap<FString, FString> McpHeaderValues;
 
-	/** 没有编辑器对话框处理时，对运行时权限请求的答复。 */
+	/** Answer to runtime permission requests when no editor dialog handles them. */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	EShuttlegentPermissionPolicy PermissionPolicy = EShuttlegentPermissionPolicy::Reject;
 
-	/** 新对话的编辑器写入确认方式；面板中可按对话切换。删除、移动、改名在任何模式下都要确认。 */
+	/** How editor writes are confirmed in new conversations; each conversation can switch it in the panel. Deleting, moving and renaming always need confirmation. */
 	UPROPERTY(Config, EditAnywhere, Category = "Permissions")
 	EShuttlegentWriteMode DefaultWriteMode = EShuttlegentWriteMode::Manual;
 
-	/** 在面板中播放标志动画（开场、工作中、悬停、完成）；关闭时标志始终显示静止帧。 */
+	/** Play the logo animations in the panel (intro, working, hover, done); when off, the logo always shows a still frame. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	bool bAnimateMark = true;
 
-	/** 面板中对话与输入框的字号，单位 CSS 像素；面板侧栏与控件保持原尺寸。 */
+	/** Font size of the conversation and the input box in the panel, in CSS pixels; the sidebar and controls keep their size. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance", meta = (ClampMin = "11", ClampMax = "20", UIMin = "11", UIMax = "20"))
 	int32 FontSize = ShuttlegentAppearanceConstant::DefaultFontSize;
 
-	/** 对话与输入框占满两侧窗格之间的全部宽度，不再使用居中的阅读栏。 */
+	/** Let the conversation and the input box fill the whole width between the side panes instead of a centered reading column. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	bool bWideLayout = false;
 
-	/** 侧栏、菜单、按钮、卡片使用的字体，可填多个并用逗号分隔；留空使用 Segoe UI 与微软雅黑 UI。立即生效。 */
+	/** Font for the sidebar, menus, buttons and cards; several can be listed, separated by commas. Leave empty to use Segoe UI and Microsoft YaHei UI. Takes effect immediately. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	FString UiFontFamily;
 
-	/** 对话消息与输入框使用的字体；留空跟随界面字体。想让回复更像书页，可以填思源宋体等衬线字体。立即生效。 */
+	/** Font for conversation messages and the input box; leave empty to follow the UI font. For replies that read more like a printed page, try a serif font such as Source Han Serif. Takes effect immediately. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	FString ChatFontFamily;
 
-	/** 代码、参数与日志使用的等宽字体；留空使用 Cascadia Mono 与 Consolas。立即生效。 */
+	/** Monospace font for code, arguments and logs; leave empty to use Cascadia Mono and Consolas. Takes effect immediately. */
 	UPROPERTY(Config, EditAnywhere, Category = "Appearance")
 	FString CodeFontFamily;
 

@@ -173,7 +173,7 @@ void SShuttlegentFontField::RebuildItems(const FString& Filter)
 	}
 	if (!RecommendedItems.IsEmpty())
 	{
-		Items.Add(SShuttlegentFontFieldPrivate::MakeItem(FString(), LOCTEXT("RecommendedHeader", "推荐（本机已安装）"), true, false));
+		Items.Add(SShuttlegentFontFieldPrivate::MakeItem(FString(), LOCTEXT("RecommendedHeader", "Recommended (installed on this machine)"), true, false));
 		Items.Append(RecommendedItems);
 	}
 
@@ -184,7 +184,7 @@ void SShuttlegentFontField::RebuildItems(const FString& Filter)
 	}
 	if (AllItems.IsEmpty()) return;
 
-	const FText AllHeader = bMonospaceOnly ? LOCTEXT("MonoHeader", "本机等宽字体（共 {0} 个）") : LOCTEXT("AllHeader", "全部字体（共 {0} 个）");
+	const FText AllHeader = bMonospaceOnly ? LOCTEXT("MonoHeader", "Monospace fonts on this machine ({0})") : LOCTEXT("AllHeader", "All fonts ({0})");
 	Items.Add(SShuttlegentFontFieldPrivate::MakeItem(FString(), FText::Format(AllHeader, FText::AsNumber(AllItems.Num())), true, false));
 	Items.Append(AllItems);
 }
@@ -320,7 +320,7 @@ FText SShuttlegentFontField::GetWarning() const
 	{
 		if (SShuttlegentFontFieldPrivate::IsGeneric(Family) || FShuttlegentSystemFonts::IsInstalled(Family)) return FText::GetEmpty();
 	}
-	return FText::Format(LOCTEXT("NotInstalled", "本机未安装“{0}”，面板会退回默认字体"), FText::FromString(FString::Join(Families, ShuttlegentEditorSettingsUi::FontJoiner)));
+	return FText::Format(LOCTEXT("NotInstalled", "\"{0}\" is not installed on this machine; the panel falls back to the default font"), FText::FromString(FString::Join(Families, ShuttlegentEditorSettingsUi::FontJoiner)));
 }
 
 FString SShuttlegentFontField::LastSegment(const FString& Text)

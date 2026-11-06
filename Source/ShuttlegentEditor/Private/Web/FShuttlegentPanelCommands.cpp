@@ -11,12 +11,12 @@ FShuttlegentPanelCommands::FShuttlegentPanelCommands()
 
 void FShuttlegentPanelCommands::RegisterCommands()
 {
-	UI_COMMAND(ToggleSidebar, "切换会话侧栏", "显示或隐藏会话侧栏", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::B));
-	UI_COMMAND(ToggleInspector, "切换检视窗格", "显示或隐藏检视窗格", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::I));
-	UI_COMMAND(NewSession, "新会话", "开始一个新会话", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::N));
-	UI_COMMAND(SearchSessions, "搜索会话", "打开会话侧栏并聚焦搜索框", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::K));
-	UI_COMMAND(FocusInput, "聚焦输入框", "把键盘焦点移到输入框", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::L));
-	UI_COMMAND(ReloadPage, "刷新面板页面", "从磁盘重新加载面板页面；对话、会话、队列与已保存的草稿不受影响（草稿在输入停顿约 1 秒后保存）", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::R));
+	UI_COMMAND(ToggleSidebar, "Toggle Session Sidebar", "Show or hide the session sidebar", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::B));
+	UI_COMMAND(ToggleInspector, "Toggle Inspector Pane", "Show or hide the inspector pane", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::I));
+	UI_COMMAND(NewSession, "New Session", "Start a new session", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::N));
+	UI_COMMAND(SearchSessions, "Search Sessions", "Open the session sidebar and focus the search box", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::K));
+	UI_COMMAND(FocusInput, "Focus Input Box", "Move keyboard focus to the input box", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::L));
+	UI_COMMAND(ReloadPage, "Reload Panel Page", "Reload the panel page from disk; conversations, sessions, queues and saved drafts are not affected (drafts are saved about 1 second after typing pauses)", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Control, EKeys::R));
 }
 
 #undef LOCTEXT_NAMESPACE

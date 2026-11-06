@@ -56,7 +56,7 @@ namespace FShuttlegentHistoryToolsPrivate
 			// 可撤销步骤是队列中位于已撤销步骤之前的部分；下一次撤销取其中最新的一步，下一次重做取已撤销步骤中最早的一步
 			const int32 Steps = FMath::Clamp(FShuttlegentToolArguments::GetInteger(Arguments, ArgSteps, 1), 1, ShuttlegentToolsConstant::MaxHistorySteps);
 			const int32 FirstUndone = Transactor->GetQueueLength() - Transactor->GetUndoCount();
-			OutRequest.Action = bRedo ? LOCTEXT("RedoAction", "重做编辑器操作").ToString() : LOCTEXT("UndoAction", "撤销编辑器操作").ToString();
+			OutRequest.Action = bRedo ? LOCTEXT("RedoAction", "Redo editor operations").ToString() : LOCTEXT("UndoAction", "Undo editor operations").ToString();
 			for (int32 Step = 0; Step < Steps; ++Step)
 			{
 				const int32 QueueIndex = bRedo ? FirstUndone + Step : FirstUndone - 1 - Step;
@@ -65,9 +65,9 @@ namespace FShuttlegentHistoryToolsPrivate
 
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = Transaction->GetTitle().ToString();
-				Item.Field = bRedo ? LOCTEXT("RedoField", "重做").ToString() : LOCTEXT("UndoField", "撤销").ToString();
-				Item.CurrentValue = FText::Format(LOCTEXT("StepDone", "第 {0} 步"), FText::AsNumber(Step + 1)).ToString();
-				Item.PlannedValue = bRedo ? LOCTEXT("Redone", "重新执行").ToString() : LOCTEXT("Undone", "撤销").ToString();
+				Item.Field = bRedo ? LOCTEXT("RedoField", "Redo").ToString() : LOCTEXT("UndoField", "Undo").ToString();
+				Item.CurrentValue = FText::Format(LOCTEXT("StepDone", "Step {0}"), FText::AsNumber(Step + 1)).ToString();
+				Item.PlannedValue = bRedo ? LOCTEXT("Redone", "Run again").ToString() : LOCTEXT("Undone", "Undo").ToString();
 			}
 			if (OutRequest.Objects.IsEmpty()) OutError = bRedo ? TEXT("Nothing to redo.") : TEXT("Nothing to undo.");
 			return !OutRequest.Objects.IsEmpty();
@@ -82,7 +82,7 @@ namespace FShuttlegentHistoryToolsPrivate
 				if (bDone) continue;
 
 				// 预览之后历史已发生变化；其余步骤同样不再执行
-				Item.Message = LOCTEXT("HistoryChanged", "编辑器历史已变化，未执行").ToString();
+				Item.Message = LOCTEXT("HistoryChanged", "The editor history changed, so this did not run").ToString();
 				break;
 			}
 		}

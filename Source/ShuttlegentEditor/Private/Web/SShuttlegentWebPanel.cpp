@@ -339,7 +339,7 @@ TSharedRef<SWidget> SShuttlegentWebPanel::BuildPlaceholder() const
 			.Padding(0.0f, ShuttlegentEditorMetric::PlaceholderSpacing, 0.0f, 0.0f)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("Loading", "正在加载…"))
+				.Text(LOCTEXT("Loading", "Loading…"))
 				.Font(FCoreStyle::GetDefaultFontStyle(SShuttlegentWebPanelPrivate::TypefaceRegular, ShuttlegentEditorMetric::FontCaption))
 				.ColorAndOpacity(FSlateColor(FLinearColor(ShuttlegentEditorColor::Muted)))
 			]
@@ -696,7 +696,7 @@ void SShuttlegentWebPanel::HandlePickImages()
 
 	TArray<FString> Files;
 	const void* ParentWindow = FSlateApplication::Get().FindBestParentWindowHandleForDialogs(AsShared());
-	const FString Title = LOCTEXT("PickImagesTitle", "选择要附到消息中的图片").ToString();
+	const FString Title = LOCTEXT("PickImagesTitle", "Choose images to attach to the message").ToString();
 	if (!DesktopPlatform->OpenFileDialog(ParentWindow, Title, FPaths::ProjectDir(), FString(), FShuttlegentImageFiles::GetDialogFilter(), EFileDialogFlags::Multiple, Files) || Files.IsEmpty()) return;
 
 	CallPage(ShuttlegentEditorWeb::JsOnImages, FShuttlegentWebJson::ToJson(FShuttlegentImageFiles::Load(Files)));

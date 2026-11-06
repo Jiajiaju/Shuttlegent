@@ -225,8 +225,8 @@ namespace FShuttlegentToolsetToolsPrivate
 			if (!FindCalledTool(Arguments, Tool, Toolset, OutError)) return false;
 
 			OutRequest.Action = Tool.bUndoable
-				? FText::Format(LOCTEXT("Action", "调用引擎工具 {0} · {1}（能否撤销以执行结果为准）"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString()
-				: FText::Format(LOCTEXT("ActionNonUndoable", "调用引擎工具 {0} · {1}"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString();
+				? FText::Format(LOCTEXT("Action", "Call engine tool {0} · {1} (whether it can be undone depends on the result)"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString()
+				: FText::Format(LOCTEXT("ActionNonUndoable", "Call engine tool {0} · {1}"), FText::FromString(ShortName(Toolset)), FText::FromString(Tool.Name)).ToString();
 			OutRequest.bUndoable = OutRequest.bUndoable && Tool.bUndoable;
 			OutRequest.bDestructive = Tool.bDestructive;
 			const UWorld* World = GEditor != nullptr ? GEditor->GetEditorWorldContext().World() : nullptr;
@@ -235,7 +235,7 @@ namespace FShuttlegentToolsetToolsPrivate
 			FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 			Item.Name = Tool.Name;
 			Item.Path = Tool.FullName;
-			Item.Field = LOCTEXT("ArgumentsField", "参数").ToString();
+			Item.Field = LOCTEXT("ArgumentsField", "Arguments").ToString();
 			Item.CurrentValue = FirstLine(Tool.Description);
 			Item.PlannedValue = Truncate(GetToolArguments(Arguments), ShuttlegentToolsetBridgeConstant::MaxArgumentChars);
 			return true;
@@ -261,7 +261,7 @@ namespace FShuttlegentToolsetToolsPrivate
 				{
 					// 工具已在运行；它会在本事务之外完成，且不等待其结果
 					Item.Status = EShuttlegentWriteObjectStatus::Completed;
-					Item.Message = LOCTEXT("StillRunning", "工具仍在后台执行，结果未返回").ToString();
+					Item.Message = LOCTEXT("StillRunning", "The tool is still running in the background and has not returned a result").ToString();
 					continue;
 				}
 

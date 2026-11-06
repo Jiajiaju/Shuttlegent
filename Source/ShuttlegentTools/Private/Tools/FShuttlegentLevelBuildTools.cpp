@@ -324,16 +324,16 @@ namespace FShuttlegentLevelBuildToolsPrivate
 			int32 Missed = 0;
 			if (!PlanPlacement(Arguments, Source, Transforms, Missed, OutError)) return false;
 
-			const FText Action = FText::Format(LOCTEXT("PlaceAction", "批量摆放 {0} 个 {1}"), FText::AsNumber(Transforms.Num()), FText::FromString(Source.Prefix));
-			OutRequest.Action = Missed > 0 ? FText::Format(LOCTEXT("PlaceActionMissed", "{0}（{1} 个下方没有地面，保持原高度）"), Action, FText::AsNumber(Missed)).ToString() : Action.ToString();
+			const FText Action = FText::Format(LOCTEXT("PlaceAction", "Place {0} × {1}"), FText::AsNumber(Transforms.Num()), FText::FromString(Source.Prefix));
+			OutRequest.Action = Missed > 0 ? FText::Format(LOCTEXT("PlaceActionMissed", "{0} ({1} have no ground below and keep their height)"), Action, FText::AsNumber(Missed)).ToString() : Action.ToString();
 			OutRequest.Level = FShuttlegentToolObjects::GetEditorWorld()->GetMapName();
 			for (int32 Index = 0; Index < Transforms.Num(); ++Index)
 			{
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = MakeLabel(Arguments, Source, Index);
 				Item.Path = Source.Path;
-				Item.Field = LOCTEXT("TransformField", "位置 / 旋转 / 缩放").ToString();
-				Item.CurrentValue = LOCTEXT("NotPlaced", "（新建）").ToString();
+				Item.Field = LOCTEXT("TransformField", "Location / Rotation / Scale").ToString();
+				Item.CurrentValue = LOCTEXT("NotPlaced", "(new)").ToString();
 				Item.PlannedValue = FShuttlegentPlacement::Describe(Transforms[Index]);
 			}
 			return true;
@@ -356,7 +356,7 @@ namespace FShuttlegentLevelBuildToolsPrivate
 				if (!bPlanned || !Transforms.IsValidIndex(Index) || !IsValid(Subsystem) || !IsValid(World))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = Error.IsEmpty() ? LOCTEXT("PlanChanged", "来源或关卡在确认期间已变化").ToString() : Error;
+					Item.Message = Error.IsEmpty() ? LOCTEXT("PlanChanged", "The source or the level changed while waiting for confirmation").ToString() : Error;
 					continue;
 				}
 
@@ -368,7 +368,7 @@ namespace FShuttlegentLevelBuildToolsPrivate
 				if (!IsValid(NewActor))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("PlaceFailed", "无法在当前关卡生成").ToString();
+					Item.Message = LOCTEXT("PlaceFailed", "Cannot be spawned in the current level").ToString();
 					continue;
 				}
 
@@ -407,7 +407,7 @@ namespace FShuttlegentLevelBuildToolsPrivate
 			TArray<FTransform> Planned;
 			if (!PlanArrangement(Arguments, Actors, Planned, OutError)) return false;
 
-			OutRequest.Action = FText::Format(LOCTEXT("ArrangeAction", "整理 Actor 位置（{0}）"), FText::FromString(FShuttlegentToolArguments::GetString(Arguments, ArgOperation))).ToString();
+			OutRequest.Action = FText::Format(LOCTEXT("ArrangeAction", "Arrange Actors ({0})"), FText::FromString(FShuttlegentToolArguments::GetString(Arguments, ArgOperation))).ToString();
 			for (int32 Index = 0; Index < Actors.Num(); ++Index)
 			{
 				const FTransform Current = Actors[Index]->GetActorTransform();
@@ -416,7 +416,7 @@ namespace FShuttlegentLevelBuildToolsPrivate
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = Actors[Index]->GetActorLabel();
 				Item.Path = Actors[Index]->GetPathName();
-				Item.Field = LOCTEXT("ArrangeField", "位置 / 旋转 / 缩放").ToString();
+				Item.Field = LOCTEXT("ArrangeField", "Location / Rotation / Scale").ToString();
 				Item.CurrentValue = FShuttlegentPlacement::Describe(Current);
 				Item.PlannedValue = FShuttlegentPlacement::Describe(Planned[Index]);
 				if (OutRequest.Level.IsEmpty()) OutRequest.Level = FShuttlegentToolObjects::GetLevelName(Actors[Index]);
@@ -438,7 +438,7 @@ namespace FShuttlegentLevelBuildToolsPrivate
 				if (!Planned.IsValidIndex(Index))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = Error.IsEmpty() ? LOCTEXT("ActorGone", "Actor 已不存在").ToString() : Error;
+					Item.Message = Error.IsEmpty() ? LOCTEXT("ActorGone", "The Actor no longer exists").ToString() : Error;
 					continue;
 				}
 

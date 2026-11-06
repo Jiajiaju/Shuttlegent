@@ -4,13 +4,13 @@
 
 #include "EShuttlegentExternalMcpType.generated.h"
 
-/** 项目声明给运行时的外部 MCP 服务所用的传输方式。 */
+/** Transport of an external MCP server that the project declares to the runtime. */
 UENUM()
 enum class EShuttlegentExternalMcpType : uint8
 {
-	// 通过 URL 访问的 Streamable HTTP
+	// Streamable HTTP, reached through a URL
 	Http,
 
-	// 由运行时启动的本机进程，经 stdin 与 stdout 通信
+	// Local process started by the runtime, talking over stdin and stdout
 	Stdio
 };

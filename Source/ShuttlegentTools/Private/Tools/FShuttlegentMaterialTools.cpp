@@ -499,12 +499,12 @@ namespace FShuttlegentMaterialToolsPrivate
 					Item.Path = Instance->GetPathName();
 					Item.Field = Change.Parameter.Info.Name.ToString();
 					Item.CurrentValue = FormatValue(Change.Parameter.Meta.Value);
-					if (!Change.Parameter.Meta.bOverride) Item.CurrentValue += LOCTEXT("Inherited", "（继承自父材质）").ToString();
+					if (!Change.Parameter.Meta.bOverride) Item.CurrentValue += LOCTEXT("Inherited", " (inherited from the parent material)").ToString();
 					Item.PlannedValue = FormatValue(Change.Value);
 				}
 			}
 
-			OutRequest.Action = bStaticSwitch ? LOCTEXT("SetParametersStaticAction", "修改材质实例参数（含静态开关，将重新编译材质）").ToString() : LOCTEXT("SetParametersAction", "修改材质实例参数").ToString();
+			OutRequest.Action = bStaticSwitch ? LOCTEXT("SetParametersStaticAction", "Change material instance parameters (includes static switches; the material will be recompiled)").ToString() : LOCTEXT("SetParametersAction", "Change material instance parameters").ToString();
 			return true;
 		}
 
@@ -522,7 +522,7 @@ namespace FShuttlegentMaterialToolsPrivate
 				if (Parameter == nullptr)
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("ParameterGone", "材质实例或参数已不存在").ToString();
+					Item.Message = LOCTEXT("ParameterGone", "The material instance or parameter no longer exists").ToString();
 					continue;
 				}
 
@@ -588,7 +588,7 @@ namespace FShuttlegentMaterialToolsPrivate
 			if (!PlanChanges(Parent, GetParametersArgument(Arguments), Changes, OutError)) return false;
 
 			TArray<FString> Planned;
-			Planned.Add(FText::Format(LOCTEXT("PlannedParent", "父材质 {0}"), FText::FromString(Parent->GetName())).ToString());
+			Planned.Add(FText::Format(LOCTEXT("PlannedParent", "Parent material {0}"), FText::FromString(Parent->GetName())).ToString());
 			for (const FParameterChange& Change : Changes)
 			{
 				Planned.Add(FString::Printf(TEXT("%s = %s"), *Change.Parameter.Info.Name.ToString(), *FormatValue(Change.Value)));
@@ -613,12 +613,12 @@ namespace FShuttlegentMaterialToolsPrivate
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = Name;
 				Item.Path = PackageName;
-				Item.Field = LOCTEXT("CreateField", "材质实例").ToString();
-				Item.CurrentValue = LOCTEXT("NotCreated", "（新建）").ToString();
+				Item.Field = LOCTEXT("CreateField", "Material instance").ToString();
+				Item.CurrentValue = LOCTEXT("NotCreated", "(new)").ToString();
 				Item.PlannedValue = FString::Join(Planned, TEXT("; "));
 			}
 
-			OutRequest.Action = HasStaticSwitch(Changes) ? LOCTEXT("CreateStaticAction", "新建材质实例（含静态开关，将编译材质）").ToString() : LOCTEXT("CreateAction", "新建材质实例").ToString();
+			OutRequest.Action = HasStaticSwitch(Changes) ? LOCTEXT("CreateStaticAction", "Create material instance (includes static switches; the material will be compiled)").ToString() : LOCTEXT("CreateAction", "Create material instance").ToString();
 			return true;
 		}
 
@@ -634,7 +634,7 @@ namespace FShuttlegentMaterialToolsPrivate
 				if (!bPlanned)
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = Error.IsEmpty() ? LOCTEXT("ParentGone", "父材质已不存在").ToString() : Error;
+					Item.Message = Error.IsEmpty() ? LOCTEXT("ParentGone", "The parent material no longer exists").ToString() : Error;
 					continue;
 				}
 
@@ -645,7 +645,7 @@ namespace FShuttlegentMaterialToolsPrivate
 				if (!IsValid(Instance))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("CreateFailed", "无法在该路径新建资源").ToString();
+					Item.Message = LOCTEXT("CreateFailed", "Cannot create an asset at this path").ToString();
 					continue;
 				}
 
@@ -745,7 +745,7 @@ namespace FShuttlegentMaterialToolsPrivate
 			TArray<FSlotTarget> Slots;
 			if (!CollectSlots(Arguments, Slots, OutError)) return false;
 
-			OutRequest.Action = FText::Format(LOCTEXT("AssignAction", "替换材质为 {0}"), FText::FromString(Material->GetName())).ToString();
+			OutRequest.Action = FText::Format(LOCTEXT("AssignAction", "Replace material with {0}"), FText::FromString(Material->GetName())).ToString();
 			for (const FSlotTarget& Slot : Slots)
 			{
 				const UMeshComponent* Component = Slot.Component.Get();
@@ -755,9 +755,9 @@ namespace FShuttlegentMaterialToolsPrivate
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = FString::Printf(TEXT("%s.%s"), *FShuttlegentToolObjects::GetDisplayName(Owner), *Component->GetName());
 				Item.Path = Component->GetPathName();
-				Item.Field = FText::Format(LOCTEXT("SlotField", "材质槽 {0} {1}"), FText::AsNumber(Slot.Index), FText::FromString(DescribeSlotName(Component, Slot.Index))).ToString();
+				Item.Field = FText::Format(LOCTEXT("SlotField", "Material slot {0} {1}"), FText::AsNumber(Slot.Index), FText::FromString(DescribeSlotName(Component, Slot.Index))).ToString();
 				Item.CurrentValue = IsValid(Current) ? Current->GetPathName() : FString(NoneValue);
-				if (!IsSlotOverridden(Component, Slot.Index)) Item.CurrentValue += LOCTEXT("MeshDefault", "（网格体默认）").ToString();
+				if (!IsSlotOverridden(Component, Slot.Index)) Item.CurrentValue += LOCTEXT("MeshDefault", " (mesh default)").ToString();
 				Item.PlannedValue = Material->GetPathName();
 				if (OutRequest.Level.IsEmpty()) OutRequest.Level = FShuttlegentToolObjects::GetLevelName(Component);
 			}
@@ -780,7 +780,7 @@ namespace FShuttlegentMaterialToolsPrivate
 				if (!IsValid(Material) || !IsValid(Component) || Component->GetPathName() != Item.Path)
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("SlotGone", "材质、组件或材质槽已变化").ToString();
+					Item.Message = LOCTEXT("SlotGone", "The material, component or material slot changed").ToString();
 					continue;
 				}
 

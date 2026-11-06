@@ -121,8 +121,8 @@ void FShuttlegentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder& D
 	{
 		const FShuttlegentToolDefinition& Definition = Tool->GetDefinition();
 		const FString ToolName = Definition.Name;
-		const FText Kind = Definition.bReadOnly ? LOCTEXT("ReadTool", "读") : LOCTEXT("WriteTool", "写，执行前确认");
-		const FText Label = FText::Format(LOCTEXT("ToolLabel", "{0}（{1}）"), FText::FromString(ToolName), Kind);
+		const FText Kind = Definition.bReadOnly ? LOCTEXT("ReadTool", "Read") : LOCTEXT("WriteTool", "Write, confirmed before running");
+		const FText Label = FText::Format(LOCTEXT("ToolLabel", "{0} ({1})"), FText::FromString(ToolName), Kind);
 
 		Category.AddCustomRow(FText::FromString(ToolName))
 			.NameContent()
@@ -135,7 +135,7 @@ void FShuttlegentSettingsCustomization::CustomizeDetails(IDetailLayoutBuilder& D
 			.ValueContent()
 			[
 				SNew(SCheckBox)
-				.ToolTipText(LOCTEXT("SwitchTooltip", "关闭后模型看不到也调用不了这个工具；立即生效"))
+				.ToolTipText(LOCTEXT("SwitchTooltip", "When off, the model can neither see nor call this tool; takes effect immediately"))
 				.IsChecked_Lambda([ToolName]() { return FShuttlegentSettingsCustomizationPrivate::IsEnabled(ToolName) ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
 				.OnCheckStateChanged_Lambda([ToolName](ECheckBoxState State) { FShuttlegentSettingsCustomizationPrivate::SetEnabled(ToolName, State == ECheckBoxState::Checked); })
 			];
@@ -176,9 +176,9 @@ void FShuttlegentSettingsCustomization::CustomizeFonts(IDetailLayoutBuilder& Det
 	const TArray<FString> TextPresets = FShuttlegentSettingsCustomizationPrivate::ToPresets(ShuttlegentEditorSettingsUi::TextFontPresets);
 	const TArray<FString> MonoPresets = FShuttlegentSettingsCustomizationPrivate::ToPresets(ShuttlegentEditorSettingsUi::MonoFontPresets);
 
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, UiFontFamily), TextPresets, false, LOCTEXT("DefaultUiFont", "默认（Segoe UI + 微软雅黑 UI）"));
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, ChatFontFamily), TextPresets, false, LOCTEXT("DefaultChatFont", "默认（跟随界面字体）"));
-	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, CodeFontFamily), MonoPresets, true, LOCTEXT("DefaultCodeFont", "默认（Cascadia Mono + Consolas）"));
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, UiFontFamily), TextPresets, false, LOCTEXT("DefaultUiFont", "Default (Segoe UI + Microsoft YaHei UI)"));
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, ChatFontFamily), TextPresets, false, LOCTEXT("DefaultChatFont", "Default (follow the UI font)"));
+	FShuttlegentSettingsCustomizationPrivate::CustomizeFontRow(DetailBuilder, GET_MEMBER_NAME_CHECKED(UShuttlegentSettings, CodeFontFamily), MonoPresets, true, LOCTEXT("DefaultCodeFont", "Default (Cascadia Mono + Consolas)"));
 }
 
 void FShuttlegentSettingsCustomization::CustomizeToolsets(IDetailLayoutBuilder& DetailBuilder)
@@ -189,11 +189,11 @@ void FShuttlegentSettingsCustomization::CustomizeToolsets(IDetailLayoutBuilder& 
 	const TArray<FShuttlegentToolsetInfo> Toolsets = FShuttlegentToolsets::GetToolsets();
 	if (Toolsets.IsEmpty())
 	{
-		Category.AddCustomRow(LOCTEXT("NoToolsets", "没有引擎 Toolset"))
+		Category.AddCustomRow(LOCTEXT("NoToolsets", "No engine toolsets"))
 			.WholeRowContent()
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("NoToolsetsHint", "没有启用的引擎 Toolset。在“编辑 > 插件”中搜索 Toolset 启用需要的插件，重启编辑器后在这里出现。"))
+				.Text(LOCTEXT("NoToolsetsHint", "No engine toolsets are enabled. Search for Toolset in Edit > Plugins, enable the plugins you need, and they appear here after the editor restarts."))
 				.AutoWrapText(true)
 				.Font(IDetailLayoutBuilder::GetDetailFont())
 			];
@@ -204,8 +204,8 @@ void FShuttlegentSettingsCustomization::CustomizeToolsets(IDetailLayoutBuilder& 
 	{
 		const FString ToolsetName = Toolset.Name;
 		const bool bBlocked = Toolset.bBlockedByProject;
-		const FText Label = bBlocked ? FText::Format(LOCTEXT("BlockedToolsetLabel", "{0}（项目已屏蔽）"), FText::FromString(ToolsetName)) : FText::FromString(ToolsetName);
-		const FText Tooltip = bBlocked ? LOCTEXT("BlockedToolsetTooltip", "项目设置 > Shuttlegent > General > Blocked Toolset Names 屏蔽了这个 Toolset，个人无法打开") : LOCTEXT("ToolsetSwitchTooltip", "关闭后模型看不到也调用不了这个 Toolset 的工具；立即生效");
+		const FText Label = bBlocked ? FText::Format(LOCTEXT("BlockedToolsetLabel", "{0} (blocked by the project)"), FText::FromString(ToolsetName)) : FText::FromString(ToolsetName);
+		const FText Tooltip = bBlocked ? LOCTEXT("BlockedToolsetTooltip", "This toolset is blocked by Project Settings > Shuttlegent > General > Blocked Toolset Names and cannot be turned on personally") : LOCTEXT("ToolsetSwitchTooltip", "When off, the model can neither see nor call the tools of this toolset; takes effect immediately");
 
 		Category.AddCustomRow(FText::FromString(ToolsetName))
 			.NameContent()

@@ -4,21 +4,21 @@
 
 #include "FShuttlegentMcpHeader.generated.h"
 
-/** 发给外部 MCP 服务的 HTTP 请求头；值取自变量，密钥不写进配置。 */
+/** HTTP header sent to an external MCP server; the value comes from a variable so keys stay out of the config. */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentMcpHeader
 {
 	GENERATED_BODY()
 
-	/** 请求头名称，例如 Authorization。 */
+	/** Header name, for example Authorization. */
 	UPROPERTY(Config, EditAnywhere, Category = "Header")
 	FString Name;
 
-	/** 加在变量值之前的文字，例如 "Bearer "。 */
+	/** Text placed before the variable value, for example "Bearer ". */
 	UPROPERTY(Config, EditAnywhere, Category = "Header")
 	FString Prefix;
 
-	/** 存放值的变量名；每位用户在 编辑器偏好设置 > Shuttlegent > General > Mcp Header Values 中填写。 */
+	/** Name of the variable that holds the value; each user fills it in under Editor Preferences > Shuttlegent > General > Mcp Header Values. */
 	UPROPERTY(Config, EditAnywhere, Category = "Header")
 	FString ValueVariable;
 };

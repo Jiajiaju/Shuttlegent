@@ -36,7 +36,7 @@ void FShuttlegentAgentEntryCustomization::CustomizeHeader(TSharedRef<IPropertyHa
 {
 	const FString AgentId = FShuttlegentAgentEntryCustomizationPrivate::GetAgentId(PropertyHandle);
 	const FShuttlegentAgentManifest* Manifest = FShuttlegentAgentCatalog::Find(AgentId);
-	const FText Description = AgentId == ShuttlegentAgentConstant::DefaultAgentId ? LOCTEXT("DefaultLoop", "运行时自带的默认循环") : FText::FromString(Manifest != nullptr ? Manifest->Description : AgentId);
+	const FText Description = AgentId == ShuttlegentAgentConstant::DefaultAgentId ? LOCTEXT("DefaultLoop", "The runtime's built-in default loop") : FText::FromString(Manifest != nullptr ? Manifest->Description : AgentId);
 	HeaderRow
 		.NameContent()
 		[
@@ -57,11 +57,11 @@ void FShuttlegentAgentEntryCustomization::CustomizeChildren(TSharedRef<IProperty
 {
 	const FString AgentId = FShuttlegentAgentEntryCustomizationPrivate::GetAgentId(PropertyHandle);
 
-	ChildBuilder.AddCustomRow(LOCTEXT("CapabilitiesSearch", "能力"))
+	ChildBuilder.AddCustomRow(LOCTEXT("CapabilitiesSearch", "Capabilities"))
 		.NameContent()
 		[
 			SNew(STextBlock)
-			.Text(LOCTEXT("Capabilities", "能力"))
+			.Text(LOCTEXT("Capabilities", "Capabilities"))
 			.Font(IDetailLayoutBuilder::GetDetailFont())
 		]
 		.ValueContent()
@@ -89,7 +89,7 @@ void FShuttlegentAgentEntryCustomization::CustomizeChildren(TSharedRef<IProperty
 		.ValueContent()
 		.MinDesiredWidth(ShuttlegentEditorSettingsUi::ProbeValueMinWidth)
 		[
-			FShuttlegentSettingsChoices::MakeModelCombo(DefaultModel.ToSharedRef(), LOCTEXT("FollowDefault", "跟随默认模型"))
+			FShuttlegentSettingsChoices::MakeModelCombo(DefaultModel.ToSharedRef(), LOCTEXT("FollowDefault", "Follow the default model"))
 		];
 }
 

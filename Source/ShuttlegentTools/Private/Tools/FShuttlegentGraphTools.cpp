@@ -138,17 +138,17 @@ namespace FShuttlegentGraphToolsPrivate
 			TArray<FGraphPlan> Plans;
 			if (!PlanGraphs(Arguments, Asset, Plans, OutError)) return false;
 
-			OutRequest.Action = LOCTEXT("TidyAction", "整理节点图排版").ToString();
+			OutRequest.Action = LOCTEXT("TidyAction", "Tidy the graph layout").ToString();
 			for (const FGraphPlan& Plan : Plans)
 			{
-				const FText Estimated = Plan.Adapter->HasRenderedSizes() ? FText::GetEmpty() : LOCTEXT("Estimated", "（节点尺寸为估算）");
+				const FText Estimated = Plan.Adapter->HasRenderedSizes() ? FText::GetEmpty() : LOCTEXT("Estimated", " (node sizes are estimated)");
 
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = Asset->GetName();
 				Item.Path = Asset->GetPathName();
 				Item.Field = Plan.Adapter->GetGraphName();
-				Item.CurrentValue = FText::Format(LOCTEXT("CurrentLayout", "{0} 个节点，范围 {1}"), FText::AsNumber(Plan.Current.Nodes.Num()), DescribeBounds(Plan.Current)).ToString();
-				Item.PlannedValue = FText::Format(LOCTEXT("PlannedLayout", "移动 {0} 个节点，范围 {1}{2}"), FText::AsNumber(Plan.Moved), DescribeBounds(Plan.Planned), Estimated).ToString();
+				Item.CurrentValue = FText::Format(LOCTEXT("CurrentLayout", "{0} node(s), bounds {1}"), FText::AsNumber(Plan.Current.Nodes.Num()), DescribeBounds(Plan.Current)).ToString();
+				Item.PlannedValue = FText::Format(LOCTEXT("PlannedLayout", "Move {0} node(s), bounds {1}{2}"), FText::AsNumber(Plan.Moved), DescribeBounds(Plan.Planned), Estimated).ToString();
 			}
 			return true;
 		}
@@ -166,7 +166,7 @@ namespace FShuttlegentGraphToolsPrivate
 				if (Plan == nullptr)
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = Error.IsEmpty() ? LOCTEXT("GraphGone", "节点图已不存在或已没有可排的节点").ToString() : Error;
+					Item.Message = Error.IsEmpty() ? LOCTEXT("GraphGone", "The graph no longer exists or has no nodes left to arrange").ToString() : Error;
 					continue;
 				}
 

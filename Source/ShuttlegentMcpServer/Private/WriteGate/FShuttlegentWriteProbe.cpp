@@ -78,7 +78,7 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 	// 预览：每个 Actor 及其当前 Z 值与将要设置的 Z 值
 	FShuttlegentWriteRequest Request;
 	Request.ToolName = ShuttlegentWriteProbe::ToolName;
-	Request.Action = LOCTEXT("Action", "设置 Actor 位置").ToString();
+	Request.Action = LOCTEXT("Action", "Set Actor location").ToString();
 	Request.bUndoable = true;
 
 	TArray<TWeakObjectPtr<AActor>> Actors;
@@ -91,7 +91,7 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 		FShuttlegentWriteObject& Object = Request.Objects.AddDefaulted_GetRef();
 		Object.Name = Actor->GetActorLabel();
 		Object.Path = Actor->GetPathName();
-		Object.Field = LOCTEXT("FieldZ", "位置 Z（cm）").ToString();
+		Object.Field = LOCTEXT("FieldZ", "Location Z (cm)").ToString();
 		Object.CurrentValue = FShuttlegentWriteProbePrivate::FormatZ(CurrentZ);
 		Object.PlannedValue = FShuttlegentWriteProbePrivate::FormatZ(CurrentZ + ZOffset);
 
@@ -118,7 +118,7 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 		Result.RequestId = *RequestIdHolder;
 		int32 Completed = 0;
 		{
-			FScopedTransaction Transaction(LOCTEXT("Transaction", "Shuttlegent · 设置 Actor 位置"));
+			FScopedTransaction Transaction(LOCTEXT("Transaction", "Shuttlegent · Set Actor location"));
 			for (int32 Index = 0; Index < Actors.Num(); ++Index)
 			{
 				FShuttlegentWriteObject& Object = Result.Objects[Index];
@@ -126,19 +126,19 @@ void FShuttlegentWriteProbe::HandleCommand(const TArray<FString>& Args)
 				if (FailFrom != ShuttlegentWriteProbe::NoFailure && Index > FailFrom)
 				{
 					Object.Status = EShuttlegentWriteObjectStatus::NotRun;
-					Object.Message = LOCTEXT("NotRun", "前一个对象失败，未执行").ToString();
+					Object.Message = LOCTEXT("NotRun", "The previous object failed, so this one did not run").ToString();
 					continue;
 				}
 				if (Index == FailFrom)
 				{
 					Object.Status = EShuttlegentWriteObjectStatus::Failed;
-					Object.Message = LOCTEXT("ProbeFailure", "探针参数指定此对象失败").ToString();
+					Object.Message = LOCTEXT("ProbeFailure", "The probe arguments asked this object to fail").ToString();
 					continue;
 				}
 				if (!IsValid(Actor))
 				{
 					Object.Status = EShuttlegentWriteObjectStatus::Failed;
-					Object.Message = LOCTEXT("ActorGone", "对象已不存在").ToString();
+					Object.Message = LOCTEXT("ActorGone", "The object no longer exists").ToString();
 					continue;
 				}
 

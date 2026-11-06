@@ -1,0 +1,1912 @@
+﻿# Shuttlegent Chinese (Simplified) translation.
+# Fill out your copyright notice in the Description page of Project Settings.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: Shuttlegent\n"
+"POT-Creation-Date: 2026-11-06 08:26\n"
+"PO-Revision-Date: 2026-11-06 08:26\n"
+"Language-Team: \n"
+"Language: zh-Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Key:	MemoryGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentCore/Private/FShuttlegentMemoryStore.cpp(232)
+#: Plugins/Shuttlegent/Source/ShuttlegentCore/Private/FShuttlegentMemoryStore.cpp(232)
+msgctxt "ShuttlegentMemoryStore,MemoryGone"
+msgid "This memory is no longer in the file."
+msgstr "这条记忆已不在文件中。"
+
+#. Key:	MemoryChanged
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentCore/Private/FShuttlegentMemoryStore.cpp(244)
+#: Plugins/Shuttlegent/Source/ShuttlegentCore/Private/FShuttlegentMemoryStore.cpp(244)
+msgctxt "ShuttlegentMemoryStore,MemoryChanged"
+msgid "This memory has been changed or removed."
+msgstr "这条记忆已被改动或删除。"
+
+#. Key:	ToolInToolset
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(105)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(105)
+msgctxt "ShuttlegentToolPresentation,ToolInToolset"
+msgid "{0} ({1})"
+msgstr "{0}（{1}）"
+
+#. Key:	PatternInPath
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(122)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(122)
+msgctxt "ShuttlegentToolPresentation,PatternInPath"
+msgid "{0} ({1})"
+msgstr "{0}（{1}）"
+
+#. Key:	ToolRead
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(54)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(54)
+msgctxt "ShuttlegentToolPresentation,ToolRead"
+msgid "Read file"
+msgstr "读取文件"
+
+#. Key:	ToolReadImage
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(55)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(55)
+msgctxt "ShuttlegentToolPresentation,ToolReadImage"
+msgid "View image"
+msgstr "查看图片"
+
+#. Key:	ToolWrite
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(56)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(56)
+msgctxt "ShuttlegentToolPresentation,ToolWrite"
+msgid "Write file"
+msgstr "写入文件"
+
+#. Key:	ToolEdit
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(57)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(57)
+msgctxt "ShuttlegentToolPresentation,ToolEdit"
+msgid "Edit file"
+msgstr "编辑文件"
+
+#. Key:	ToolGlob
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(58)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(58)
+msgctxt "ShuttlegentToolPresentation,ToolGlob"
+msgid "Find files"
+msgstr "查找文件"
+
+#. Key:	ToolGrep
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(59)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(59)
+msgctxt "ShuttlegentToolPresentation,ToolGrep"
+msgid "Search content"
+msgstr "搜索内容"
+
+#. Key:	ToolWebSearch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(60)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(60)
+msgctxt "ShuttlegentToolPresentation,ToolWebSearch"
+msgid "Web search"
+msgstr "网页搜索"
+
+#. Key:	ToolWebFetch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(61)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(61)
+msgctxt "ShuttlegentToolPresentation,ToolWebFetch"
+msgid "Read web page"
+msgstr "读取网页"
+
+#. Key:	ToolSubagent
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(62)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(62)
+msgctxt "ShuttlegentToolPresentation,ToolSubagent"
+msgid "Subtask"
+msgstr "子任务"
+
+#. Key:	ToolListSubagentModels
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(63)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(63)
+msgctxt "ShuttlegentToolPresentation,ToolListSubagentModels"
+msgid "List subtask models"
+msgstr "查看子任务模型"
+
+#. Key:	ToolTodoWrite
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(64)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(64)
+msgctxt "ShuttlegentToolPresentation,ToolTodoWrite"
+msgid "Update to-dos"
+msgstr "更新待办"
+
+#. Key:	ToolCreateGoal
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(65)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(65)
+msgctxt "ShuttlegentToolPresentation,ToolCreateGoal"
+msgid "Set goal"
+msgstr "设定目标"
+
+#. Key:	ToolGetGoal
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(66)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(66)
+msgctxt "ShuttlegentToolPresentation,ToolGetGoal"
+msgid "View goal"
+msgstr "查看目标"
+
+#. Key:	ToolUpdateGoal
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(67)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(67)
+msgctxt "ShuttlegentToolPresentation,ToolUpdateGoal"
+msgid "Update goal"
+msgstr "更新目标"
+
+#. Key:	ToolMcp
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(74)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/FShuttlegentToolPresentation.cpp(74)
+msgctxt "ShuttlegentToolPresentation,ToolMcp"
+msgid "Editor tool: {0}"
+msgstr "编辑器工具：{0}"
+
+#. Key:	HistoryNoControl
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1002)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1002)
+msgctxt "ShuttlegentChatModel,HistoryNoControl"
+msgid "The runtime's session control plugin is not available."
+msgstr "运行时的会话控制插件不可用。"
+
+#. Key:	BranchBlocked
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1019)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1019)
+msgctxt "ShuttlegentChatModel,BranchBlocked"
+msgid "Cannot branch: {0}"
+msgstr "不能分支：{0}"
+
+#. Key:	LogBranch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1025)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1025)
+msgctxt "ShuttlegentChatModel,LogBranch"
+msgid "Branch from this message"
+msgstr "从这条消息分支"
+
+#. Key:	BranchFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1034)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1034)
+msgctxt "ShuttlegentChatModel,BranchFailed"
+msgid "Branching failed: {0}"
+msgstr "分支失败：{0}"
+
+#. Key:	RewindBlocked
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1050)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1050)
+msgctxt "ShuttlegentChatModel,RewindBlocked"
+msgid "Cannot go back here: {0}"
+msgstr "不能回到这里：{0}"
+
+#. Key:	RewindNotTop
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1058)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1058)
+msgctxt "ShuttlegentChatModel,RewindNotTop"
+msgid "Cannot go back here: other edits were made in the editor after this point, and undoing directly would undo them too. Nothing was changed."
+msgstr "不能回到这里：这之后编辑器里还有其他编辑，直接撤销会连带撤掉它们。未做任何改动。"
+
+#. Key:	LogRewind
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1067)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1067)
+msgctxt "ShuttlegentChatModel,LogRewind"
+msgid "Go back to before this message"
+msgstr "回到这条消息之前"
+
+#. Key:	RewindFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1088)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1088)
+msgctxt "ShuttlegentChatModel,RewindFailed"
+msgid "Going back failed: {0}. Nothing was changed."
+msgstr "回退失败：{0}。未做任何改动。"
+
+#. Key:	RewindRaced
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1093)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1093)
+msgctxt "ShuttlegentChatModel,RewindRaced"
+msgid "Cannot go back here: other edits were made in the editor while waiting. Nothing was changed."
+msgstr "不能回到这里：等待期间编辑器里又有了其他编辑。未做任何改动。"
+
+#. Key:	BranchTitle
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1153)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1153)
+msgctxt "ShuttlegentChatModel,BranchTitle"
+msgid "{0} (branch)"
+msgstr "{0}（分支）"
+
+#. Key:	LogCancel
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1168)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1168)
+msgctxt "ShuttlegentChatModel,LogCancel"
+msgid "Send a stop request"
+msgstr "发送停止请求"
+
+#. Key:	LogQueueRestored
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1208)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1208)
+msgctxt "ShuttlegentChatModel,LogQueueRestored"
+msgid "Restored {0} queued message(s) not sent last time; the queue is paused"
+msgstr "放回上次未发出的 {0} 条排队消息，队列已暂停"
+
+#. Key:	LogOpenSessionDeferred
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1215)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1215)
+msgctxt "ShuttlegentChatModel,LogOpenSessionDeferred"
+msgid "Opened the session record; the runtime context is restored when it is first shown"
+msgstr "打开会话记录，首次显示时恢复运行时上下文"
+
+#. Key:	LogOpenSession
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1219)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1219)
+msgctxt "ShuttlegentChatModel,LogOpenSession"
+msgid "Opened the session record and restored the runtime context"
+msgstr "打开会话记录，恢复运行时上下文"
+
+#. Key:	ChoiceMessageHeader
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(124)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(124)
+msgctxt "ShuttlegentChatModel,ChoiceMessageHeader"
+msgid "About \"{0}\", my choice:"
+msgstr "关于“{0}”，我的选择："
+
+#. Key:	BusyUntitled
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1257)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1257)
+msgctxt "ShuttlegentChatModel,BusyUntitled"
+msgid "New conversation"
+msgstr "新对话"
+
+#. Key:	ChoiceMessageItem
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(129)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(129)
+msgctxt "ShuttlegentChatModel,ChoiceMessageItem"
+msgid "{0} (id: {1})"
+msgstr "{0}（id: {1}）"
+
+#. Key:	LogReconnect
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1304)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1304)
+msgctxt "ShuttlegentChatModel,LogReconnect"
+msgid "Reconnect to the runtime"
+msgstr "重新连接运行时"
+
+#. Key:	ChoiceMessageNoneSelected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(131)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(131)
+msgctxt "ShuttlegentChatModel,ChoiceMessageNoneSelected"
+msgid "\n- Nothing selected"
+msgstr "\n- 没有选中任何一项"
+
+#. Key:	ChoiceMessageItemSeparator
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(132)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(132)
+msgctxt "ShuttlegentChatModel,ChoiceMessageItemSeparator"
+msgid ", "
+msgstr "、"
+
+#. Key:	ChoiceMessageSelected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(132)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(132)
+msgctxt "ShuttlegentChatModel,ChoiceMessageSelected"
+msgid "\n- Selected: {0}"
+msgstr "\n- 选中：{0}"
+
+#. Key:	LogPermissionAllowed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1369)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1369)
+msgctxt "ShuttlegentChatModel,LogPermissionAllowed"
+msgid "Allowed this runtime elevation"
+msgstr "允许本次运行时提权"
+
+#. Key:	LogPermissionRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1369)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1369)
+msgctxt "ShuttlegentChatModel,LogPermissionRejected"
+msgid "Rejected the runtime elevation"
+msgstr "拒绝运行时提权"
+
+#. Key:	ChoiceMessageNote
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(137)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(137)
+msgctxt "ShuttlegentChatModel,ChoiceMessageNote"
+msgid "\n- Note on {0} (id: {1}): {2}"
+msgstr "\n- {0}（id: {1}）的评语：{2}"
+
+#. Key:	ChoiceMessageOverall
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(139)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(139)
+msgctxt "ShuttlegentChatModel,ChoiceMessageOverall"
+msgid "\n- Overall: {0}"
+msgstr "\n- 整体意见：{0}"
+
+#. Key:	ConfigFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1454)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1454)
+msgctxt "ShuttlegentChatModel,ConfigFailed"
+msgid "Switching failed: {0}"
+msgstr "切换失败：{0}"
+
+#. Key:	LogPlanOff
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1644)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1644)
+msgctxt "ShuttlegentChatModel,LogPlanOff"
+msgid "Left plan mode"
+msgstr "退出计划模式"
+
+#. Key:	LogPlanOn
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1644)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1644)
+msgctxt "ShuttlegentChatModel,LogPlanOn"
+msgid "Entered plan mode"
+msgstr "进入计划模式"
+
+#. Key:	PlanResuming
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1653)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1653)
+msgctxt "ShuttlegentChatModel,PlanResuming"
+msgid "The session is being resumed."
+msgstr "会话正在恢复。"
+
+#. Key:	PlanReviewing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1658)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1658)
+msgctxt "ShuttlegentChatModel,PlanReviewing"
+msgid "Review the plan from the agent first."
+msgstr "先审批 Agent 交出的计划。"
+
+#. Key:	PlanNoControl
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1667)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1667)
+msgctxt "ShuttlegentChatModel,PlanNoControl"
+msgid "The runtime's session control plugin is not available."
+msgstr "运行时的会话控制插件不可用。"
+
+#. Key:	PlanNotOpen
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1672)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1672)
+msgctxt "ShuttlegentChatModel,PlanNotOpen"
+msgid "The session is not ready in the runtime yet."
+msgstr "会话尚未在运行时中就绪。"
+
+#. Key:	PlanSetFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1710)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1710)
+msgctxt "ShuttlegentChatModel,PlanSetFailed"
+msgid "Switching plan mode failed: {0}"
+msgstr "切换计划模式失败：{0}"
+
+#. Key:	LogPlanReview
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1757)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1757)
+msgctxt "ShuttlegentChatModel,LogPlanReview"
+msgid "The agent handed over a plan; waiting for review"
+msgstr "Agent 交出计划，等待审批"
+
+#. Key:	PlanAnswerFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1794)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1794)
+msgctxt "ShuttlegentChatModel,PlanAnswerFailed"
+msgid "The review result did not reach the runtime: {0}"
+msgstr "审批结果未送达运行时：{0}"
+
+#. Key:	LogPlanSettled
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1819)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1819)
+msgctxt "ShuttlegentChatModel,LogPlanSettled"
+msgid "Plan review: {0}"
+msgstr "计划审批：{0}"
+
+#. Key:	LogChoicePresented
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1848)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1848)
+msgctxt "ShuttlegentChatModel,LogChoicePresented"
+msgid "The agent handed over a choice card: {0}"
+msgstr "Agent 交出选择卡：{0}"
+
+#. Key:	ChoiceClosed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1859)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1859)
+msgctxt "ShuttlegentChatModel,ChoiceClosed"
+msgid "This choice card is no longer waiting for an answer."
+msgstr "这张选择卡已不在等待作答。"
+
+#. Key:	ChoiceEmpty
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1866)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1866)
+msgctxt "ShuttlegentChatModel,ChoiceEmpty"
+msgid "Select an option or write a note before submitting."
+msgstr "先选择一项或写下意见再提交。"
+
+#. Key:	ChoiceBlocked
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1873)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1873)
+msgctxt "ShuttlegentChatModel,ChoiceBlocked"
+msgid "Messages cannot be sent right now: handle the prompt above first."
+msgstr "现在不能发送消息：先处理上方的提示。"
+
+#. Key:	LogChoiceSettled
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1898)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(1898)
+msgctxt "ShuttlegentChatModel,LogChoiceSettled"
+msgid "Choice card: {0}"
+msgstr "选择卡：{0}"
+
+#. Key:	LogCompactAuto
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2050)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2050)
+msgctxt "ShuttlegentChatModel,LogCompactAuto"
+msgid "The context is near its limit; started compacting automatically"
+msgstr "上下文接近上限，开始自动压缩"
+
+#. Key:	LogCompactManual
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2050)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2050)
+msgctxt "ShuttlegentChatModel,LogCompactManual"
+msgid "Started compacting the context manually"
+msgstr "开始手动压缩上下文"
+
+#. Key:	LogCompactDone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2089)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2089)
+msgctxt "ShuttlegentChatModel,LogCompactDone"
+msgid "Context compaction finished"
+msgstr "上下文压缩完成"
+
+#. Key:	LogCompactFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2089)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2089)
+msgctxt "ShuttlegentChatModel,LogCompactFailed"
+msgid "Context compaction failed: {0}"
+msgstr "上下文压缩失败：{0}"
+
+#. Key:	CompactRunning
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2098)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2098)
+msgctxt "ShuttlegentChatModel,CompactRunning"
+msgid "Compaction is in progress."
+msgstr "正在压缩。"
+
+#. Key:	CompactFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2130)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2130)
+msgctxt "ShuttlegentChatModel,CompactFailed"
+msgid "Compaction failed: {0}"
+msgstr "压缩失败：{0}"
+
+#. Key:	CompactNothing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2134)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2134)
+msgctxt "ShuttlegentChatModel,CompactNothing"
+msgid "There is nothing to compact."
+msgstr "没有可压缩的内容。"
+
+#. Key:	PromptFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2378)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2378)
+msgctxt "ShuttlegentChatModel,PromptFailed"
+msgid "Sending failed: {0}"
+msgstr "发送失败：{0}"
+
+#. Key:	LogTurnStart
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2401)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2401)
+msgctxt "ShuttlegentChatModel,LogTurnStart"
+msgid "Turn started"
+msgstr "开始本轮"
+
+#. Key:	ResumeFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2439)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2439)
+msgctxt "ShuttlegentChatModel,ResumeFailed"
+msgid "Resuming the session failed: {0}"
+msgstr "恢复会话失败：{0}"
+
+#. Key:	AgentControlMissing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2463)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2463)
+msgctxt "ShuttlegentChatModel,AgentControlMissing"
+msgid "The runtime control channel is not ready, so agent \"{0}\" could not be set for the new session; send the message again later"
+msgstr "运行时控制口未就绪，无法为新会话指定 Agent“{0}”；稍后重新发送"
+
+#. Key:	AgentHandoffFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2484)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2484)
+msgctxt "ShuttlegentChatModel,AgentHandoffFailed"
+msgid "Could not set agent \"{0}\" for the new session: {1}"
+msgstr "无法为新会话指定 Agent“{0}”：{1}"
+
+#. Key:	NewSessionFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2506)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2506)
+msgctxt "ShuttlegentChatModel,NewSessionFailed"
+msgid "Creating the session failed: {0}"
+msgstr "新建会话失败：{0}"
+
+#. Key:	Cancelled
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2607)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2607)
+msgctxt "ShuttlegentChatModel,Cancelled"
+msgid "Cancelled"
+msgstr "已取消"
+
+#. Key:	StoppedFor
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2612)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2612)
+msgctxt "ShuttlegentChatModel,StoppedFor"
+msgid "Stopped: {0}"
+msgstr "已停止：{0}"
+
+#. Key:	InterruptedImagesMissing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2725)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2725)
+msgctxt "ShuttlegentChatModel,InterruptedImagesMissing"
+msgid "Some images attached to this message can no longer be found; a retry sends only the ones that still exist. Add them again if needed."
+msgstr "这条消息所附的图片有的已找不到，重试时只发送找得到的；需要的话请重新添加。"
+
+#. Key:	TurnInterrupted
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2733)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2733)
+msgctxt "ShuttlegentChatModel,TurnInterrupted"
+msgid "This turn did not end normally (the editor closed during the turn, or the runtime exited midway); writes, permission requests and questions that were waiting for confirmation have been discarded."
+msgstr "这一轮没有正常结束（编辑器在回合中关闭，或运行时中途退出）；当时未确认的写入、权限请求与提问均已作废。"
+
+#. Key:	LogResumed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2776)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2776)
+msgctxt "ShuttlegentChatModel,LogResumed"
+msgid "Session resumed"
+msgstr "会话已恢复"
+
+#. Key:	LogModelReplaced
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2866)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2866)
+msgctxt "ShuttlegentChatModel,LogModelReplaced"
+msgid "The connection for model {0} is no longer available; switched to {1}"
+msgstr "原模型 {0} 的连接已不可用，已换成 {1}"
+
+#. Key:	LogModelsChanged
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2922)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2922)
+msgctxt "ShuttlegentChatModel,LogModelsChanged"
+msgid "Model connections changed; restarting the runtime"
+msgstr "模型连接已变化，重启运行时"
+
+#. Key:	LogToolCall
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2957)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2957)
+msgctxt "ShuttlegentChatModel,LogToolCall"
+msgid "Tool call: {0}"
+msgstr "工具调用：{0}"
+
+#. Key:	LogToolFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2958)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2958)
+msgctxt "ShuttlegentChatModel,LogToolFailed"
+msgid "Tool failed: {0}"
+msgstr "工具失败：{0}"
+
+#. Key:	LogTurnCompleted
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2987)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2987)
+msgctxt "ShuttlegentChatModel,LogTurnCompleted"
+msgid "Turn finished"
+msgstr "本轮结束"
+
+#. Key:	LogTurnStopped
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2988)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2988)
+msgctxt "ShuttlegentChatModel,LogTurnStopped"
+msgid "Turn stopped"
+msgstr "本轮已停止"
+
+#. Key:	LogTurnFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2989)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(2989)
+msgctxt "ShuttlegentChatModel,LogTurnFailed"
+msgid "Turn query failed"
+msgstr "本轮查询失败"
+
+#. Key:	LogWriteUnknown
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3049)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3049)
+msgctxt "ShuttlegentChatModel,LogWriteUnknown"
+msgid "Editor write result unknown"
+msgstr "编辑器写入结果未知"
+
+#. Key:	LogRuntimeLost
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3065)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3065)
+msgctxt "ShuttlegentChatModel,LogRuntimeLost"
+msgid "Runtime disconnected"
+msgstr "运行时断开"
+
+#. Key:	RuntimeLost
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3066)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3066)
+msgctxt "ShuttlegentChatModel,RuntimeLost"
+msgid "The runtime exited unexpectedly (code {0})."
+msgstr "运行时意外退出（代码 {0}）。"
+
+#. Key:	ElevationAutoRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3198)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3198)
+msgctxt "ShuttlegentChatModel,ElevationAutoRejected"
+msgid "Runtime elevation is turned off in the settings, so this was rejected automatically: {0}"
+msgstr "设置中已关闭运行时提权，已自动拒绝：{0}"
+
+#. Key:	LogPermissionAutoRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3199)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3199)
+msgctxt "ShuttlegentChatModel,LogPermissionAutoRejected"
+msgid "Runtime elevation rejected automatically by the settings"
+msgstr "按设置自动拒绝运行时提权"
+
+#. Key:	LogPermissionRequest
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3207)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3207)
+msgctxt "ShuttlegentChatModel,LogPermissionRequest"
+msgid "The runtime requested extra permissions"
+msgstr "运行时请求额外权限"
+
+#. Key:	LogWriteRequested
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3226)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3226)
+msgctxt "ShuttlegentChatModel,LogWriteRequested"
+msgid "Editor write request: {0}"
+msgstr "编辑器写入请求：{0}"
+
+#. Key:	LogWriteApproved
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3244)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3244)
+msgctxt "ShuttlegentChatModel,LogWriteApproved"
+msgid "Confirmed the editor write"
+msgstr "确认执行编辑器写入"
+
+#. Key:	LogWriteAutoApproved
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3244)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3244)
+msgctxt "ShuttlegentChatModel,LogWriteAutoApproved"
+msgid "Ran the editor write directly under the write mode"
+msgstr "按写入模式直接执行编辑器写入"
+
+#. Key:	WriteRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3251)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3251)
+msgctxt "ShuttlegentChatModel,WriteRejected"
+msgid "This editor write was cancelled; nothing was changed."
+msgstr "已取消本次编辑器写入，未执行修改。"
+
+#. Key:	WriteExpired
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3252)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3252)
+msgctxt "ShuttlegentChatModel,WriteExpired"
+msgid "The editor write request expired (the level changed, the connection dropped, or the turn ended); nothing was changed."
+msgstr "编辑器写入请求已失效（关卡切换、连接断开或本轮结束），未执行修改。"
+
+#. Key:	WriteTimedOut
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3253)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3253)
+msgctxt "ShuttlegentChatModel,WriteTimedOut"
+msgid "The editor write request was not confirmed within 55 seconds and expired; nothing was changed."
+msgstr "编辑器写入请求超过 55 秒未确认，已失效，未执行修改。"
+
+#. Key:	LogWriteExpired
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3255)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3255)
+msgctxt "ShuttlegentChatModel,LogWriteExpired"
+msgid "Editor write request expired"
+msgstr "编辑器写入请求失效"
+
+#. Key:	LogWriteRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3255)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3255)
+msgctxt "ShuttlegentChatModel,LogWriteRejected"
+msgid "Editor write cancelled"
+msgstr "取消编辑器写入"
+
+#. Key:	LogWriteLateResult
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3274)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3274)
+msgctxt "ShuttlegentChatModel,LogWriteLateResult"
+msgid "Editor write result reported"
+msgstr "编辑器写入结果已回报"
+
+#. Key:	LogWriteCompleted
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3293)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3293)
+msgctxt "ShuttlegentChatModel,LogWriteCompleted"
+msgid "Editor write completed"
+msgstr "编辑器写入完成"
+
+#. Key:	LogWritePartial
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3293)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3293)
+msgctxt "ShuttlegentChatModel,LogWritePartial"
+msgid "Editor write not fully completed"
+msgstr "编辑器写入未全部完成"
+
+#. Key:	QuestionAnswered
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3327)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3327)
+msgctxt "ShuttlegentChatModel,QuestionAnswered"
+msgid "Agent asked: {0}  Your answer: {1}"
+msgstr "Agent 提问：{0}　你的回答：{1}"
+
+#. Key:	QuestionSkipped
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3332)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3332)
+msgctxt "ShuttlegentChatModel,QuestionSkipped"
+msgid "Agent asked: {0}  Skipped"
+msgstr "Agent 提问：{0}　已跳过"
+
+#. Key:	QuestionTimedOut
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3337)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3337)
+msgctxt "ShuttlegentChatModel,QuestionTimedOut"
+msgid "Agent asked: {0}  Not answered within 55 seconds; the agent will ask in text instead"
+msgstr "Agent 提问：{0}　超过 55 秒未回答，Agent 将改用文字提问"
+
+#. Key:	QuestionExpired
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3342)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(3342)
+msgctxt "ShuttlegentChatModel,QuestionExpired"
+msgid "Agent asked: {0}  Expired"
+msgstr "Agent 提问：{0}　已失效"
+
+#. Key:	LogRetryStart
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(604)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(604)
+msgctxt "ShuttlegentChatModel,LogRetryStart"
+msgid "Retry starting the runtime"
+msgstr "重试启动运行时"
+
+#. Key:	LogRetryResume
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(626)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(626)
+msgctxt "ShuttlegentChatModel,LogRetryResume"
+msgid "Retry resuming the session"
+msgstr "重试恢复会话"
+
+#. Key:	LogWriteVerified
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(638)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(638)
+msgctxt "ShuttlegentChatModel,LogWriteVerified"
+msgid "Checked the objects whose write result was unknown"
+msgstr "已核对写入结果未知的对象"
+
+#. Key:	ImagesDropped
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(677)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(677)
+msgctxt "ShuttlegentChatModel,ImagesDropped"
+msgid "The message was not sent and is back in the queue; its attached images were not kept, so please add them again."
+msgstr "消息未能发出，已放回队列；所附图片没有保留，请重新添加。"
+
+#. Key:	LogPromptParked
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(684)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(684)
+msgctxt "ShuttlegentChatModel,LogPromptParked"
+msgid "Message not sent; moved back to the front of the queue"
+msgstr "消息未发出，已放回队列首位"
+
+#. Key:	ImageOnlyPrompt
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(710)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(710)
+msgctxt "ShuttlegentChatModel,ImageOnlyPrompt"
+msgid "(see attached images)"
+msgstr "（见附图）"
+
+#. Key:	LogQueued
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(721)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(721)
+msgctxt "ShuttlegentChatModel,LogQueued"
+msgid "Added to the queue"
+msgstr "加入队列"
+
+#. Key:	ImagesNotReady
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(731)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(731)
+msgctxt "ShuttlegentChatModel,ImagesNotReady"
+msgid "Images can be added once the runtime is ready"
+msgstr "运行时就绪后才能添加图片"
+
+#. Key:	ImagesUnsupported
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(736)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(736)
+msgctxt "ShuttlegentChatModel,ImagesUnsupported"
+msgid "The current model does not support images; the default model deepseek-flash does, and you can switch back to it in Editor Preferences"
+msgstr "当前模型不支持图片；默认模型 deepseek-flash 支持，可在偏好设置中改回"
+
+#. Key:	ImagesUnsupportedBySession
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(749)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(749)
+msgctxt "ShuttlegentChatModel,ImagesUnsupportedBySession"
+msgid "The model {0} used by this conversation does not support images; switch to a model that does below, or start a new conversation"
+msgstr "这个对话使用的模型 {0} 不支持图片；在下方切换到支持图片的模型，或新建对话"
+
+#. Key:	ImagesBusy
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(755)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(755)
+msgctxt "ShuttlegentChatModel,ImagesBusy"
+msgid "Send messages with images after this turn ends"
+msgstr "本轮结束后再发送带图片的消息"
+
+#. Key:	LogQueueResumed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(787)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(787)
+msgctxt "ShuttlegentChatModel,LogQueueResumed"
+msgid "Queue resumed"
+msgstr "继续队列"
+
+#. Key:	LogRetry
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(801)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(801)
+msgctxt "ShuttlegentChatModel,LogRetry"
+msgid "Retry the query"
+msgstr "重试查询"
+
+#. Key:	LogQueuePaused
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(823)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(823)
+msgctxt "ShuttlegentChatModel,LogQueuePaused"
+msgid "Queue paused"
+msgstr "队列已暂停"
+
+#. Key:	QueuedReferenceGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(840)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(840)
+msgctxt "ShuttlegentChatModel,QueuedReferenceGone"
+msgid "An object referenced by the next queued message is no longer valid, so the queue is paused. Take that message back, remove or re-add the reference, then continue."
+msgstr "队列中下一条消息引用的对象已失效，队列已暂停。取回该条，移除或重新添加引用后再继续。"
+
+#. Key:	LogQueueNext
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(857)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(857)
+msgctxt "ShuttlegentChatModel,LogQueueNext"
+msgid "Send the next queued message"
+msgstr "发送队列中的下一条"
+
+#. Key:	UndoNotSupported
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(906)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(906)
+msgctxt "ShuttlegentChatModel,UndoNotSupported"
+msgid "This operation was not a synchronous transaction and cannot be undone."
+msgstr "此操作不是同步事务，不能撤销。"
+
+#. Key:	UndoDone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(911)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(911)
+msgctxt "ShuttlegentChatModel,UndoDone"
+msgid "This change has been undone."
+msgstr "本次修改已撤销。"
+
+#. Key:	UndoNothing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(916)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(916)
+msgctxt "ShuttlegentChatModel,UndoNothing"
+msgid "Nothing was changed, so there is nothing to undo."
+msgstr "没有执行任何修改，无需撤销。"
+
+#. Key:	UndoNotTop
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(921)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(921)
+msgctxt "ShuttlegentChatModel,UndoNotTop"
+msgid "Other edits came after it, so this transaction is no longer at the top of the undo stack and cannot be undone directly; check the editor's undo history."
+msgstr "之后还有其他编辑，本次事务已不在撤销栈顶，不能直接撤销；请在编辑器撤销历史中核对。"
+
+#. Key:	UndoAvailable
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(924)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(924)
+msgctxt "ShuttlegentChatModel,UndoAvailable"
+msgid "This transaction is at the top of the undo stack and can be undone."
+msgstr "本次事务在撤销栈顶，可撤销。"
+
+#. Key:	UndoFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(937)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(937)
+msgctxt "ShuttlegentChatModel,UndoFailed"
+msgid "Undo failed: {0}"
+msgstr "撤销失败：{0}"
+
+#. Key:	LogUndoWrite
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(942)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(942)
+msgctxt "ShuttlegentChatModel,LogUndoWrite"
+msgid "Undo this change"
+msgstr "撤销本次修改"
+
+#. Key:	UndoMemoryFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(955)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(955)
+msgctxt "ShuttlegentChatModel,UndoMemoryFailed"
+msgid "Undo failed: {0}"
+msgstr "撤销失败：{0}"
+
+#. Key:	LogUndoMemory
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(960)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(960)
+msgctxt "ShuttlegentChatModel,LogUndoMemory"
+msgid "Undo the memory change"
+msgstr "撤销记忆修改"
+
+#. Key:	HistoryNoSession
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(987)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(987)
+msgctxt "ShuttlegentChatModel,HistoryNoSession"
+msgid "This conversation has no session yet."
+msgstr "这段对话还没有会话。"
+
+#. Key:	HistoryBusy
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(992)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(992)
+msgctxt "ShuttlegentChatModel,HistoryBusy"
+msgid "A turn is still running or messages are queued; try again when it is done."
+msgstr "本轮还在进行或有排队的消息，结束后再操作。"
+
+#. Key:	HistoryNotOpen
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(997)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Chat/ShuttlegentChatModel.cpp(997)
+msgctxt "ShuttlegentChatModel,HistoryNotOpen"
+msgid "The session is not ready in the runtime yet."
+msgstr "会话尚未在运行时中就绪。"
+
+#. Key:	DefaultLoop
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(39)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(39)
+msgctxt "ShuttlegentAgentEntryCustomization,DefaultLoop"
+msgid "The runtime's built-in default loop"
+msgstr "运行时自带的默认循环"
+
+#. Key:	CapabilitiesSearch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(60)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(60)
+msgctxt "ShuttlegentAgentEntryCustomization,CapabilitiesSearch"
+msgid "Capabilities"
+msgstr "能力"
+
+#. Key:	Capabilities
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(64)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(64)
+msgctxt "ShuttlegentAgentEntryCustomization,Capabilities"
+msgid "Capabilities"
+msgstr "能力"
+
+#. Key:	FollowDefault
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(92)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentAgentEntryCustomization.cpp(92)
+msgctxt "ShuttlegentAgentEntryCustomization,FollowDefault"
+msgid "Follow the default model"
+msgstr "跟随默认模型"
+
+#. Key:	ProbeSearch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(100)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(100)
+msgctxt "ShuttlegentConnectionCustomization,ProbeSearch"
+msgid "Test connection"
+msgstr "测试连接"
+
+#. Key:	ProbeName
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(104)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(104)
+msgctxt "ShuttlegentConnectionCustomization,ProbeName"
+msgid "Status"
+msgstr "状态"
+
+#. Key:	ModelsSearch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(114)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(114)
+msgctxt "ShuttlegentConnectionCustomization,ModelsSearch"
+msgid "Models"
+msgstr "模型"
+
+#. Key:	ModelsName
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(119)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentConnectionCustomization.cpp(119)
+msgctxt "ShuttlegentConnectionCustomization,ModelsName"
+msgid "Models"
+msgstr "模型"
+
+#. Key:	CapPlanMode
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(100)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(100)
+msgctxt "ShuttlegentSettingsChoices,CapPlanMode"
+msgid "Plan mode"
+msgstr "计划模式"
+
+#. Key:	CapTodo
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(101)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(101)
+msgctxt "ShuttlegentSettingsChoices,CapTodo"
+msgid "Task list"
+msgstr "任务清单"
+
+#. Key:	CapContextUsage
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(102)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(102)
+msgctxt "ShuttlegentSettingsChoices,CapContextUsage"
+msgid "Context usage"
+msgstr "上下文用量"
+
+#. Key:	CapMemory
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(103)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(103)
+msgctxt "ShuttlegentSettingsChoices,CapMemory"
+msgid "Memory"
+msgstr "记忆"
+
+#. Key:	CapModelSwitch
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(104)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(104)
+msgctxt "ShuttlegentSettingsChoices,CapModelSwitch"
+msgid "Model switching"
+msgstr "切换模型"
+
+#. Key:	CapImageInput
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(105)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(105)
+msgctxt "ShuttlegentSettingsChoices,CapImageInput"
+msgid "Image input"
+msgstr "图片输入"
+
+#. Key:	NoCapabilities
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(109)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(109)
+msgctxt "ShuttlegentSettingsChoices,NoCapabilities"
+msgid "No capabilities declared"
+msgstr "未声明任何能力"
+
+#. Key:	CapabilitySeparator
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(121)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(121)
+msgctxt "ShuttlegentSettingsChoices,CapabilitySeparator"
+msgid ", "
+msgstr "、"
+
+#. Key:	DefaultAgent
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(88)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(88)
+msgctxt "ShuttlegentSettingsChoices,DefaultAgent"
+msgid "Default"
+msgstr "默认"
+
+#. Key:	CapRewind
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(98)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(98)
+msgctxt "ShuttlegentSettingsChoices,CapRewind"
+msgid "Go back and branch"
+msgstr "回到这里与分支"
+
+#. Key:	CapSlashCommands
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(99)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsChoices.cpp(99)
+msgctxt "ShuttlegentSettingsChoices,CapSlashCommands"
+msgid "Slash commands"
+msgstr "斜杠命令"
+
+#. Key:	ReadTool
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(124)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(124)
+msgctxt "ShuttlegentSettingsCustomization,ReadTool"
+msgid "Read"
+msgstr "读"
+
+#. Key:	WriteTool
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(124)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(124)
+msgctxt "ShuttlegentSettingsCustomization,WriteTool"
+msgid "Write, confirmed before running"
+msgstr "写，执行前确认"
+
+#. Key:	ToolLabel
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(125)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(125)
+msgctxt "ShuttlegentSettingsCustomization,ToolLabel"
+msgid "{0} ({1})"
+msgstr "{0}（{1}）"
+
+#. Key:	SwitchTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(138)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(138)
+msgctxt "ShuttlegentSettingsCustomization,SwitchTooltip"
+msgid "When off, the model can neither see nor call this tool; takes effect immediately"
+msgstr "关闭后模型看不到也调用不了这个工具；立即生效"
+
+#. Key:	DefaultUiFont
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(179)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(179)
+msgctxt "ShuttlegentSettingsCustomization,DefaultUiFont"
+msgid "Default (Segoe UI + Microsoft YaHei UI)"
+msgstr "默认（Segoe UI + 微软雅黑 UI）"
+
+#. Key:	DefaultChatFont
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(180)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(180)
+msgctxt "ShuttlegentSettingsCustomization,DefaultChatFont"
+msgid "Default (follow the UI font)"
+msgstr "默认（跟随界面字体）"
+
+#. Key:	DefaultCodeFont
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(181)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(181)
+msgctxt "ShuttlegentSettingsCustomization,DefaultCodeFont"
+msgid "Default (Cascadia Mono + Consolas)"
+msgstr "默认（Cascadia Mono + Consolas）"
+
+#. Key:	NoToolsets
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(192)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(192)
+msgctxt "ShuttlegentSettingsCustomization,NoToolsets"
+msgid "No engine toolsets"
+msgstr "没有引擎 Toolset"
+
+#. Key:	NoToolsetsHint
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(196)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(196)
+msgctxt "ShuttlegentSettingsCustomization,NoToolsetsHint"
+msgid "No engine toolsets are enabled. Search for Toolset in Edit > Plugins, enable the plugins you need, and they appear here after the editor restarts."
+msgstr "没有启用的引擎 Toolset。在“编辑 > 插件”中搜索 Toolset 启用需要的插件，重启编辑器后在这里出现。"
+
+#. Key:	BlockedToolsetLabel
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(207)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(207)
+msgctxt "ShuttlegentSettingsCustomization,BlockedToolsetLabel"
+msgid "{0} (blocked by the project)"
+msgstr "{0}（项目已屏蔽）"
+
+#. Key:	BlockedToolsetTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(208)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(208)
+msgctxt "ShuttlegentSettingsCustomization,BlockedToolsetTooltip"
+msgid "This toolset is blocked by Project Settings > Shuttlegent > General > Blocked Toolset Names and cannot be turned on personally"
+msgstr "项目设置 > Shuttlegent > General > Blocked Toolset Names 屏蔽了这个 Toolset，个人无法打开"
+
+#. Key:	ToolsetSwitchTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(208)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/FShuttlegentSettingsCustomization.cpp(208)
+msgctxt "ShuttlegentSettingsCustomization,ToolsetSwitchTooltip"
+msgid "When off, the model can neither see nor call the tools of this toolset; takes effect immediately"
+msgstr "关闭后模型看不到也调用不了这个 Toolset 的工具；立即生效"
+
+#. Key:	RecommendedHeader
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(176)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(176)
+msgctxt "SShuttlegentFontField,RecommendedHeader"
+msgid "Recommended (installed on this machine)"
+msgstr "推荐（本机已安装）"
+
+#. Key:	AllHeader
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(187)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(187)
+msgctxt "SShuttlegentFontField,AllHeader"
+msgid "All fonts ({0})"
+msgstr "全部字体（共 {0} 个）"
+
+#. Key:	MonoHeader
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(187)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(187)
+msgctxt "SShuttlegentFontField,MonoHeader"
+msgid "Monospace fonts on this machine ({0})"
+msgstr "本机等宽字体（共 {0} 个）"
+
+#. Key:	NotInstalled
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(323)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentFontField.cpp(323)
+msgctxt "SShuttlegentFontField,NotInstalled"
+msgid "\"{0}\" is not installed on this machine; the panel falls back to the default font"
+msgstr "本机未安装“{0}”，面板会退回默认字体"
+
+#. Key:	Untested
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(101)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(101)
+msgctxt "ShuttlegentProbeRow,Untested"
+msgid "Untested"
+msgstr "未测试"
+
+#. Key:	ProbeTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(39)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(39)
+msgctxt "ShuttlegentProbeRow,ProbeTooltip"
+msgid "Test connection: detect the protocol and list the models. Details go to the Output Log (LogShuttlegent)."
+msgstr "测试连接：检测协议并列出模型。详细信息写入 Output Log（LogShuttlegent）。"
+
+#. Key:	Testing
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(88)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(88)
+msgctxt "ShuttlegentProbeRow,Testing"
+msgid "Testing..."
+msgstr "正在测试…"
+
+#. Key:	Connected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(92)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(92)
+msgctxt "ShuttlegentProbeRow,Connected"
+msgid "Connected"
+msgstr "已连通"
+
+#. Key:	Failed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(96)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Settings/SShuttlegentProbeRow.cpp(96)
+msgctxt "ShuttlegentProbeRow,Failed"
+msgid "Failed"
+msgstr "未连通"
+
+#. Key:	CloseDuringTurn
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(173)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(173)
+msgctxt "ShuttlegentEditor,CloseDuringTurn"
+msgid "Turns are still running in these sessions, and closing the editor will interrupt them:{0}\n\nWrites, permission requests and questions waiting for confirmation will be discarded; after reopening, click \"Retry\" at the end of the conversation. Close anyway?"
+msgstr "以下会话的回合仍在进行，关闭编辑器会中断它们：{0}\n\n未确认的写入、权限请求与提问将作废；重新打开后可在对话末尾点“重试”。仍要关闭吗？"
+
+#. Key:	CloseDuringTurnTitle
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(174)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(174)
+msgctxt "ShuttlegentEditor,CloseDuringTurnTitle"
+msgid "Shuttlegent turn in progress"
+msgstr "Shuttlegent 回合进行中"
+
+#. Key:	ToolbarTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(209)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(209)
+msgctxt "ShuttlegentEditor,ToolbarTooltip"
+msgid "Open the Shuttlegent panel"
+msgstr "打开 Shuttlegent 面板"
+
+#. Key:	ToolbarLabel
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(225)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(225)
+msgctxt "ShuttlegentEditor,ToolbarLabel"
+msgid "Shuttlegent"
+msgstr "Shuttlegent"
+
+#. Key:	ChatTabTitle
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(58)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(58)
+msgctxt "ShuttlegentEditor,ChatTabTitle"
+msgid "Shuttlegent"
+msgstr "Shuttlegent"
+
+#. Key:	ChatTabTooltip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(59)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/ShuttlegentEditorModule.cpp(59)
+msgctxt "ShuttlegentEditor,ChatTabTooltip"
+msgid "Work with an AI agent in the editor"
+msgstr "在编辑器中与 AI Agent 协作"
+
+#. Key:	NewConversationLabel
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Tabs/FShuttlegentSessionTabRegistry.cpp(483)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Tabs/FShuttlegentSessionTabRegistry.cpp(483)
+msgctxt "ShuttlegentSessionTabRegistry,NewConversationLabel"
+msgid "New conversation"
+msgstr "新对话"
+
+#. Key:	ToggleSidebar
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(14)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(14)
+msgctxt "UICommands.ShuttlegentPanelCommands,ToggleSidebar"
+msgid "Toggle Session Sidebar"
+msgstr "切换会话侧栏"
+
+#. Key:	ToggleSidebar_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(14)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(14)
+msgctxt "UICommands.ShuttlegentPanelCommands,ToggleSidebar_ToolTip"
+msgid "Show or hide the session sidebar"
+msgstr "显示或隐藏会话侧栏"
+
+#. Key:	ToggleInspector
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(15)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(15)
+msgctxt "UICommands.ShuttlegentPanelCommands,ToggleInspector"
+msgid "Toggle Inspector Pane"
+msgstr "切换检视窗格"
+
+#. Key:	ToggleInspector_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(15)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(15)
+msgctxt "UICommands.ShuttlegentPanelCommands,ToggleInspector_ToolTip"
+msgid "Show or hide the inspector pane"
+msgstr "显示或隐藏检视窗格"
+
+#. Key:	NewSession
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(16)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(16)
+msgctxt "UICommands.ShuttlegentPanelCommands,NewSession"
+msgid "New Session"
+msgstr "新会话"
+
+#. Key:	NewSession_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(16)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(16)
+msgctxt "UICommands.ShuttlegentPanelCommands,NewSession_ToolTip"
+msgid "Start a new session"
+msgstr "开始一个新会话"
+
+#. Key:	SearchSessions
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(17)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(17)
+msgctxt "UICommands.ShuttlegentPanelCommands,SearchSessions"
+msgid "Search Sessions"
+msgstr "搜索会话"
+
+#. Key:	SearchSessions_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(17)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(17)
+msgctxt "UICommands.ShuttlegentPanelCommands,SearchSessions_ToolTip"
+msgid "Open the session sidebar and focus the search box"
+msgstr "打开会话侧栏并聚焦搜索框"
+
+#. Key:	FocusInput
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(18)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(18)
+msgctxt "UICommands.ShuttlegentPanelCommands,FocusInput"
+msgid "Focus Input Box"
+msgstr "聚焦输入框"
+
+#. Key:	FocusInput_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(18)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(18)
+msgctxt "UICommands.ShuttlegentPanelCommands,FocusInput_ToolTip"
+msgid "Move keyboard focus to the input box"
+msgstr "把键盘焦点移到输入框"
+
+#. Key:	ReloadPage
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(19)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(19)
+msgctxt "UICommands.ShuttlegentPanelCommands,ReloadPage"
+msgid "Reload Panel Page"
+msgstr "刷新面板页面"
+
+#. Key:	ReloadPage_ToolTip
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(19)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(19)
+msgctxt "UICommands.ShuttlegentPanelCommands,ReloadPage_ToolTip"
+msgid "Reload the panel page from disk; conversations, sessions, queues and saved drafts are not affected (drafts are saved about 1 second after typing pauses)"
+msgstr "从磁盘重新加载面板页面；对话、会话、队列与已保存的草稿不受影响（草稿在输入停顿约 1 秒后保存）"
+
+#. Key:	CommandContext
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(8)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/FShuttlegentPanelCommands.cpp(8)
+msgctxt "ShuttlegentPanelCommands,CommandContext"
+msgid "Shuttlegent"
+msgstr "Shuttlegent"
+
+#. Key:	Loading
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/SShuttlegentWebPanel.cpp(342)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/SShuttlegentWebPanel.cpp(342)
+msgctxt "SShuttlegentWebPanel,Loading"
+msgid "Loading…"
+msgstr "正在加载…"
+
+#. Key:	PickImagesTitle
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/SShuttlegentWebPanel.cpp(699)
+#: Plugins/Shuttlegent/Source/ShuttlegentEditor/Private/Web/SShuttlegentWebPanel.cpp(699)
+msgctxt "SShuttlegentWebPanel,PickImagesTitle"
+msgid "Choose images to attach to the message"
+msgstr "选择要附到消息中的图片"
+
+#. Key:	Transaction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRunner.cpp(134)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRunner.cpp(134)
+msgctxt "ShuttlegentToolRunner,Transaction"
+msgid "Shuttlegent · {0}"
+msgstr "Shuttlegent · {0}"
+
+#. Key:	RolledBack
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRunner.cpp(169)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/Endpoint/FShuttlegentToolRunner.cpp(169)
+msgctxt "ShuttlegentToolRunner,RolledBack"
+msgid "Another object in the batch failed, so this one was rolled back with the batch"
+msgstr "同批其他对象失败，已随整批回滚"
+
+#. Key:	Transaction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(121)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(121)
+msgctxt "ShuttlegentWriteProbe,Transaction"
+msgid "Shuttlegent · Set Actor location"
+msgstr "Shuttlegent · 设置 Actor 位置"
+
+#. Key:	NotRun
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(129)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(129)
+msgctxt "ShuttlegentWriteProbe,NotRun"
+msgid "The previous object failed, so this one did not run"
+msgstr "前一个对象失败，未执行"
+
+#. Key:	ProbeFailure
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(135)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(135)
+msgctxt "ShuttlegentWriteProbe,ProbeFailure"
+msgid "The probe arguments asked this object to fail"
+msgstr "探针参数指定此对象失败"
+
+#. Key:	ActorGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(141)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(141)
+msgctxt "ShuttlegentWriteProbe,ActorGone"
+msgid "The object no longer exists"
+msgstr "对象已不存在"
+
+#. Key:	Action
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(81)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(81)
+msgctxt "ShuttlegentWriteProbe,Action"
+msgid "Set Actor location"
+msgstr "设置 Actor 位置"
+
+#. Key:	FieldZ
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(94)
+#: Plugins/Shuttlegent/Source/ShuttlegentMcpServer/Private/WriteGate/FShuttlegentWriteProbe.cpp(94)
+msgctxt "ShuttlegentWriteProbe,FieldZ"
+msgid "Location Z (cm)"
+msgstr "位置 Z（cm）"
+
+#. Key:	Transform
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Placement/FShuttlegentPlacement.cpp(467)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Placement/FShuttlegentPlacement.cpp(467)
+msgctxt "ShuttlegentPlacement,Transform"
+msgid "Location {0} Rotation {1} Scale {2}"
+msgstr "位置 {0} 旋转 {1} 缩放 {2}"
+
+#. Key:	ExportAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(104)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(104)
+msgctxt "ShuttlegentDataTableTools,ExportAction"
+msgid "Export DataTable to file"
+msgstr "导出数据表到文件"
+
+#. Key:	ExportField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(110)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(110)
+msgctxt "ShuttlegentDataTableTools,ExportField"
+msgid "Export file"
+msgstr "导出文件"
+
+#. Key:	FileExists
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(111)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(111)
+msgctxt "ShuttlegentDataTableTools,FileExists"
+msgid "File exists and will be overwritten"
+msgstr "文件已存在，将被覆盖"
+
+#. Key:	NewFile
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(111)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(111)
+msgctxt "ShuttlegentDataTableTools,NewFile"
+msgid "(new)"
+msgstr "（新建）"
+
+#. Key:	ExportPlanned
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(112)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(112)
+msgctxt "ShuttlegentDataTableTools,ExportPlanned"
+msgid "{0} row(s) → {1}"
+msgstr "{0} 行 → {1}"
+
+#. Key:	TableGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(127)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(127)
+msgctxt "ShuttlegentDataTableTools,TableGone"
+msgid "The DataTable no longer exists"
+msgstr "数据表已不存在"
+
+#. Key:	ExportFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(137)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentDataTableTools.cpp(137)
+msgctxt "ShuttlegentDataTableTools,ExportFailed"
+msgid "Could not write {0}: the file may be in use by another program or read-only"
+msgstr "无法写入 {0}：文件可能被其他程序占用或只读"
+
+#. Key:	ObjectGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(126)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(126)
+msgctxt "ShuttlegentEditTools,ObjectGone"
+msgid "The object or property no longer exists"
+msgstr "对象或属性已不存在"
+
+#. Key:	ValueRejected
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(138)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(138)
+msgctxt "ShuttlegentEditTools,ValueRejected"
+msgid "The value cannot be written to this property"
+msgstr "值无法写入该属性"
+
+#. Key:	SpawnAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(177)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(177)
+msgctxt "ShuttlegentEditTools,SpawnAction"
+msgid "Spawn Actor {0}"
+msgstr "生成 Actor {0}"
+
+#. Key:	SpawnField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(183)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(183)
+msgctxt "ShuttlegentEditTools,SpawnField"
+msgid "Location / Rotation"
+msgstr "位置 / 旋转"
+
+#. Key:	NotPlaced
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(184)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(184)
+msgctxt "ShuttlegentEditTools,NotPlaced"
+msgid "(new)"
+msgstr "（新建）"
+
+#. Key:	SpawnFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(199)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(199)
+msgctxt "ShuttlegentEditTools,SpawnFailed"
+msgid "This class cannot be spawned in the current level"
+msgstr "无法在当前关卡生成该类"
+
+#. Key:	DeleteAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(238)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(238)
+msgctxt "ShuttlegentEditTools,DeleteAction"
+msgid "Delete Actor"
+msgstr "删除 Actor"
+
+#. Key:	DeleteField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(252)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(252)
+msgctxt "ShuttlegentEditTools,DeleteField"
+msgid "Actor"
+msgstr "Actor"
+
+#. Key:	Deleted
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(254)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(254)
+msgctxt "ShuttlegentEditTools,Deleted"
+msgid "Delete"
+msgstr "删除"
+
+#. Key:	DeleteFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(268)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(268)
+msgctxt "ShuttlegentEditTools,DeleteFailed"
+msgid "The Actor no longer exists or cannot be deleted"
+msgstr "Actor 已不存在或无法删除"
+
+#. Key:	SaveAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(293)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(293)
+msgctxt "ShuttlegentEditTools,SaveAction"
+msgid "Save to disk"
+msgstr "保存到磁盘"
+
+#. Key:	SaveField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(299)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(299)
+msgctxt "ShuttlegentEditTools,SaveField"
+msgid "File"
+msgstr "文件"
+
+#. Key:	Clean
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(300)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(300)
+msgctxt "ShuttlegentEditTools,Clean"
+msgid "No changes"
+msgstr "无修改"
+
+#. Key:	Dirty
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(300)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(300)
+msgctxt "ShuttlegentEditTools,Dirty"
+msgid "Has unsaved changes"
+msgstr "有未保存的修改"
+
+#. Key:	Saved
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(301)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(301)
+msgctxt "ShuttlegentEditTools,Saved"
+msgid "Save"
+msgstr "保存"
+
+#. Key:	SaveFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(322)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(322)
+msgctxt "ShuttlegentEditTools,SaveFailed"
+msgid "Not saved: the file may be read-only or not checked out"
+msgstr "未保存：文件可能只读或未签出"
+
+#. Key:	SetPropertyAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(85)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentEditTools.cpp(85)
+msgctxt "ShuttlegentEditTools,SetPropertyAction"
+msgid "Set property {0}"
+msgstr "设置属性 {0}"
+
+#. Key:	TidyAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(141)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(141)
+msgctxt "ShuttlegentGraphTools,TidyAction"
+msgid "Tidy the graph layout"
+msgstr "整理节点图排版"
+
+#. Key:	Estimated
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(144)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(144)
+msgctxt "ShuttlegentGraphTools,Estimated"
+msgid " (node sizes are estimated)"
+msgstr "（节点尺寸为估算）"
+
+#. Key:	CurrentLayout
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(150)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(150)
+msgctxt "ShuttlegentGraphTools,CurrentLayout"
+msgid "{0} node(s), bounds {1}"
+msgstr "{0} 个节点，范围 {1}"
+
+#. Key:	PlannedLayout
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(151)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(151)
+msgctxt "ShuttlegentGraphTools,PlannedLayout"
+msgid "Move {0} node(s), bounds {1}{2}"
+msgstr "移动 {0} 个节点，范围 {1}{2}"
+
+#. Key:	GraphGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(169)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(169)
+msgctxt "ShuttlegentGraphTools,GraphGone"
+msgid "The graph no longer exists or has no nodes left to arrange"
+msgstr "节点图已不存在或已没有可排的节点"
+
+#. Key:	Bounds
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(48)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentGraphTools.cpp(48)
+msgctxt "ShuttlegentGraphTools,Bounds"
+msgid "{0} × {1}"
+msgstr "{0} × {1}"
+
+#. Key:	RedoAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(59)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(59)
+msgctxt "ShuttlegentHistoryTools,RedoAction"
+msgid "Redo editor operations"
+msgstr "重做编辑器操作"
+
+#. Key:	UndoAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(59)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(59)
+msgctxt "ShuttlegentHistoryTools,UndoAction"
+msgid "Undo editor operations"
+msgstr "撤销编辑器操作"
+
+#. Key:	RedoField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(68)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(68)
+msgctxt "ShuttlegentHistoryTools,RedoField"
+msgid "Redo"
+msgstr "重做"
+
+#. Key:	UndoField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(68)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(68)
+msgctxt "ShuttlegentHistoryTools,UndoField"
+msgid "Undo"
+msgstr "撤销"
+
+#. Key:	StepDone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(69)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(69)
+msgctxt "ShuttlegentHistoryTools,StepDone"
+msgid "Step {0}"
+msgstr "第 {0} 步"
+
+#. Key:	Redone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(70)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(70)
+msgctxt "ShuttlegentHistoryTools,Redone"
+msgid "Run again"
+msgstr "重新执行"
+
+#. Key:	Undone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(70)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(70)
+msgctxt "ShuttlegentHistoryTools,Undone"
+msgid "Undo"
+msgstr "撤销"
+
+#. Key:	HistoryChanged
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(85)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentHistoryTools.cpp(85)
+msgctxt "ShuttlegentHistoryTools,HistoryChanged"
+msgid "The editor history changed, so this did not run"
+msgstr "编辑器历史已变化，未执行"
+
+#. Key:	PlaceAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(327)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(327)
+msgctxt "ShuttlegentLevelBuildTools,PlaceAction"
+msgid "Place {0} × {1}"
+msgstr "批量摆放 {0} 个 {1}"
+
+#. Key:	PlaceActionMissed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(328)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(328)
+msgctxt "ShuttlegentLevelBuildTools,PlaceActionMissed"
+msgid "{0} ({1} have no ground below and keep their height)"
+msgstr "{0}（{1} 个下方没有地面，保持原高度）"
+
+#. Key:	TransformField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(335)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(335)
+msgctxt "ShuttlegentLevelBuildTools,TransformField"
+msgid "Location / Rotation / Scale"
+msgstr "位置 / 旋转 / 缩放"
+
+#. Key:	NotPlaced
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(336)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(336)
+msgctxt "ShuttlegentLevelBuildTools,NotPlaced"
+msgid "(new)"
+msgstr "（新建）"
+
+#. Key:	PlanChanged
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(359)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(359)
+msgctxt "ShuttlegentLevelBuildTools,PlanChanged"
+msgid "The source or the level changed while waiting for confirmation"
+msgstr "来源或关卡在确认期间已变化"
+
+#. Key:	PlaceFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(371)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(371)
+msgctxt "ShuttlegentLevelBuildTools,PlaceFailed"
+msgid "Cannot be spawned in the current level"
+msgstr "无法在当前关卡生成"
+
+#. Key:	ArrangeAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(410)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(410)
+msgctxt "ShuttlegentLevelBuildTools,ArrangeAction"
+msgid "Arrange Actors ({0})"
+msgstr "整理 Actor 位置（{0}）"
+
+#. Key:	ArrangeField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(419)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(419)
+msgctxt "ShuttlegentLevelBuildTools,ArrangeField"
+msgid "Location / Rotation / Scale"
+msgstr "位置 / 旋转 / 缩放"
+
+#. Key:	ActorGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(441)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentLevelBuildTools.cpp(441)
+msgctxt "ShuttlegentLevelBuildTools,ActorGone"
+msgid "The Actor no longer exists"
+msgstr "Actor 已不存在"
+
+#. Key:	Inherited
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(502)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(502)
+msgctxt "ShuttlegentMaterialTools,Inherited"
+msgid " (inherited from the parent material)"
+msgstr "（继承自父材质）"
+
+#. Key:	SetParametersAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(507)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(507)
+msgctxt "ShuttlegentMaterialTools,SetParametersAction"
+msgid "Change material instance parameters"
+msgstr "修改材质实例参数"
+
+#. Key:	SetParametersStaticAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(507)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(507)
+msgctxt "ShuttlegentMaterialTools,SetParametersStaticAction"
+msgid "Change material instance parameters (includes static switches; the material will be recompiled)"
+msgstr "修改材质实例参数（含静态开关，将重新编译材质）"
+
+#. Key:	ParameterGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(525)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(525)
+msgctxt "ShuttlegentMaterialTools,ParameterGone"
+msgid "The material instance or parameter no longer exists"
+msgstr "材质实例或参数已不存在"
+
+#. Key:	PlannedParent
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(591)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(591)
+msgctxt "ShuttlegentMaterialTools,PlannedParent"
+msgid "Parent material {0}"
+msgstr "父材质 {0}"
+
+#. Key:	CreateField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(616)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(616)
+msgctxt "ShuttlegentMaterialTools,CreateField"
+msgid "Material instance"
+msgstr "材质实例"
+
+#. Key:	NotCreated
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(617)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(617)
+msgctxt "ShuttlegentMaterialTools,NotCreated"
+msgid "(new)"
+msgstr "（新建）"
+
+#. Key:	CreateAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(621)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(621)
+msgctxt "ShuttlegentMaterialTools,CreateAction"
+msgid "Create material instance"
+msgstr "新建材质实例"
+
+#. Key:	CreateStaticAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(621)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(621)
+msgctxt "ShuttlegentMaterialTools,CreateStaticAction"
+msgid "Create material instance (includes static switches; the material will be compiled)"
+msgstr "新建材质实例（含静态开关，将编译材质）"
+
+#. Key:	ParentGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(637)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(637)
+msgctxt "ShuttlegentMaterialTools,ParentGone"
+msgid "The parent material no longer exists"
+msgstr "父材质已不存在"
+
+#. Key:	CreateFailed
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(648)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(648)
+msgctxt "ShuttlegentMaterialTools,CreateFailed"
+msgid "Cannot create an asset at this path"
+msgstr "无法在该路径新建资源"
+
+#. Key:	AssignAction
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(748)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(748)
+msgctxt "ShuttlegentMaterialTools,AssignAction"
+msgid "Replace material with {0}"
+msgstr "替换材质为 {0}"
+
+#. Key:	SlotField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(758)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(758)
+msgctxt "ShuttlegentMaterialTools,SlotField"
+msgid "Material slot {0} {1}"
+msgstr "材质槽 {0} {1}"
+
+#. Key:	MeshDefault
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(760)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(760)
+msgctxt "ShuttlegentMaterialTools,MeshDefault"
+msgid " (mesh default)"
+msgstr "（网格体默认）"
+
+#. Key:	SlotGone
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(783)
+#: Plugins/Shuttlegent/Source/ShuttlegentTools/Private/Tools/FShuttlegentMaterialTools.cpp(783)
+msgctxt "ShuttlegentMaterialTools,SlotGone"
+msgid "The material, component or material slot changed"
+msgstr "材质、组件或材质槽已变化"
+
+#. Key:	Action
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(228)
+#: Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(228)
+msgctxt "ShuttlegentToolsetTools,Action"
+msgid "Call engine tool {0} · {1} (whether it can be undone depends on the result)"
+msgstr "调用引擎工具 {0} · {1}（能否撤销以执行结果为准）"
+
+#. Key:	ActionNonUndoable
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(229)
+#: Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(229)
+msgctxt "ShuttlegentToolsetTools,ActionNonUndoable"
+msgid "Call engine tool {0} · {1}"
+msgstr "调用引擎工具 {0} · {1}"
+
+#. Key:	ArgumentsField
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(238)
+#: Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(238)
+msgctxt "ShuttlegentToolsetTools,ArgumentsField"
+msgid "Arguments"
+msgstr "参数"
+
+#. Key:	StillRunning
+#. SourceLocation:	Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(264)
+#: Plugins/Shuttlegent/Source/ShuttlegentToolsetBridge/Private/FShuttlegentToolsetTools.cpp(264)
+msgctxt "ShuttlegentToolsetTools,StillRunning"
+msgid "The tool is still running in the background and has not returned a result"
+msgstr "工具仍在后台执行，结果未返回"
+

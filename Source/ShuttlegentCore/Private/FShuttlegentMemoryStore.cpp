@@ -7,6 +7,8 @@
 #include "ShuttlegentConstants.h"
 #include "ShuttlegentLog.h"
 
+#define LOCTEXT_NAMESPACE "ShuttlegentMemoryStore"
+
 namespace FShuttlegentMemoryStorePrivate
 {
 	// 记录日期的字符数（YYYY-MM-DD）
@@ -227,7 +229,7 @@ bool FShuttlegentMemoryStore::Revert(const FShuttlegentMemoryChange& Change, FSt
 			const int32 LineIndex = FShuttlegentMemoryStorePrivate::FindItem(Lines, Change.After.Text);
 			if (LineIndex == INDEX_NONE)
 			{
-				OutError = TEXT("这条记忆已不在文件中。");
+				OutError = LOCTEXT("MemoryGone", "This memory is no longer in the file.").ToString();
 				return false;
 			}
 			Lines.RemoveAt(LineIndex);
@@ -239,7 +241,7 @@ bool FShuttlegentMemoryStore::Revert(const FShuttlegentMemoryChange& Change, FSt
 			const int32 LineIndex = FShuttlegentMemoryStorePrivate::FindItem(Lines, Change.After.Text);
 			if (LineIndex == INDEX_NONE)
 			{
-				OutError = TEXT("这条记忆已被改动或删除。");
+				OutError = LOCTEXT("MemoryChanged", "This memory has been changed or removed.").ToString();
 				return false;
 			}
 			Lines[LineIndex] = FShuttlegentMemoryStorePrivate::FormatItem(Change.Before);
@@ -278,3 +280,5 @@ void FShuttlegentMemoryStore::MigrateLocalPrompt()
 	}
 	UE_LOG(LogShuttlegent, Warning, TEXT("Could not move the personal prompt %s to %s; it is no longer loaded from the project root."), *OldPath, *NewPath);
 }
+
+#undef LOCTEXT_NAMESPACE

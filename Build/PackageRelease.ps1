@@ -4,7 +4,7 @@ Packs the Shuttlegent plugin into a release zip that includes the agent runtime.
 
 .DESCRIPTION
 Copies the git-tracked plugin files a user needs (descriptor, license, README, Config,
-Resources, Source, Docs, Samples, Runtime/plugins, Runtime/profile), adds the built
+Content/Localization, Resources, Source, Docs, Samples, Runtime/plugins, Runtime/profile), adds the built
 runtime from Runtime/ (shuttlegent-runtime.exe, its ripgrep sidecar, runtime-version.json)
 and the DeepSeek Harness license, and zips them under a top-level Shuttlegent/ folder:
 
@@ -36,7 +36,7 @@ $DshDir = Join-Path $PluginDir 'ThirdParty\deepseek-harness'
 if (-not $OutDir) { $OutDir = Join-Path $PluginDir 'Saved\Release' }
 
 # Git-tracked paths that go into the package as they are
-$TrackedPaths = @('Shuttlegent.uplugin', 'LICENSE', 'README.md', 'Config', 'Resources', 'Source', 'Docs', 'Samples', 'Runtime/plugins', 'Runtime/profile')
+$TrackedPaths = @('Shuttlegent.uplugin', 'LICENSE', 'README.md', 'Config', 'Content/Localization', 'Resources', 'Source', 'Docs', 'Samples', 'Runtime/plugins', 'Runtime/profile')
 
 # Built runtime files, not in git; all of them are required
 $RuntimeFiles = @('shuttlegent-runtime.exe', 'shuttlegent-runtime-rg.exe', 'runtime-version.json')

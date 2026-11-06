@@ -480,7 +480,7 @@ FText FShuttlegentSessionTabRegistry::GetTabLabel(const FGuid& ViewId) const
 {
 	const FShuttlegentSessionTab* Entry = FindByView(ViewId);
 	const FString Title = Entry != nullptr && Entry->View.IsValid() ? Entry->View->GetCurrentTitle() : FString();
-	return Title.IsEmpty() ? LOCTEXT("NewConversationLabel", "新对话") : FText::FromString(Title);
+	return Title.IsEmpty() ? LOCTEXT("NewConversationLabel", "New conversation") : FText::FromString(Title);
 }
 
 void FShuttlegentSessionTabRegistry::SyncWindowTitle(const FGuid& ViewId, const TSharedRef<SDockTab>& Tab) const

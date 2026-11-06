@@ -42,6 +42,23 @@
 			"LoadingPhase": "Default"
 		}
 	],
+	"LocalizationTargets": [
+		{
+			"Name": "Shuttlegent",
+			"LoadingPolicy": "Editor",
+			"ConfigGenerationPolicy": "User"
+		},
+		{
+			"Name": "ShuttlegentToolTips",
+			"LoadingPolicy": "ToolTips",
+			"ConfigGenerationPolicy": "User"
+		},
+		{
+			"Name": "ShuttlegentPropertyNames",
+			"LoadingPolicy": "PropertyNames",
+			"ConfigGenerationPolicy": "User"
+		}
+	],
 	"Plugins": [
 		{
 			"Name": "ToolsetRegistry",

@@ -5,3 +5,11 @@
 *.cs text eol=lf
 *.usf text eol=lf
 *.ush text eol=lf
+
+# Unreal localization files keep the bytes the gather commandlets write:
+# .manifest and .archive are UTF-16LE, .po is UTF-8 with BOM, .locres and .locmeta are binary
+*.manifest -text
+*.archive -text
+*.po -text
+*.locres binary
+*.locmeta binary

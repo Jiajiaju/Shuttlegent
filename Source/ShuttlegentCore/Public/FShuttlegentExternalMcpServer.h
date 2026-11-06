@@ -7,33 +7,33 @@
 
 #include "FShuttlegentExternalMcpServer.generated.h"
 
-/** 项目在每个会话中声明给运行时的知识或工具服务。 */
+/** Knowledge or tool server that the project declares to the runtime in every session. */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentExternalMcpServer
 {
 	GENERATED_BODY()
 
-	/** 服务名，运行时以它作为该服务工具名的前缀；不得为编辑器端点占用的 "ue"。 */
+	/** Server name; the runtime uses it as the prefix of this server's tool names. Must not be "ue", which the editor endpoint uses. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Name;
 
-	/** 传输方式：Http 通过 URL 访问，Stdio 由运行时启动本机进程。 */
+	/** Transport: Http is reached through a URL, Stdio is a local process started by the runtime. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	EShuttlegentExternalMcpType Type = EShuttlegentExternalMcpType::Http;
 
-	/** Http：绝对 URL。 */
+	/** Http: absolute URL. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Url;
 
-	/** Http：随请求发送的请求头；值来自变量，密钥不写进配置。 */
+	/** Http: headers sent with each request; values come from variables so keys stay out of the config. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	TArray<FShuttlegentMcpHeader> Headers;
 
-	/** Stdio：可执行文件的绝对路径。 */
+	/** Stdio: absolute path of the executable. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	FString Command;
 
-	/** Stdio：启动参数。 */
+	/** Stdio: launch arguments. */
 	UPROPERTY(Config, EditAnywhere, Category = "Server")
 	TArray<FString> Arguments;
 };

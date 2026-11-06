@@ -56,7 +56,7 @@ void FShuttlegentEditorModule::StartupModule()
 
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(ShuttlegentEditorName::ChatTabId, FOnSpawnTab::CreateRaw(this, &FShuttlegentEditorModule::SpawnChatTab))
 		.SetDisplayName(LOCTEXT("ChatTabTitle", "Shuttlegent"))
-		.SetTooltipText(LOCTEXT("ChatTabTooltip", "在编辑器中与 AI Agent 协作"))
+		.SetTooltipText(LOCTEXT("ChatTabTooltip", "Work with an AI agent in the editor"))
 		.SetIcon(FSlateIcon(ShuttlegentEditorName::StyleSetName, ShuttlegentEditorStyleKey::TabIcon))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 
@@ -170,8 +170,8 @@ bool FShuttlegentEditorModule::HandleCanCloseEditor()
 	{
 		List += FString::Printf(TEXT("\n  · %s"), *Title);
 	}
-	const FText Message = FText::Format(LOCTEXT("CloseDuringTurn", "以下会话的回合仍在进行，关闭编辑器会中断它们：{0}\n\n未确认的写入、权限请求与提问将作废；重新打开后可在对话末尾点“重试”。仍要关闭吗？"), FText::FromString(List));
-	if (FMessageDialog::Open(EAppMsgType::YesNo, EAppReturnType::No, Message, LOCTEXT("CloseDuringTurnTitle", "Shuttlegent 回合进行中")) != EAppReturnType::Yes) return false;
+	const FText Message = FText::Format(LOCTEXT("CloseDuringTurn", "Turns are still running in these sessions, and closing the editor will interrupt them:{0}\n\nWrites, permission requests and questions waiting for confirmation will be discarded; after reopening, click \"Retry\" at the end of the conversation. Close anyway?"), FText::FromString(List));
+	if (FMessageDialog::Open(EAppMsgType::YesNo, EAppReturnType::No, Message, LOCTEXT("CloseDuringTurnTitle", "Shuttlegent turn in progress")) != EAppReturnType::Yes) return false;
 
 	ChatModel->SettleBeforeExit();
 	return true;
@@ -206,7 +206,7 @@ void FShuttlegentEditorModule::RegisterMenus()
 	const TSharedRef<SWidget> Button = SNew(SButton)
 		.ButtonStyle(&ToolbarStyle.ButtonStyle)
 		.ContentPadding(ToolbarStyle.ButtonPadding)
-		.ToolTipText(LOCTEXT("ToolbarTooltip", "打开 Shuttlegent 面板"))
+		.ToolTipText(LOCTEXT("ToolbarTooltip", "Open the Shuttlegent panel"))
 		.OnClicked_Lambda([]()
 		{
 			FGlobalTabmanager::Get()->TryInvokeTab(ShuttlegentEditorName::ChatTabId);

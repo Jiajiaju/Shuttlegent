@@ -85,7 +85,7 @@ TSharedRef<SWidget> FShuttlegentSettingsChoices::MakeAgentCombo(const TSharedRef
 
 FText FShuttlegentSettingsChoices::GetAgentLabel(const FString& AgentId)
 {
-	if (AgentId.IsEmpty() || AgentId == ShuttlegentAgentConstant::DefaultAgentId) return LOCTEXT("DefaultAgent", "默认");
+	if (AgentId.IsEmpty() || AgentId == ShuttlegentAgentConstant::DefaultAgentId) return LOCTEXT("DefaultAgent", "Default");
 
 	const FShuttlegentAgentManifest* Manifest = FShuttlegentAgentCatalog::Find(AgentId);
 	return FText::FromString(Manifest != nullptr ? Manifest->DisplayName : AgentId);
@@ -93,20 +93,20 @@ FText FShuttlegentSettingsChoices::GetAgentLabel(const FString& AgentId)
 
 FText FShuttlegentSettingsChoices::GetAgentCapabilities(const FString& AgentId)
 {
-	// 能力项按 ShuttlegentAgentConstant::AllCapabilities 的顺序显示中文名；说明文件里不认识的能力项原样列出
+	// 能力项按 ShuttlegentAgentConstant::AllCapabilities 的顺序显示本地化名称；说明文件里不认识的能力项原样列出
 	const TPair<const TCHAR*, FText> Known[] = {
-		{ TEXT("rewind"), LOCTEXT("CapRewind", "回到这里与分支") },
-		{ TEXT("slashCommands"), LOCTEXT("CapSlashCommands", "斜杠命令") },
-		{ TEXT("planMode"), LOCTEXT("CapPlanMode", "计划模式") },
-		{ TEXT("todo"), LOCTEXT("CapTodo", "任务清单") },
-		{ TEXT("contextUsage"), LOCTEXT("CapContextUsage", "上下文用量") },
-		{ TEXT("memory"), LOCTEXT("CapMemory", "记忆") },
-		{ TEXT("modelSwitch"), LOCTEXT("CapModelSwitch", "切换模型") },
-		{ TEXT("imageInput"), LOCTEXT("CapImageInput", "图片输入") },
+		{ TEXT("rewind"), LOCTEXT("CapRewind", "Go back and branch") },
+		{ TEXT("slashCommands"), LOCTEXT("CapSlashCommands", "Slash commands") },
+		{ TEXT("planMode"), LOCTEXT("CapPlanMode", "Plan mode") },
+		{ TEXT("todo"), LOCTEXT("CapTodo", "Task list") },
+		{ TEXT("contextUsage"), LOCTEXT("CapContextUsage", "Context usage") },
+		{ TEXT("memory"), LOCTEXT("CapMemory", "Memory") },
+		{ TEXT("modelSwitch"), LOCTEXT("CapModelSwitch", "Model switching") },
+		{ TEXT("imageInput"), LOCTEXT("CapImageInput", "Image input") },
 	};
 
 	const FShuttlegentAgentManifest* Manifest = FShuttlegentAgentCatalog::Find(AgentId.IsEmpty() ? FString(ShuttlegentAgentConstant::DefaultAgentId) : AgentId);
-	if (Manifest == nullptr || Manifest->Capabilities.IsEmpty()) return LOCTEXT("NoCapabilities", "未声明任何能力");
+	if (Manifest == nullptr || Manifest->Capabilities.IsEmpty()) return LOCTEXT("NoCapabilities", "No capabilities declared");
 
 	TArray<FString> Names;
 	for (const TPair<const TCHAR*, FText>& Item : Known)
@@ -118,7 +118,7 @@ FText FShuttlegentSettingsChoices::GetAgentCapabilities(const FString& AgentId)
 		const bool bKnown = Algo::AnyOf(Known, [&Capability](const TPair<const TCHAR*, FText>& Item) { return Capability == Item.Key; });
 		if (!bKnown) Names.Add(Capability);
 	}
-	return FText::FromString(FString::Join(Names, *LOCTEXT("CapabilitySeparator", "、").ToString()));
+	return FText::FromString(FString::Join(Names, *LOCTEXT("CapabilitySeparator", ", ").ToString()));
 }
 
 #undef LOCTEXT_NAMESPACE

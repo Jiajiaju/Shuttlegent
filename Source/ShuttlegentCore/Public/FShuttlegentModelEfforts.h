@@ -5,19 +5,19 @@
 #include "FShuttlegentModelEfforts.generated.h"
 
 /**
- * 一个模型可选的推理强度档位，测试连接时从 models.opencode.ai 的模型目录查得（FShuttlegentEffortCatalog）。
- * 只记录查到了具体档位的模型；没有记录的模型不声明档位，请求不带推理参数，沿用服务方的默认行为。
+ * Reasoning effort levels available for a model, looked up in the models.opencode.ai catalog when the connection is tested (FShuttlegentEffortCatalog).
+ * Only models with known levels are recorded; other models declare no levels, and their requests carry no reasoning parameter and keep the provider's default behavior.
  */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentModelEfforts
 {
 	GENERATED_BODY()
 
-	/** 模型 ID。 */
+	/** Model ID. */
 	UPROPERTY(Config)
 	FString ModelId;
 
-	/** 可选档位，取运行时的档位名（minimal、low、medium、high、xhigh、max），从低到高。 */
+	/** Available levels, using the runtime's level names (minimal, low, medium, high, xhigh, max), from low to high. */
 	UPROPERTY(Config)
 	TArray<FString> Efforts;
 };

@@ -1,0 +1,617 @@
+﻿# ShuttlegentToolTips Chinese (Simplified) translation.
+# Fill out your copyright notice in the Description page of Project Settings.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: ShuttlegentToolTips\n"
+"POT-Creation-Date: 2026-11-06 08:18\n"
+"PO-Revision-Date: 2026-11-06 08:18\n"
+"Language-Team: \n"
+"Language: zh-Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Key:	EShuttlegentConnectionStatus
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentConnectionStatus"
+msgid "Result of the latest test of a model connection."
+msgstr "一条模型连接最近一次检测的结论。"
+
+#. Key:	EShuttlegentConnectionStatus.Connected
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Connected [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Connected [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentConnectionStatus.Connected"
+msgid "Connected: the protocol and model list were detected"
+msgstr "已连通：协议与模型列表已识别"
+
+#. Key:	EShuttlegentConnectionStatus.Failed
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Failed [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Failed [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentConnectionStatus.Failed"
+msgid "Not connected: see the Output Log for the reason"
+msgstr "未连通：原因写在 Output Log"
+
+#. Key:	EShuttlegentConnectionStatus.Testing
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Testing [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Testing [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentConnectionStatus.Testing"
+msgid "Test in progress"
+msgstr "正在检测"
+
+#. Key:	EShuttlegentConnectionStatus.Untested
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Untested [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Untested [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentConnectionStatus.Untested"
+msgid "Not tested yet, or the address or key changed since the last test"
+msgstr "还没检测过，或地址、密钥改过之后还没重新检测"
+
+#. Key:	EShuttlegentExternalMcpType
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentExternalMcpType"
+msgid "Transport of an external MCP server that the project declares to the runtime."
+msgstr "项目声明给运行时的外部 MCP 服务所用的传输方式。"
+
+#. Key:	EShuttlegentExternalMcpType.Http
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType:Http [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType:Http [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentExternalMcpType.Http"
+msgid "Streamable HTTP, reached through a URL"
+msgstr "通过 URL 访问的 Streamable HTTP"
+
+#. Key:	EShuttlegentExternalMcpType.Stdio
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType:Stdio [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType:Stdio [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentExternalMcpType.Stdio"
+msgid "Local process started by the runtime, talking over stdin and stdout"
+msgstr "由运行时启动的本机进程，经 stdin 与 stdout 通信"
+
+#. Key:	EShuttlegentPermissionPolicy
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentPermissionPolicy"
+msgid "How to answer session/request_permission from the runtime when no UI handler is bound."
+msgstr "没有绑定界面处理器时，如何答复运行时发来的 session/request_permission。"
+
+#. Key:	EShuttlegentPermissionPolicy.Allow
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Allow [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Allow [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentPermissionPolicy.Allow"
+msgid "Allow each request once"
+msgstr "每个请求都允许一次"
+
+#. Key:	EShuttlegentPermissionPolicy.Reject
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Reject [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Reject [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentPermissionPolicy.Reject"
+msgid "Reject every request"
+msgstr "拒绝所有请求"
+
+#. Key:	EShuttlegentProviderApi
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentProviderApi"
+msgid "API protocol of a model provider route served through llm-pi-ai."
+msgstr "经 llm-pi-ai 接入的模型供应商路由所用的接口协议。"
+
+#. Key:	EShuttlegentProviderApi.AnthropicMessages
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:AnthropicMessages [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:AnthropicMessages [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentProviderApi.AnthropicMessages"
+msgid "Anthropic Messages API and compatible endpoints"
+msgstr "Anthropic Messages API 及兼容端点"
+
+#. Key:	EShuttlegentProviderApi.OpenAiCompletions
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiCompletions [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiCompletions [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentProviderApi.OpenAiCompletions"
+msgid "OpenAI Chat Completions and compatible endpoints: DashScope, Kimi, Zhipu, Doubao, Ollama, vLLM, team gateways"
+msgstr "OpenAI Chat Completions 及兼容端点：DashScope、Kimi、智谱、豆包、Ollama、vLLM、团队网关"
+
+#. Key:	EShuttlegentProviderApi.OpenAiResponses
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiResponses [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiResponses [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentProviderApi.OpenAiResponses"
+msgid "OpenAI Responses API"
+msgstr "OpenAI Responses API"
+
+#. Key:	EShuttlegentUiGuideKind
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentUiGuideKind"
+msgid "Kind of place that a UI guide entry opens for the user."
+msgstr "界面指路条目为用户打开的位置类型。"
+
+#. Key:	EShuttlegentUiGuideKind.Settings
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind:Settings [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind:Settings [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentUiGuideKind.Settings"
+msgid "Settings page, opened by container / category / section"
+msgstr "设置页面，按 容器 / 分类 / 分节 打开"
+
+#. Key:	EShuttlegentUiGuideKind.Tab
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind:Tab [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind:Tab [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentUiGuideKind.Tab"
+msgid "Editor tab, opened by tab ID"
+msgstr "编辑器页签，按页签 ID 打开"
+
+#. Key:	EShuttlegentWriteMode
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode [Enum ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode [Enum ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentWriteMode"
+msgid "How editor writes in a conversation are confirmed; plan mode is tracked by the runtime and is not listed here. Deleting, moving and renaming always need confirmation."
+msgstr "对话中编辑器写入的确认方式；计划模式另由运行时记录，不在此列。删除、移动、改名在任何模式下都要确认。"
+
+#. Key:	EShuttlegentWriteMode.AcceptEdits
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:AcceptEdits [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:AcceptEdits [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentWriteMode.AcceptEdits"
+msgid "Run undoable writes directly; writes that cannot be undone still need confirmation"
+msgstr "可撤销的写入直接执行，不可撤销的仍要确认"
+
+#. Key:	EShuttlegentWriteMode.Auto
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:Auto [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:Auto [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentWriteMode.Auto"
+msgid "Run every write directly except deleting, moving and renaming"
+msgstr "除删除、移动、改名外的写入都直接执行"
+
+#. Key:	EShuttlegentWriteMode.Manual
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:Manual [EnumEntry ToolTip meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:Manual [EnumEntry ToolTip meta-data]
+msgctxt "UObjectToolTips,EShuttlegentWriteMode.Manual"
+msgid "Show a confirmation card for every write"
+msgstr "每次写入都弹确认卡"
+
+#. Key:	ShuttlegentAgentEntry
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentAgentEntry"
+msgid "Personal settings for one agent; the agents themselves come from the plugin and are not entered by hand."
+msgstr "一个 Agent 的个人设置；Agent 本身由插件提供，不手填。"
+
+#. Key:	ShuttlegentAgentEntry:AgentId
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:AgentId [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:AgentId [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentAgentEntry:AgentId"
+msgid "Agent identifier, filled in by the plugin."
+msgstr "Agent 的标识，由插件填写。"
+
+#. Key:	ShuttlegentAgentEntry:bEnabled
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:bEnabled [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:bEnabled [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentAgentEntry:bEnabled"
+msgid "Whether the agent appears in the session's agent picker; the default agent is always enabled."
+msgstr "是否出现在会话的 Agent 选择器中；默认 Agent 始终启用。"
+
+#. Key:	ShuttlegentAgentEntry:DefaultModel
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:DefaultModel [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:DefaultModel [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentAgentEntry:DefaultModel"
+msgid "Model selected together with this agent, chosen by model name; leave empty to use the default model under Defaults."
+msgstr "选中该 Agent 时带出的模型，按模型名称选择；留空使用默认值中的默认模型。"
+
+#. Key:	ShuttlegentConnection
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection"
+msgid "A model connection in the personal settings: enter only the address and key; the protocol and available models are detected (FShuttlegentConnectionTester).\nEach connection is one runtime route, and every detected model appears in the session's model menu."
+msgstr "个人设置中的一条模型连接：只填地址与密钥，协议与可用模型由检测得出（FShuttlegentConnectionTester）。\n一条连接即运行时的一个路由，检测出的每个模型都出现在会话的模型菜单中。"
+
+#. Key:	ShuttlegentConnection:Api
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:Api [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:Api [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:Api"
+msgid "Detected API protocol."
+msgstr "检测出的接口协议。"
+
+#. Key:	ShuttlegentConnection:ApiKey
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ApiKey [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ApiKey [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:ApiKey"
+msgid "API key, stored only in the settings on this machine."
+msgstr "密钥，只保存在本机设置中。"
+
+#. Key:	ShuttlegentConnection:BaseUrl
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:BaseUrl [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:BaseUrl [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:BaseUrl"
+msgid "Service address, for example https://api.openai.com/v1. The built-in DeepSeek connection has a fixed address."
+msgstr "服务地址，例如 https://api.openai.com/v1。内置 DeepSeek 连接的地址固定。"
+
+#. Key:	ShuttlegentConnection:bBuiltin
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:bBuiltin [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:bBuiltin [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:bBuiltin"
+msgid "Built-in DeepSeek connection: served by the runtime's llm-deepseek with a fixed address, protocol and models; only the key is needed, and it cannot be removed."
+msgstr "内置 DeepSeek 连接：由运行时 llm-deepseek 提供，地址、协议与模型固定，只需填密钥，不可删除。"
+
+#. Key:	ShuttlegentConnection:ModelEfforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ModelEfforts [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ModelEfforts [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:ModelEfforts"
+msgid "Models whose reasoning effort levels were found during the test; requests to other models carry no reasoning parameter and keep the provider's default behavior."
+msgstr "检测时查得推理强度档位的模型；不在其中的模型请求不带推理参数，沿用服务方的默认行为。"
+
+#. Key:	ShuttlegentConnection:ModelIds
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ModelIds [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ModelIds [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:ModelIds"
+msgid "Detected chat model IDs, newest first; the first one is this connection's default model."
+msgstr "检测出的可用于对话的模型 ID，最新的在前；第一个即这条连接的默认模型。"
+
+#. Key:	ShuttlegentConnection:Status
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:Status [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:Status [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:Status"
+msgid "Result of the latest test."
+msgstr "最近一次检测的结论。"
+
+#. Key:	ShuttlegentConnection:TestedFingerprint
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:TestedFingerprint [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:TestedFingerprint [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentConnection:TestedFingerprint"
+msgid "Fingerprint of the address and key at the latest test; a mismatch with the current values means they changed and need a new test. Does not contain the key itself."
+msgstr "最近一次检测时地址与密钥的指纹；与当前值不一致说明改过，需要重新检测。不含密钥原文。"
+
+#. Key:	ShuttlegentExternalMcpServer
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer"
+msgid "Knowledge or tool server that the project declares to the runtime in every session."
+msgstr "项目在每个会话中声明给运行时的知识或工具服务。"
+
+#. Key:	ShuttlegentExternalMcpServer:Arguments
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Arguments [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Arguments [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Arguments"
+msgid "Stdio: launch arguments."
+msgstr "Stdio：启动参数。"
+
+#. Key:	ShuttlegentExternalMcpServer:Command
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Command [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Command [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Command"
+msgid "Stdio: absolute path of the executable."
+msgstr "Stdio：可执行文件的绝对路径。"
+
+#. Key:	ShuttlegentExternalMcpServer:Headers
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Headers [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Headers [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Headers"
+msgid "Http: headers sent with each request; values come from variables so keys stay out of the config."
+msgstr "Http：随请求发送的请求头；值来自变量，密钥不写进配置。"
+
+#. Key:	ShuttlegentExternalMcpServer:Name
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Name [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Name [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Name"
+msgid "Server name; the runtime uses it as the prefix of this server's tool names. Must not be \"ue\", which the editor endpoint uses."
+msgstr "服务名，运行时以它作为该服务工具名的前缀；不得为编辑器端点占用的 \"ue\"。"
+
+#. Key:	ShuttlegentExternalMcpServer:Type
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Type [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Type [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Type"
+msgid "Transport: Http is reached through a URL, Stdio is a local process started by the runtime."
+msgstr "传输方式：Http 通过 URL 访问，Stdio 由运行时启动本机进程。"
+
+#. Key:	ShuttlegentExternalMcpServer:Url
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Url [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Url [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentExternalMcpServer:Url"
+msgid "Http: absolute URL."
+msgstr "Http：绝对 URL。"
+
+#. Key:	ShuttlegentMcpHeader
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentMcpHeader"
+msgid "HTTP header sent to an external MCP server; the value comes from a variable so keys stay out of the config."
+msgstr "发给外部 MCP 服务的 HTTP 请求头；值取自变量，密钥不写进配置。"
+
+#. Key:	ShuttlegentMcpHeader:Name
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:Name [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:Name [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentMcpHeader:Name"
+msgid "Header name, for example Authorization."
+msgstr "请求头名称，例如 Authorization。"
+
+#. Key:	ShuttlegentMcpHeader:Prefix
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:Prefix [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:Prefix [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentMcpHeader:Prefix"
+msgid "Text placed before the variable value, for example \"Bearer \"."
+msgstr "加在变量值之前的文字，例如 \"Bearer \"。"
+
+#. Key:	ShuttlegentMcpHeader:ValueVariable
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:ValueVariable [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:ValueVariable [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentMcpHeader:ValueVariable"
+msgid "Name of the variable that holds the value; each user fills it in under Editor Preferences > Shuttlegent > General > Mcp Header Values."
+msgstr "存放值的变量名；每位用户在 编辑器偏好设置 > Shuttlegent > General > Mcp Header Values 中填写。"
+
+#. Key:	ShuttlegentModelEfforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentModelEfforts"
+msgid "Reasoning effort levels available for a model, looked up in the models.opencode.ai catalog when the connection is tested (FShuttlegentEffortCatalog).\nOnly models with known levels are recorded; other models declare no levels, and their requests carry no reasoning parameter and keep the provider's default behavior."
+msgstr "一个模型可选的推理强度档位，测试连接时从 models.opencode.ai 的模型目录查得（FShuttlegentEffortCatalog）。\n只记录查到了具体档位的模型；没有记录的模型不声明档位，请求不带推理参数，沿用服务方的默认行为。"
+
+#. Key:	ShuttlegentModelEfforts:Efforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts:Efforts [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts:Efforts [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentModelEfforts:Efforts"
+msgid "Available levels, using the runtime's level names (minimal, low, medium, high, xhigh, max), from low to high."
+msgstr "可选档位，取运行时的档位名（minimal、low、medium、high、xhigh、max），从低到高。"
+
+#. Key:	ShuttlegentModelEfforts:ModelId
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts:ModelId [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts:ModelId [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentModelEfforts:ModelId"
+msgid "Model ID."
+msgstr "模型 ID。"
+
+#. Key:	ShuttlegentProjectSettings
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings [Class ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings [Class ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings"
+msgid "Project settings shared through version control (Project Settings > Shuttlegent > General).\nPlugin defaults come from the plugin's Config/DefaultShuttlegent.ini; the project overrides them in its own Config/DefaultShuttlegent.ini.\nPersonal options, including model providers and their keys, are in UShuttlegentSettings."
+msgstr "项目经版本控制共享的设置（项目设置 > Shuttlegent > General）。\n插件默认值来自插件的 Config/DefaultShuttlegent.ini，项目在自己的 Config/DefaultShuttlegent.ini 中覆盖。\n个人选项（包括模型供应商及其密钥）在 UShuttlegentSettings 中。"
+
+#. Key:	ShuttlegentProjectSettings:BlockedToolsetNames
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:BlockedToolsetNames [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:BlockedToolsetNames [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:BlockedToolsetNames"
+msgid "Engine toolsets (Toolset Registry) and tools hidden from the assistant for the whole team. Each rule is a case-insensitive substring of\nthe toolset name or the full tool name (Toolset.Tool); write /pattern/ for a regular expression."
+msgstr "对全团队屏蔽的引擎 Toolset（Toolset Registry）及其工具，助手看不到它们。规则按不区分大小写的子串匹配\nToolset 名或工具全名（Toolset.Tool）；写成 /pattern/ 时为正则表达式。"
+
+#. Key:	ShuttlegentProjectSettings:bUseBuiltinSkills
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:bUseBuiltinSkills [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:bUseBuiltinSkills [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:bUseBuiltinSkills"
+msgid "Also load the skills and slash templates that ship with the plugin; they come after the two folder lists above, and the project's version wins on a name clash."
+msgstr "同时加载插件自带的技能与斜杠模板；排在上面两项的目录之后，同名时以项目的为准。"
+
+#. Key:	ShuttlegentProjectSettings:DestructiveToolPrefixes
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:DestructiveToolPrefixes [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:DestructiveToolPrefixes [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:DestructiveToolPrefixes"
+msgid "Engine toolset tools whose names start with these words delete, move or rename, and their confirmation cards are marked as destructive. Matching works like Read Only Tool Prefixes."
+msgstr "名称以这些词开头的引擎 Toolset 工具会删除、移动或改名，其确认卡标为破坏性操作。匹配方式同 Read Only Tool Prefixes。"
+
+#. Key:	ShuttlegentProjectSettings:ExternalMcpServers
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ExternalMcpServers [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ExternalMcpServers [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:ExternalMcpServers"
+msgid "Knowledge or tool servers declared to the runtime in every session."
+msgstr "每个会话都声明给运行时的知识或工具服务。"
+
+#. Key:	ShuttlegentProjectSettings:NonUndoableTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:NonUndoableTools [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:NonUndoableTools [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:NonUndoableTools"
+msgid "Engine toolset tools that run outside an editor transaction and are marked as not undoable, by tool name or full name.\nUse this for tools whose undo would corrupt the edited object, such as DataTable tools that rebuild the whole table in place."
+msgstr "不在编辑器事务中执行、并标为不可撤销的引擎 Toolset 工具，按工具名或全名填写。\n用于撤销会损坏所编辑对象的工具，例如原地重建整张表的 DataTable 工具。"
+
+#. Key:	ShuttlegentProjectSettings:ReadOnlyToolPrefixes
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyToolPrefixes [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyToolPrefixes [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:ReadOnlyToolPrefixes"
+msgid "Engine toolset tools whose names start with these words are read-only and run without confirmation; for example, Get matches GetSelectedActors and get_actors.\nAll other engine toolset tools need the user's confirmation before they run."
+msgstr "名称以这些词开头的引擎 Toolset 工具视为只读，无需确认即可执行，例如 Get 匹配 GetSelectedActors 与 get_actors。\n其余引擎 Toolset 工具执行前都要用户确认。"
+
+#. Key:	ShuttlegentProjectSettings:ReadOnlyTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyTools [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyTools [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:ReadOnlyTools"
+msgid "Additional engine toolset tools treated as read-only, by tool name (Snapshot) or full name (Toolset.Tool)."
+msgstr "另外视为只读的引擎 Toolset 工具，按工具名（Snapshot）或全名（Toolset.Tool）填写。"
+
+#. Key:	ShuttlegentProjectSettings:SkillDirs
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:SkillDirs [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:SkillDirs [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:SkillDirs"
+msgid "Skill folders loaded by the runtime, relative to the project folder."
+msgstr "运行时加载的技能目录，相对项目目录。"
+
+#. Key:	ShuttlegentProjectSettings:TemplateDirs
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:TemplateDirs [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:TemplateDirs [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:TemplateDirs"
+msgid "Folders that hold slash templates (*.md), relative to the project folder."
+msgstr "斜杠模板（*.md）所在目录，相对项目目录。"
+
+#. Key:	ShuttlegentProjectSettings:UiGuides
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:UiGuides [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:UiGuides [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:UiGuides"
+msgid "Editor locations the assistant can open for the user."
+msgstr "助手可以为用户打开的编辑器位置。"
+
+#. Key:	ShuttlegentProjectSettings:WriteTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:WriteTools [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:WriteTools [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentProjectSettings:WriteTools"
+msgid "Engine toolset tools that look like queries but write; they always need confirmation, overriding the read-only rules."
+msgstr "名称像查询、实际会写入的引擎 Toolset 工具，执行前总要确认；优先于只读规则。"
+
+#. Key:	ShuttlegentSettings
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings [Class ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings [Class ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings"
+msgid "Personal Shuttlegent settings (Editor Preferences > Shuttlegent > General)."
+msgstr "Shuttlegent 的个人设置（编辑器偏好设置 > Shuttlegent > General）。"
+
+#. Key:	ShuttlegentSettings:Agents
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:Agents [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:Agents [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:Agents"
+msgid "Agents provided by the plugin: enabled agents appear in the session's agent picker, each with its own default model."
+msgstr "插件提供的 Agent：启用后出现在会话的 Agent 选择器中，可各自指定默认模型。"
+
+#. Key:	ShuttlegentSettings:bAllowElevation
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowElevation [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowElevation [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bAllowElevation"
+msgid "Let the runtime ask to run tools outside the sandbox; when off, such requests are rejected at once and noted in the conversation."
+msgstr "允许运行时请求让工具越出沙箱；关闭时此类请求立即拒绝，并在对话中注明。"
+
+#. Key:	ShuttlegentSettings:bAllowShell
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowShell [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowShell [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bAllowShell"
+msgid "Give the runtime a PowerShell tool. Takes effect the next time the runtime starts."
+msgstr "为运行时提供 PowerShell 工具。下次启动运行时生效。"
+
+#. Key:	ShuttlegentSettings:bAllowWorkspaceWrite
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowWorkspaceWrite [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowWorkspaceWrite [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bAllowWorkspaceWrite"
+msgid "Let the runtime's file tools write to the project folder without asking; when off, every write needs elevation. Takes effect the next time the runtime starts."
+msgstr "允许运行时的文件工具不经询问写入项目目录；关闭时每次写入都需提权。下次启动运行时生效。"
+
+#. Key:	ShuttlegentSettings:bAnimateMark
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAnimateMark [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAnimateMark [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bAnimateMark"
+msgid "Play the logo animations in the panel (intro, working, hover, done); when off, the logo always shows a still frame."
+msgstr "在面板中播放标志动画（开场、工作中、悬停、完成）；关闭时标志始终显示静止帧。"
+
+#. Key:	ShuttlegentSettings:bPrewarmRuntime
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bPrewarmRuntime [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bPrewarmRuntime [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bPrewarmRuntime"
+msgid "Start the runtime while the editor is idle after launch, so it is already connected when the panel opens."
+msgstr "编辑器启动后空闲时预先启动运行时，打开面板时即已连接。"
+
+#. Key:	ShuttlegentSettings:bWideLayout
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bWideLayout [BoolProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bWideLayout [BoolProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:bWideLayout"
+msgid "Let the conversation and the input box fill the whole width between the side panes instead of a centered reading column."
+msgstr "对话与输入框占满两侧窗格之间的全部宽度，不再使用居中的阅读栏。"
+
+#. Key:	ShuttlegentSettings:ChatFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:ChatFontFamily [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:ChatFontFamily [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:ChatFontFamily"
+msgid "Font for conversation messages and the input box; leave empty to follow the UI font. For replies that read more like a printed page, try a serif font such as Source Han Serif. Takes effect immediately."
+msgstr "对话消息与输入框使用的字体；留空跟随界面字体。想让回复更像书页，可以填思源宋体等衬线字体。立即生效。"
+
+#. Key:	ShuttlegentSettings:CodeFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:CodeFontFamily [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:CodeFontFamily [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:CodeFontFamily"
+msgid "Monospace font for code, arguments and logs; leave empty to use Cascadia Mono and Consolas. Takes effect immediately."
+msgstr "代码、参数与日志使用的等宽字体；留空使用 Cascadia Mono 与 Consolas。立即生效。"
+
+#. Key:	ShuttlegentSettings:Connections
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:Connections [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:Connections [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:Connections"
+msgid "Model connections: enter only an address and key for each; the protocol and available models are detected. The first model of the first connected connection is the default model for new sessions.\nThe built-in DeepSeek connection is preinstalled and cannot be removed. After connections are added or removed, or a test result changes, the panel restarts the runtime to apply it when no turn is running."
+msgstr "模型连接：每条只填地址与密钥，协议与可用模型自动检测；第一条已连通的连接中的第一个模型为新会话的默认模型。\n内置 DeepSeek 连接预装且不可删除。增删连接或检测结论变化后，面板在没有回合进行时自动重启运行时使其生效。"
+
+#. Key:	ShuttlegentSettings:DefaultAgent
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DefaultAgent [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DefaultAgent [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:DefaultAgent"
+msgid "Agent used by default in new sessions."
+msgstr "新会话默认使用的 Agent。"
+
+#. Key:	ShuttlegentSettings:DefaultWriteMode
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DefaultWriteMode [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DefaultWriteMode [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:DefaultWriteMode"
+msgid "How editor writes are confirmed in new conversations; each conversation can switch it in the panel. Deleting, moving and renaming always need confirmation."
+msgstr "新对话的编辑器写入确认方式；面板中可按对话切换。删除、移动、改名在任何模式下都要确认。"
+
+#. Key:	ShuttlegentSettings:DisabledTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DisabledTools [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DisabledTools [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:DisabledTools"
+msgid "Editor tools not offered to the model, by tool name; shown as switches under the Editor Tools category. Takes effect immediately."
+msgstr "不提供给模型的编辑器工具，按工具名填写；在 Editor Tools 分类下显示为开关。立即生效。"
+
+#. Key:	ShuttlegentSettings:DisabledToolsets
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DisabledToolsets [ArrayProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DisabledToolsets [ArrayProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:DisabledToolsets"
+msgid "Engine toolsets not offered to the model, by toolset name; shown as switches under the Engine Toolsets category. Takes effect immediately."
+msgstr "不提供给模型的引擎 Toolset，按 Toolset 名填写；在 Engine Toolsets 分类下显示为开关。立即生效。"
+
+#. Key:	ShuttlegentSettings:FontSize
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:FontSize [IntProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:FontSize [IntProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:FontSize"
+msgid "Font size of the conversation and the input box in the panel, in CSS pixels; the sidebar and controls keep their size."
+msgstr "面板中对话与输入框的字号，单位 CSS 像素；面板侧栏与控件保持原尺寸。"
+
+#. Key:	ShuttlegentSettings:McpHeaderValues
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:McpHeaderValues [MapProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:McpHeaderValues [MapProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:McpHeaderValues"
+msgid "Values of the variables referenced by external MCP server headers (the variables are named in Project Settings > Shuttlegent > General), for example TEAM_KB_TOKEN -> <token>; stored only in the settings on this machine."
+msgstr "外部 MCP 服务请求头所引用变量的值（变量在 项目设置 > Shuttlegent > General 中命名），例如 TEAM_KB_TOKEN -> <token>；只保存在本机设置中。"
+
+#. Key:	ShuttlegentSettings:PermissionPolicy
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:PermissionPolicy [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:PermissionPolicy [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:PermissionPolicy"
+msgid "Answer to runtime permission requests when no editor dialog handles them."
+msgstr "没有编辑器对话框处理时，对运行时权限请求的答复。"
+
+#. Key:	ShuttlegentSettings:RuntimeExecutableOverride
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:RuntimeExecutableOverride [StructProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:RuntimeExecutableOverride [StructProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:RuntimeExecutableOverride"
+msgid "Runtime executable started instead of the plugin's Runtime/shuttlegent-runtime.exe; leave empty to use the default."
+msgstr "代替插件自带 Runtime/shuttlegent-runtime.exe 启动的运行时可执行文件；留空使用默认值。"
+
+#. Key:	ShuttlegentSettings:UiFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:UiFontFamily [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:UiFontFamily [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentSettings:UiFontFamily"
+msgid "Font for the sidebar, menus, buttons and cards; several can be listed, separated by commas. Leave empty to use Segoe UI and Microsoft YaHei UI. Takes effect immediately."
+msgstr "侧栏、菜单、按钮、卡片使用的字体，可填多个并用逗号分隔；留空使用 Segoe UI 与微软雅黑 UI。立即生效。"
+
+#. Key:	ShuttlegentUiGuide
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide [ScriptStruct ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide [ScriptStruct ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentUiGuide"
+msgid "An editor location the assistant can open for the user, with a short note on what to do there."
+msgstr "助手可以为用户打开的一个编辑器位置，附一句在那里做什么的说明。"
+
+#. Key:	ShuttlegentUiGuide:Description
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Description [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Description [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentUiGuide:Description"
+msgid "What the user can find or do there; told to the model and returned when the location opens."
+msgstr "用户在那里能找到或要做的事；会告知模型，并在打开时返回。"
+
+#. Key:	ShuttlegentUiGuide:Id
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Id [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Id [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentUiGuide:Id"
+msgid "Key the model passes to show_editor_ui, for example world-settings."
+msgstr "模型传给 show_editor_ui 的键，例如 world-settings。"
+
+#. Key:	ShuttlegentUiGuide:Kind
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Kind [EnumProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Kind [EnumProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentUiGuide:Kind"
+msgid "Kind of location to open: an editor tab or a settings page."
+msgstr "打开的位置类型：编辑器页签或设置页面。"
+
+#. Key:	ShuttlegentUiGuide:Target
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Target [StrProperty ToolTip meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Target [StrProperty ToolTip meta-data]
+msgctxt "UObjectToolTips,ShuttlegentUiGuide:Target"
+msgid "Tab: tab ID. Settings: container/category/section, for example Project/Engine/Rendering."
+msgstr "Tab：页签 ID。Settings：容器/分类/分节，例如 Project/Engine/Rendering。"
+

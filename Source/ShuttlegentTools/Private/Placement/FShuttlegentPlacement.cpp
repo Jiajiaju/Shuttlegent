@@ -464,7 +464,7 @@ int32 FShuttlegentPlacement::SnapToGround(UWorld* World, TArray<FTransform>& InO
 
 FString FShuttlegentPlacement::Describe(const FTransform& Transform)
 {
-	return FText::Format(LOCTEXT("Transform", "位置 {0} 旋转 {1} 缩放 {2}"), FText::FromString(Transform.GetLocation().ToCompactString()), FText::FromString(Transform.Rotator().ToCompactString()), FText::FromString(Transform.GetScale3D().ToCompactString())).ToString();
+	return FText::Format(LOCTEXT("Transform", "Location {0} Rotation {1} Scale {2}"), FText::FromString(Transform.GetLocation().ToCompactString()), FText::FromString(Transform.Rotator().ToCompactString()), FText::FromString(Transform.GetScale3D().ToCompactString())).ToString();
 }
 
 #undef LOCTEXT_NAMESPACE

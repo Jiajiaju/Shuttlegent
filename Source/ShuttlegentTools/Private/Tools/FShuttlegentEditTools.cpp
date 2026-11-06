@@ -82,7 +82,7 @@ namespace FShuttlegentEditToolsPrivate
 				return false;
 			}
 
-			OutRequest.Action = FText::Format(LOCTEXT("SetPropertyAction", "设置属性 {0}"), FText::FromString(PropertyName)).ToString();
+			OutRequest.Action = FText::Format(LOCTEXT("SetPropertyAction", "Set property {0}"), FText::FromString(PropertyName)).ToString();
 			for (const FString& Target : Targets)
 			{
 				UObject* Object = FShuttlegentToolObjects::ResolveObject(Target);
@@ -123,7 +123,7 @@ namespace FShuttlegentEditToolsPrivate
 				if (Property == nullptr)
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("ObjectGone", "对象或属性已不存在").ToString();
+					Item.Message = LOCTEXT("ObjectGone", "The object or property no longer exists").ToString();
 					continue;
 				}
 
@@ -135,7 +135,7 @@ namespace FShuttlegentEditToolsPrivate
 				Object->PostEditChangeProperty(ChangedEvent);
 
 				Item.Status = End != nullptr ? EShuttlegentWriteObjectStatus::Completed : EShuttlegentWriteObjectStatus::Failed;
-				if (End == nullptr) Item.Message = Errors.IsEmpty() ? LOCTEXT("ValueRejected", "值无法写入该属性").ToString() : FString(Errors);
+				if (End == nullptr) Item.Message = Errors.IsEmpty() ? LOCTEXT("ValueRejected", "The value cannot be written to this property").ToString() : FString(Errors);
 			}
 		}
 	};
@@ -174,14 +174,14 @@ namespace FShuttlegentEditToolsPrivate
 
 			const FTransform Transform = MakeTransform(Arguments);
 			const FString Label = FShuttlegentToolArguments::GetString(Arguments, ArgLabel, Class->GetName());
-			OutRequest.Action = FText::Format(LOCTEXT("SpawnAction", "生成 Actor {0}"), FText::FromString(Class->GetName())).ToString();
+			OutRequest.Action = FText::Format(LOCTEXT("SpawnAction", "Spawn Actor {0}"), FText::FromString(Class->GetName())).ToString();
 			OutRequest.Level = World->GetMapName();
 
 			FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 			Item.Name = Label;
 			Item.Path = Class->GetPathName();
-			Item.Field = LOCTEXT("SpawnField", "位置 / 旋转").ToString();
-			Item.CurrentValue = LOCTEXT("NotPlaced", "（新建）").ToString();
+			Item.Field = LOCTEXT("SpawnField", "Location / Rotation").ToString();
+			Item.CurrentValue = LOCTEXT("NotPlaced", "(new)").ToString();
 			Item.PlannedValue = Transform.GetLocation().ToCompactString() + TEXT(" ") + Transform.Rotator().ToCompactString();
 			return true;
 		}
@@ -196,7 +196,7 @@ namespace FShuttlegentEditToolsPrivate
 				if (!IsValid(Actor))
 				{
 					Item.Status = EShuttlegentWriteObjectStatus::Failed;
-					Item.Message = LOCTEXT("SpawnFailed", "无法在当前关卡生成该类").ToString();
+					Item.Message = LOCTEXT("SpawnFailed", "This class cannot be spawned in the current level").ToString();
 					continue;
 				}
 
@@ -235,7 +235,7 @@ namespace FShuttlegentEditToolsPrivate
 		virtual bool Preview(const TSharedRef<FJsonObject>& Arguments, FShuttlegentWriteRequest& OutRequest, FString& OutError) override
 		{
 			const TArray<FString> Targets = FShuttlegentToolArguments::GetStringArray(Arguments, ArgTargets);
-			OutRequest.Action = LOCTEXT("DeleteAction", "删除 Actor").ToString();
+			OutRequest.Action = LOCTEXT("DeleteAction", "Delete Actor").ToString();
 			OutRequest.bDestructive = true;
 			for (const FString& Target : Targets)
 			{
@@ -251,7 +251,7 @@ namespace FShuttlegentEditToolsPrivate
 				Item.Path = Actor->GetPathName();
 				Item.Field = LOCTEXT("DeleteField", "Actor").ToString();
 				Item.CurrentValue = Actor->GetClass()->GetName();
-				Item.PlannedValue = LOCTEXT("Deleted", "删除").ToString();
+				Item.PlannedValue = LOCTEXT("Deleted", "Delete").ToString();
 				if (OutRequest.Level.IsEmpty()) OutRequest.Level = FShuttlegentToolObjects::GetLevelName(Actor);
 			}
 			return true;
@@ -265,7 +265,7 @@ namespace FShuttlegentEditToolsPrivate
 				AActor* Actor = Cast<AActor>(FShuttlegentToolObjects::ResolveObject(Item.Path));
 				const bool bDeleted = IsValid(World) && IsValid(Actor) && World->EditorDestroyActor(Actor, true);
 				Item.Status = bDeleted ? EShuttlegentWriteObjectStatus::Completed : EShuttlegentWriteObjectStatus::Failed;
-				if (!bDeleted) Item.Message = LOCTEXT("DeleteFailed", "Actor 已不存在或无法删除").ToString();
+				if (!bDeleted) Item.Message = LOCTEXT("DeleteFailed", "The Actor no longer exists or cannot be deleted").ToString();
 			}
 		}
 	};
@@ -290,15 +290,15 @@ namespace FShuttlegentEditToolsPrivate
 			TArray<UPackage*> Packages;
 			if (!CollectPackages(Arguments, Packages, OutError)) return false;
 
-			OutRequest.Action = LOCTEXT("SaveAction", "保存到磁盘").ToString();
+			OutRequest.Action = LOCTEXT("SaveAction", "Save to disk").ToString();
 			for (const UPackage* Package : Packages)
 			{
 				FShuttlegentWriteObject& Item = OutRequest.Objects.AddDefaulted_GetRef();
 				Item.Name = FPackageName::GetShortName(Package->GetName());
 				Item.Path = Package->GetName();
-				Item.Field = LOCTEXT("SaveField", "文件").ToString();
-				Item.CurrentValue = Package->IsDirty() ? LOCTEXT("Dirty", "有未保存的修改").ToString() : LOCTEXT("Clean", "无修改").ToString();
-				Item.PlannedValue = LOCTEXT("Saved", "保存").ToString();
+				Item.Field = LOCTEXT("SaveField", "File").ToString();
+				Item.CurrentValue = Package->IsDirty() ? LOCTEXT("Dirty", "Has unsaved changes").ToString() : LOCTEXT("Clean", "No changes").ToString();
+				Item.PlannedValue = LOCTEXT("Saved", "Save").ToString();
 			}
 			return true;
 		}
@@ -319,7 +319,7 @@ namespace FShuttlegentEditToolsPrivate
 				const UPackage* Package = FindPackage(nullptr, *Item.Path);
 				const bool bSaved = IsValid(Package) && !Package->IsDirty();
 				Item.Status = bSaved ? EShuttlegentWriteObjectStatus::Completed : EShuttlegentWriteObjectStatus::Failed;
-				if (!bSaved) Item.Message = LOCTEXT("SaveFailed", "未保存：文件可能只读或未签出").ToString();
+				if (!bSaved) Item.Message = LOCTEXT("SaveFailed", "Not saved: the file may be read-only or not checked out").ToString();
 			}
 		}
 

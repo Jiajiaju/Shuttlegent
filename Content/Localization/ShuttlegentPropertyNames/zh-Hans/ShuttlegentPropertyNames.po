@@ -1,0 +1,617 @@
+﻿# ShuttlegentPropertyNames Chinese (Simplified) translation.
+# Fill out your copyright notice in the Description page of Project Settings.
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: ShuttlegentPropertyNames\n"
+"POT-Creation-Date: 2026-11-06 08:18\n"
+"PO-Revision-Date: 2026-11-06 08:18\n"
+"Language-Team: \n"
+"Language: zh-Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#. Key:	EShuttlegentConnectionStatus.Connected
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Connected [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Connected [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentConnectionStatus.Connected"
+msgid "Connected"
+msgstr "已连通"
+
+#. Key:	EShuttlegentConnectionStatus.EShuttlegentConnectionStatus_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:EShuttlegentConnectionStatus_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:EShuttlegentConnectionStatus_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentConnectionStatus.EShuttlegentConnectionStatus_MAX"
+msgid "EShuttlegent Connection Status MAX"
+msgstr "EShuttlegent Connection Status MAX"
+
+#. Key:	EShuttlegentConnectionStatus.Failed
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Failed [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Failed [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentConnectionStatus.Failed"
+msgid "Failed"
+msgstr "未连通"
+
+#. Key:	EShuttlegentConnectionStatus.Testing
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Testing [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Testing [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentConnectionStatus.Testing"
+msgid "Testing"
+msgstr "正在测试"
+
+#. Key:	EShuttlegentConnectionStatus.Untested
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentConnectionStatus:Untested [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentConnectionStatus:Untested [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentConnectionStatus.Untested"
+msgid "Untested"
+msgstr "未测试"
+
+#. Key:	EShuttlegentExternalMcpType.EShuttlegentExternalMcpType_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType:EShuttlegentExternalMcpType_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType:EShuttlegentExternalMcpType_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentExternalMcpType.EShuttlegentExternalMcpType_MAX"
+msgid "EShuttlegent External Mcp Type MAX"
+msgstr "EShuttlegent External Mcp Type MAX"
+
+#. Key:	EShuttlegentExternalMcpType.Http
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType:Http [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType:Http [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentExternalMcpType.Http"
+msgid "Http"
+msgstr "Http"
+
+#. Key:	EShuttlegentExternalMcpType.Stdio
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentExternalMcpType:Stdio [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentExternalMcpType:Stdio [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentExternalMcpType.Stdio"
+msgid "Stdio"
+msgstr "Stdio"
+
+#. Key:	EShuttlegentPermissionPolicy.Allow
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Allow [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Allow [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentPermissionPolicy.Allow"
+msgid "Allow"
+msgstr "允许"
+
+#. Key:	EShuttlegentPermissionPolicy.EShuttlegentPermissionPolicy_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy:EShuttlegentPermissionPolicy_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy:EShuttlegentPermissionPolicy_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentPermissionPolicy.EShuttlegentPermissionPolicy_MAX"
+msgid "EShuttlegent Permission Policy MAX"
+msgstr "EShuttlegent Permission Policy MAX"
+
+#. Key:	EShuttlegentPermissionPolicy.Reject
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Reject [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentPermissionPolicy:Reject [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentPermissionPolicy.Reject"
+msgid "Reject"
+msgstr "拒绝"
+
+#. Key:	EShuttlegentProviderApi.AnthropicMessages
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:AnthropicMessages [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:AnthropicMessages [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentProviderApi.AnthropicMessages"
+msgid "Anthropic Messages"
+msgstr "Anthropic Messages"
+
+#. Key:	EShuttlegentProviderApi.EShuttlegentProviderApi_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:EShuttlegentProviderApi_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:EShuttlegentProviderApi_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentProviderApi.EShuttlegentProviderApi_MAX"
+msgid "EShuttlegent Provider Api MAX"
+msgstr "EShuttlegent Provider Api MAX"
+
+#. Key:	EShuttlegentProviderApi.OpenAiCompletions
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiCompletions [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiCompletions [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentProviderApi.OpenAiCompletions"
+msgid "Open Ai Completions"
+msgstr "OpenAI Completions"
+
+#. Key:	EShuttlegentProviderApi.OpenAiResponses
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiResponses [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentProviderApi:OpenAiResponses [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentProviderApi.OpenAiResponses"
+msgid "Open Ai Responses"
+msgstr "OpenAI Responses"
+
+#. Key:	EShuttlegentUiGuideKind.EShuttlegentUiGuideKind_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind:EShuttlegentUiGuideKind_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind:EShuttlegentUiGuideKind_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentUiGuideKind.EShuttlegentUiGuideKind_MAX"
+msgid "EShuttlegent Ui Guide Kind MAX"
+msgstr "EShuttlegent Ui Guide Kind MAX"
+
+#. Key:	EShuttlegentUiGuideKind.Settings
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind:Settings [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind:Settings [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentUiGuideKind.Settings"
+msgid "Settings"
+msgstr "设置页面"
+
+#. Key:	EShuttlegentUiGuideKind.Tab
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentUiGuideKind:Tab [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentUiGuideKind:Tab [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentUiGuideKind.Tab"
+msgid "Tab"
+msgstr "编辑器页签"
+
+#. Key:	EShuttlegentWriteMode.AcceptEdits
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:AcceptEdits [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:AcceptEdits [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentWriteMode.AcceptEdits"
+msgid "Accept Edits"
+msgstr "自动接受编辑"
+
+#. Key:	EShuttlegentWriteMode.Auto
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:Auto [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:Auto [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentWriteMode.Auto"
+msgid "Auto"
+msgstr "自动"
+
+#. Key:	EShuttlegentWriteMode.EShuttlegentWriteMode_MAX
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:EShuttlegentWriteMode_MAX [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:EShuttlegentWriteMode_MAX [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentWriteMode.EShuttlegentWriteMode_MAX"
+msgid "EShuttlegent Write Mode MAX"
+msgstr "EShuttlegent Write Mode MAX"
+
+#. Key:	EShuttlegentWriteMode.Manual
+#. SourceLocation:	/Script/ShuttlegentCore.EShuttlegentWriteMode:Manual [EnumEntry DisplayName meta-data]
+#: /Script/ShuttlegentCore.EShuttlegentWriteMode:Manual [EnumEntry DisplayName meta-data]
+msgctxt "UObjectDisplayNames,EShuttlegentWriteMode.Manual"
+msgid "Manual"
+msgstr "逐次确认"
+
+#. Key:	ShuttlegentAgentEntry
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentAgentEntry"
+msgid "Shuttlegent Agent Entry"
+msgstr "Shuttlegent Agent 设置"
+
+#. Key:	ShuttlegentAgentEntry:AgentId
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:AgentId [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:AgentId [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentAgentEntry:AgentId"
+msgid "Agent Id"
+msgstr "Agent 标识"
+
+#. Key:	ShuttlegentAgentEntry:bEnabled
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:bEnabled [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:bEnabled [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentAgentEntry:bEnabled"
+msgid "Enabled"
+msgstr "启用"
+
+#. Key:	ShuttlegentAgentEntry:DefaultModel
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentAgentEntry:DefaultModel [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentAgentEntry:DefaultModel [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentAgentEntry:DefaultModel"
+msgid "Default Model"
+msgstr "默认模型"
+
+#. Key:	ShuttlegentConnection
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection"
+msgid "Shuttlegent Connection"
+msgstr "Shuttlegent 模型连接"
+
+#. Key:	ShuttlegentConnection:Api
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:Api [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:Api [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:Api"
+msgid "Api"
+msgstr "接口协议"
+
+#. Key:	ShuttlegentConnection:ApiKey
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ApiKey [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ApiKey [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:ApiKey"
+msgid "Api Key"
+msgstr "密钥"
+
+#. Key:	ShuttlegentConnection:BaseUrl
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:BaseUrl [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:BaseUrl [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:BaseUrl"
+msgid "Base Url"
+msgstr "服务地址"
+
+#. Key:	ShuttlegentConnection:bBuiltin
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:bBuiltin [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:bBuiltin [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:bBuiltin"
+msgid "Builtin"
+msgstr "内置"
+
+#. Key:	ShuttlegentConnection:ModelEfforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ModelEfforts [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ModelEfforts [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:ModelEfforts"
+msgid "Model Efforts"
+msgstr "模型推理强度"
+
+#. Key:	ShuttlegentConnection:ModelIds
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:ModelIds [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:ModelIds [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:ModelIds"
+msgid "Model Ids"
+msgstr "模型 ID"
+
+#. Key:	ShuttlegentConnection:Status
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:Status [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:Status [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:Status"
+msgid "Status"
+msgstr "状态"
+
+#. Key:	ShuttlegentConnection:TestedFingerprint
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentConnection:TestedFingerprint [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentConnection:TestedFingerprint [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentConnection:TestedFingerprint"
+msgid "Tested Fingerprint"
+msgstr "检测指纹"
+
+#. Key:	ShuttlegentExternalMcpServer
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer"
+msgid "Shuttlegent External Mcp Server"
+msgstr "Shuttlegent 外部 MCP 服务"
+
+#. Key:	ShuttlegentExternalMcpServer:Arguments
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Arguments [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Arguments [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Arguments"
+msgid "Arguments"
+msgstr "启动参数"
+
+#. Key:	ShuttlegentExternalMcpServer:Command
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Command [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Command [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Command"
+msgid "Command"
+msgstr "可执行文件"
+
+#. Key:	ShuttlegentExternalMcpServer:Headers
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Headers [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Headers [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Headers"
+msgid "Headers"
+msgstr "请求头"
+
+#. Key:	ShuttlegentExternalMcpServer:Name
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Name [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Name [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Name"
+msgid "Name"
+msgstr "名称"
+
+#. Key:	ShuttlegentExternalMcpServer:Type
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Type [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Type [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Type"
+msgid "Type"
+msgstr "传输方式"
+
+#. Key:	ShuttlegentExternalMcpServer:Url
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Url [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentExternalMcpServer:Url [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentExternalMcpServer:Url"
+msgid "Url"
+msgstr "URL"
+
+#. Key:	ShuttlegentMcpHeader
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentMcpHeader"
+msgid "Shuttlegent Mcp Header"
+msgstr "Shuttlegent MCP 请求头"
+
+#. Key:	ShuttlegentMcpHeader:Name
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:Name [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:Name [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentMcpHeader:Name"
+msgid "Name"
+msgstr "名称"
+
+#. Key:	ShuttlegentMcpHeader:Prefix
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:Prefix [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:Prefix [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentMcpHeader:Prefix"
+msgid "Prefix"
+msgstr "前缀"
+
+#. Key:	ShuttlegentMcpHeader:ValueVariable
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentMcpHeader:ValueVariable [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentMcpHeader:ValueVariable [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentMcpHeader:ValueVariable"
+msgid "Value Variable"
+msgstr "值变量名"
+
+#. Key:	ShuttlegentModelEfforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentModelEfforts"
+msgid "Shuttlegent Model Efforts"
+msgstr "Shuttlegent 模型推理强度"
+
+#. Key:	ShuttlegentModelEfforts:Efforts
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts:Efforts [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts:Efforts [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentModelEfforts:Efforts"
+msgid "Efforts"
+msgstr "推理强度档位"
+
+#. Key:	ShuttlegentModelEfforts:ModelId
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentModelEfforts:ModelId [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentModelEfforts:ModelId [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentModelEfforts:ModelId"
+msgid "Model Id"
+msgstr "模型 ID"
+
+#. Key:	ShuttlegentProjectSettings
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings [Class DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings [Class DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings"
+msgid "Shuttlegent"
+msgstr "Shuttlegent"
+
+#. Key:	ShuttlegentProjectSettings:BlockedToolsetNames
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:BlockedToolsetNames [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:BlockedToolsetNames [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:BlockedToolsetNames"
+msgid "Blocked Toolset Names"
+msgstr "屏蔽的 Toolset"
+
+#. Key:	ShuttlegentProjectSettings:bUseBuiltinSkills
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:bUseBuiltinSkills [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:bUseBuiltinSkills [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:bUseBuiltinSkills"
+msgid "Use Built-in Skills and Templates"
+msgstr "使用插件自带的技能与模板"
+
+#. Key:	ShuttlegentProjectSettings:DestructiveToolPrefixes
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:DestructiveToolPrefixes [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:DestructiveToolPrefixes [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:DestructiveToolPrefixes"
+msgid "Destructive Tool Prefixes"
+msgstr "破坏性工具前缀"
+
+#. Key:	ShuttlegentProjectSettings:ExternalMcpServers
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ExternalMcpServers [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ExternalMcpServers [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:ExternalMcpServers"
+msgid "External Mcp Servers"
+msgstr "外部 MCP 服务"
+
+#. Key:	ShuttlegentProjectSettings:NonUndoableTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:NonUndoableTools [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:NonUndoableTools [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:NonUndoableTools"
+msgid "Non Undoable Tools"
+msgstr "不可撤销的工具"
+
+#. Key:	ShuttlegentProjectSettings:ReadOnlyToolPrefixes
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyToolPrefixes [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyToolPrefixes [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:ReadOnlyToolPrefixes"
+msgid "Read Only Tool Prefixes"
+msgstr "只读工具前缀"
+
+#. Key:	ShuttlegentProjectSettings:ReadOnlyTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyTools [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:ReadOnlyTools [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:ReadOnlyTools"
+msgid "Read Only Tools"
+msgstr "只读工具"
+
+#. Key:	ShuttlegentProjectSettings:SkillDirs
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:SkillDirs [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:SkillDirs [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:SkillDirs"
+msgid "Skill Dirs"
+msgstr "技能目录"
+
+#. Key:	ShuttlegentProjectSettings:TemplateDirs
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:TemplateDirs [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:TemplateDirs [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:TemplateDirs"
+msgid "Template Dirs"
+msgstr "斜杠模板目录"
+
+#. Key:	ShuttlegentProjectSettings:UiGuides
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:UiGuides [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:UiGuides [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:UiGuides"
+msgid "Ui Guides"
+msgstr "界面指路"
+
+#. Key:	ShuttlegentProjectSettings:WriteTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentProjectSettings:WriteTools [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentProjectSettings:WriteTools [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentProjectSettings:WriteTools"
+msgid "Write Tools"
+msgstr "写入工具"
+
+#. Key:	ShuttlegentSettings
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings [Class DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings [Class DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings"
+msgid "Shuttlegent"
+msgstr "Shuttlegent"
+
+#. Key:	ShuttlegentSettings:Agents
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:Agents [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:Agents [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:Agents"
+msgid "Agents"
+msgstr "Agent"
+
+#. Key:	ShuttlegentSettings:bAllowElevation
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowElevation [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowElevation [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bAllowElevation"
+msgid "Allow Elevation"
+msgstr "允许提权"
+
+#. Key:	ShuttlegentSettings:bAllowShell
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowShell [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowShell [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bAllowShell"
+msgid "Allow Shell"
+msgstr "允许 Shell"
+
+#. Key:	ShuttlegentSettings:bAllowWorkspaceWrite
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAllowWorkspaceWrite [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAllowWorkspaceWrite [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bAllowWorkspaceWrite"
+msgid "Allow Workspace Write"
+msgstr "允许写入项目目录"
+
+#. Key:	ShuttlegentSettings:bAnimateMark
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bAnimateMark [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bAnimateMark [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bAnimateMark"
+msgid "Animate Mark"
+msgstr "标志动画"
+
+#. Key:	ShuttlegentSettings:bPrewarmRuntime
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bPrewarmRuntime [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bPrewarmRuntime [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bPrewarmRuntime"
+msgid "Prewarm Runtime"
+msgstr "预先启动运行时"
+
+#. Key:	ShuttlegentSettings:bWideLayout
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:bWideLayout [BoolProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:bWideLayout [BoolProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:bWideLayout"
+msgid "Wide Layout"
+msgstr "宽版布局"
+
+#. Key:	ShuttlegentSettings:ChatFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:ChatFontFamily [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:ChatFontFamily [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:ChatFontFamily"
+msgid "Chat Font Family"
+msgstr "对话字体"
+
+#. Key:	ShuttlegentSettings:CodeFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:CodeFontFamily [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:CodeFontFamily [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:CodeFontFamily"
+msgid "Code Font Family"
+msgstr "代码字体"
+
+#. Key:	ShuttlegentSettings:Connections
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:Connections [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:Connections [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:Connections"
+msgid "Connections"
+msgstr "模型连接"
+
+#. Key:	ShuttlegentSettings:DefaultAgent
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DefaultAgent [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DefaultAgent [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:DefaultAgent"
+msgid "Default Agent"
+msgstr "默认 Agent"
+
+#. Key:	ShuttlegentSettings:DefaultWriteMode
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DefaultWriteMode [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DefaultWriteMode [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:DefaultWriteMode"
+msgid "Default Write Mode"
+msgstr "默认写入确认方式"
+
+#. Key:	ShuttlegentSettings:DisabledTools
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DisabledTools [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DisabledTools [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:DisabledTools"
+msgid "Disabled Tools"
+msgstr "关闭的编辑器工具"
+
+#. Key:	ShuttlegentSettings:DisabledToolsets
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:DisabledToolsets [ArrayProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:DisabledToolsets [ArrayProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:DisabledToolsets"
+msgid "Disabled Toolsets"
+msgstr "关闭的引擎 Toolset"
+
+#. Key:	ShuttlegentSettings:FontSize
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:FontSize [IntProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:FontSize [IntProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:FontSize"
+msgid "Font Size"
+msgstr "字号"
+
+#. Key:	ShuttlegentSettings:McpHeaderValues
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:McpHeaderValues [MapProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:McpHeaderValues [MapProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:McpHeaderValues"
+msgid "Mcp Header Values"
+msgstr "MCP 请求头变量值"
+
+#. Key:	ShuttlegentSettings:PermissionPolicy
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:PermissionPolicy [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:PermissionPolicy [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:PermissionPolicy"
+msgid "Permission Policy"
+msgstr "权限请求答复方式"
+
+#. Key:	ShuttlegentSettings:RuntimeExecutableOverride
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:RuntimeExecutableOverride [StructProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:RuntimeExecutableOverride [StructProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:RuntimeExecutableOverride"
+msgid "Runtime Executable Override"
+msgstr "运行时可执行文件"
+
+#. Key:	ShuttlegentSettings:UiFontFamily
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentSettings:UiFontFamily [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentSettings:UiFontFamily [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentSettings:UiFontFamily"
+msgid "Ui Font Family"
+msgstr "界面字体"
+
+#. Key:	ShuttlegentUiGuide
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide [ScriptStruct DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide [ScriptStruct DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentUiGuide"
+msgid "Shuttlegent Ui Guide"
+msgstr "Shuttlegent 界面指路"
+
+#. Key:	ShuttlegentUiGuide:Description
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Description [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Description [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentUiGuide:Description"
+msgid "Description"
+msgstr "说明"
+
+#. Key:	ShuttlegentUiGuide:Id
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Id [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Id [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentUiGuide:Id"
+msgid "Id"
+msgstr "键"
+
+#. Key:	ShuttlegentUiGuide:Kind
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Kind [EnumProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Kind [EnumProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentUiGuide:Kind"
+msgid "Kind"
+msgstr "类型"
+
+#. Key:	ShuttlegentUiGuide:Target
+#. SourceLocation:	/Script/ShuttlegentCore.ShuttlegentUiGuide:Target [StrProperty DisplayName meta-data]
+#: /Script/ShuttlegentCore.ShuttlegentUiGuide:Target [StrProperty DisplayName meta-data]
+msgctxt "UObjectDisplayNames,ShuttlegentUiGuide:Target"
+msgid "Target"
+msgstr "目标"
+

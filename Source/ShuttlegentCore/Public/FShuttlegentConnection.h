@@ -9,43 +9,43 @@
 #include "FShuttlegentConnection.generated.h"
 
 /**
- * 个人设置中的一条模型连接：只填地址与密钥，协议与可用模型由检测得出（FShuttlegentConnectionTester）。
- * 一条连接即运行时的一个路由，检测出的每个模型都出现在会话的模型菜单中。
+ * A model connection in the personal settings: enter only the address and key; the protocol and available models are detected (FShuttlegentConnectionTester).
+ * Each connection is one runtime route, and every detected model appears in the session's model menu.
  */
 USTRUCT()
 struct SHUTTLEGENTCORE_API FShuttlegentConnection
 {
 	GENERATED_BODY()
 
-	/** 服务地址，例如 https://api.openai.com/v1。内置 DeepSeek 连接的地址固定。 */
+	/** Service address, for example https://api.openai.com/v1. The built-in DeepSeek connection has a fixed address. */
 	UPROPERTY(Config, EditAnywhere, Category = "Connection")
 	FString BaseUrl;
 
-	/** 密钥，只保存在本机设置中。 */
+	/** API key, stored only in the settings on this machine. */
 	UPROPERTY(Config, EditAnywhere, Category = "Connection", meta = (PasswordField = true))
 	FString ApiKey;
 
-	/** 内置 DeepSeek 连接：由运行时 llm-deepseek 提供，地址、协议与模型固定，只需填密钥，不可删除。 */
+	/** Built-in DeepSeek connection: served by the runtime's llm-deepseek with a fixed address, protocol and models; only the key is needed, and it cannot be removed. */
 	UPROPERTY(Config)
 	bool bBuiltin = false;
 
-	/** 检测出的接口协议。 */
+	/** Detected API protocol. */
 	UPROPERTY(Config)
 	EShuttlegentProviderApi Api = EShuttlegentProviderApi::OpenAiCompletions;
 
-	/** 检测出的可用于对话的模型 ID，最新的在前；第一个即这条连接的默认模型。 */
+	/** Detected chat model IDs, newest first; the first one is this connection's default model. */
 	UPROPERTY(Config)
 	TArray<FString> ModelIds;
 
-	/** 检测时查得推理强度档位的模型；不在其中的模型请求不带推理参数，沿用服务方的默认行为。 */
+	/** Models whose reasoning effort levels were found during the test; requests to other models carry no reasoning parameter and keep the provider's default behavior. */
 	UPROPERTY(Config)
 	TArray<FShuttlegentModelEfforts> ModelEfforts;
 
-	/** 最近一次检测的结论。 */
+	/** Result of the latest test. */
 	UPROPERTY(Config)
 	EShuttlegentConnectionStatus Status = EShuttlegentConnectionStatus::Untested;
 
-	/** 最近一次检测时地址与密钥的指纹；与当前值不一致说明改过，需要重新检测。不含密钥原文。 */
+	/** Fingerprint of the address and key at the latest test; a mismatch with the current values means they changed and need a new test. Does not contain the key itself. */
 	UPROPERTY(Config)
 	FString TestedFingerprint;
 };

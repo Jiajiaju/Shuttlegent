@@ -166,7 +166,7 @@ namespace FShuttlegentToolRunnerPrivate
 			if (Object.Status != EShuttlegentWriteObjectStatus::Completed) continue;
 
 			Object.Status = EShuttlegentWriteObjectStatus::RolledBack;
-			Object.Message = LOCTEXT("RolledBack", "同批其他对象失败，已随整批回滚").ToString();
+			Object.Message = LOCTEXT("RolledBack", "Another object in the batch failed, so this one was rolled back with the batch").ToString();
 		}
 		return Result;
 	}

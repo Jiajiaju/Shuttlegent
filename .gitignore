@@ -8,6 +8,7 @@ DerivedDataCache/
 .vs/
 .vscode/
 .idea/
+.obsidian/
 *.sln
 *.suo
 *.user

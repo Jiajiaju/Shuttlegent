@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 4,
-	"VersionName": "0.4.0",
+	"Version": 5,
+	"VersionName": "0.5.0",
 	"FriendlyName": "Shuttlegent",
 	"Description": "Project-agnostic AI agent for the Unreal Editor, built on DeepSeek Harness via ACP and MCP.",
 	"Category": "Editor",

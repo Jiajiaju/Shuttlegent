@@ -10,7 +10,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Unreal%20Engine-5.8-313131" alt="Unreal Engine 5.8">
   <img src="https://img.shields.io/badge/platform-Windows-0078D6" alt="Windows">
-  <img src="https://img.shields.io/badge/version-0.4.0%20experimental-orange" alt="0.4.0 experimental">
+  <img src="https://img.shields.io/badge/version-0.5.0%20experimental-orange" alt="0.5.0 experimental">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
 </p>
 
